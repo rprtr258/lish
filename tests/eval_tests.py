@@ -1,10 +1,9 @@
 import unittest
 
-from main import atom as symbol
-from main import parse, eval
+from definitions import A, B, C, NIL
+from context import LispSH
+from LispSH import parse, eval, symbol
 
-A, B, C = symbol("a"), symbol("b"), symbol("c")
-NIL = []
 
 class TestEval(unittest.TestCase):
     def __eval_test__(self, test_program, expected_result):
@@ -12,16 +11,16 @@ class TestEval(unittest.TestCase):
         self.assertEqual(actual_result, expected_result)
 
     def test_quote(self):
-        self.__eval_test__("(quote a)", "a")
+        self.__eval_test__("(quote a)", A)
 
     def test_quote_list(self):
-        self.__eval_test__("(quote (a b c))", ["a", "b", "c"])
+        self.__eval_test__("(quote (a b c))", [A, B, C])
 
     def test_quote_nested_list(self):
-        self.__eval_test__("(quote (a b (c d (f e))))", ["a", "b", ["c", "d", ["f", "e"]]])
+        self.__eval_test__("(quote (a b (c d (f e))))", [A, B, [C, symbol("d"), [symbol("f"), symbol("e")]]])
 
     def test_quote_nil(self):
-        self.__eval_test__("(quote ())", [])
+        self.__eval_test__("(quote ())", NIL)
 
     def test_atom_quote(self):
         self.__eval_test__("(atom (quote a))", True)

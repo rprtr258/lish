@@ -1,12 +1,8 @@
 import unittest
 
-from main import atom as symbol
-from main import read_from_tokens, tokenize
-
-
-A = "a"
-B = "b"
-C = "c"
+from context import LispSH
+from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
+from LispSH.main import read_from_tokens, tokenize, symbol
 
 
 class TestTokenizer(unittest.TestCase):
@@ -15,7 +11,7 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(actual_result, expected_result)
 
     def test_atom_quote_list(self):
-        self.__tokenizer_test__("(atom '(a b c))", ["atom", ["quote", [A, B, C]]])
+        self.__tokenizer_test__("(atom '(a b c))", [ATOM_SYMBOL, [QUOTE_SYMBOL, [A, B, C]]])
 
     def test_list_border_spaces(self):
         self.__tokenizer_test__("(  a b )", [A, B])
@@ -27,28 +23,28 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__("   (a b)  ", [A, B])
 
     def test_eq_quoted_equal(self):
-        self.__tokenizer_test__("(eq 'a 'a)", ["eq", ["quote", A], ["quote", A]])
+        self.__tokenizer_test__("(eq? 'a 'a)", [EQ_SYMBOL, QA, QA])
 
     def test_eq_quoted_nils(self):
-        self.__tokenizer_test__("(eq '() '())", ["eq", ["quote", []], ["quote", []]])
+        self.__tokenizer_test__("(eq? '() '())", [EQ_SYMBOL, QNIL, QNIL])
 
     def test_quoted_nil(self):
-        self.__tokenizer_test__("'()", ["quote", []])
+        self.__tokenizer_test__("'()", QNIL)
 
     def test_cond(self):
         self.__tokenizer_test__(
-            "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))",
-            [symbol("cond"),
-                [["eq", ["quote", A], ["quote", B]], ["quote", symbol("first")]],
-                [["atom", ["quote", A]], ["quote", symbol("second")]]])
+            "(cond ((eq? 'a 'b) 'first) ((atom 'a) 'second))",
+            [COND_SYMBOL,
+                [[EQ_SYMBOL, QA, QB], [QUOTE_SYMBOL, symbol("first")]],
+                [[ATOM_SYMBOL, QA], [QUOTE_SYMBOL, symbol("second")]]])
 
     def test_lambda_passing_lambda(self):
         self.__tokenizer_test__("((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))", [
             [symbol("lambda"), [symbol("f")],
-                [symbol("f"), ["quote", [B, C]]]],
-                ["quote",
+                [symbol("f"), [QUOTE_SYMBOL, [B, C]]]],
+                [QUOTE_SYMBOL,
                     [symbol("lambda"), [symbol("x")],
-                        [symbol("cons"), ["quote", A], symbol("x")]]]])
+                        [symbol("cons"), QA, symbol("x")]]]])
 
     def test_not_enough_close_parens(self):
         with self.assertRaises(ValueError) as cm:
