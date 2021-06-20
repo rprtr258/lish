@@ -56,6 +56,10 @@ class TestTokenizer(unittest.TestCase):
             no_quote_replace(
                 """a "b (("( c)")(")""", '(', ' ( '),
                 """a "b ((" (  c)")(")""")
+        # TODO: fix
+        # self.assertEqual(
+            # no_quote_replace("\"\" \"(\"", '(', ' ( '),
+            # "\"\\\"\" \"(\"")
 
     def test_tokenize(self):
         self.assertEqual(
@@ -66,6 +70,10 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual(
             tokenize(f"(+ {DQUOTE}{SLASH}{SLASH}{SLASH}{DQUOTE}{DQUOTE} {DQUOTE}abc{DQUOTE})"),
             ['(', '+', f"{DQUOTE}{SLASH}{DQUOTE}{DQUOTE}", f"{DQUOTE}abc{DQUOTE}", ')'])
+        # TODO: fix
+        # self.assertEqual(
+            # tokenize("""(+ "(" "\\"" ")" "\\\\")"""),
+            # ['(', '+', '"("', '"""', '")"', '"\\"', ')'])
 
     def test_string(self):
         self.__tokenizer_test__("""(+ "a" "(a b))))")""", [Symbol("+"), Atom("a"), Atom("(a b))))")])

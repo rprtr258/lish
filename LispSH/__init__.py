@@ -26,6 +26,8 @@ class Macro:
 class Atom:
     value: Union[bool, int, float]
 
+def get_atom_value(atom): return atom.value
+
 def atom_or_symbol(token):
     if token[0] == '"' and token[-1] == '"' and len(token) >= 2:
         return Atom(token[1 : -1])
@@ -158,10 +160,11 @@ class NamedFunction:
         return f"<fun {self.name}>"
 
 def plus(*x):
-    if isinstance(x[0], Atom) and isinstance(x[0].value, int):
-        return Atom(sum(map(lambda x: x.value, x), 0))
-    if isinstance(x[0], str):
-        return "".join(x) # sum(x, "")
+    if isinstance(x[0], Atom):
+        if isinstance(x[0].value, int):
+            return Atom(sum(map(get_atom_value, x), 0))
+        elif isinstance(x[0].value, str):
+            return Atom("".join(map(get_atom_value, x))) # sum(x, "")
     return sum(x, [])
 
 def default_env():
@@ -171,7 +174,7 @@ def default_env():
     env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         '+': NamedFunction("+", plus),
-        '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(lambda x: x.value, x[1:])) if len(x) > 1 else -x[0].value)),
+        '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(get_atom_value, x[1:])) if len(x) > 1 else -x[0].value)),
         '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
         '/':op.truediv,
         '>':op.gt,
