@@ -13,17 +13,17 @@ class TestRepl(unittest.TestCase):
 
     def test_if_macro_true(self):
         global_env = default_env()
-        self.assertEqual(eval(parse("(defmacro if (p x y) (cond p x y))"), global_env), NIL)
+        self.assertEqual(eval(parse("(defmacro if (p x y) (list 'cond p x y))"), global_env), NIL)
         self.assertEqual(eval(parse("(if (nil? '()) 1 2)"), global_env), atom(1))
 
     def test_if_macro_false(self):
         global_env = default_env()
-        self.assertEqual(eval(parse("(defmacro if (p x y) (cond p x y))"), global_env), NIL)
+        self.assertEqual(eval(parse("(defmacro if (p x y) (list 'cond p x y))"), global_env), NIL)
         self.assertEqual(eval(parse("(if (nil? '(a)) 1 2)"), global_env), atom(2))
 
     def test_if_in_recursive_function(self):
         global_env = default_env()
-        self.assertEqual(eval(parse("(defmacro if (p x y) (cond p x y))"), global_env), NIL)
+        self.assertEqual(eval(parse("(defmacro if (p x y) (list 'cond p x y))"), global_env), NIL)
         self.assertEqual(eval(parse("(define fact (lambda (n) (cond (eq? n 1) 1 (* n (fact (- n 1))))))"), global_env), NIL)
         self.assertEqual(eval(parse("(fact 1)"), global_env), atom(1))
         self.assertEqual(eval(parse("(fact 2)"), global_env), atom(2))

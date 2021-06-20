@@ -3,9 +3,6 @@ from typing import List, Any
 import math
 import operator as op
 
-################ Types
-
-List   = list         # A Lisp List is implemented as a Python list
 
 ################ Constants
 
@@ -147,7 +144,7 @@ def default_env():
         'max':     max,
         'min':     min,
         'not':     op.not_,
-        'nil?':    NamedFunction("nil?", lambda x: x == []),
+        'nil?':    NamedFunction("nil?", lambda x: atom(x == [])),
         'number?': lambda x: is_atom(x) and (isinstance(val := atom_value(x), int) or isinstance(val, float)),
         'procedure?': callable,
         'round':   round,
@@ -180,66 +177,85 @@ def log_eval(eval):
         return res
     return wrapped_eval
 
+def macroexpand(args, body, exps):
+    # print("ARGS:", schemestr(args))
+    # print("BODY:", schemestr(body))
+    # print("EXPS:", schemestr(exps))
+    # print("EXPANDED:", schemestr(eval(body, Env([symbol_name(arg) for arg in args], exps, global_env))))
+    # print()
+    return eval(body, Env([symbol_name(arg) for arg in args], exps, global_env))
+
 # @log_eval
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     if is_symbol(x):
+        # x
+        # but x is symbol
         return env.get(symbol_name(x))
     elif is_atom(x):
+        # x
+        # but x is atom (e.g. number)
         return x
-    elif x[0] == symbol("quote"):          # (quote exp)
-        _, exp = x
-        return exp
-    elif x[0] == symbol("atom"):          # (atom exp)
-        _, exp = x
-        exp = eval(exp, env)
-        return atom(\
-            is_atom(exp) or \
-            is_symbol(exp) or \
-            isinstance(exp, str) or \
-            isinstance(exp, bool) or \
-            exp == [])
-    elif x[0] == symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
-        predicates_exps = x[1:]
-        i = 0
-        while i + 1 < len(predicates_exps):
-            predicate, expression = predicates_exps[i : i + 2]
-            i += 2
-            if atom_value(eval(predicate, env)):
-                return eval(expression, env)
-        # if default value is given
-        if len(predicates_exps) % 2 == 1:
-            return eval(predicates_exps[-1], env)
-    elif x[0] == symbol("define"):         # (define var exp)
-        _, var, exp = x
-        assert is_symbol(var), "Definition name is not a symbol"
-        env[symbol_name(var)] = eval(exp, env)
-        return [] # TODO: nil
-    elif x[0] == symbol("defmacro"):         # (defmacro macroname (args...) body)
-        _, macroname, args, body = x
-        assert is_symbol(macroname), "Macro definition name is not a symbol"
-        env[symbol_name(macroname)] = macro(args, body)
-        return [] # TODO: nil
-    elif x[0] == symbol("set!"):           # (set! var exp)
-        _, var, exp = x
-        assert is_symbol(var), "Definition name is not a symbol"
-        var_name = symbol_name(var)
-        env.find(var_name)[var_name] = eval(exp, env)
-    elif x[0] == symbol("lambda"):         # (lambda (args...) body)
-        _, args, body = x
-        return Procedure([symbol_name(arg) for arg in args], body, env)
     elif is_symbol(x[0]) and (res := env.get(symbol_name(x[0]))) and is_macro(res): # (macroname exps...)
         _, macroargs, macrobody = res
         exps = x[1:]
         # TODO: macroexpand
-        macroexpansion = eval(macrobody, Env([symbol_name(arg) for arg in macroargs], exps, env))
+        macroexpansion = macroexpand(macroargs, macrobody, exps)
         return eval(macroexpansion, env)
-    else:                          # (proc arg...)
-        proc = eval(x[0], env)
-        args = [eval(exp, env) for exp in x[1:]]
-        if not callable(proc):
-            raise ValueError(f"{proc} is not a function call in {x}")
-        return proc(*args)
+    else:
+        form_word = x[0]
+        if form_word == symbol("quote"):
+            # (quote exp)
+            _, exp = x
+            return exp
+        elif form_word == symbol("atom"):
+            # (atom exp)
+            _, exp = x
+            exp = eval(exp, env)
+            return atom(\
+                is_atom(exp) or \
+                is_symbol(exp) or \
+                isinstance(exp, str) or \
+                isinstance(exp, bool) or \
+                exp == [])
+        elif form_word == symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
+            # (cond p1 e1 p2 e2 ... pn en)
+            # or
+            # (cond p1 e1 p2 e2 ... pn en default)
+            predicates_exps = x[1:]
+            i = 0
+            while i + 1 < len(predicates_exps):
+                predicate, expression = predicates_exps[i : i + 2]
+                i += 2
+                if atom_value(eval(predicate, env)):
+                    return eval(expression, env)
+            # if default value is given
+            if len(predicates_exps) % 2 == 1:
+                return eval(predicates_exps[-1], env)
+        elif form_word == symbol("define"):         # (define var exp)
+            _, var, exp = x
+            assert is_symbol(var), "Definition name is not a symbol"
+            env[symbol_name(var)] = eval(exp, env)
+            return [] # TODO: nil
+        elif form_word == symbol("defmacro"):         # (defmacro macroname (args...) body)
+            _, macroname, args, body = x
+            assert is_symbol(macroname), "Macro definition name is not a symbol"
+            env[symbol_name(macroname)] = macro(args, body)
+            return [] # TODO: nil
+        elif form_word == symbol("set!"):           # (set! var exp)
+            _, var, exp = x
+            assert is_symbol(var), "Definition name is not a symbol"
+            var_name = symbol_name(var)
+            env.find(var_name)[var_name] = eval(exp, env)
+        elif form_word == symbol("lambda"):         # (lambda (args...) body)
+            _, args, body = x
+            return Procedure([symbol_name(arg) for arg in args], body, env)
+        else:                          # (proc arg...)
+            proc = eval(x[0], env)
+            args = [eval(exp, env) for exp in x[1:]]
+            if not callable(proc):
+                raise ValueError(f"{proc} is not a function call in {x}")
+            return proc(*args)
 
 def fix_parens(cmd_line):
     cmd_line = cmd_line.strip()
@@ -261,8 +277,8 @@ def schemestr(exp):
     if is_symbol(exp):
         return symbol_name(exp)
     elif is_atom(exp):
-        return atom_value(exp)
-    elif isinstance(exp, List):
+        return str(atom_value(exp))
+    elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
     else:
         return str(exp)

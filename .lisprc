@@ -1,1 +1,3 @@
-(define fact (lambda (n) (cond (eq? n 1) 1 (* n (fact (- n 1))))))
+(defmacro if (p x y) (list 'cond p x y))
+(if (nil? '()) (echo 1) (echo 2))
+(if (nil? '(a)) (echo 1) (echo 2))
