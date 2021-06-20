@@ -120,7 +120,7 @@ def default_env():
         '<=':op.le,
         '=':op.eq,
         'abs':     abs,
-        "echo":    NamedFunction("echo", lambda *x: print(*x)),
+        "echo":    NamedFunction("echo", lambda *x: " ".join(map(schemestr, x))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
