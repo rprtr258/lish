@@ -1,1 +1,1 @@
-(defmacro if (p x y) (cond p x y))
+(define fact (lambda (n) (cond (eq? n 1) 1 (* n (fact (- n 1))))))

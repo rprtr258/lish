@@ -1,6 +1,6 @@
 import unittest
 
-from definitions import A, B, C, NIL
+from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
 from LispSH import parse, eval, symbol
 
@@ -23,37 +23,37 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(quote ())", NIL)
 
     def test_atom_quote(self):
-        self.__eval_test__("(atom (quote a))", True)
+        self.__eval_test__("(atom (quote a))", TRUE)
 
     def test_atom_quote_list(self):
-        self.__eval_test__("(atom (quote (a b c)))", False)
+        self.__eval_test__("(atom (quote (a b c)))", FALSE)
 
     def test_atom_quote_nil(self):
-        self.__eval_test__("(atom (quote ()))", True)
+        self.__eval_test__("(atom (quote ()))", TRUE)
 
     def test_atom_quoted(self):
-        self.__eval_test__("(atom 'a)", True)
+        self.__eval_test__("(atom 'a)", TRUE)
 
     def test_atom_quoted_list(self):
-        self.__eval_test__("(atom '(a b c))", False)
+        self.__eval_test__("(atom '(a b c))", FALSE)
 
     def test_atom_quoted_nil(self):
-        self.__eval_test__("(atom '())", True)
+        self.__eval_test__("(atom '())", TRUE)
 
     def test_atom_atom_quoted(self):
-        self.__eval_test__("(atom (atom 'a))", True)
+        self.__eval_test__("(atom (atom 'a))", TRUE)
 
     def test_atom_quoted_atom(self):
-        self.__eval_test__("(atom '(atom 'a))", False)
+        self.__eval_test__("(atom '(atom 'a))", FALSE)
 
     def test_eq_equal_symbols(self):
-        self.__eval_test__("(eq? 'a 'a)", True)
+        self.__eval_test__("(eq? 'a 'a)", TRUE)
 
     def test_eq_not_equal_symbols(self):
-        self.__eval_test__("(eq? 'a 'b)", False)
+        self.__eval_test__("(eq? 'a 'b)", FALSE)
 
     def test_eq_nils(self):
-        self.__eval_test__("(eq? '() '())", True)
+        self.__eval_test__("(eq? '() '())", TRUE)
 
     def test_car(self):
         self.__eval_test__("(car '(a b c))", A)
@@ -76,8 +76,11 @@ class TestEval(unittest.TestCase):
     def test_cdr_cons(self):
         self.__eval_test__("(cdr (cons 'a '(b c)))", [B, C])
 
-    def test_cond(self):
-        self.__eval_test__("(cond (eq? 'a 'b) 'first (atom 'a) 'second)", symbol("second"))
+    def test_cond_true(self):
+        self.__eval_test__("(cond (eq? 'a 'a) 'first 'second)", symbol("first"))
+
+    def test_cond_false(self):
+        self.__eval_test__("(cond (eq? 'a 'b) 'first 'second)", symbol("second"))
 
     def test_lambda_one_argument(self):
         self.__eval_test__("((lambda (x) (cons x '(b))) 'a)", [A, B])

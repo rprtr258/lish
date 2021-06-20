@@ -25,14 +25,22 @@ def symbol_name(symbol): return symbol[1]
 
 # Number, Boolean is implemented as a ["ATOM", value]
 def atom(token: str) -> List[Any]:
-    "Numbers become numbers; every other token is a symbol."
+    """Numbers become atom numbers;
+    Bools become atom bools;
+    every other token is a symbol."""
+    if token in ["True", "False"]:
+        return ["ATOM", (token == "True")]
+    if token in [True, False]:
+        return ["ATOM", token]
     try:
         return ["ATOM", int(token)]
     except ValueError:
-        try:
-            return ["ATOM", float(token)]
-        except ValueError:
-            return symbol(token) # TODO: wtf atom returns symbol?
+        pass
+    try:
+        return ["ATOM", float(token)]
+    except ValueError:
+        pass
+    return symbol(token) # TODO: wtf atom returns symbol?
 def is_atom(form): return isinstance(form, list) and len(form) == 2 and form[0] == "ATOM"
 def atom_value(atom): return atom[1]
 
@@ -107,27 +115,30 @@ class NamedFunction:
 
 def default_env():
     "An environment with some Scheme standard procedures."
+    from random import random
     env = Env()
     env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
-        '+': NamedFunction("+", lambda *x: sum(x) if isinstance(x[0], int) else "".join(x)),
-        '-': NamedFunction("-", lambda *x: x[0] - sum(x[1:]) if len(x) > 1 else -x[0]),
-        '*':op.mul,
+        '+': NamedFunction("+", lambda *x: sum(x) if isinstance(x[0], int) else ("".join(x) if isinstance(x[0], str) else sum(x, []))),
+        '-': NamedFunction("-", lambda *x: atom(atom_value(x[0]) - sum(map(atom_value, x[1:])) if len(x) > 1 else -atom_value(x[0]))),
+        '*': NamedFunction("*", lambda x, y: atom(atom_value(x) * atom_value(y))),
         '/':op.truediv,
         '>':op.gt,
         '<':op.lt,
         '>=':op.ge,
         '<=':op.le,
         '=':op.eq,
+        "rand": NamedFunction("rand", random),
         'abs':     abs,
-        "echo":    NamedFunction("echo", lambda *x: " ".join(map(schemestr, x))),
+        "echo":    NamedFunction("echo", lambda *x: print(*x)),
+        "str":    NamedFunction("str", lambda *x: " ".join(map(schemestr, x))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         'car':     lambda x: x[0],
         'cdr':     lambda x: x[1:],
         'cons':    lambda x,y: [x] + y,
-        'eq?':     lambda x, y: x == y,
+        'eq?':     lambda x, y: atom(x == y),
         'equal?':  op.eq,
         'length':  len,
         'list':    lambda *x: list(x),
@@ -172,12 +183,9 @@ def log_eval(eval):
 # @log_eval
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
-    if is_symbol(x):      # variable reference
+    if is_symbol(x):
         return env.get(symbol_name(x))
-        # return eval(env.get(symbol_name(x)), env)
-    elif is_atom(x):      # atom aka constant
-        return atom_value(x)
-    elif not isinstance(x, List):  # constant literal
+    elif is_atom(x):
         return x
     elif x[0] == symbol("quote"):          # (quote exp)
         _, exp = x
@@ -185,19 +193,19 @@ def eval(x, env=global_env):
     elif x[0] == symbol("atom"):          # (atom exp)
         _, exp = x
         exp = eval(exp, env)
-        return \
+        return atom(\
             is_atom(exp) or \
             is_symbol(exp) or \
             isinstance(exp, str) or \
             isinstance(exp, bool) or \
-            exp == []
+            exp == [])
     elif x[0] == symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
         predicates_exps = x[1:]
         i = 0
         while i + 1 < len(predicates_exps):
             predicate, expression = predicates_exps[i : i + 2]
             i += 2
-            if eval(eval(predicate, env), env):
+            if atom_value(eval(predicate, env)):
                 return eval(expression, env)
         # if default value is given
         if len(predicates_exps) % 2 == 1:
@@ -265,7 +273,7 @@ def repl():
         input_line = input(eval(symbol("prompt")))
         input_line = fix_parens(input_line)
         val = eval(parse(input_line))
-        if not val is None: 
+        if val != []: # TODO: nil
             print(schemestr(val))
 
 ################ File load
