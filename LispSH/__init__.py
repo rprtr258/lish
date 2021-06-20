@@ -127,7 +127,7 @@ def default_env():
         '=':op.eq,
         "rand": NamedFunction("rand", random),
         'abs':     abs,
-        "echo":    NamedFunction("echo", lambda *x: print(*x)),
+        "echo":    NamedFunction("echo", lambda *x: print(*map(schemestr, x))),
         "str":    NamedFunction("str", lambda *x: " ".join(map(schemestr, x))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
@@ -135,7 +135,7 @@ def default_env():
         'car':     lambda x: x[0],
         'cdr':     lambda x: x[1:],
         'cons':    lambda x,y: [x] + y,
-        'eq?':     lambda x, y: atom(x == y),
+        'eq?':     lambda x, y: atom(x == y), # TODO: replace eq? with =
         'equal?':  op.eq,
         'length':  len,
         'list':    lambda *x: list(x),

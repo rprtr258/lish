@@ -1,3 +1,2 @@
 (defmacro if (p x y) (list 'cond p x y))
-(if (nil? '()) (echo 1) (echo 2))
-(if (nil? '(a)) (echo 1) (echo 2))
+(defmacro defun (f args body) (list 'define f (list 'lambda args body)))
