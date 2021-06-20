@@ -2,7 +2,7 @@ import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
-from LispSH import parse, eval, symbol
+from LispSH import parse, eval, Symbol
 
 
 class TestEval(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(quote (a b c))", [A, B, C])
 
     def test_quote_nested_list(self):
-        self.__eval_test__("(quote (a b (c d (f e))))", [A, B, [C, symbol("d"), [symbol("f"), symbol("e")]]])
+        self.__eval_test__("(quote (a b (c d (f e))))", [A, B, [C, Symbol("d"), [Symbol("f"), Symbol("e")]]])
 
     def test_quote_nil(self):
         self.__eval_test__("(quote ())", NIL)
@@ -46,10 +46,10 @@ class TestEval(unittest.TestCase):
     def test_atom_quoted_atom(self):
         self.__eval_test__("(atom '(atom 'a))", FALSE)
 
-    def test_eq_equal_symbols(self):
+    def test_eq_equal_Symbols(self):
         self.__eval_test__("(= 'a 'a)", TRUE)
 
-    def test_eq_not_equal_symbols(self):
+    def test_eq_not_equal_Symbols(self):
         self.__eval_test__("(= 'a 'b)", FALSE)
 
     def test_eq_nils(self):
@@ -77,16 +77,16 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(cdr (cons 'a '(b c)))", [B, C])
 
     def test_cond_true(self):
-        self.__eval_test__("(cond (= 'a 'a) 'first 'second)", symbol("first"))
+        self.__eval_test__("(cond (= 'a 'a) 'first 'second)", Symbol("first"))
 
     def test_cond_false(self):
-        self.__eval_test__("(cond (= 'a 'b) 'first 'second)", symbol("second"))
+        self.__eval_test__("(cond (= 'a 'b) 'first 'second)", Symbol("second"))
 
     def test_lambda_one_argument(self):
         self.__eval_test__("((lambda (x) (cons x '(b))) 'a)", [A, B])
 
     def test_lambda_two_arguments(self):
-        self.__eval_test__("((lambda (x y) (cons x (cdr y))) 'z '(a b c))", [symbol("z"), B, C])
+        self.__eval_test__("((lambda (x y) (cons x (cdr y))) 'z '(a b c))", [Symbol("z"), B, C])
 
     def test_lambda_passing_lambda(self):
         self.__eval_test__("((lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))", [A, B, C])
@@ -102,7 +102,7 @@ class TestEval(unittest.TestCase):
                         # ('t (cons (subst x y (car z))
                             # (subst x y (cdr z)))))))
                 # 'm 'b '(a b (a b c) d))""",
-            # [A, symbol("m"), [A, symbol("m"), C], symbol("d")])
+            # [A, Symbol("m"), [A, Symbol("m"), C], Symbol("d")])
 
     # def test_defun_subst(self):
         # self.__eval_test__(
@@ -113,10 +113,10 @@ class TestEval(unittest.TestCase):
                     # (subst x y (car z))
                     # (subst x y (cdr z))))))
             # 'm 'b '(a b (a b c) d))""",
-            # [A, symbol("m"), [A, symbol("m"), C], symbol("d")])
+            # [A, Symbol("m"), [A, Symbol("m"), C], Symbol("d")])
 
     # def test_defun_cadr(self):
-        # self.__eval_test__("""((defun cadr (x) (car (cdr x))) '((a b) (c d) e))""", [C, symbol("d")])
+        # self.__eval_test__("""((defun cadr (x) (car (cdr x))) '((a b) (c d) e))""", [C, Symbol("d")])
 
 if __name__ == '__main__':
     unittest.main()

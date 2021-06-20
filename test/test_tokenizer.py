@@ -2,7 +2,7 @@ import unittest
 
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
-from LispSH import read_from_tokens, tokenize, symbol
+from LispSH import read_from_tokens, tokenize, Symbol
 
 
 class TestTokenizer(unittest.TestCase):
@@ -35,16 +35,16 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__(
             "(cond ((eq? 'a 'b) 'first) ((atom 'a) 'second))",
             [COND_SYMBOL,
-                [[EQ_SYMBOL, QA, QB], [QUOTE_SYMBOL, symbol("first")]],
-                [[ATOM_SYMBOL, QA], [QUOTE_SYMBOL, symbol("second")]]])
+                [[EQ_SYMBOL, QA, QB], [QUOTE_SYMBOL, Symbol("first")]],
+                [[ATOM_SYMBOL, QA], [QUOTE_SYMBOL, Symbol("second")]]])
 
     def test_lambda_passing_lambda(self):
         self.__tokenizer_test__("((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))", [
-            [symbol("lambda"), [symbol("f")],
-                [symbol("f"), [QUOTE_SYMBOL, [B, C]]]],
+            [Symbol("lambda"), [Symbol("f")],
+                [Symbol("f"), [QUOTE_SYMBOL, [B, C]]]],
             [QUOTE_SYMBOL,
-                [symbol("lambda"), [symbol("x")],
-                    [symbol("cons"), QA, symbol("x")]]]])
+                [Symbol("lambda"), [Symbol("x")],
+                    [Symbol("cons"), QA, Symbol("x")]]]])
 
     def test_not_enough_close_parens(self):
         with self.assertRaises(ValueError) as cm:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from typing import List, Any
+from typing import List, Any, Union
+from dataclasses import dataclass
 import math
 import operator as op
 
@@ -12,35 +13,33 @@ QUOTE = '\''
 
 ################ Datatypes
 
-# TODO: make dataclasses or classes
-def macro(args, body): return ["MACRO", args, body]
-def is_macro(form): return isinstance(form, list) and len(form) == 3 and form[0] == "MACRO"
+@dataclass
+class Symbol:
+    name: str
 
-# Symbol is implemented as a ["SYMBOL", symbol_name]
-def symbol(name): return ["SYMBOL", name]
-def is_symbol(form): return isinstance(form, list) and len(form) == 2 and form[0] == "SYMBOL"
-def symbol_name(symbol): return symbol[1]
+@dataclass
+class Macro:
+    args: List[Symbol]
+    body: List[Any]
 
-# Number, Boolean is implemented as a ["ATOM", value]
-def atom(token: str) -> List[Any]:
-    """Numbers become atom numbers;
-    Bools become atom bools;
-    every other token is a symbol."""
+@dataclass
+class Atom:
+    value: Union[bool, int, float]
+
+def atom_or_symbol(token):
     if token in ["True", "False"]:
-        return ["ATOM", (token == "True")]
+        return Atom(token == "True")
     if token in [True, False]:
-        return ["ATOM", token]
+        return Atom(token)
     try:
-        return ["ATOM", int(token)]
+        return Atom(int(token))
     except ValueError:
         pass
     try:
-        return ["ATOM", float(token)]
+        return float(int(token))
     except ValueError:
         pass
-    return symbol(token) # TODO: wtf atom returns symbol?
-def is_atom(form): return isinstance(form, list) and len(form) == 2 and form[0] == "ATOM"
-def atom_value(atom): return atom[1]
+    return Symbol(token)
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 
@@ -70,11 +69,11 @@ def read_from_tokens(tokens):
     elif token == QUOTE:
         L = []
         L.append(read_from_tokens(tokens))
-        return [symbol("quote")] + L
+        return [Symbol("quote")] + L
     elif token == CLOSE_PAREN:
         raise SyntaxError(f'unexpected {CLOSE_PAREN}')
     else:
-        return atom(token)
+        return atom_or_symbol(token)
 
 def parse(program):
     "Read a Scheme expression from a string."
@@ -112,8 +111,8 @@ class NamedFunction:
         return f"<fun {self.name}>"
 
 def plus(*x):
-    if is_atom(x[0]) and isinstance(atom_value(x[0]), int):
-        return atom(sum(map(atom_value, x), 0))
+    if isinstance(x[0], Atom) and isinstance(x[0].value, int):
+        return Atom(sum(map(lambda x: x.value, x), 0))
     if isinstance(x[0], str):
         return "".join(x) # sum(x, "")
     return sum(x, [])
@@ -125,25 +124,25 @@ def default_env():
     env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         '+': NamedFunction("+", plus),
-        '-': NamedFunction("-", lambda *x: atom(atom_value(x[0]) - sum(map(atom_value, x[1:])) if len(x) > 1 else -atom_value(x[0]))),
-        '*': NamedFunction("*", lambda x, y: atom(atom_value(x) * atom_value(y))),
+        '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(lambda x: x.value, x[1:])) if len(x) > 1 else -x[0].value)),
+        '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
         '/':op.truediv,
         '>':op.gt,
-        '<': lambda x, y: atom(x < y), # TODO: change ops to reduce
+        '<': lambda x, y: Atom(x < y), # TODO: change ops to reduce
         '>=':op.ge,
         '<=':op.le,
         '=':op.eq,
         "rand": NamedFunction("rand", random),
         'abs':     abs,
         "echo":    NamedFunction("echo", lambda *x: print(*map(schemestr, x))),
-        "str":    NamedFunction("str", lambda *x: atom(" ".join(map(schemestr, x)))),
+        "str":    NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         'car':     lambda x: x[0],
         'cdr':     lambda x: x[1:],
         'cons':    lambda x,y: [x] + y,
-        "=": lambda x, y: atom(x == y),
+        "=": lambda x, y: Atom(x == y),
         'length':  len,
         'list':    lambda *x: list(x),
         'list?':   lambda x: isinstance(x,list),
@@ -151,11 +150,11 @@ def default_env():
         'max':     max,
         'min':     min,
         'not':     op.not_,
-        'nil?':    NamedFunction("nil?", lambda x: atom(x == [])),
-        'number?': lambda x: is_atom(x) and (isinstance(val := atom_value(x), int) or isinstance(val, float)),
+        'nil?':    NamedFunction("nil?", lambda x: Atom(x == [])),
+        'number?': lambda x: isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)),
         'procedure?': callable,
         'round':   round,
-        'symbol?': is_symbol,
+        'symbol?': lambda x: isinstance(x, Symbol),
         "prompt": "lis.py> ",
     })
     return env
@@ -188,7 +187,7 @@ def macroexpand(args, body, exps, env):
     # print("ARGS:", schemestr(args))
     # print("BODY:", schemestr(body))
     # print("EXPS:", schemestr(exps))
-    macroexpansion = eval(body, Env([symbol_name(arg) for arg in args], exps, env))
+    macroexpansion = eval(body, Env([arg.name for arg in args], exps, env))
     # print("EXPANDED:", schemestr(macroexpansion))
     # print()
     return macroexpansion
@@ -196,37 +195,37 @@ def macroexpand(args, body, exps, env):
 # @log_eval
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
-    if is_symbol(x):
+    if isinstance(x, Symbol):
         # x
         # but x is symbol
-        return env.get(symbol_name(x))
-    elif is_atom(x):
+        return env.get(x.name)
+    elif isinstance(x, Atom):
         # x
         # but x is atom (e.g. number)
         return x
-    elif is_symbol(x[0]) and (res := env.get(symbol_name(x[0]))) and is_macro(res): # (macroname exps...)
-        _, macroargs, macrobody = res
+    elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro): # (macroname exps...)
+        macroargs, macrobody = res.args, res.body
         exps = x[1:]
         # TODO: macroexpand
         macroexpansion = macroexpand(macroargs, macrobody, exps, env)
         return eval(macroexpansion, env)
     else:
         form_word = x[0]
-        if form_word == symbol("quote"):
+        if form_word == Symbol("quote"):
             # (quote exp)
             _, exp = x
             return exp
-        elif form_word == symbol("atom"):
+        elif form_word == Symbol("atom"):
             # (atom exp)
             _, exp = x
             exp = eval(exp, env)
-            return atom(\
-                is_atom(exp) or \
-                is_symbol(exp) or \
+            return Atom(\
+                isinstance(exp, Atom) or \
+                isinstance(exp, Symbol) or \
                 isinstance(exp, str) or \
                 isinstance(exp, bool) or \
                 exp == [])
-        elif form_word == symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
+        elif form_word == Symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
             # (cond p1 e1 p2 e2 ... pn en)
             # or
             # (cond p1 e1 p2 e2 ... pn en default)
@@ -235,29 +234,29 @@ def eval(x, env=global_env):
             while i + 1 < len(predicates_exps):
                 predicate, expression = predicates_exps[i : i + 2]
                 i += 2
-                if atom_value(eval(predicate, env)):
+                if eval(predicate, env).value:
                     return eval(expression, env)
             # if default value is given
             if len(predicates_exps) % 2 == 1:
                 return eval(predicates_exps[-1], env)
-        elif form_word == symbol("define"):         # (define var exp)
+        elif form_word == Symbol("define"):         # (define var exp)
             _, var, exp = x
-            assert is_symbol(var), "Definition name is not a symbol"
-            env[symbol_name(var)] = eval(exp, env)
+            assert isinstance(var, Symbol), "Definition name is not a symbol"
+            env[var.name] = eval(exp, env)
             return [] # TODO: nil
-        elif form_word == symbol("defmacro"):         # (defmacro macroname (args...) body)
+        elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
             _, macroname, args, body = x
-            assert is_symbol(macroname), "Macro definition name is not a symbol"
-            env[symbol_name(macroname)] = macro(args, body)
+            assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
+            env[macroname.name] = Macro(args, body)
             return [] # TODO: nil
-        elif form_word == symbol("set!"):           # (set! var exp)
+        elif form_word == Symbol("set!"):           # (set! var exp)
             _, var, exp = x
-            assert is_symbol(var), "Definition name is not a symbol"
-            var_name = symbol_name(var)
+            assert isinstance(var, Symbol), "Definition name is not a symbol"
+            var_name = var.name
             env.find(var_name)[var_name] = eval(exp, env)
-        elif form_word == symbol("lambda"):         # (lambda (args...) body)
+        elif form_word == Symbol("lambda"):         # (lambda (args...) body)
             _, args, body = x
-            return Procedure([symbol_name(arg) for arg in args], body, env)
+            return Procedure([arg.name for arg in args], body, env)
         else:
             # (proc arg...)
             proc = eval(x[0], env)
@@ -283,10 +282,10 @@ def fix_parens(cmd_line):
 
 def schemestr(exp):
     "Convert a Python object back into a Scheme-readable string."
-    if is_symbol(exp):
-        return symbol_name(exp)
-    elif is_atom(exp):
-        return str(atom_value(exp))
+    if isinstance(exp, Symbol):
+        return exp.name
+    elif isinstance(exp, Atom):
+        return str(exp.value)
     elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
     else:
