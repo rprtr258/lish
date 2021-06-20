@@ -137,10 +137,10 @@ def default_env():
         'min':     min,
         'not':     op.not_,
         'nil?':    NamedFunction("nil?", lambda x: x == []),
-        'number?': lambda x: isinstance(x, Number),
+        'number?': lambda x: is_atom(x) and (isinstance(val := atom_value(x), int) or isinstance(val, float)),
         'procedure?': callable,
         'round':   round,
-        'symbol?': lambda x: isinstance(x, Symbol),
+        'symbol?': is_symbol,
         "prompt": "lis.py> ",
     })
     return env
