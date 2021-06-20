@@ -3,5 +3,5 @@ program = [
     "(cadr '(a (b c) d))"
 ]
 for cmd in program:
-    res, env = interpret(cmd, env)
+    res = eval(parse(cmd))
     print(res)
