@@ -47,13 +47,13 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(atom '(atom 'a))", FALSE)
 
     def test_eq_equal_symbols(self):
-        self.__eval_test__("(eq? 'a 'a)", TRUE)
+        self.__eval_test__("(= 'a 'a)", TRUE)
 
     def test_eq_not_equal_symbols(self):
-        self.__eval_test__("(eq? 'a 'b)", FALSE)
+        self.__eval_test__("(= 'a 'b)", FALSE)
 
     def test_eq_nils(self):
-        self.__eval_test__("(eq? '() '())", TRUE)
+        self.__eval_test__("(= '() '())", TRUE)
 
     def test_car(self):
         self.__eval_test__("(car '(a b c))", A)
@@ -77,10 +77,10 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(cdr (cons 'a '(b c)))", [B, C])
 
     def test_cond_true(self):
-        self.__eval_test__("(cond (eq? 'a 'a) 'first 'second)", symbol("first"))
+        self.__eval_test__("(cond (= 'a 'a) 'first 'second)", symbol("first"))
 
     def test_cond_false(self):
-        self.__eval_test__("(cond (eq? 'a 'b) 'first 'second)", symbol("second"))
+        self.__eval_test__("(cond (= 'a 'b) 'first 'second)", symbol("second"))
 
     def test_lambda_one_argument(self):
         self.__eval_test__("((lambda (x) (cons x '(b))) 'a)", [A, B])

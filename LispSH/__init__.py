@@ -143,8 +143,7 @@ def default_env():
         'car':     lambda x: x[0],
         'cdr':     lambda x: x[1:],
         'cons':    lambda x,y: [x] + y,
-        'eq?':     lambda x, y: atom(x == y), # TODO: replace eq? with =
-        'equal?':  op.eq,
+        "=": lambda x, y: atom(x == y),
         'length':  len,
         'list':    lambda *x: list(x),
         'list?':   lambda x: isinstance(x,list),

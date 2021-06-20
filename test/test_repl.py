@@ -42,7 +42,7 @@ class TestRepl(unittest.TestCase):
     def test_if_in_recursive_function(self):
         self.__test_cmds__([
             "(defmacro if (p x y) (list 'cond p x y))",
-            "(define fact (lambda (n) (cond (eq? n 1) 1 (* n (fact (- n 1))))))",
+            "(define fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
             ("(fact 1)", atom(1)),
             ("(fact 2)", atom(2)),
             ("(fact 3)", atom(6)),
@@ -59,7 +59,7 @@ class TestRepl(unittest.TestCase):
 
     def test_recursion(self):
         self.__test_cmds__([
-            "(define fact (lambda (n) (cond (eq? n 1) 1 (* n (fact (- n 1))))))",
+            "(define fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
             ("(fact 1)", atom(1)),
             ("(fact 2)", atom(2)),
             ("(fact 3)", atom(6)),
@@ -98,7 +98,7 @@ class TestRepl(unittest.TestCase):
         # global_env = default_env()
         # self.assertEqual(eval(parse("(define S (lambda (y) (y y)))"), global_env), NIL)
         # self.assertEqual(eval(parse("(define Y (lambda (f) (S (lambda (z) (f (z z))))))"), global_env), NIL)
-        # self.assertEqual(eval(parse("(define fact (lambda (f) (lambda (x) (if (eq? x 1) 1 (* x (f (- x 1)))))))"), global_env), NIL)
+        # self.assertEqual(eval(parse("(define fact (lambda (f) (lambda (x) (if (= x 1) 1 (* x (f (- x 1)))))))"), global_env), NIL)
         # self.assertEqual(eval(parse("(define yfact (Y fact))"), global_env), NIL)
         # self.assertEqual(eval(parse("(yfact 1)"), global_env), 1)
         # self.assertEqual(eval(parse("(yfact 2)"), global_env), 2)
