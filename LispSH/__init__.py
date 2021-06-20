@@ -294,7 +294,9 @@ def schemestr(exp):
 def repl():
     "A prompt-read-eval-print loop."
     while True:
-        input_line = input(eval(symbol("prompt")))
+        input_line = input(eval(Symbol("prompt")))
+        if input_line.strip() == "":
+            continue
         input_line = fix_parens(input_line)
         val = eval(parse(input_line))
         if val != []: # TODO: nil
