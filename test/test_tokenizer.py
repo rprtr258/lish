@@ -42,9 +42,9 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__("((lambda (f) (f '(b c))) '(lambda (x) (cons 'a x)))", [
             [symbol("lambda"), [symbol("f")],
                 [symbol("f"), [QUOTE_SYMBOL, [B, C]]]],
-                [QUOTE_SYMBOL,
-                    [symbol("lambda"), [symbol("x")],
-                        [symbol("cons"), QA, symbol("x")]]]])
+            [QUOTE_SYMBOL,
+                [symbol("lambda"), [symbol("x")],
+                    [symbol("cons"), QA, symbol("x")]]]])
 
     def test_not_enough_close_parens(self):
         with self.assertRaises(ValueError) as cm:
