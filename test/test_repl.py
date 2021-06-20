@@ -94,6 +94,12 @@ class TestRepl(unittest.TestCase):
         self.assertNotEqual(result[1], result[2])
         self.assertNotEqual(result[0], result[2])
 
+    def test_rev_macro(self):
+        self.__test_cmds__([
+            "(defmacro rev (x) (cond (nil? x) x (+ (rev (cdr x)) (list (car x)))))",
+            ("(rev (1 str))", atom("1"))
+        ])
+
     # def test_y_combinator(self):
         # global_env = default_env()
         # self.assertEqual(eval(parse("(define S (lambda (y) (y y)))"), global_env), NIL)
@@ -104,6 +110,7 @@ class TestRepl(unittest.TestCase):
         # self.assertEqual(eval(parse("(yfact 2)"), global_env), 2)
         # self.assertEqual(eval(parse("(yfact 3)"), global_env), 6)
         # self.assertEqual(eval(parse("(yfact 4)"), global_env), 24)
+
 
 if __name__ == '__main__':
     unittest.main()
