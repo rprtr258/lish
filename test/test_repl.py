@@ -47,7 +47,7 @@ class TestRepl(unittest.TestCase):
             ("(fact 2)", atom(2)),
             ("(fact 3)", atom(6)),
             ("(fact 4)", atom(24)),
-            "(define rev (lambda (x) (progn (echo x) (if (nil? x) x (+ (rev (cdr x)) (list (car x)))))))",
+            "(define rev (lambda (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x))))))",
             ("(rev '(a b c))", [C, B, A])
         ])
 
@@ -65,7 +65,22 @@ class TestRepl(unittest.TestCase):
             ("(fact 3)", atom(6)),
             ("(fact 4)", atom(24))
         ])
-        
+
+    def test_triple_print_function(self):
+        env = default_env()
+        eval(parse("(defmacro defun (f args body) (list 'define f (list 'lambda args body)))"), env)
+        eval(parse("(defun p3f (x) (list x x x))"), env)
+        result = eval(parse("(p3f (rand))"), env)
+        self.assertEqual(*result)
+
+    def test_triple_print_macro(self):
+        env = default_env()
+        eval(parse("(defmacro p3m (x) (list 'list x x x))"), env)
+        result = eval(parse("(p3m (rand))"), env)
+        self.assertNotEqual(result[0], result[1])
+        self.assertNotEqual(result[1], result[2])
+        self.assertNotEqual(result[0], result[2])
+
     # def test_y_combinator(self):
         # global_env = default_env()
         # self.assertEqual(eval(parse("(define S (lambda (y) (y y)))"), global_env), NIL)
@@ -76,9 +91,6 @@ class TestRepl(unittest.TestCase):
         # self.assertEqual(eval(parse("(yfact 2)"), global_env), 2)
         # self.assertEqual(eval(parse("(yfact 3)"), global_env), 6)
         # self.assertEqual(eval(parse("(yfact 4)"), global_env), 24)
-
-    # (define p3f (lambda (x) (progn (echo x) (echo x) (echo x))))
-    # (defmacro p3m (x) (progn (echo x) (echo x) (echo x)))
 
 if __name__ == '__main__':
     unittest.main()
