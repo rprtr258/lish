@@ -2,7 +2,7 @@ import unittest
 
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
-from LispSH import read_from_tokens, tokenize, Symbol
+from LispSH import read_from_tokens, tokenize, Symbol, Atom, no_quote_replace
 
 
 class TestTokenizer(unittest.TestCase):
@@ -50,6 +50,25 @@ class TestTokenizer(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             read_from_tokens(tokenize("(a b"))
         self.assertEqual(str(cm.exception), "Not enough close parens found")
+
+    def test_no_quote_replace(self):
+        self.assertEqual(
+            no_quote_replace(
+                """a "b (("( c)")(")""", '(', ' ( '),
+                """a "b ((" (  c)")(")""")
+
+    def test_tokenize(self):
+        self.assertEqual(
+            tokenize("""(+ "a" "(a b))))")"""),
+            ['(', '+', "\"a\"", "\"(a b))))\"", ')'])
+        SLASH = '\\'
+        DQUOTE = '"'
+        self.assertEqual(
+            tokenize(f"(+ {DQUOTE}{SLASH}{SLASH}{SLASH}{DQUOTE}{DQUOTE} {DQUOTE}abc{DQUOTE})"),
+            ['(', '+', f"{DQUOTE}{SLASH}{DQUOTE}{DQUOTE}", f"{DQUOTE}abc{DQUOTE}", ')'])
+
+    def test_string(self):
+        self.__tokenizer_test__("""(+ "a" "(a b))))")""", [Symbol("+"), Atom("a"), Atom("(a b))))")])
 
 if __name__ == '__main__':
     unittest.main()

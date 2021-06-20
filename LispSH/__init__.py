@@ -27,6 +27,8 @@ class Atom:
     value: Union[bool, int, float]
 
 def atom_or_symbol(token):
+    if token[0] == '"' and token[-1] == '"' and len(token) >= 2:
+        return Atom(token[1 : -1])
     if token in ["True", "False"]:
         return Atom(token == "True")
     if token in [True, False]:
@@ -43,13 +45,58 @@ def atom_or_symbol(token):
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 
+def no_quote_replace(s: str, c: str, p: str):
+    "Replaces c(char) to p(pattern) in s if c not in double quotes"
+    i = 0
+    res = ""
+    quoted = False
+    while i < len(s):
+        if s[i] == '"':
+            res += '"'
+            quoted = not quoted
+        elif s[i] == c and not quoted:
+            res += p
+        else:
+            res += s[i]
+        i += 1
+    return res
+
+# TODO: test mirroring
 def tokenize(s: str) -> List[str]:
     "Convert a string into a list of tokens."
-    return s \
-        .replace(OPEN_PAREN, f" {OPEN_PAREN} ") \
-        .replace(CLOSE_PAREN, f" {CLOSE_PAREN} ") \
-        .replace(QUOTE, f" {QUOTE} ") \
-        .split()
+    word = None
+    res = []
+    quoted = False
+    s = no_quote_replace(s, OPEN_PAREN, f" {OPEN_PAREN} ")
+    s = no_quote_replace(s, CLOSE_PAREN, f" {CLOSE_PAREN} ")
+    s = no_quote_replace(s, QUOTE, f" {QUOTE} ")
+    mirrored = False
+    for c in s:
+        if c in [' ', '\n']:
+            if not quoted:
+                if not word is None:
+                    res.append(word)
+                    word = None
+                mirrored = False
+            else:
+                word += c
+        elif c == '\\' and quoted:
+            if mirrored:
+                word += '\\'
+                mirrored = False
+            else:
+                mirrored = True
+        else:
+            word = c if word is None else word + c
+            if c == '"' and not mirrored:
+                if quoted:
+                    res.append(word)
+                    word = None
+                quoted = not quoted
+            mirrored = False
+    if not word is None:
+        res.append(word)
+    return res
 
 def read_from_tokens(tokens):
     "Read an expression from a sequence of tokens."
