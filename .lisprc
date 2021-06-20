@@ -1,2 +1,4 @@
-(defmacro if (p x y) (list 'cond p x y))
 (defmacro defun (f args body) (list 'define f (list 'lambda args body)))
+(defun evens (x) (cond (nil? x) '() (cons (car x) (odds (cdr x)))))
+(defun odds (x) (cond (nil? x) '() (evens (cdr x))))
+(defmacro let (exps body) (cons (list 'lambda (evens exps) body) (odds exps)))

@@ -2,7 +2,7 @@ import unittest
 
 from definitions import NIL, A, B, C
 from context import LispSH
-from LispSH import parse, eval, default_env, atom
+from LispSH import parse, eval, default_env, atom, symbol
 
 
 class TestRepl(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestRepl(unittest.TestCase):
     def test_self_combinator(self):
         self.__test_cmds__([
             "(define S (lambda (y) (y y)))",
-            ("(S str)", "<fun str>")
+            ("(S str)", atom("<fun str>"))
         ])
 
     def test_recursion(self):
@@ -64,6 +64,19 @@ class TestRepl(unittest.TestCase):
             ("(fact 2)", atom(2)),
             ("(fact 3)", atom(6)),
             ("(fact 4)", atom(24))
+        ])
+
+    def test_let(self):
+        self.__test_cmds__([
+            "(defmacro defun (f args body) (list 'define f (list 'lambda args body)))",
+            "(defun evens (x) (cond (nil? x) '() (cons (car x) (odds (cdr x)))))",
+            "(defun odds (x) (cond (nil? x) '() (evens (cdr x))))",
+            "(defmacro let (exps body) (cons (list 'lambda (evens exps) body) (odds exps)))",
+            ("(evens '(x 1 y 2))", [symbol("x"), symbol("y")]),
+            ("(odds '(x 1 y 2))", [atom(1), atom(2)]),
+            ("(let (x 1 y 2) x)", atom(1)),
+            ("(str (let (x 1 y 2) x))", atom("1")),
+            ("(str (let (x 1 y 2) y))", atom("2"))
         ])
 
     def test_triple_print_function(self):

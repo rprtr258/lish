@@ -12,6 +12,7 @@ QUOTE = '\''
 
 ################ Datatypes
 
+# TODO: make dataclasses or classes
 def macro(args, body): return ["MACRO", args, body]
 def is_macro(form): return isinstance(form, list) and len(form) == 3 and form[0] == "MACRO"
 
@@ -110,25 +111,32 @@ class NamedFunction:
     def __repr__(self):
         return f"<fun {self.name}>"
 
+def plus(*x):
+    if is_atom(x[0]) and isinstance(atom_value(x[0]), int):
+        return atom(sum(map(atom_value, x), 0))
+    if isinstance(x[0], str):
+        return "".join(x) # sum(x, "")
+    return sum(x, [])
+
 def default_env():
     "An environment with some Scheme standard procedures."
     from random import random
     env = Env()
     env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
-        '+': NamedFunction("+", lambda *x: sum(x) if isinstance(x[0], int) else ("".join(x) if isinstance(x[0], str) else sum(x, []))),
+        '+': NamedFunction("+", plus),
         '-': NamedFunction("-", lambda *x: atom(atom_value(x[0]) - sum(map(atom_value, x[1:])) if len(x) > 1 else -atom_value(x[0]))),
         '*': NamedFunction("*", lambda x, y: atom(atom_value(x) * atom_value(y))),
         '/':op.truediv,
         '>':op.gt,
-        '<':op.lt,
+        '<': lambda x, y: atom(x < y), # TODO: change ops to reduce
         '>=':op.ge,
         '<=':op.le,
         '=':op.eq,
         "rand": NamedFunction("rand", random),
         'abs':     abs,
         "echo":    NamedFunction("echo", lambda *x: print(*map(schemestr, x))),
-        "str":    NamedFunction("str", lambda *x: " ".join(map(schemestr, x))),
+        "str":    NamedFunction("str", lambda *x: atom(" ".join(map(schemestr, x)))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
@@ -140,7 +148,7 @@ def default_env():
         'length':  len,
         'list':    lambda *x: list(x),
         'list?':   lambda x: isinstance(x,list),
-        'map':     map,
+        'map':     lambda f, xs: list(map(f, xs)),
         'max':     max,
         'min':     min,
         'not':     op.not_,
@@ -177,13 +185,14 @@ def log_eval(eval):
         return res
     return wrapped_eval
 
-def macroexpand(args, body, exps):
+def macroexpand(args, body, exps, env):
     # print("ARGS:", schemestr(args))
     # print("BODY:", schemestr(body))
     # print("EXPS:", schemestr(exps))
-    # print("EXPANDED:", schemestr(eval(body, Env([symbol_name(arg) for arg in args], exps, global_env))))
+    macroexpansion = eval(body, Env([symbol_name(arg) for arg in args], exps, env))
+    # print("EXPANDED:", schemestr(macroexpansion))
     # print()
-    return eval(body, Env([symbol_name(arg) for arg in args], exps, global_env))
+    return macroexpansion
 
 # @log_eval
 def eval(x, env=global_env):
@@ -200,7 +209,7 @@ def eval(x, env=global_env):
         _, macroargs, macrobody = res
         exps = x[1:]
         # TODO: macroexpand
-        macroexpansion = macroexpand(macroargs, macrobody, exps)
+        macroexpansion = macroexpand(macroargs, macrobody, exps, env)
         return eval(macroexpansion, env)
     else:
         form_word = x[0]
@@ -250,11 +259,12 @@ def eval(x, env=global_env):
         elif form_word == symbol("lambda"):         # (lambda (args...) body)
             _, args, body = x
             return Procedure([symbol_name(arg) for arg in args], body, env)
-        else:                          # (proc arg...)
+        else:
+            # (proc arg...)
             proc = eval(x[0], env)
             args = [eval(exp, env) for exp in x[1:]]
             if not callable(proc):
-                raise ValueError(f"{proc} is not a function call in {x}")
+                raise ValueError(f"{proc} is not a function call in {schemestr(x)}")
             return proc(*args)
 
 def fix_parens(cmd_line):
