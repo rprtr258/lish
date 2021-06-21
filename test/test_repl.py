@@ -10,7 +10,8 @@ class TestRepl(unittest.TestCase):
         env = default_env()
         for cmd_line in cmds:
             if isinstance(cmd_line, str):
-                cmd, expected_result = cmd_line, NIL
+                eval(parse(cmd_line), env)
+                return
             elif isinstance(cmd_line, tuple) and len(cmd_line) == 2:
                 cmd, expected_result = cmd_line
             else:
