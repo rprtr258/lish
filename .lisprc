@@ -1,3 +1,8 @@
+(define map (lambda (f xs)
+    (cond
+        (nil? xs) '()
+        (cons (f (car xs)) (map f (cdr xs))))))
+
 (define `` (lambda (f)
     (cond
         (atom? f) (list 'quote f)
@@ -21,11 +26,32 @@
         (nil? x) '()
         (evens (cdr x))))
 (defmacro let (exps body)
-    (cons
-        (` (lambda
+    (cons (`
+        (lambda
             (~ (evens exps))
             (~ body)))
         (odds exps)))
+
+(defun cadr (x) (car (cdr x)))
+(defun cddr (x) (cdr (cdr x)))
+(defun caddr (x) (car (cddr x)))
+(defun cdddr (x) (cdr (cddr x)))
+(defmacro letfun (exps body)
+    (let
+        (f (defun f (expss)
+            (cond
+                (nil? expss) '()
+                (let
+                    (fun-name (car expss)
+                    fun-args (cadr expss)
+                    fun-body (caddr expss)
+                    rest (cdddr expss))
+                    (+
+                        (` ((~ fun-name) (defun (~ fun-name) (~ fun-args) (~ fun-body))))
+                        (f rest))))))
+        (` (let
+            (~ (f exps))
+            (~ body)))))
 
 (defmacro defun-trace (f args body)
     (` (define
@@ -38,9 +64,36 @@
                     (echo '(~ f) (~ (car args)) res)
                     res))))))
 
+(defmacro # (body) (` (lambda (%) (~ body))))
+
+(defun doseq-helper (sxs body)
+    (let
+        (var-name (car sxs)
+        var-seq (car (cdr sxs))
+        rest (cdr (cdr sxs)))
+        (cond
+            (nil? rest) (` (map
+                (lambda ((~ var-name)) (~ body))
+                (~ var-seq)))
+            (` (map
+                (lambda ((~ var-name)) (~ (doseq-helper rest body)))
+                (~ var-seq))))))
+(defmacro doseq (seq-exprs body) (doseq-helper seq-exprs body))
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defun dec (n) (- n 1))
+(defun inc (n) (+ n 1))
 
 (defun-trace fact (n)
     (cond
@@ -59,3 +112,49 @@
         (*
             n
             (fact1 (dec n)))))
+
+(defun range (n)
+    ((defun range-helper (k n)
+        (cond
+            (= k n) '()
+            (cons k (range-helper (inc k) n)))) 0 n))
+
+(defun range2 (n)
+    (let
+        (range-helper (defun range-helper (k n)
+            (cond
+                (= k n) '()
+                (cons k (range-helper (inc k) n)))))
+        (range-helper 0 n)))
+
+(defun range3 (n)
+    (letfun
+        (range-helper (k n) (cond
+            (= k n) '()
+            (cons k (range-helper (inc k) n))))
+        (range-helper 0 n)))
+
+(defun rainbow (s)
+    (doseq
+        (k (map (# (int (* (inc (cos (/ % 4))) (/ (len s) 2)))) (range 30)))
+        (echo (* " " k) s)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(rainbow (* "A" 10))
+
+(doseq (x '(-1 0 1)
+        y '(1 2 3))
+  (echo (* x y)))

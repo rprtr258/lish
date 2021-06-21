@@ -161,7 +161,7 @@ class NamedFunction:
 
 def plus(*x):
     if isinstance(x[0], Atom):
-        if isinstance(x[0].value, int):
+        if isinstance(x[0].value, int) or isinstance(x[0].value, float):
             return Atom(sum(map(get_atom_value, x), 0))
         elif isinstance(x[0].value, str):
             return Atom("".join(map(get_atom_value, x))) # sum(x, "")
@@ -170,13 +170,14 @@ def plus(*x):
 def default_env():
     "An environment with some Scheme standard procedures."
     from random import random
+    from math import cos
     env = Env()
-    env.update(vars(math)) # sin, cos, sqrt, pi, ...
+    # env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         '+': NamedFunction("+", plus),
         '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(get_atom_value, x[1:])) if len(x) > 1 else -x[0].value)),
         '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
-        '/':op.truediv,
+        '/': NamedFunction("/", lambda x, y: Atom(x.value / y.value)),
         '>':op.gt,
         '<': lambda x, y: Atom(x.value < y.value), # TODO: change ops to reduce
         '>=':op.ge,
@@ -184,19 +185,20 @@ def default_env():
         '=':op.eq,
         "rand": NamedFunction("rand", random),
         'abs':     abs,
-        "echo":    NamedFunction("echo", lambda *x: print(*map(schemestr, x))),
+        "cos": NamedFunction("cos", lambda x: Atom(cos(x.value))),
+        "echo":    NamedFunction("echo", lambda *x: print(*map(lambda y: y.value if isinstance(y, Atom) else schemestr(y), x))),
         "str":    NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         'append':  op.add,
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
-        'car':     lambda x: x[0],
-        'cdr':     lambda x: x[1:],
+        "car": NamedFunction("car", lambda x: x[0]),
+        "cdr": NamedFunction("cdr", lambda x: x[1:]),
         'cons':    lambda x,y: [x] + y,
         "=": lambda x, y: Atom(x == y),
-        'length':  len,
-        'list':    lambda *x: list(x),
-        'list?':   lambda x: isinstance(x,list),
-        'map':     lambda f, xs: list(map(f, xs)),
+        "len": NamedFunction("len", lambda x: Atom(len(x if isinstance(x, list) else x.value))),
+        "int": NamedFunction("int", lambda x: Atom(int(x.value))),
+        "list": NamedFunction("list", lambda *x: list(x)),
+        'list?':   lambda x: isinstance(x, list),
         'max':     max,
         'min':     min,
         'not':     op.not_,
@@ -220,7 +222,7 @@ class Procedure(object):
     def __call__(self, *args): 
         return eval(self.body, Env(self.args, args, self.env))
     def __repr__(self):
-        return f"<({self.args}) -> {self.body}> with {self.env.keys()}"
+        return schemestr([Symbol("lambda"), self.args, self.body])
 
 ################ eval
 
@@ -233,14 +235,11 @@ def log_eval(eval):
         return res
     return wrapped_eval
 
-def macroexpand(args, body, exps, env, stack):
-    # print("ARGS:", schemestr(args))
-    # print("BODY:", schemestr(body))
-    # print("EXPS:", schemestr(exps))
-    macroexpansion = eval(body, Env([arg.name for arg in args], exps, env), stack + [body])
-    # print("EXPANDED:", schemestr(macroexpansion))
-    # print()
-    return macroexpansion
+def macroexpand(macroform, env, stack):
+    macroname, *exps = macroform
+    res = env.get(macroname.name)
+    macroargs, macrobody = res.args, res.body
+    return eval(macrobody, Env([arg.name for arg in macroargs], exps, env), stack + [macrobody])
 
 # @log_eval
 def eval(x, env=global_env, stack=[]):
@@ -253,11 +252,9 @@ def eval(x, env=global_env, stack=[]):
         # x
         # but x is atom (e.g. number)
         return x
-    elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro): # (macroname exps...)
-        macroargs, macrobody = res.args, res.body
-        exps = x[1:]
-        # TODO: macroexpand
-        macroexpansion = macroexpand(macroargs, macrobody, exps, env, stack + [macrobody])
+    elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro):
+        # (macroname exps...)
+        macroexpansion = macroexpand(x, env, stack + [x])
         return eval(macroexpansion, env, stack + [macroexpansion])
     else:
         form_word = x[0]
@@ -295,7 +292,11 @@ def eval(x, env=global_env, stack=[]):
 Stack is:
 """ + "\n".join(map(schemestr,  stack + [x]))
             env[var.name] = eval(exp, env, stack + [exp])
-            return [] # TODO: nil
+            return env[var.name]
+        elif form_word == Symbol("macroexpand"):
+            # (macroexpand (macro exps...))
+            _, macroform = x
+            return macroexpand(macroform, env, stack + [macrobody])
         elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
             _, macroname, args, body = x
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
@@ -319,7 +320,12 @@ Stack is:
                 raise ValueError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}.
 Stack is:
 """ + "\n".join(map(schemestr,  stack + [x])))
-            return proc(*args)
+            try:
+                return proc(*args)
+            except Exception as e:
+                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
+Stack is:
+""" + "\n".join(map(schemestr,  stack + [x])))
 
 def fix_parens(cmd_line):
     cmd_line = cmd_line.strip()
@@ -344,8 +350,10 @@ def schemestr(exp):
         return exp.name
     elif isinstance(exp, Atom):
         return repr(exp.value).replace("'", '"')
+    elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
+        return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
-        assert len(exp) == 2
+        assert len(exp) == 2, f"Quote has zero or more than one argument: {exp}"
         return "'" + schemestr(exp[1])
     elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
