@@ -204,7 +204,7 @@ def default_env():
         'number?': lambda x: isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)),
         'procedure?': callable,
         'round':   round,
-        'symbol?': lambda x: atom(isinstance(x, Symbol)),
+        'symbol?': lambda x: Atom(isinstance(x, Symbol)),
         "prompt": "lis.py> ",
     })
     return env
