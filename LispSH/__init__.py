@@ -63,9 +63,15 @@ def no_quote_replace(s: str, c: str, p: str):
         i += 1
     return res
 
+def remove_comment(s: str) -> str:
+    if ';' in s:
+        return s[:s.find(';')] # TODO: check "wOwOw ;;;; " ; fuck you
+    return s
+
 # TODO: test mirroring
 def tokenize(s: str) -> List[str]:
     "Convert a string into a list of tokens."
+    s = remove_comment(s)
     word = None
     res = []
     quoted = False
@@ -167,28 +173,60 @@ def plus(*x):
             return Atom("".join(map(get_atom_value, x))) # sum(x, "")
     return sum(x, [])
 
+def echo(*x):
+    if len(x) == 1:
+        x = x[0]
+        if isinstance(x, Atom):
+            print(x.value)
+        else:
+            print(schemestr(x))
+    else:
+        for xi in x:
+            if isinstance(xi, Atom):
+                print(xi.value, end="")
+            else:
+                print(xi, end="")
+        print()
+    return []
+
 def default_env():
     "An environment with some Scheme standard procedures."
     from random import random
     from math import cos
+    from functools import reduce
+    from os import walk, path
     env = Env()
     # env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
+        # ARIPHMETIC OPERATORS
         '+': NamedFunction("+", plus),
         '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(get_atom_value, x[1:])) if len(x) > 1 else -x[0].value)),
         '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
         '/': NamedFunction("/", lambda x, y: Atom(x.value / y.value)),
+        # COMPARISON OPERATORS
         '>':op.gt,
         '<': lambda x, y: Atom(x.value < y.value), # TODO: change ops to reduce
         '>=':op.ge,
         '<=':op.le,
         '=':op.eq,
+        # BOOL FUNCTIONS
+        "or": NamedFunction("or", lambda *x: reduce((lambda x, y: Atom(x.value or y.value)), x)),
+        # LIST OPERATIONS
+        "map": NamedFunction("map", lambda f, x: list(map(f, x))),
+        "sorted-by": NamedFunction("sorted-by", lambda x, f: sorted(x, key=lambda x: f(x).value)),
+        # STRING FUNCTIONS
+        "join": NamedFunction("join", lambda d, x: Atom(d.value.join(map(get_atom_value, x)))),
+        # FILE OPERATIONS
+        "path-getsize": NamedFunction("path-getsize", lambda x: Atom(path.getsize(x.value))),
+        # OTHER FUNCTIONS
+        "ls-r": NamedFunction("ls-r", lambda x: [[Atom(dir_name), list(map(Atom, files))] for dir_name, _, files in walk(x.value)]),
         "rand": NamedFunction("rand", random),
         'abs':     abs,
         "cos": NamedFunction("cos", lambda x: Atom(cos(x.value))),
-        "echo":    NamedFunction("echo", lambda *x: print(*map(lambda y: y.value if isinstance(y, Atom) else schemestr(y), x))),
+        "echo":    NamedFunction("echo", echo),
         "str":    NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         'append':  op.add,
+        "name": NamedFunction("name", lambda x: Atom(x.name)),
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         "car": NamedFunction("car", lambda x: x[0]),
@@ -235,14 +273,14 @@ def log_eval(eval):
         return res
     return wrapped_eval
 
-def macroexpand(macroform, env, stack):
+def macroexpand(macroform, env):
     macroname, *exps = macroform
     res = env.get(macroname.name)
     macroargs, macrobody = res.args, res.body
-    return eval(macrobody, Env([arg.name for arg in macroargs], exps, env), stack + [macrobody])
+    return eval(macrobody, Env([arg.name for arg in macroargs], exps, env))
 
 # @log_eval
-def eval(x, env=global_env, stack=[]):
+def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):
         # x
@@ -254,8 +292,8 @@ def eval(x, env=global_env, stack=[]):
         return x
     elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro):
         # (macroname exps...)
-        macroexpansion = macroexpand(x, env, stack + [x])
-        return eval(macroexpansion, env, stack + [macroexpansion])
+        macroexpansion = macroexpand(x, env)
+        return eval(macroexpansion, env)
     else:
         form_word = x[0]
         if form_word == Symbol("quote"):
@@ -265,7 +303,7 @@ def eval(x, env=global_env, stack=[]):
         elif form_word == Symbol("atom?"):
             # (atom exp)
             _, exp = x
-            exp = eval(exp, env, stack + [exp])
+            exp = eval(exp, env)
             return Atom(\
                 isinstance(exp, Atom) or \
                 isinstance(exp, Symbol) or \
@@ -281,51 +319,60 @@ def eval(x, env=global_env, stack=[]):
             while i + 1 < len(predicates_exps):
                 predicate, expression = predicates_exps[i : i + 2]
                 i += 2
-                if eval(predicate, env, stack + [predicate]).value:
-                    return eval(expression, env, stack + [expression])
+                if eval(predicate, env).value:
+                    return eval(expression, env)
             # if default value is given
             if len(predicates_exps) % 2 == 1:
-                return eval(predicates_exps[-1], env, stack + [predicates_exps[-1]])
+                return eval(predicates_exps[-1], env)
         elif form_word == Symbol("define"):         # (define var exp)
             _, var, exp = x
-            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {schemestr(var)}.
-Stack is:
-""" + "\n".join(map(schemestr,  stack + [x]))
-            env[var.name] = eval(exp, env, stack + [exp])
+            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {schemestr(var)}"""
+            env[var.name] = eval(exp, env)
             return env[var.name]
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
             _, macroform = x
-            return macroexpand(macroform, env, stack + [macrobody])
+            return macroexpand(macroform, env)
         elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
             _, macroname, args, body = x
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
             env[macroname.name] = Macro(args, body)
             return [] # TODO: nil
-        elif form_word == Symbol("set!"):           # (set! var exp)
+        elif form_word == Symbol("set!"):
+            # (set! var exp)
             _, var, exp = x
             assert isinstance(var, Symbol), "Definition name is not a symbol"
             var_name = var.name
-            env.find(var_name)[var_name] = eval(exp, env, stack + [exp])
-        elif form_word == Symbol("lambda"):         # (lambda (args...) body)
+            env.find(var_name)[var_name] = eval(exp, env)
+        elif form_word == Symbol("lambda"):
+            # (lambda (args...) body)
             _, args, body = x
             for arg in args:
                 assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {schemestr(arg)}"
             return Procedure([arg.name for arg in args], body, env)
-        else:
-            # (proc arg...)
-            proc = eval(x[0], env, stack + [x[0]])
-            args = [eval(exp, env, stack + [exp]) for exp in x[1:]]
-            if not callable(proc):
-                raise ValueError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}.
-Stack is:
-""" + "\n".join(map(schemestr,  stack + [x])))
+        elif form_word == Symbol("apply"):
+            # (apply f (args...))
+            _, proc, args = x
+            proc = eval(proc, env)
+            args = eval(args, env)
             try:
                 return proc(*args)
             except Exception as e:
-                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
-Stack is:
-""" + "\n".join(map(schemestr,  stack + [x])))
+                print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
+Error is:
+    {"Recursed" if isinstance(e, RuntimeError) else e}"""))
+        else:
+            # (proc arg...)
+            proc = eval(form_word, env)
+            args = [eval(exp, env) for exp in x[1:]]
+            if not callable(proc):
+                print(RuntimeError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}."""))
+            try:
+                return proc(*args)
+            except Exception as e:
+                print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
+Error is:
+    {"Recursed" if isinstance(e, RuntimeError) else e}"""))
 
 def fix_parens(cmd_line):
     cmd_line = cmd_line.strip()
@@ -349,7 +396,10 @@ def schemestr(exp):
     elif isinstance(exp, Symbol):
         return exp.name
     elif isinstance(exp, Atom):
-        return repr(exp.value).replace("'", '"')
+        if isinstance(exp.value, str):
+            return repr(exp.value).replace("'", '"')
+        else:
+            return str(exp.value)
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
         return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
@@ -358,7 +408,7 @@ def schemestr(exp):
     elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
     else:
-        print(exp)
+        print("WTF IS THIS:", exp)
         return str(exp)
 
 def repl():
@@ -380,13 +430,15 @@ def load_file(filename):
         cmd = ""
         for line in fd:
             line = line.strip("\n") # remove newline
-            cmd += line
+            line = remove_comment(line)
+            line = line.strip()
+            cmd += ' ' + line
             deg += line.count(OPEN_PAREN) - line.count(CLOSE_PAREN)
-            if deg == 0 and cmd != "":
+            if deg == 0 and cmd.strip() != "":
                 eval(parse(cmd))
                 cmd = ""
         if deg == 0:
-            if cmd != "":
+            if cmd.strip() != "":
                 eval(parse(cmd))
         else:
             raise ValueError(f"There is {deg} close parens required")

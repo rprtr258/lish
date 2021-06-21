@@ -1,7 +1,8 @@
-(define map (lambda (f xs)
-    (cond
-        (nil? xs) '()
-        (cons (f (car xs)) (map f (cdr xs))))))
+; not effective due to heavy recursion
+;(define map (lambda (f xs)
+;    (cond
+;        (nil? xs) '()
+;        (cons (f (car xs)) (map f (cdr xs))))))
 
 (define `` (lambda (f)
     (cond
@@ -37,8 +38,8 @@
 (defun caddr (x) (car (cddr x)))
 (defun cdddr (x) (cdr (cddr x)))
 (defmacro letfun (exps body)
-    (let
-        (f (defun f (expss)
+    (` (let
+        (~ ((defun f (expss)
             (cond
                 (nil? expss) '()
                 (let
@@ -48,10 +49,8 @@
                     rest (cdddr expss))
                     (+
                         (` ((~ fun-name) (defun (~ fun-name) (~ fun-args) (~ fun-body))))
-                        (f rest))))))
-        (` (let
-            (~ (f exps))
-            (~ body)))))
+                        (f rest))))) exps))
+        (~ body))))
 
 (defmacro defun-trace (f args body)
     (` (define
@@ -95,10 +94,10 @@
 (defun dec (n) (- n 1))
 (defun inc (n) (+ n 1))
 
-(defun-trace fact (n)
+(defun-trace fact-t (n)
     (cond
         (= n 1) 1
-        (* n (fact (dec n)))))
+        (* n (fact-t (dec n)))))
 (defun-trace fib (n)
     (cond
         (< n 2) n
@@ -106,38 +105,49 @@
             (fib (- n 1))
             (fib (- n 2)))))
 
-(defun fact1 (n)
+(defun fact (n)
     (cond
         (= n 1) 1
         (*
             n
-            (fact1 (dec n)))))
+            (fact (dec n)))))
+
 
 (defun range (n)
-    ((defun range-helper (k n)
-        (cond
-            (= k n) '()
-            (cons k (range-helper (inc k) n)))) 0 n))
-
-(defun range2 (n)
-    (let
-        (range-helper (defun range-helper (k n)
-            (cond
-                (= k n) '()
-                (cons k (range-helper (inc k) n)))))
-        (range-helper 0 n)))
-
-(defun range3 (n)
     (letfun
         (range-helper (k n) (cond
             (= k n) '()
             (cons k (range-helper (inc k) n))))
         (range-helper 0 n)))
 
-(defun rainbow (s)
-    (doseq
-        (k (map (# (int (* (inc (cos (/ % 4))) (/ (len s) 2)))) (range 30)))
-        (echo (* " " k) s)))
+
+; (map* * '((1 2 3) (-1 0 1))
+; (-1 0 3)
+(defun map* (f xss)
+    (cond
+        (apply or (map nil? xss)) '()
+        (cons
+            (apply f (map car xss))
+            (map* f (map cdr xss)))))
+
+; (*map (# (list % (inc %))) '(1 2 3))
+; (1 2 2 3 3 4)
+(defun *map (f xs)
+    (cond
+        (nil? xs) '()
+        (+
+            (f (car xs))
+            (*map f (cdr xs)))))
+
+(defun take (n x)
+    (cond
+        (or (nil? x) (= n 0)) '()
+        (cons (car x) (take (dec n) (cdr x)))))
+
+(defun drop (n x)
+    (cond
+        (or (nil? x) (= n 0)) x
+        (drop (dec n) (cdr x))))
 
 
 
@@ -148,13 +158,19 @@
 
 
 
+(echo "el0chka")
+(doseq (x '(1 1 1) y '(1 3 5 7))
+    (echo (* "*" y)))
+
+(echo)
+(echo "almaz")
+(doseq (x '(1 3 5 7 5 3 1))
+    (echo (* " " (- 7 x)) (* "*" (* x 2))))
 
 
 
 
 
-(rainbow (* "A" 10))
-
-(doseq (x '(-1 0 1)
-        y '(1 2 3))
-  (echo (* x y)))
+;(doseq (x '(-1 0 1)
+;       y '(1 2 3))
+;    (echo (* x y)))
