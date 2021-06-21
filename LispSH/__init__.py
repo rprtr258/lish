@@ -148,7 +148,7 @@ class Env(dict):
             return []
         return env[var]
     def __repr__(self):
-        return "{" + " ".join(f"{k}: {v}" for k, v in self.items()) + "}"
+        return "{\n  " + "  \n".join(f"{k}: {v}" for k, v in self.items()) + "\n}"
 
 class NamedFunction:
     def __init__(self, name, body):
@@ -178,7 +178,7 @@ def default_env():
         '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
         '/':op.truediv,
         '>':op.gt,
-        '<': lambda x, y: Atom(x < y), # TODO: change ops to reduce
+        '<': lambda x, y: Atom(x.value < y.value), # TODO: change ops to reduce
         '>=':op.ge,
         '<=':op.le,
         '=':op.eq,
@@ -204,7 +204,7 @@ def default_env():
         'number?': lambda x: isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)),
         'procedure?': callable,
         'round':   round,
-        'symbol?': lambda x: isinstance(x, Symbol),
+        'symbol?': lambda x: atom(isinstance(x, Symbol)),
         "prompt": "lis.py> ",
     })
     return env
@@ -233,17 +233,17 @@ def log_eval(eval):
         return res
     return wrapped_eval
 
-def macroexpand(args, body, exps, env):
+def macroexpand(args, body, exps, env, stack):
     # print("ARGS:", schemestr(args))
     # print("BODY:", schemestr(body))
     # print("EXPS:", schemestr(exps))
-    macroexpansion = eval(body, Env([arg.name for arg in args], exps, env))
+    macroexpansion = eval(body, Env([arg.name for arg in args], exps, env), stack + [body])
     # print("EXPANDED:", schemestr(macroexpansion))
     # print()
     return macroexpansion
 
 # @log_eval
-def eval(x, env=global_env):
+def eval(x, env=global_env, stack=[]):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):
         # x
@@ -257,18 +257,18 @@ def eval(x, env=global_env):
         macroargs, macrobody = res.args, res.body
         exps = x[1:]
         # TODO: macroexpand
-        macroexpansion = macroexpand(macroargs, macrobody, exps, env)
-        return eval(macroexpansion, env)
+        macroexpansion = macroexpand(macroargs, macrobody, exps, env, stack + [macrobody])
+        return eval(macroexpansion, env, stack + [macroexpansion])
     else:
         form_word = x[0]
         if form_word == Symbol("quote"):
             # (quote exp)
             _, exp = x
             return exp
-        elif form_word == Symbol("atom"):
+        elif form_word == Symbol("atom?"):
             # (atom exp)
             _, exp = x
-            exp = eval(exp, env)
+            exp = eval(exp, env, stack + [exp])
             return Atom(\
                 isinstance(exp, Atom) or \
                 isinstance(exp, Symbol) or \
@@ -284,15 +284,17 @@ def eval(x, env=global_env):
             while i + 1 < len(predicates_exps):
                 predicate, expression = predicates_exps[i : i + 2]
                 i += 2
-                if eval(predicate, env).value:
-                    return eval(expression, env)
+                if eval(predicate, env, stack + [predicate]).value:
+                    return eval(expression, env, stack + [expression])
             # if default value is given
             if len(predicates_exps) % 2 == 1:
-                return eval(predicates_exps[-1], env)
+                return eval(predicates_exps[-1], env, stack + [predicates_exps[-1]])
         elif form_word == Symbol("define"):         # (define var exp)
             _, var, exp = x
-            assert isinstance(var, Symbol), "Definition name is not a symbol"
-            env[var.name] = eval(exp, env)
+            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {schemestr(var)}.
+Stack is:
+""" + "\n".join(map(schemestr,  stack + [x]))
+            env[var.name] = eval(exp, env, stack + [exp])
             return [] # TODO: nil
         elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
             _, macroname, args, body = x
@@ -303,16 +305,20 @@ def eval(x, env=global_env):
             _, var, exp = x
             assert isinstance(var, Symbol), "Definition name is not a symbol"
             var_name = var.name
-            env.find(var_name)[var_name] = eval(exp, env)
+            env.find(var_name)[var_name] = eval(exp, env, stack + [exp])
         elif form_word == Symbol("lambda"):         # (lambda (args...) body)
             _, args, body = x
+            for arg in args:
+                assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {schemestr(arg)}"
             return Procedure([arg.name for arg in args], body, env)
         else:
             # (proc arg...)
-            proc = eval(x[0], env)
-            args = [eval(exp, env) for exp in x[1:]]
+            proc = eval(x[0], env, stack + [x[0]])
+            args = [eval(exp, env, stack + [exp]) for exp in x[1:]]
             if not callable(proc):
-                raise ValueError(f"{proc} is not a function call in {schemestr(x)}")
+                raise ValueError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}.
+Stack is:
+""" + "\n".join(map(schemestr,  stack + [x])))
             return proc(*args)
 
 def fix_parens(cmd_line):
@@ -332,13 +338,19 @@ def fix_parens(cmd_line):
 
 def schemestr(exp):
     "Convert a Python object back into a Scheme-readable string."
-    if isinstance(exp, Symbol):
+    if exp == []:
+        return "nil"
+    elif isinstance(exp, Symbol):
         return exp.name
     elif isinstance(exp, Atom):
-        return str(exp.value)
+        return repr(exp.value).replace("'", '"')
+    elif isinstance(exp, list) and exp[0] == Symbol("quote"):
+        assert len(exp) == 2
+        return "'" + schemestr(exp[1])
     elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
     else:
+        print(exp)
         return str(exp)
 
 def repl():
@@ -356,5 +368,17 @@ def repl():
 
 def load_file(filename):
     with open(filename, "r") as fd:
+        deg = 0
+        cmd = ""
         for line in fd:
-            eval(parse(line))
+            line = line.strip("\n") # remove newline
+            cmd += line
+            deg += line.count(OPEN_PAREN) - line.count(CLOSE_PAREN)
+            if deg == 0 and cmd != "":
+                eval(parse(cmd))
+                cmd = ""
+        if deg == 0:
+            if cmd != "":
+                eval(parse(cmd))
+        else:
+            raise ValueError(f"There is {deg} close parens required")

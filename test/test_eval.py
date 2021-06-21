@@ -23,28 +23,28 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(quote ())", NIL)
 
     def test_atom_quote(self):
-        self.__eval_test__("(atom (quote a))", TRUE)
+        self.__eval_test__("(atom? (quote a))", TRUE)
 
     def test_atom_quote_list(self):
-        self.__eval_test__("(atom (quote (a b c)))", FALSE)
+        self.__eval_test__("(atom? (quote (a b c)))", FALSE)
 
     def test_atom_quote_nil(self):
-        self.__eval_test__("(atom (quote ()))", TRUE)
+        self.__eval_test__("(atom? (quote ()))", TRUE)
 
     def test_atom_quoted(self):
-        self.__eval_test__("(atom 'a)", TRUE)
+        self.__eval_test__("(atom? 'a)", TRUE)
 
     def test_atom_quoted_list(self):
-        self.__eval_test__("(atom '(a b c))", FALSE)
+        self.__eval_test__("(atom? '(a b c))", FALSE)
 
     def test_atom_quoted_nil(self):
-        self.__eval_test__("(atom '())", TRUE)
+        self.__eval_test__("(atom? '())", TRUE)
 
     def test_atom_atom_quoted(self):
-        self.__eval_test__("(atom (atom 'a))", TRUE)
+        self.__eval_test__("(atom? (atom? 'a))", TRUE)
 
     def test_atom_quoted_atom(self):
-        self.__eval_test__("(atom '(atom 'a))", FALSE)
+        self.__eval_test__("(atom? '(atom? 'a))", FALSE)
 
     def test_eq_equal_Symbols(self):
         self.__eval_test__("(= 'a 'a)", TRUE)
@@ -96,7 +96,7 @@ class TestEval(unittest.TestCase):
             # """((label subst
                 # (lambda (x y z)
                     # (cond
-                        # ((atom z) (cond
+                        # ((atom? z) (cond
                             # ((eq z y) x)
                             # ('t z)))
                         # ('t (cons (subst x y (car z))
@@ -107,7 +107,7 @@ class TestEval(unittest.TestCase):
     # def test_defun_subst(self):
         # self.__eval_test__(
         # """((defun subst (x y z)
-            # (cond ((atom z) (cond ((eq z y) x)
+            # (cond ((atom? z) (cond ((eq z y) x)
                     # ('t z)))
                 # ('t (cons
                     # (subst x y (car z))
