@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# TODO: variadic defun (defn (& x) x) and macro (defmacro (& x) x)
+# TODO: (loop ... recur) or Tail call optimisation(harder, non-recursive eval?)
+
 from typing import List, Any, Union
 from dataclasses import dataclass
 import math
@@ -146,6 +150,8 @@ class Env(dict):
         if var in self:
             return self
         if self.outer is None:
+            if var not in ["cond", "quote", "atom?", "lambda", "define", "defmacro", "macroexpand", "set!"]:
+                print(f"WARNING: {var} was not found")
             return None # nil
         return self.outer.find(var)
     def get(self, var):
@@ -174,20 +180,29 @@ def plus(*x):
     return sum(x, [])
 
 def echo(*x):
-    if len(x) == 1:
-        x = x[0]
-        if isinstance(x, Atom):
-            print(x.value)
-        else:
-            print(schemestr(x))
-    else:
-        for xi in x:
-            if isinstance(xi, Atom):
-                print(xi.value, end="")
+    def echo_helper(*x):
+        if len(x) == 1:
+            x = x[0]
+            if isinstance(x, Atom):
+                return str(x.value)
             else:
-                print(xi, end="")
-        print()
+                return schemestr(x)
+        else:
+            res = ""
+            for xi in x:
+                if isinstance(xi, Atom):
+                    res += str(xi.value)
+                elif isinstance(xi, list):
+                    res += "(" + echo_helper(*xi) + ")"
+                else:
+                    res += str(xi)
+            return res
+    print(echo_helper(*x))
     return []
+
+def cons(*x):
+    x = list(x)
+    return x[:-1] + x[-1]
 
 def default_env():
     "An environment with some Scheme standard procedures."
@@ -212,10 +227,12 @@ def default_env():
         # BOOL FUNCTIONS
         "or": NamedFunction("or", lambda *x: reduce((lambda x, y: Atom(x.value or y.value)), x)),
         # LIST OPERATIONS
+        "cons": NamedFunction("cons", cons),
         "map": NamedFunction("map", lambda f, x: list(map(f, x))),
         "sorted-by": NamedFunction("sorted-by", lambda x, f: sorted(x, key=lambda x: f(x).value)),
         # STRING FUNCTIONS
         "join": NamedFunction("join", lambda d, x: Atom(d.value.join(map(get_atom_value, x)))),
+        "str": NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         # FILE OPERATIONS
         "path-getsize": NamedFunction("path-getsize", lambda x: Atom(path.getsize(x.value))),
         # OTHER FUNCTIONS
@@ -224,14 +241,12 @@ def default_env():
         'abs':     abs,
         "cos": NamedFunction("cos", lambda x: Atom(cos(x.value))),
         "echo":    NamedFunction("echo", echo),
-        "str":    NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         'append':  op.add,
         "name": NamedFunction("name", lambda x: Atom(x.name)),
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         "car": NamedFunction("car", lambda x: x[0]),
         "cdr": NamedFunction("cdr", lambda x: x[1:]),
-        'cons':    lambda x,y: [x] + y,
         "=": lambda x, y: Atom(x == y),
         "len": NamedFunction("len", lambda x: Atom(len(x if isinstance(x, list) else x.value))),
         "int": NamedFunction("int", lambda x: Atom(int(x.value))),
@@ -245,7 +260,7 @@ def default_env():
         'procedure?': callable,
         'round':   round,
         'symbol?': lambda x: Atom(isinstance(x, Symbol)),
-        "prompt": "lis.py> ",
+        "prompt": lambda: "lis.py> ",
     })
     return env
 
@@ -343,7 +358,9 @@ def eval(x, env=global_env):
             _, var, exp = x
             assert isinstance(var, Symbol), "Definition name is not a symbol"
             var_name = var.name
-            env.find(var_name)[var_name] = eval(exp, env)
+            new_var_value = eval(exp, env)
+            env.find(var_name)[var_name] = new_var_value
+            return new_var_value
         elif form_word == Symbol("lambda"):
             # (lambda (args...) body)
             _, args, body = x
@@ -368,7 +385,9 @@ Error is:
             if not callable(proc):
                 print(RuntimeError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}."""))
             try:
-                return proc(*args)
+                if (res := proc(*args)) is None:
+                    print("FUCK YOU,", schemestr(x), schemestr(args))
+                return res
             except Exception as e:
                 print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
 Error is:
@@ -407,6 +426,8 @@ def schemestr(exp):
         return "'" + schemestr(exp[1])
     elif isinstance(exp, list):
         return '(' + ' '.join(map(schemestr, exp)) + ')'
+    elif exp is None:
+        print("[FEAR AND LOATHING IN NONE VEGAS]")
     else:
         print("WTF IS THIS:", exp)
         return str(exp)
@@ -414,7 +435,7 @@ def schemestr(exp):
 def repl():
     "A prompt-read-eval-print loop."
     while True:
-        input_line = input(eval(Symbol("prompt")))
+        input_line = input(eval([Symbol("prompt")]).value)
         if input_line.strip() == "":
             continue
         input_line = fix_parens(input_line)
@@ -441,4 +462,4 @@ def load_file(filename):
             if cmd.strip() != "":
                 eval(parse(cmd))
         else:
-            raise ValueError(f"There is {deg} close parens required")
+            raise ValueError(f"There are {deg} close parens required")
