@@ -2,7 +2,7 @@ import unittest
 
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
-from LispSH.reader import READ, read_form, tokenize, Reader
+from LispSH.reader import READ, tokenize
 from LispSH.datatypes import Symbol, Atom
 
 
@@ -49,13 +49,13 @@ class TestTokenizer(unittest.TestCase):
 
     def test_not_enough_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
-            read_form(Reader(tokenize("(a b")))
-        self.assertEqual(str(cm.exception), "Unexpected end of input")
+            READ("(a b")
+        self.assertEqual(str(cm.exception), "There are 1 open parens left unclosed")
 
-    # def test_too_much_close_parens(self):
-        # with self.assertRaises(SyntaxError) as cm:
-            # read_form(Reader(tokenize("(a b))")))
-        # self.assertEqual(str(cm.exception), "Not enough close parens found")
+    def test_too_much_close_parens(self):
+        with self.assertRaises(SyntaxError) as cm:
+            READ("(a b))")
+        self.assertEqual(str(cm.exception), "There are 1 redundant closed parens")
 
     def test_tokenize(self):
         self.assertEqual(

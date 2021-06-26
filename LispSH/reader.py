@@ -80,7 +80,20 @@ def read_form(reader):
         return read_atom(reader)
 
 def read_str(line):
-    return read_form(Reader(tokenize(line)))
+    paren_degree = 0
+    tokens = tokenize(line)
+    for token in tokens:
+        if token == '(':
+            paren_degree += 1
+        elif token == ')':
+            paren_degree -= 1
+    print(paren_degree)
+    if paren_degree != 0:
+        if paren_degree > 0:
+            raise SyntaxError(f"There are {paren_degree} open parens left unclosed")
+        elif paren_degree < 0:
+            raise SyntaxError(f"There are {-paren_degree} redundant closed parens")
+    return read_form(Reader(tokens))
 
 def READ(line):
     "Read an expression from a string"

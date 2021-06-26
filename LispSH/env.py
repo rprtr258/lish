@@ -2,7 +2,7 @@ import math
 import operator as op
 
 from LispSH.datatypes import Atom, get_atom_value, Symbol
-from LispSH.printer import PRINT
+from LispSH.printer import PRINT, pr_str_no_escape
 
 
 class Env(dict):
@@ -45,24 +45,9 @@ def plus(*x):
     return sum(x, [])
 
 def echo(*x):
-    def echo_helper(*x):
-        if len(x) == 1:
-            x = x[0]
-            if isinstance(x, Atom):
-                return str(x.value)
-            else:
-                return PRINT(x)
-        else:
-            res = ""
-            for xi in x:
-                if isinstance(xi, Atom):
-                    res += str(xi.value)
-                elif isinstance(xi, list):
-                    res += "(" + echo_helper(*xi) + ")"
-                else:
-                    res += str(xi)
-            return res
-    print(echo_helper(*x))
+    for y in x:
+        print(pr_str_no_escape(y), end="")
+    print()
     return []
 
 def cons(*x):

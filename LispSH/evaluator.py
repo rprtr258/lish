@@ -118,7 +118,7 @@ Error is:
             proc = EVAL(form_word, env)
             args = [EVAL(exp, env) for exp in x[1:]]
             if not callable(proc) and not isinstance(proc, Procedure):
-                raise RuntimeError(f"""{proc} (named {PRINT(x[0])}) is not a function call in {PRINT(x)}.""")
+                raise RuntimeError(f"""{proc} (which is {PRINT(x[0])}) is not a function call in {PRINT(x)}.""")
             try:
                 if (res := proc(*args)) is None:
                     print("FUCK YOU,", PRINT(x), PRINT(args))
