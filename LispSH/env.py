@@ -123,7 +123,7 @@ def default_env():
         # OTHER FUNCTIONS
         "ls-r": NamedFunction("ls-r", lambda x: [[Atom(dir_name), list(map(Atom, files))] for dir_name, _, files in walk(x.value)]),
         "echo":    NamedFunction("echo", echo),
-        "name": NamedFunction("name", lambda x: Atom(x)),
+        "name": NamedFunction("name", lambda x: Atom(x) if isinstance(x, Symbol) else []),
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         # TODO: rename to parse-int? / str->int

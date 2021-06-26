@@ -32,7 +32,6 @@ def rep(line):
 # TODO: line editing, parens?
 def repl():
     "A prompt-read-eval-print loop."
-    return
     while True:
         try:
             print_prompt()
