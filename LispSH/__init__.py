@@ -44,7 +44,7 @@ def atom_or_symbol(token):
     except ValueError:
         pass
     try:
-        return float(int(token))
+        return Atom(float(token))
     except ValueError:
         pass
     return Symbol(token)
@@ -214,53 +214,55 @@ def default_env():
     # env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         # ARIPHMETIC OPERATORS
-        '+': NamedFunction("+", plus),
-        '-': NamedFunction("-", lambda *x: Atom(x[0].value - sum(map(get_atom_value, x[1:])) if len(x) > 1 else -x[0].value)),
-        '*': NamedFunction("*", lambda x, y: Atom(x.value * y.value)),
-        '/': NamedFunction("/", lambda x, y: Atom(x.value / y.value)),
+        "+": NamedFunction("+", plus),
+        "-": NamedFunction("-", lambda *x: reduce(lambda a, b: Atom(a.value - b.value), x[1:], x[0]) if len(x) > 1 else Atom(-x[0].value)),
+        "*": NamedFunction("*", lambda *x: reduce(lambda a, b: Atom(a.value * b.value), x[1:], x[0])),
+        "/": NamedFunction("/", lambda *x: reduce(lambda a, b: Atom(a.value // b.value), x[1:], x[0])),
+        # MATH FUNCTIONS
+        "rand": NamedFunction("rand", lambda:Atom(random())),
+        "abs": NamedFunction("abs", lambda x: Atom(abs(x.value))),
+        "cos": NamedFunction("cos", lambda x: Atom(cos(x.value))),
+        "max": NamedFunction("max", lambda *x: reduce(lambda a, b: Atom(max(a.value, b.value)), x[1:], x[0])),
+        "min": NamedFunction("min", lambda *x: reduce(lambda a, b: Atom(min(a.value, b.value)), x[1:], x[0])),
+        "round": NamedFunction("round", lambda x: Atom(round(x.value))),
         # COMPARISON OPERATORS
-        '>':op.gt,
-        '<': lambda x, y: Atom(x.value < y.value), # TODO: change ops to reduce
-        '>=':op.ge,
-        '<=':op.le,
-        '=':op.eq,
+        ">": NamedFunction(">", lambda *x: Atom(all(map(lambda xy: op.gt(xy[0].value, xy[1].value), zip(x, x[1:]))))),
+        "<": NamedFunction("<", lambda *x: Atom(all(map(lambda xy: op.lt(xy[0].value, xy[1].value), zip(x, x[1:]))))),
+        ">=": NamedFunction(">=", lambda *x: Atom(all(map(lambda xy: op.ge(xy[0].value, xy[1].value), zip(x, x[1:]))))),
+        "<=": NamedFunction("<=", lambda *x: Atom(all(map(lambda xy: op.le(xy[0].value, xy[1].value), zip(x, x[1:]))))),
+        "=": NamedFunction("=", lambda *x: Atom(all(map(lambda xy: op.eq(xy[0], xy[1]), zip(x, x[1:]))))),
+        "nil?": NamedFunction("nil?", lambda x: Atom(x == [])),
+        "list?": NamedFunction("list?", lambda x: Atom(isinstance(x, list))),
+        "number?": NamedFunction("number?", lambda x: Atom(isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)))),
+        "procedure?": NamedFunction("procedure?", lambda x: Atom(callable(x))),
+        "symbol?": lambda x: Atom(isinstance(x, Symbol)),
         # BOOL FUNCTIONS
         "or": NamedFunction("or", lambda *x: reduce((lambda x, y: Atom(x.value or y.value)), x)),
+        "not": NamedFunction("not", lambda x: Atom(op.not_(x.value))),
         # LIST OPERATIONS
         "cons": NamedFunction("cons", cons),
         "map": NamedFunction("map", lambda f, x: list(map(f, x))),
+        # TODO: f is identity by default
         "sorted-by": NamedFunction("sorted-by", lambda x, f: sorted(x, key=lambda x: f(x).value)),
+        "len": NamedFunction("len", lambda x: Atom(len(x if isinstance(x, list) else x.value))),
+        "car": NamedFunction("car", lambda x: x[0]),
+        "cdr": NamedFunction("cdr", lambda x: x[1:]),
+        "list": NamedFunction("list", lambda *x: list(x)),
         # STRING FUNCTIONS
         "join": NamedFunction("join", lambda d, x: Atom(d.value.join(map(get_atom_value, x)))),
         "str": NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
         # FILE OPERATIONS
+        # TODO: tests
         "path-getsize": NamedFunction("path-getsize", lambda x: Atom(path.getsize(x.value))),
         # OTHER FUNCTIONS
         "ls-r": NamedFunction("ls-r", lambda x: [[Atom(dir_name), list(map(Atom, files))] for dir_name, _, files in walk(x.value)]),
-        "rand": NamedFunction("rand", random),
-        'abs':     abs,
-        "cos": NamedFunction("cos", lambda x: Atom(cos(x.value))),
         "echo":    NamedFunction("echo", echo),
-        'append':  op.add,
         "name": NamedFunction("name", lambda x: Atom(x.name)),
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
-        "car": NamedFunction("car", lambda x: x[0]),
-        "cdr": NamedFunction("cdr", lambda x: x[1:]),
-        "=": lambda x, y: Atom(x == y),
-        "len": NamedFunction("len", lambda x: Atom(len(x if isinstance(x, list) else x.value))),
+        # TODO: rename to parse-int? / str->int
         "int": NamedFunction("int", lambda x: Atom(int(x.value))),
-        "list": NamedFunction("list", lambda *x: list(x)),
-        'list?':   lambda x: isinstance(x, list),
-        'max':     max,
-        'min':     min,
-        'not':     op.not_,
-        'nil?':    NamedFunction("nil?", lambda x: Atom(x == [])),
-        'number?': lambda x: isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)),
-        'procedure?': callable,
-        'round':   round,
-        'symbol?': lambda x: Atom(isinstance(x, Symbol)),
-        "prompt": lambda: "lis.py> ",
+        "prompt": lambda: Atom("lis.py> "),
     })
     return env
 
