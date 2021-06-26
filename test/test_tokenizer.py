@@ -3,7 +3,7 @@ import unittest
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
 from LispSH.reader import READ, tokenize
-from LispSH.datatypes import Symbol, Atom
+from LispSH.datatypes import Symbol, Atom, Keyword
 
 
 class TestTokenizer(unittest.TestCase):
@@ -31,6 +31,9 @@ class TestTokenizer(unittest.TestCase):
 
     def test_quoted_nil(self):
         self.__tokenizer_test__("'()", QNIL)
+
+    def test_keyword(self):
+        self.__tokenizer_test__(":ab", Keyword("ab"))
 
     def test_quote(self):
         self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])

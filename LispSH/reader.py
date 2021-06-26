@@ -1,7 +1,7 @@
 from typing import List, Any, Union
 import re
 
-from LispSH.datatypes import Symbol, Atom
+from LispSH.datatypes import Symbol, Atom, Keyword
 
 
 # TODO: remove
@@ -53,6 +53,8 @@ def read_atom(token):
     if token[0] == '"': return Atom(token[1:-1])
     # bool
     if token in ["true", "false"]: return Atom(token == "true")
+    if token[0] == ':': return Keyword(token[1:])
+    # TODO: remove try catch shit
     try:
         return Atom(int(token))
     except ValueError:
@@ -83,8 +85,6 @@ def read_form(reader):
     return read_atom(token)
 
 def check_parens(tokens):
-    if tokens[0] not in ['(', "'", '`', '~', "~@"]:
-        raise SyntaxError("Not a form")
     if tokens.count('(') != tokens.count(')'):
         raise SyntaxError("Different number of open and close parens")
     if tokens.count('(') > 0 and tokens[-1] != ')':

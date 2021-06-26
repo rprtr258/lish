@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 
 class Symbol(str): pass
+class Keyword(str): pass
 
 @dataclass
 class Atom(object):

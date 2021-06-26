@@ -1,7 +1,7 @@
 import math
 import operator as op
 
-from LispSH.datatypes import Atom, get_atom_value, Symbol
+from LispSH.datatypes import get_atom_value, Atom, Symbol, Keyword
 from LispSH.printer import PRINT, pr_str_no_escape
 
 
@@ -84,7 +84,7 @@ def default_env():
         "nil?": NamedFunction("nil?", lambda x: Atom(x == [])),
         "number?": NamedFunction("number?", lambda x: Atom(isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)))),
         "procedure?": NamedFunction("procedure?", lambda x: Atom(callable(x))),
-        "atom?": NamedFunction("atom?", lambda x: Atom(isinstance(x, Atom) or isinstance(x, Symbol) or x == [])),
+        "atom?": NamedFunction("atom?", lambda x: Atom(isinstance(x, Atom) or isinstance(x, Symbol) or isinstance(x, Keyword) or x == [])),
         "symbol?": lambda x: Atom(isinstance(x, Symbol)),
         "list?": NamedFunction("list?", lambda x: Atom(isinstance(x, list))),
         # BOOL FUNCTIONS
