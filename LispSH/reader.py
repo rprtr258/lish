@@ -59,15 +59,10 @@ def read_atom(token):
     # bool
     if token in ["true", "false"]: return Atom(token == "true")
     if token[0] == ':': return Keyword(token[1:])
-    # TODO: remove try catch shit
-    try:
+    if re.match(r"-?[0-9]+$", token):
         return Atom(int(token))
-    except ValueError:
-        pass
-    try:
+    if re.match(r"-?[0-9][0-9.]*$", token):
         return Atom(float(token))
-    except ValueError:
-        pass
     return Symbol(token)
 
 def read_form(reader):
