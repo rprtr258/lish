@@ -11,130 +11,103 @@
 ;            (nil? ys) '()
 ;            (recur (cons (f (car ys)) res) (cdr ys))))))
 
-(defmacro ` (f)
-    ((define `` (lambda (f)
-        (cond
-            (atom? f) (list 'quote f)
-            (= '~ (car f)) (car (cdr f))
-            (cons
-                'list
-                (map `` f)))))
-    f))
 
 (defmacro defun (f args body)
-    (` (define (~ f)
-        (lambda (~ args) (~ body)))))
+    (list 'set! f
+        (list 'lambda args body)))
 (defmacro if (p x y)
-    (` (cond
-        (~ p) (~ x)
-        (~ y))))
+    (list 'cond
+        p x
+        y))
 
-(defun evens (x)
-    (if
-        (nil? x)
-        '()
-        (cons
-            (car x)
-            (odds (cdr x)))))
-(defun odds (x)
-    (if
-        (nil? x)
-        '()
-        (evens (cdr x))))
-(defmacro let (exps body)
-    (cons (`
-        (lambda
-            (~ (evens exps))
-            (~ body)))
-        (odds exps)))
 
 ; TODO: change to variadic func
-(defmacro compose (f g) (` (lambda (x) ((~ f) ((~ g) x)))))
-(define cadr (compose car cdr))
-(define cddr (compose cdr cdr))
-(define caddr (compose car cddr))
-(define cdddr (compose cdr cddr))
+(defmacro compose (f g) (list 'lambda '(x) (list f (list g 'x))))
+(set! cadr (compose car cdr))
+(set! cddr (compose cdr cdr))
+(set! caddr (compose car cddr))
+(set! cdddr (compose cdr cddr))
 (defmacro letfun (exps body)
-    (` (let
-        (~ ((defun f (expss)
+    (list 'let*
+        ((defun f (expss)
             (if
                 (nil? expss)
-                '()
-                (let
+                ()
+                (let*
                     (fun-name (car expss)
                     fun-args (cadr expss)
                     fun-body (caddr expss)
                     rest (cdddr expss))
                     (+
-                        (` ((~ fun-name) (defun (~ fun-name) (~ fun-args) (~ fun-body))))
-                        (f rest))))) exps))
-        (~ body))))
+                        (list fun-name (list 'defun fun-name fun-args fun-body)))
+                        (f rest)))) exps)
+        body))
 
 (defmacro defun-trace (f args body)
-    (` (defun (~ f) (~ args)
-        (let
-            (res (~ body))
-            (progn
-                (echo (~ (name f)) " " (~ (cons 'list args)) " " res)
-                res)))))
+    (list 'defun f args
+        (list 'let*
+            (list 'res body)
+            (list 'progn
+                (list 'echo (name f) " " (cons 'list args) " " 'res)
+                'res))))
 
 ; anaphoric lambda, argument binds to %
-(defmacro # (body) (` (lambda (%) (~ body))))
+(defmacro # (body) (list 'lambda '(%) body))
 
 (defmacro doseq (seq-exprs body)
     ((defun doseq-helper (sxs body)
-        (let
+        (let*
             (var-name (car sxs)
             var-seq (cadr sxs)
             the-body (if
                 (nil? (cddr sxs))
                 body
                 (doseq-helper (cddr sxs) body)))
-            (` (map
-                (lambda ((~ var-name)) (~ the-body))
-                (~ var-seq)))))
+            (list 'map
+                (list 'lambda (list var-name) the-body)
+                var-seq)))
     seq-exprs body))
 
 (defun single? (x) (= (len x) 1))
-(defmacro cons-if (p x y s) (` (cons (if (~ p) (~ x) (~ y)) (~ s))))
+;(defmacro cons-if (p x y s) (list 'cons (list 'if p x y) s))
 
-(defmacro -> (x) ((defun ->-helper (y)
-    (if
-        (single? y)
-        (car y)
-        (let
-            (fst (car y)
-            next-f (cadr y)
-            rest (cddr y))
-            (->-helper
-                (cons-if
-                    (atom? next-f)
-                    (` ((~ next-f) (~ fst)))
-                    (cons (car next-f) fst (cdr next-f))
-                    rest)))))
-    x))
+;(defmacro -> (x) ((defun ->-helper (y)
+;    (if
+;        (single? y)
+;        (car y)
+;        (let*
+;            (fst (car y)
+;            next-f (cadr y)
+;            rest (cddr y))
+;            (->-helper
+;                (cons-if
+;                    (atom? next-f)
+;                    (list next-f fst))
+;                    (cons (car next-f) fst (cdr next-f))
+;                    rest))))
+;    x))
 
-(defmacro >-> (x) ((defun >->-helper (y)
-    (if
-        (single? y)
-        (car y)
-        (let
-            (fst (car y)
-            next-f (cadr y)
-            rest (cddr y))
-            (>->-helper
-                (cons-if
-                    (atom? next-f)
-                    (` ((~ next-f) (~ fst)))
-                    (` ((lambda (%%) (~ next-f)) (~ fst)))
-                    rest)))))
-    x))
+;(defmacro >-> (x) ((defun >->-helper (y)
+;    (if
+;        (single? y)
+;        (car y)
+;        (let*
+;            (fst (car y)
+;            next-f (cadr y)
+;            rest (cddr y))
+;            (>->-helper
+;                (cons-if
+;                    (atom? next-f)
+;                    (list next-f fst)
+;                    (list (list 'lambda '(%%) next-f) fst))
+;                    rest))))
+;    x))
 
 (defmacro juxt (fs)
-    (` (lambda (x)
-        (map
+    (list 'lambda '(x)
+        (list 'map
             (# (% x))
-            (~ (cons 'list fs))))))
+            (cons 'list fs))))
 
 ; ============ FUNCTIONS SECTION ============
 
@@ -215,7 +188,7 @@
 
 (echo "el0chka")
 (doseq (x '(1 1 1) y '(1 3 5 7))
-    (-> ("*" (* y) echo)))
+    (echo (* "*"y)))
 
 (echo)
 (echo "almaz")
@@ -225,8 +198,8 @@
 
 
 
-(define prompt
-  (let (cnt 0)
+(set! prompt
+  (let* (cnt 0)
     (lambda () (progn
       (set! cnt (inc cnt))
       (+ "lis.py(" (str cnt) ")> ")))))

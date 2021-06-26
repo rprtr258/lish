@@ -10,18 +10,22 @@ class Env(dict):
     def __init__(self, parms=(), args=(), outer=None):
         self.update(zip(parms, args))
         self.outer = outer
+
+    def set(self, var, value):
+        self[var] = value
+
     def find(self, var):
         "Find the innermost Env where var appears."
-        if var in self:
-            return self
-        if self.outer is None:
-            return None # nil
+        if var in self: return self
+        if self.outer is None: return None # nil
         return self.outer.find(var)
+
     def get(self, var):
         env = self.find(var)
         if env is None:
             return []
         return env[var]
+
     def __repr__(self):
         return "{\n  " + "  \n".join(f"{k}: {v}" for k, v in self.items()) + "\n}"
 
@@ -29,8 +33,10 @@ class NamedFunction:
     def __init__(self, name, body):
         self.name = name
         self.body = body
+
     def __call__(self, *args, **kwargs):
         return self.body(*args, **kwargs)
+
     def __repr__(self):
         return f"<func {self.name}>"
 

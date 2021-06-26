@@ -77,15 +77,15 @@ def read_form(reader):
         return []
     # READER MACROSES
     token = reader.next() # remove reader macro
-    if token == "'": return ["quote", read_form(reader)]
-    if token == '`': return ["quasiquote", read_form(reader)]
-    if token == '~': return ["unquote", read_form(reader)]
-    if token == "~@": return ["splice-unquote", read_form(reader)]
-    if token == "@": return ["deref", read_form(reader)]
+    if token == "'": return [Symbol("quote"), read_form(reader)]
+    if token == '`': return [Symbol("quasiquote"), read_form(reader)]
+    if token == '~': return [Symbol("unquote"), read_form(reader)]
+    if token == "~@": return [Symbol("splice-unquote"), read_form(reader)]
+    if token == "@": return [Symbol("deref"), read_form(reader)]
     if token == "^":
         meta = read_list(reader)
         data = read_form(reader)
-        return ["with-meta", data, meta]
+        return [Symbol("with-meta"), data, meta]
     if token == CLOSE_PAREN:
         raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
     # ATOM
@@ -95,22 +95,20 @@ def read_form(reader):
 def check_parens(tokens):
     if tokens.count('(') != tokens.count(')'):
         raise SyntaxError("Different number of open and close parens")
-    parens = list(filter(lambda x: x in ['(', ')'], tokens))
-    paren_degree = 0
-    for i, paren in enumerate(parens):
-        if paren == '(':
-            paren_degree += 1
-        elif paren == ')':
-            paren_degree -= 1
-            if paren_degree < 0:
-                raise SyntaxError(f"Redundant close paren")
-            if paren_degree == 0 and i < len(parens) - 1 and any(map(lambda x: x in ['('], parens[i + 1:])):
-                raise SyntaxError(f"Another form found while parsing")
-    if paren_degree != 0:
-        if paren_degree > 0:
-            raise SyntaxError(f"There are {paren_degree} open parens left unclosed")
-        elif paren_degree < 0:
-            raise SyntaxError(f"There are {-paren_degree} redundant closed parens")
+    stack = []
+    for token in tokens:
+        if token in ['(', '[', '{']:
+            stack.append(token)
+        elif token in [')', ']', '}']:
+            close_paren = {
+                ')': '(',
+                ']': '[',
+                '}': '{'
+            }[token]
+            if len(stack) == 0 or stack.pop() != close_paren:
+                raise SyntaxError(f"Unexpected {paren}")
+    if len(stack) != 0:
+        raise SyntaxError(f"There are {stack} parens unclosed")
 
 def read_str(line):
     tokens = tokenize(line)

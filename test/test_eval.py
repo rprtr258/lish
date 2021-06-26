@@ -184,11 +184,13 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__('{}', Hashmap([]))
         self.__EVAL_test__('{"a" (+ 1 2)}', Hashmap(["a", 3]))
         self.__EVAL_test__('{:a (+ 1 2)}', Hashmap([Keyword("a"), 3]))
+        # TODO: fix
+        #self.__EVAL_test__('{(+ 1 2) (+ 1 2)}', Hashmap([3, 3]))
 
-    def test_not_function(self):
+    def test_not_defined_function(self):
         with self.assertRaises(RuntimeError) as cm:
             self.__EVAL_test__("(abc 1 2 3)", None)
-        self.assertEqual(str(cm.exception), "ERROR: abc value not found")
+        self.assertEqual(str(cm.exception), "abc value not found")
 
     # def test_label(self):
         # self.__EVAL_test__(

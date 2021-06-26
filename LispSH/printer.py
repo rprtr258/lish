@@ -24,6 +24,8 @@ def pr_str_no_escape(exp):
         return "(" + " ".join(map(pr_str_no_escape, exp)) + ")"
     elif exp is None:
         print("[FEAR AND LOATHING IN NONE VEGAS]")
+    elif callable(exp):
+        return str(exp)
     else:
         print("WTF IS THIS:", exp)
         return str(exp)
@@ -58,6 +60,8 @@ def pr_str(exp):
         return "(" + " ".join(map(pr_str, exp)) + ")"
     elif exp is None:
         print("[FEAR AND LOATHING IN NONE VEGAS]")
+    elif callable(exp):
+        return str(exp)
     else:
         print("WTF IS THIS:", exp)
         return str(exp)

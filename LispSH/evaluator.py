@@ -46,7 +46,7 @@ def eval_ast(ast, env):
     elif isinstance(ast, Hashmap):
         res = []
         for k, v in ast.items():
-            res.append(k)
+            res.append(eval_ast(k, env))
             res.append(eval_ast(v, env))
         return Hashmap(res)
     elif isinstance(ast[0], Symbol) and (res := env.get(ast[0])) and isinstance(res, Macro):
@@ -73,28 +73,34 @@ def eval_ast(ast, env):
             # if default value is given
             if len(predicates_exps) % 2 == 1:
                 return eval_ast(predicates_exps[-1], env)
-        elif form_word == Symbol("define"):
+        elif form_word == Symbol("set!"):
             # (define var exp)
             _, var, exp = ast
             assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {PRINT(var)}"""
-            env[var] = eval_ast(exp, env)
-            return env[var]
+            value = eval_ast(exp, env)
+            env.set(var, value)
+            return value
+        elif form_word == Symbol("let*"):
+            # (let* (v1 e1 v2 e2...) e)
+            _, bindings, exp = ast
+            assert len(bindings) % 2 == 0
+            i = 0
+            let_env = Env(outer=env)
+            while i < len(bindings):
+                var, var_exp = bindings[i : i + 2]
+                let_env.set(var, eval_ast(var_exp, let_env))
+                i += 2
+            return eval_ast(exp, let_env)
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
             _, macroform = ast
             return macroexpand(macroform, env)
-        elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
+        elif form_word == Symbol("defmacro"):
+            # (defmacro macroname (args...) body)
             _, macroname, args, body = ast
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
             env[macroname] = Macro(args, body)
             return [] # TODO: nil
-        elif form_word == Symbol("set!"):
-            # (set! var exp)
-            _, var_name, exp = ast
-            assert isinstance(var_name, Symbol), "Definition name is not a symbol"
-            new_var_value = eval_ast(exp, env)
-            env.find(var_name)[var_name] = new_var_value
-            return new_var_value
         elif form_word == Symbol("lambda"):
             # (lambda (args...) body)
             _, args, body = ast
@@ -109,9 +115,9 @@ def eval_ast(ast, env):
             try:
                 return proc(*args)
             except Exception as e:
-                print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(PRINT, args))}).
+                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(PRINT, args))}).
 Error is:
-    {"Recursed" if isinstance(e, RuntimeError) else e}"""))
+    {"Recursed" if isinstance(e, RuntimeError) else e}""")
         else:
             # (proc arg...)
             proc = eval_ast(form_word, env)

@@ -113,7 +113,7 @@ class TestTokenizer(unittest.TestCase):
     def test_two_forms(self):
         with self.assertRaises(SyntaxError) as cm:
             READ('(+ 1 2)(* 2 3)')
-        self.assertEqual(str(cm.exception), "Another form found while parsing")
+        self.assertEqual(str(cm.exception), "Tokens left after reading whole form, check parens")
 
     def test_tokenize(self):
         self.assertEqual(

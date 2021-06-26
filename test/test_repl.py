@@ -24,7 +24,7 @@ class TestRepl(unittest.TestCase):
 
     def test_cadr(self):
         self.__test_cmds__([
-            "(define cadr (lambda (x) (car (cdr x))))",
+            "(set! cadr (lambda (x) (car (cdr x))))",
             ("(cadr '(a (b c) d))", [B, C])
         ])
 
@@ -38,7 +38,7 @@ class TestRepl(unittest.TestCase):
     def test_defun_macro(self):
         self.__test_cmds__([
             "(defmacro if (p x y) (list 'cond p x y))",
-            "(defmacro defun (f args body) (list 'define f (list 'lambda args body)))",
+            "(defmacro defun (f args body) (list 'set! f (list 'lambda args body)))",
             "(defun rev (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x)))))",
             ("(rev '(a b c))", [C, B, A])
         ])
@@ -46,24 +46,24 @@ class TestRepl(unittest.TestCase):
     def test_if_in_recursive_function(self):
         self.__test_cmds__([
             "(defmacro if (p x y) (list 'cond p x y))",
-            "(define fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
+            "(set! fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
             ("(fact 1)", 1),
             ("(fact 2)", 2),
             ("(fact 3)", 6),
             ("(fact 4)", 24),
-            "(define rev (lambda (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x))))))",
+            "(set! rev (lambda (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x))))))",
             ("(rev '(a b c))", [C, B, A])
         ])
 
     def test_self_combinator(self):
         self.__test_cmds__([
-            "(define S (lambda (y) (y y)))",
+            "(set! S (lambda (y) (y y)))",
             ("(S str)", "<fun str>")
         ])
 
     def test_recursion(self):
         self.__test_cmds__([
-            "(define fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
+            "(set! fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
             ("(fact 1)", 1),
             ("(fact 2)", 2),
             ("(fact 3)", 6),
@@ -72,20 +72,14 @@ class TestRepl(unittest.TestCase):
 
     def test_let(self):
         self.__test_cmds__([
-            "(defmacro defun (f args body) (list 'define f (list 'lambda args body)))",
-            "(defun evens (x) (cond (nil? x) '() (cons (car x) (odds (cdr x)))))",
-            "(defun odds (x) (cond (nil? x) '() (evens (cdr x))))",
-            "(defmacro let (exps body) (cons (list 'lambda (evens exps) body) (odds exps)))",
-            ("(evens '(x 1 y 2))", [Symbol("x"), Symbol("y")]),
-            ("(odds '(x 1 y 2))", [1, 2]),
-            ("(let (x 1 y 2) x)", 1),
-            ("(str (let (x 1 y 2) x))", "1"),
-            ("(str (let (x 1 y 2) y))", "2")
+            ("(let* (x 1 y 2) x)", 1),
+            ("(str (let* (x 1 y 2) x))", "1"),
+            ("(str (let* (x 1 y 2) y))", "2")
         ])
 
     def test_triple_print_function(self):
         env = default_env()
-        EVAL(READ("(defmacro defun (f args body) (list 'define f (list 'lambda args body)))"), env)
+        EVAL(READ("(defmacro defun (f args body) (list 'set! f (list 'lambda args body)))"), env)
         EVAL(READ("(defun p3f (x) (list x x x))"), env)
         result = EVAL(READ("(p3f (rand))"), env)
         self.assertEqual(*result)
