@@ -16,84 +16,51 @@ class TestEVAL(unittest.TestCase):
 
     def test_quote(self):
         self.__EVAL_test__("(quote a)", A)
-
-    def test_quote_list(self):
         self.__EVAL_test__("(quote (a b c))", [A, B, C])
-
-    def test_quote_nested_list(self):
         self.__EVAL_test__("(quote (a b (c d (f e))))", [A, B, [C, Symbol("d"), [Symbol("f"), Symbol("e")]]])
-
-    def test_quote_nil(self):
         self.__EVAL_test__("(quote ())", NIL)
 
-    def test_atom_quote(self):
+    def test_atom(self):
         self.__EVAL_test__("(atom? (quote a))", TRUE)
-
-    def test_atom_quote_list(self):
         self.__EVAL_test__("(atom? (quote (a b c)))", FALSE)
-
-    def test_atom_quote_nil(self):
         self.__EVAL_test__("(atom? (quote ()))", TRUE)
-
-    def test_atom_quoted(self):
         self.__EVAL_test__("(atom? 'a)", TRUE)
-
-    def test_atom_quoted_list(self):
         self.__EVAL_test__("(atom? '(a b c))", FALSE)
-
-    def test_atom_quoted_nil(self):
         self.__EVAL_test__("(atom? '())", TRUE)
-
-    def test_atom_atom_quoted(self):
         self.__EVAL_test__("(atom? (atom? 'a))", TRUE)
-
-    def test_atom_quoted_atom(self):
         self.__EVAL_test__("(atom? '(atom? 'a))", FALSE)
 
-    def test_eq_equal_Symbols(self):
+    def test_eq(self):
         self.__EVAL_test__("(= 'a 'a)", TRUE)
-
-    def test_eq_not_equal_Symbols(self):
         self.__EVAL_test__("(= 'a 'b)", FALSE)
-
-    def test_eq_nils(self):
         self.__EVAL_test__("(= '() '())", TRUE)
-
-    def test_car(self):
-        self.__EVAL_test__("(car '(a b c))", A)
-
-    def test_cdr(self):
-        self.__EVAL_test__("(cdr '(a b c))", [B, C])
-
-    def test_cdr_nil(self):
-        self.__EVAL_test__("(cdr '(a))", NIL)
 
     def test_cons(self):
         self.__EVAL_test__("(cons 'a '(b c))", [A, B, C])
-
-    def test_cons_cons_cons(self):
         self.__EVAL_test__("(cons 'a (cons 'b (cons 'c '())))", [A, B, C])
 
-    def test_car_cons(self):
+    def test_car(self):
+        self.__EVAL_test__("(car '(a b c))", A)
         self.__EVAL_test__("(car (cons 'a '(b c)))", A)
 
-    def test_cdr_cons(self):
+    def test_cdr(self):
         self.__EVAL_test__("(cdr (cons 'a '(b c)))", [B, C])
+        self.__EVAL_test__("(cdr '(a))", NIL)
+        self.__EVAL_test__("(cdr '(a b c))", [B, C])
 
-    def test_cond_true(self):
+    def test_cond(self):
         self.__EVAL_test__("(cond (= 'a 'a) 'first 'second)", Symbol("first"))
-
-    def test_cond_false(self):
         self.__EVAL_test__("(cond (= 'a 'b) 'first 'second)", Symbol("second"))
 
-    def test_lambda_one_argument(self):
+    def test_lambda(self):
         self.__EVAL_test__("((lambda (x) (cons x '(b))) 'a)", [A, B])
-
-    def test_lambda_two_arguments(self):
         self.__EVAL_test__("((lambda (x y) (cons x (cdr y))) 'z '(a b c))", [Symbol("z"), B, C])
-
-    def test_lambda_passing_lambda(self):
         self.__EVAL_test__("((lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))", [A, B, C])
+        self.__EVAL_test__("((lambda (x & y) (list x y)) 2)", [2, NIL])
+        self.__EVAL_test__("((lambda (x & y) (list x y)) 2 3)", [2, [3]])
+        self.__EVAL_test__("((lambda (x & y) (list x y)) 2 3 4)", [2, [3, 4]])
+        self.__EVAL_test__("((lambda (x y & z) (list x y z)) 2 3 4)", [2, 3, [4]])
+        self.__EVAL_test__("((lambda (x & y) (* x (apply + y))) 2 3 4)", 14)
 
     def test_ariphmetic_operators(self):
         self.__EVAL_test__("(+ 1 2 3)", 6)

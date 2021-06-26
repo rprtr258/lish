@@ -9,10 +9,10 @@ def pr_str_no_escape(exp):
     elif is_atom(exp):
         if isinstance(exp, str):
             return exp
-        if isinstance(exp, int) or isinstance(exp, float):
-            return str(exp)
         elif isinstance(exp, bool):
             return "true" if exp else "false"
+        if isinstance(exp, int) or isinstance(exp, float):
+            return str(exp)
         else:
             return f"(atom {exp})"
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
@@ -45,10 +45,10 @@ def pr_str(exp):
     elif is_atom(exp):
         if isinstance(exp, str):
             return f'"{_escape(exp)}"'
-        if isinstance(exp, int) or isinstance(exp, float):
-            return str(exp)
         elif isinstance(exp, bool):
             return "true" if exp else "false"
+        if isinstance(exp, int) or isinstance(exp, float):
+            return str(exp)
         else:
             return f"(atom {exp})"
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
