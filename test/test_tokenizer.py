@@ -34,6 +34,7 @@ class TestTokenizer(unittest.TestCase):
 
     def test_keyword(self):
         self.__tokenizer_test__(":ab", Keyword("ab"))
+        self.__tokenizer_test__("(:ab :cd :kwwww)", [Keyword("ab"), Keyword("cd"), Keyword("kwwww")])
 
     def test_quote(self):
         self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])
