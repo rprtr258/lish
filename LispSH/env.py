@@ -15,9 +15,6 @@ class Env(dict):
         if var in self:
             return self
         if self.outer is None:
-            if var not in ["cond", "quote", "atom?", "lambda", "define", "defmacro", "macroexpand", "set!"]:
-                # import pdb;pdb.set_trace()
-                print(f"WARNING: {repr(var)} was not found")
             return None # nil
         return self.outer.find(var)
     def get(self, var):

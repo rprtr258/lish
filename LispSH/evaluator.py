@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Any
 
 from LispSH.env import Env
-from LispSH.datatypes import Symbol, Macro, is_atom
+from LispSH.datatypes import Symbol, Macro, Vector, Hashmap, is_atom
 from LispSH.printer import PRINT
 
 
@@ -33,11 +33,22 @@ def eval_ast(ast, env):
     if isinstance(ast, Symbol):
         # ast
         # but ast is symbol
-        return env.get(ast)
+        res_env = env.find(ast)
+        if res_env is None:
+            raise RuntimeError(f"ERROR: {ast} value not found")
+        return res_env[ast]
     elif is_atom(ast):
         # ast
         # but ast is atom (number or string)
         return ast
+    elif isinstance(ast, Vector):
+        return Vector([eval_ast(x, env) for x in ast])
+    elif isinstance(ast, Hashmap):
+        res = []
+        for k, v in ast.items():
+            res.append(k)
+            res.append(eval_ast(v, env))
+        return Hashmap(res)
     elif isinstance(ast[0], Symbol) and (res := env.get(ast[0])) and isinstance(res, Macro):
         # (macroname exps...)
         macroexpansion = macroexpand(ast, env)
@@ -117,4 +128,6 @@ Error is:
     {"Recursed" if isinstance(e, RuntimeError) else e}""")
 
 def EVAL(ast, env):
+    if ast == []:
+        return ast
     return eval_ast(ast, env)
