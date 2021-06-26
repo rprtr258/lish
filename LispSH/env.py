@@ -7,12 +7,15 @@ from LispSH.printer import PRINT, pr_str_no_escape
 
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
-    def __init__(self, parms=(), args=(), outer=None):
-        self.update(zip(parms, args))
+    def __init__(self, binds=(), exprs=(), outer=None):
+        self.update(zip(binds, exprs))
         self.outer = outer
 
     def set(self, var, value):
-        self[var] = value
+        env = self.find(var)
+        if env is None:
+            env = self
+        env[var] = value
 
     def find(self, var):
         "Find the innermost Env where var appears."
@@ -38,7 +41,7 @@ class NamedFunction:
         return self.body(*args, **kwargs)
 
     def __repr__(self):
-        return f"<func {self.name}>"
+        return f"#{self.name}"
 
 def plus(*x):
     if is_atom(x[0]):

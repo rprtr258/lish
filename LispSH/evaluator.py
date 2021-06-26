@@ -13,8 +13,10 @@ class Procedure:
     args: List[str]
     body: Any
     env: Env
-    def __call__(self, *args): 
+
+    def __call__(self, *args):
         return eval_ast(self.body, Env(self.args, args, self.env))
+
     def __str__(self):
         return PRINT([Symbol("lambda"), self.args, self.body])
 
@@ -129,7 +131,7 @@ Error is:
                     print("FUCK YOU,", PRINT(ast), PRINT(args))
                 return res
             except Exception as e:
-                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(PRINT, args))}).
+                raise RuntimeError(f"""Error during evaluation ({" ".join(map(PRINT, [proc] + args))}).
 Error is:
     {"Recursed" if isinstance(e, RuntimeError) else e}""")
 
