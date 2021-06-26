@@ -32,6 +32,22 @@ class TestTokenizer(unittest.TestCase):
     def test_quoted_nil(self):
         self.__tokenizer_test__("'()", QNIL)
 
+    def test_quote(self):
+        self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])
+        self.__tokenizer_test__("'(a 1 bc)", [QUOTE_SYMBOL, [A, Atom(1), Symbol("bc")]])
+
+    def test_quasiquote(self):
+        self.__tokenizer_test__("`a", [Symbol("quasiquote"), A])
+        self.__tokenizer_test__("`(a 1 bc)", [Symbol("quasiquote"), [A, Atom(1), Symbol("bc")]])
+
+    def test_unquote(self):
+        self.__tokenizer_test__("~a", [Symbol("unquote"), A])
+        self.__tokenizer_test__("~(a 1 bc)", [Symbol("unquote"), [A, Atom(1), Symbol("bc")]])
+        self.__tokenizer_test__("`(a 1 ~bc)", [Symbol("quasiquote"), [A, Atom(1), [Symbol("unquote"), Symbol("bc")]]])
+
+    def test_splice_unquote(self):
+        self.__tokenizer_test__("~@(a 1 bc)", [Symbol("splice-unquote"), [A, Atom(1), Symbol("bc")]])
+
     def test_cond(self):
         self.__tokenizer_test__(
             "(cond ((eq? 'a 'b) 'first) ((atom 'a) 'second))",
@@ -50,12 +66,12 @@ class TestTokenizer(unittest.TestCase):
     def test_not_enough_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b")
-        self.assertEqual(str(cm.exception), "Form is not closed or there is garbage after form")
+        self.assertEqual(str(cm.exception), "Different number of open and close parens")
 
     def test_too_much_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b))")
-        self.assertEqual(str(cm.exception), "Redundant close paren")
+        self.assertEqual(str(cm.exception), "Different number of open and close parens")
 
     def test_unclosed_string(self):
         with self.assertRaises(SyntaxError) as cm:

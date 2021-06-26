@@ -48,10 +48,7 @@ def read_list(reader):
     reader.next() # remove ')'
     return L
 
-def read_atom(reader):
-    token = reader.next()
-    if not reader.has_next():
-        raise SyntaxError("Unexpected end of input")
+def read_atom(token):
     # str
     if token[0] == '"': return Atom(token[1:-1])
     # bool
@@ -68,21 +65,29 @@ def read_atom(reader):
 
 def read_form(reader):
     "Read an expression from a sequence of tokens"
+    if not reader.has_next():
+        raise SyntaxError("Unexpected end of input")
     token = reader.peek()
+    # LIST
     if token == '(':
         return read_list(reader)
-    elif token == "'":
-        reader.next() # remove '
-        return ["quote", read_form(reader)]
-    elif token == CLOSE_PAREN:
+    # READER MACROSES
+    token = reader.next() # remove reader macro
+    if token == "'": return ["quote", read_form(reader)]
+    if token == '`': return ["quasiquote", read_form(reader)]
+    if token == '~': return ["unquote", read_form(reader)]
+    if token == "~@": return ["splice-unquote", read_form(reader)]
+    if token == CLOSE_PAREN:
         raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
-    else:
-        return read_atom(reader)
+    # ATOM
+    return read_atom(token)
 
 def check_parens(tokens):
-    if tokens[0] not in ['(', "'"]:
+    if tokens[0] not in ['(', "'", '`', '~', "~@"]:
         raise SyntaxError("Not a form")
-    if tokens[-1] != ')':
+    if tokens.count('(') != tokens.count(')'):
+        raise SyntaxError("Different number of open and close parens")
+    if tokens.count('(') > 0 and tokens[-1] != ')':
         raise SyntaxError("Form is not closed or there is garbage after form")
     parens = list(filter(lambda x: x in ['(', ')'], tokens))
     paren_degree = 0
