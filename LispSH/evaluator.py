@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Any
 
-from LispSH.env import global_env, Env
+from LispSH.env import Env
 from LispSH.datatypes import Symbol, Macro, is_atom
 from LispSH.printer import PRINT
 
@@ -38,8 +38,7 @@ def macroexpand(macroform, env):
     return EVAL(macrobody, Env(macroargs, exps, env))
 
 #@log_eval
-# TODO: remove global_env from global vars
-def EVAL(x, env=global_env):
+def EVAL(x, env):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):
         # x

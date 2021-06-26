@@ -127,5 +127,3 @@ def default_env():
             "prompt": lambda: "lis.py> ",
     }.items()})
     return env
-
-global_env = default_env()

@@ -2,14 +2,16 @@ import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
+from LispSH.datatypes import Symbol
+from LispSH.env import default_env
 from LispSH.reader import READ
 from LispSH.evaluator import EVAL
-from LispSH.datatypes import Symbol
 
 
 class TestEVAL(unittest.TestCase):
     def __EVAL_test__(self, test_program, expected_result):
-        actual_result = EVAL(READ(test_program))
+        env = default_env()
+        actual_result = EVAL(READ(test_program), env)
         self.assertEqual(actual_result, expected_result)
 
     def test_quote(self):
@@ -100,7 +102,8 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(/ -12 2 3)", -2)
 
     def test_math_functions(self):
-        random_result = EVAL(READ("(rand)"))
+        env = default_env()
+        random_result = EVAL(READ("(rand)"), env)
         self.assertTrue(isinstance(random_result, float))
         self.assertTrue(0 <= random_result and random_result < 1)
         self.__EVAL_test__("(abs -2)", 2)
