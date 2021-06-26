@@ -35,7 +35,7 @@ def eval_ast(ast, env):
         # but ast is symbol
         res_env = env.find(ast)
         if res_env is None:
-            raise RuntimeError(f"ERROR: {ast} value not found")
+            raise RuntimeError(f"{ast} value not found")
         return res_env[ast]
     elif is_atom(ast):
         # ast

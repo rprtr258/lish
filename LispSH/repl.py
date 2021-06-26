@@ -40,7 +40,7 @@ def repl(env):
             line = fix_parens(line)
             print(rep(line, env))
         except Exception as e:
-            print(e)
+            print(f"{type(e).__name__}: {e}")
 
 ################ File load
 # TODO: move to some load function
