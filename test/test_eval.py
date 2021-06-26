@@ -2,7 +2,7 @@ import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
-from LispSH.datatypes import Symbol
+from LispSH.datatypes import Symbol, Vector
 from LispSH.env import default_env
 from LispSH.reader import READ
 from LispSH.evaluator import EVAL
@@ -172,9 +172,17 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(name 'a)", "a")
         self.__EVAL_test__("(progn 1 2 3)", 3)
         self.__EVAL_test__('(int "234")', 234)
-        self.__EVAL_test__('(int 3.14)', 3)
-        self.__EVAL_test__('(int 3.14)', 3)
-        self.__EVAL_test__('(prompt)', "lis.py> ")
+        self.__EVAL_test__("(int 3.14)", 3)
+        self.__EVAL_test__("(int 3.14)", 3)
+        self.__EVAL_test__("(prompt)", "lis.py> ")
+
+    def test_vector(self):
+        self.__EVAL_test__("[1 2 (+ 1 2)]", Vector([1, 2, 3]))
+
+    def test_not_function(self):
+        with self.assertRaises(RuntimeError) as cm:
+            self.__EVAL_test__("(abc 1 2 3)", None)
+        self.assertEqual(str(cm.exception), "ERROR: abc value not found")
 
     # def test_label(self):
         # self.__EVAL_test__(

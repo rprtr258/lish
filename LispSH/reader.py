@@ -72,7 +72,9 @@ def read_form(reader):
     if token in ['(', '[', '{']:
         return read_list(reader)
     # COMMENT
-    if token[0] == ";": return []
+    if token[0] == ";":
+        reader.next()
+        return []
     # READER MACROSES
     token = reader.next() # remove reader macro
     if token == "'": return ["quote", read_form(reader)]
@@ -93,8 +95,6 @@ def read_form(reader):
 def check_parens(tokens):
     if tokens.count('(') != tokens.count(')'):
         raise SyntaxError("Different number of open and close parens")
-    if tokens.count('(') > 0 and tokens[-1] != ')':
-        raise SyntaxError("Form is not closed or there is garbage after form")
     parens = list(filter(lambda x: x in ['(', ')'], tokens))
     paren_degree = 0
     for i, paren in enumerate(parens):
@@ -115,7 +115,14 @@ def check_parens(tokens):
 def read_str(line):
     tokens = tokenize(line)
     check_parens(tokens)
-    return read_form(Reader(tokens))
+    reader = Reader(tokens)
+    ast = read_form(reader)
+    # TODO: fix
+    while reader.has_next() and reader.peek()[0] == ';':
+        reader.next()
+    if reader.has_next():
+        raise SyntaxError("Tokens left after reading whole form, check parens")
+    return ast
 
 def READ(line):
     "Read an expression from a string"

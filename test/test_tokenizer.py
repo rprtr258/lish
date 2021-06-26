@@ -108,7 +108,7 @@ class TestTokenizer(unittest.TestCase):
     def test_unclosed_string(self):
         with self.assertRaises(SyntaxError) as cm:
             READ('(echo )"abc)')
-        self.assertEqual(str(cm.exception), "Form is not closed or there is garbage after form")
+        self.assertEqual(str(cm.exception), "Tokens left after reading whole form, check parens")
 
     def test_two_forms(self):
         with self.assertRaises(SyntaxError) as cm:
