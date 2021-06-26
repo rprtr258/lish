@@ -90,6 +90,6 @@ def read_from_tokens(tokens):
     else:
         return atom_or_symbol(token)
 
-def parse(program):
+def READ(program):
     "Read an expression from a string."
     return read_from_tokens(tokenize(program))

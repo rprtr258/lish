@@ -2,8 +2,8 @@ import unittest
 
 from definitions import NIL, A, B, C
 from context import LispSH
-from LispSH.reader import parse
-from LispSH.evaluator import eval
+from LispSH.reader import READ
+from LispSH.evaluator import EVAL
 from LispSH.env import default_env
 from LispSH.datatypes import Atom, Symbol
 
@@ -13,13 +13,13 @@ class TestRepl(unittest.TestCase):
         env = default_env()
         for cmd_line in cmds:
             if isinstance(cmd_line, str):
-                eval(parse(cmd_line), env)
+                EVAL(READ(cmd_line), env)
                 return
             elif isinstance(cmd_line, tuple) and len(cmd_line) == 2:
                 cmd, expected_result = cmd_line
             else:
                 self.assertTrue(False)
-            actual_result = eval(parse(cmd), env)
+            actual_result = EVAL(READ(cmd), env)
             self.assertEqual(actual_result, expected_result)
 
     def test_cadr(self):
@@ -85,15 +85,15 @@ class TestRepl(unittest.TestCase):
 
     def test_triple_print_function(self):
         env = default_env()
-        eval(parse("(defmacro defun (f args body) (list 'define f (list 'lambda args body)))"), env)
-        eval(parse("(defun p3f (x) (list x x x))"), env)
-        result = eval(parse("(p3f (rand))"), env)
+        EVAL(READ("(defmacro defun (f args body) (list 'define f (list 'lambda args body)))"), env)
+        EVAL(READ("(defun p3f (x) (list x x x))"), env)
+        result = EVAL(READ("(p3f (rand))"), env)
         self.assertEqual(*result)
 
     def test_triple_print_macro(self):
         env = default_env()
-        eval(parse("(defmacro p3m (x) (list 'list x x x))"), env)
-        result = eval(parse("(p3m (rand))"), env)
+        EVAL(READ("(defmacro p3m (x) (list 'list x x x))"), env)
+        result = EVAL(READ("(p3m (rand))"), env)
         self.assertNotEqual(result[0], result[1])
         self.assertNotEqual(result[1], result[2])
         self.assertNotEqual(result[0], result[2])

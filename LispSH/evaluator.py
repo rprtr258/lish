@@ -3,7 +3,7 @@ from typing import List, Any
 
 from LispSH.env import global_env, Env
 from LispSH.datatypes import Symbol, Atom, Macro
-from LispSH.printer import schemestr
+from LispSH.printer import PRINT
 
 
 # TODO: rename to function
@@ -14,9 +14,9 @@ class Procedure:
     body: Any
     env: Env
     def __call__(self, *args): 
-        return eval(self.body, Env(self.args, args, self.env))
+        return EVAL(self.body, Env(self.args, args, self.env))
     def __str__(self):
-        return schemestr([Symbol("lambda"), self.args, self.body])
+        return PRINT([Symbol("lambda"), self.args, self.body])
 
 
 # TODO: variadic defun (defn (& x) x) and macro (defmacro (& x) x)
@@ -35,11 +35,11 @@ def macroexpand(macroform, env):
     macroname, *exps = macroform
     res = env.get(macroname.name)
     macroargs, macrobody = res.args, res.body
-    return eval(macrobody, Env([arg.name for arg in macroargs], exps, env))
+    return EVAL(macrobody, Env([arg.name for arg in macroargs], exps, env))
 
 #@log_eval
 # TODO: remove global_env from global vars
-def eval(x, env=global_env):
+def EVAL(x, env=global_env):
     "Evaluate an expression in an environment."
     if isinstance(x, Symbol):
         # x
@@ -52,7 +52,7 @@ def eval(x, env=global_env):
     elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro):
         # (macroname exps...)
         macroexpansion = macroexpand(x, env)
-        return eval(macroexpansion, env)
+        return EVAL(macroexpansion, env)
     else:
         form_word = x[0]
         if form_word == Symbol("quote"):
@@ -62,7 +62,7 @@ def eval(x, env=global_env):
         elif form_word == Symbol("atom?"):
             # (atom exp)
             _, exp = x
-            exp = eval(exp, env)
+            exp = EVAL(exp, env)
             return Atom(\
                 isinstance(exp, Atom) or \
                 isinstance(exp, Symbol) or \
@@ -78,15 +78,15 @@ def eval(x, env=global_env):
             while i + 1 < len(predicates_exps):
                 predicate, expression = predicates_exps[i : i + 2]
                 i += 2
-                if eval(predicate, env).value:
-                    return eval(expression, env)
+                if EVAL(predicate, env).value:
+                    return EVAL(expression, env)
             # if default value is given
             if len(predicates_exps) % 2 == 1:
-                return eval(predicates_exps[-1], env)
+                return EVAL(predicates_exps[-1], env)
         elif form_word == Symbol("define"):         # (define var exp)
             _, var, exp = x
-            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {schemestr(var)}"""
-            env[var.name] = eval(exp, env)
+            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {PRINT(var)}"""
+            env[var.name] = EVAL(exp, env)
             return env[var.name]
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
@@ -102,37 +102,37 @@ def eval(x, env=global_env):
             _, var, exp = x
             assert isinstance(var, Symbol), "Definition name is not a symbol"
             var_name = var.name
-            new_var_value = eval(exp, env)
+            new_var_value = EVAL(exp, env)
             env.find(var_name)[var_name] = new_var_value
             return new_var_value
         elif form_word == Symbol("lambda"):
             # (lambda (args...) body)
             _, args, body = x
             for arg in args:
-                assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {schemestr(arg)}"
+                assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {PRINT(arg)}"
             return Procedure([arg.name for arg in args], body, env)
         elif form_word == Symbol("apply"):
             # (apply f (args...))
             _, proc, args = x
-            proc = eval(proc, env)
-            args = eval(args, env)
+            proc = EVAL(proc, env)
+            args = EVAL(args, env)
             try:
                 return proc(*args)
             except Exception as e:
-                print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
+                print(RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(PRINT, args))}).
 Error is:
     {"Recursed" if isinstance(e, RuntimeError) else e}"""))
         else:
             # (proc arg...)
-            proc = eval(form_word, env)
-            args = [eval(exp, env) for exp in x[1:]]
+            proc = EVAL(form_word, env)
+            args = [EVAL(exp, env) for exp in x[1:]]
             if not callable(proc) and not isinstance(proc, Procedure):
-                raise RuntimeError(f"""{proc} (named {schemestr(x[0])}) is not a function call in {schemestr(x)}.""")
+                raise RuntimeError(f"""{proc} (named {PRINT(x[0])}) is not a function call in {PRINT(x)}.""")
             try:
                 if (res := proc(*args)) is None:
-                    print("FUCK YOU,", schemestr(x), schemestr(args))
+                    print("FUCK YOU,", PRINT(x), PRINT(args))
                 return res
             except Exception as e:
-                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(schemestr, args))}).
+                raise RuntimeError(f"""Error during evaluation ({proc} {" ".join(map(PRINT, args))}).
 Error is:
     {"Recursed" if isinstance(e, RuntimeError) else e}""")

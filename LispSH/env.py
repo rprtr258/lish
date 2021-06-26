@@ -2,7 +2,7 @@ import math
 import operator as op
 
 from LispSH.datatypes import Atom, get_atom_value, Symbol
-from LispSH.printer import schemestr
+from LispSH.printer import PRINT
 
 
 class Env(dict):
@@ -34,7 +34,7 @@ class NamedFunction:
     def __call__(self, *args, **kwargs):
         return self.body(*args, **kwargs)
     def __repr__(self):
-        return f"<fun {self.name}>"
+        return self.name
 
 def plus(*x):
     if isinstance(x[0], Atom):
@@ -51,7 +51,7 @@ def echo(*x):
             if isinstance(x, Atom):
                 return str(x.value)
             else:
-                return schemestr(x)
+                return PRINT(x)
         else:
             res = ""
             for xi in x:
@@ -115,7 +115,7 @@ def default_env():
         "list": NamedFunction("list", lambda *x: list(x)),
         # STRING FUNCTIONS
         "join": NamedFunction("join", lambda d, x: Atom(d.value.join(map(get_atom_value, x)))),
-        "str": NamedFunction("str", lambda *x: Atom(" ".join(map(schemestr, x)))),
+        "str": NamedFunction("str", lambda *x: Atom(" ".join(map(PRINT, x)))),
         # FILE OPERATIONS
         # TODO: tests
         "path-getsize": NamedFunction("path-getsize", lambda x: Atom(path.getsize(x.value))),
@@ -127,6 +127,7 @@ def default_env():
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         # TODO: rename to parse-int? / str->int
         "int": NamedFunction("int", lambda x: Atom(int(x.value))),
+        "exit": lambda: exit(0),
         "prompt": lambda: Atom("lis.py> "),
     })
     return env

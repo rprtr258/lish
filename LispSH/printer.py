@@ -1,10 +1,10 @@
 from LispSH.datatypes import Symbol, Atom
 
-def _escape(s):
-    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
-
-def schemestr(exp):
+def PRINT(exp):
     "Convert an expression into a Lisp-readable string"
+    def _escape(s):
+        return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
     if exp == []:
         return "nil"
     elif isinstance(exp, Symbol):
@@ -22,9 +22,9 @@ def schemestr(exp):
         return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
         assert len(exp) == 2, f"Quote has zero or more than one argument: {exp}"
-        return "'" + schemestr(exp[1])
+        return "'" + PRINT(exp[1])
     elif isinstance(exp, list):
-        return "(" + " ".join(map(schemestr, exp)) + ")"
+        return "(" + " ".join(map(PRINT, exp)) + ")"
     elif exp is None:
         print("[FEAR AND LOATHING IN NONE VEGAS]")
     else:
