@@ -2,7 +2,7 @@ import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
-from LispSH.datatypes import Symbol, Vector
+from LispSH.datatypes import Symbol, Vector, Hashmap, Keyword
 from LispSH.env import default_env
 from LispSH.reader import READ
 from LispSH.evaluator import EVAL
@@ -177,7 +177,13 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(prompt)", "lis.py> ")
 
     def test_vector(self):
+        self.__EVAL_test__("[]", Vector([]))
         self.__EVAL_test__("[1 2 (+ 1 2)]", Vector([1, 2, 3]))
+
+    def test_hashmap(self):
+        self.__EVAL_test__('{}', Hashmap([]))
+        self.__EVAL_test__('{"a" (+ 1 2)}', Hashmap(["a", 3]))
+        self.__EVAL_test__('{:a (+ 1 2)}', Hashmap([Keyword("a"), 3]))
 
     def test_not_function(self):
         with self.assertRaises(RuntimeError) as cm:
