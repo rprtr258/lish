@@ -97,10 +97,11 @@ def default_env():
         "<=": NamedFunction("<=", lambda *x: Atom(all(map(lambda xy: op.le(xy[0].value, xy[1].value), zip(x, x[1:]))))),
         "=": NamedFunction("=", lambda *x: Atom(all(map(lambda xy: op.eq(xy[0], xy[1]), zip(x, x[1:]))))),
         "nil?": NamedFunction("nil?", lambda x: Atom(x == [])),
-        "list?": NamedFunction("list?", lambda x: Atom(isinstance(x, list))),
         "number?": NamedFunction("number?", lambda x: Atom(isinstance(x, Atom) and (isinstance(val := x.value, int) or isinstance(val, float)))),
         "procedure?": NamedFunction("procedure?", lambda x: Atom(callable(x))),
+        "atom?": NamedFunction("atom?", lambda x: Atom(isinstance(x, Atom) or isinstance(x, Symbol) or x == [])),
         "symbol?": lambda x: Atom(isinstance(x, Symbol)),
+        "list?": NamedFunction("list?", lambda x: Atom(isinstance(x, list))),
         # BOOL FUNCTIONS
         "or": NamedFunction("or", lambda *x: reduce((lambda x, y: Atom(x.value or y.value)), x)),
         "not": NamedFunction("not", lambda x: Atom(op.not_(x.value))),
@@ -122,7 +123,7 @@ def default_env():
         # OTHER FUNCTIONS
         "ls-r": NamedFunction("ls-r", lambda x: [[Atom(dir_name), list(map(Atom, files))] for dir_name, _, files in walk(x.value)]),
         "echo":    NamedFunction("echo", echo),
-        "name": NamedFunction("name", lambda x: Atom(x.name)),
+        "name": NamedFunction("name", lambda x: Atom(x)),
         'apply':   lambda fx: fx[0](*fx[1:]),
         'progn':   NamedFunction("progn", lambda *x: x[-1]),
         # TODO: rename to parse-int? / str->int

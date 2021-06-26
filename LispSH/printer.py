@@ -1,7 +1,6 @@
 from LispSH.datatypes import Symbol, Atom
 
-def PRINT(exp):
-    "Convert an expression into a Lisp-readable string"
+def pr_str(exp):
     def _escape(s):
         return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
@@ -30,3 +29,7 @@ def PRINT(exp):
     else:
         print("WTF IS THIS:", exp)
         return str(exp)
+
+def PRINT(exp):
+    "Convert an expression into a Lisp-readable string"
+    return pr_str(exp)

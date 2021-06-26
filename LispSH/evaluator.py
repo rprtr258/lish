@@ -59,11 +59,6 @@ def EVAL(x, env=global_env):
             # (quote exp)
             _, exp = x
             return exp
-        elif form_word == Symbol("atom?"):
-            # (atom exp)
-            _, exp = x
-            exp = EVAL(exp, env)
-            return Atom(isinstance(exp, Atom) or exp == [])
         elif form_word == Symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
             # (cond p1 e1 p2 e2 ... pn en)
             # or

@@ -24,9 +24,11 @@ class Reader:
         self.tokens = tokens
         self.position = 0
 
+    def has_next(self):
+        return self.position < len(self.tokens)
+
     def peek(self):
-        if self.position < len(self.tokens):
-            return self.tokens[self.position]
+        return self.tokens[self.position]
 
     def next(self):
         res = self.peek()
@@ -48,7 +50,7 @@ def read_list(reader):
 
 def read_atom(reader):
     token = reader.next()
-    if token is None:
+    if not reader.has_next():
         raise SyntaxError("Unexpected end of input")
     # str
     if token[0] == '"': return Atom(token[1:-1])
@@ -80,6 +82,6 @@ def read_form(reader):
 def read_str(line):
     return read_form(Reader(tokenize(line)))
 
-def READ(program):
+def READ(line):
     "Read an expression from a string"
-    return read_str(program)
+    return read_str(line)
