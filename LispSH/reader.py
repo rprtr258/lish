@@ -79,9 +79,8 @@ def read_form(reader):
     else:
         return read_atom(reader)
 
-def read_str(line):
+def check_parens(tokens):
     paren_degree = 0
-    tokens = tokenize(line)
     for token in tokens:
         if token == '(':
             paren_degree += 1
@@ -93,6 +92,10 @@ def read_str(line):
             raise SyntaxError(f"There are {paren_degree} open parens left unclosed")
         elif paren_degree < 0:
             raise SyntaxError(f"There are {-paren_degree} redundant closed parens")
+
+def read_str(line):
+    tokens = tokenize(line)
+    check_parens(tokens)
     return read_form(Reader(tokens))
 
 def READ(line):
