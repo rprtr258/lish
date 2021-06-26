@@ -4,7 +4,7 @@ from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
 from LispSH.reader import READ
 from LispSH.evaluator import EVAL
-from LispSH.datatypes import Symbol, Atom
+from LispSH.datatypes import Symbol
 
 
 class TestEVAL(unittest.TestCase):
@@ -94,22 +94,21 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("((lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))", [A, B, C])
 
     def test_ariphmetic_operators(self):
-        self.__EVAL_test__("(+ 1 2 3)", Atom(6))
-        self.__EVAL_test__("(+ 1 2 -3)", Atom(0))
-        self.__EVAL_test__("(* 1 2 -3)", Atom(-6))
-        self.__EVAL_test__("(/ -12 2 3)", Atom(-2))
+        self.__EVAL_test__("(+ 1 2 3)", 6)
+        self.__EVAL_test__("(+ 1 2 -3)", 0)
+        self.__EVAL_test__("(* 1 2 -3)", -6)
+        self.__EVAL_test__("(/ -12 2 3)", -2)
 
     def test_math_functions(self):
         random_result = EVAL(READ("(rand)"))
-        self.assertTrue(isinstance(random_result, Atom))
-        self.assertTrue(isinstance(random_result.value, float))
-        self.assertTrue(0 <= random_result.value and random_result.value < 1)
-        self.__EVAL_test__("(abs -2)", Atom(2))
-        self.__EVAL_test__("(abs 2)", Atom(2))
-        self.__EVAL_test__("(cos 0)", Atom(1.0))
-        self.__EVAL_test__("(max 1 2 3)", Atom(3))
-        self.__EVAL_test__("(min 1 2 3)", Atom(1))
-        self.__EVAL_test__("(round 3.14)", Atom(3))
+        self.assertTrue(isinstance(random_result, float))
+        self.assertTrue(0 <= random_result and random_result < 1)
+        self.__EVAL_test__("(abs -2)", 2)
+        self.__EVAL_test__("(abs 2)", 2)
+        self.__EVAL_test__("(cos 0)", 1.0)
+        self.__EVAL_test__("(max 1 2 3)", 3)
+        self.__EVAL_test__("(min 1 2 3)", 1)
+        self.__EVAL_test__("(round 3.14)", 3)
 
     def test_comparison_operators(self):
         self.__EVAL_test__("(> 1 2 3)", FALSE)
@@ -151,28 +150,28 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(not false)", TRUE)
 
     def test_list_operations(self):
-        self.__EVAL_test__("(cons 1 2 3 '())", [Atom(1), Atom(2), Atom(3)])
-        self.__EVAL_test__("(cons 1 '(2 3))", [Atom(1), Atom(2), Atom(3)])
-        self.__EVAL_test__("(map (lambda (x) (* 2 x)) '(2 3))", [Atom(4), Atom(6)])
-        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) abs)", [Atom(-1), Atom(1), Atom(2), Atom(-3), Atom(-4), Atom(5)])
-        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) (lambda (x) x))", [Atom(-4), Atom(-3), Atom(-1), Atom(1), Atom(2), Atom(5)])
-        self.__EVAL_test__("(len '(-1 1 5 -3 2 -4))", Atom(6))
-        self.__EVAL_test__("(car '(-1 1 5 -3 2 -4))", Atom(-1))
-        self.__EVAL_test__("(cdr '(-1 1 5 -3 2 -4))", [Atom(1), Atom(5), Atom(-3), Atom(2), Atom(-4)])
-        self.__EVAL_test__("(list -1 1 5 -3 2 -4)", [Atom(-1), Atom(1), Atom(5), Atom(-3), Atom(2), Atom(-4)])
+        self.__EVAL_test__("(cons 1 2 3 '())", [1, 2, 3])
+        self.__EVAL_test__("(cons 1 '(2 3))", [1, 2, 3])
+        self.__EVAL_test__("(map (lambda (x) (* 2 x)) '(2 3))", [4, 6])
+        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) abs)", [-1, 1, 2, -3, -4, 5])
+        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) (lambda (x) x))", [-4, -3, -1, 1, 2, 5])
+        self.__EVAL_test__("(len '(-1 1 5 -3 2 -4))", 6)
+        self.__EVAL_test__("(car '(-1 1 5 -3 2 -4))", -1)
+        self.__EVAL_test__("(cdr '(-1 1 5 -3 2 -4))", [1, 5, -3, 2, -4])
+        self.__EVAL_test__("(list -1 1 5 -3 2 -4)", [-1, 1, 5, -3, 2, -4])
 
     def test_string_functions(self):
-        self.__EVAL_test__('(join " " \'("OH" "LOL" "YA"))', Atom("OH LOL YA"))
-        self.__EVAL_test__('(str \'("OH" "LOL" "YA"))', Atom('("OH" "LOL" "YA")'))
-        self.__EVAL_test__('(str "OH" "LOL" "YA" 1)', Atom('"OH" "LOL" "YA" 1'))
+        self.__EVAL_test__('(join " " \'("OH" "LOL" "YA"))', "OH LOL YA")
+        self.__EVAL_test__('(str \'("OH" "LOL" "YA"))', '("OH" "LOL" "YA")')
+        self.__EVAL_test__('(str "OH" "LOL" "YA" 1)', '"OH" "LOL" "YA" 1')
 
     def test_other_functions(self):
-        self.__EVAL_test__("(name 'a)", Atom("a"))
-        self.__EVAL_test__("(progn 1 2 3)", Atom(3))
-        self.__EVAL_test__('(int "234")', Atom(234))
-        self.__EVAL_test__('(int 3.14)', Atom(3))
-        self.__EVAL_test__('(int 3.14)', Atom(3))
-        self.__EVAL_test__('(prompt)', Atom("lis.py> "))
+        self.__EVAL_test__("(name 'a)", "a")
+        self.__EVAL_test__("(progn 1 2 3)", 3)
+        self.__EVAL_test__('(int "234")', 234)
+        self.__EVAL_test__('(int 3.14)', 3)
+        self.__EVAL_test__('(int 3.14)', 3)
+        self.__EVAL_test__('(prompt)', "lis.py> ")
 
     # def test_label(self):
         # self.__EVAL_test__(

@@ -3,6 +3,10 @@ from dataclasses import dataclass
 
 
 class Symbol(str):
+    @property
+    def name(self):
+        return str(self)
+    
     def __hash__(self):
         return hash(("Symbol", str(self)))
 
@@ -16,15 +20,8 @@ class Keyword(str):
     def __repr__(self):
         return f":{self}"
 
-@dataclass
-class Atom:
-    value: Union[bool, int, float]
-
-    def __hash__(self):
-        return hash(("Atom", self.value))
-
-    def __repr__(self):
-        return f"<Atom {repr(self.value)}>"
+def is_atom(x):
+    return isinstance(x, int) or isinstance(x, float) or isinstance(x, str)
 
 class Vector(list): pass
 

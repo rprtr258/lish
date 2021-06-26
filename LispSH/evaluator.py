@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Any
 
 from LispSH.env import global_env, Env
-from LispSH.datatypes import Symbol, Atom, Macro
+from LispSH.datatypes import Symbol, Macro, is_atom
 from LispSH.printer import PRINT
 
 
@@ -44,8 +44,8 @@ def EVAL(x, env=global_env):
     if isinstance(x, Symbol):
         # x
         # but x is symbol
-        return env.get(str(x))
-    elif isinstance(x, Atom):
+        return env.get(x)
+    elif is_atom(x):
         # x
         # but x is atom (e.g. number)
         return x
@@ -68,7 +68,7 @@ def EVAL(x, env=global_env):
             while i + 1 < len(predicates_exps):
                 predicate, expression = predicates_exps[i : i + 2]
                 i += 2
-                if EVAL(predicate, env).value:
+                if EVAL(predicate, env):
                     return EVAL(expression, env)
             # if default value is given
             if len(predicates_exps) % 2 == 1:
@@ -90,9 +90,8 @@ def EVAL(x, env=global_env):
             return [] # TODO: nil
         elif form_word == Symbol("set!"):
             # (set! var exp)
-            _, var, exp = x
-            assert isinstance(var, Symbol), "Definition name is not a symbol"
-            var_name = var
+            _, var_name, exp = x
+            assert isinstance(var_name, Symbol), "Definition name is not a symbol"
             new_var_value = EVAL(exp, env)
             env.find(var_name)[var_name] = new_var_value
             return new_var_value

@@ -1,19 +1,19 @@
-from LispSH.datatypes import Symbol, Atom
+from LispSH.datatypes import Symbol, is_atom
 
 def pr_str_no_escape(exp):
     if exp == []:
         return "nil"
     elif isinstance(exp, Symbol):
         return exp
-    elif isinstance(exp, Atom):
-        if isinstance(exp.value, str):
-            return exp.value
-        if isinstance(exp.value, int) or isinstance(exp.value, float):
-            return str(exp.value)
-        elif isinstance(exp.value, bool):
-            return "true" if exp.value else "false"
+    elif is_atom(exp):
+        if isinstance(exp, str):
+            return exp
+        if isinstance(exp, int) or isinstance(exp, float):
+            return str(exp)
+        elif isinstance(exp, bool):
+            return "true" if exp else "false"
         else:
-            return f"(atom {exp.value})"
+            return f"(atom {exp})"
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
         return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
@@ -35,15 +35,15 @@ def pr_str(exp):
         return "nil"
     elif isinstance(exp, Symbol):
         return exp
-    elif isinstance(exp, Atom):
-        if isinstance(exp.value, str):
-            return f'"{_escape(exp.value)}"'
-        if isinstance(exp.value, int) or isinstance(exp.value, float):
-            return str(exp.value)
-        elif isinstance(exp.value, bool):
-            return "true" if exp.value else "false"
+    elif is_atom(exp):
+        if isinstance(exp, str):
+            return f'"{_escape(exp)}"'
+        if isinstance(exp, int) or isinstance(exp, float):
+            return str(exp)
+        elif isinstance(exp, bool):
+            return "true" if exp else "false"
         else:
-            return f"(atom {exp.value})"
+            return f"(atom {exp})"
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
         return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):

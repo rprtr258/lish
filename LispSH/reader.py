@@ -1,7 +1,7 @@
 from typing import List, Any, Union
 import re
 
-from LispSH.datatypes import Symbol, Atom, Keyword, Vector, Hashmap
+from LispSH.datatypes import Symbol, Keyword, Vector, Hashmap
 
 
 # TODO: remove
@@ -55,14 +55,12 @@ def read_list(reader):
 
 def read_atom(token):
     # str
-    if token[0] == '"': return Atom(token[1:-1])
+    if token[0] == '"': return token[1:-1]
     # bool
-    if token in ["true", "false"]: return Atom(token == "true")
+    if token in ["true", "false"]: return (token == "true")
     if token[0] == ':': return Keyword(token[1:])
-    if re.match(r"-?[0-9]+$", token):
-        return Atom(int(token))
-    if re.match(r"-?[0-9][0-9.]*$", token):
-        return Atom(float(token))
+    if re.match(r"-?[0-9]+$", token): return int(token)
+    if re.match(r"-?[0-9][0-9.]*$", token): return float(token)
     return Symbol(token)
 
 def read_form(reader):

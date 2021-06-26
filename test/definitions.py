@@ -1,9 +1,10 @@
 from context import LispSH
-from LispSH.datatypes import Symbol, Atom
+from LispSH.datatypes import Symbol
 
 NIL = []
-TRUE = Atom(True)
-FALSE = Atom(False)
+# TODO: inline
+TRUE = True
+FALSE = False
 A = Symbol("a")
 B = Symbol("b")
 C = Symbol("c")
