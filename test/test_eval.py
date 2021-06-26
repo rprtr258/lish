@@ -143,10 +143,10 @@ class TestEval(unittest.TestCase):
         self.__eval_test__("(symbol? 11.22)", FALSE)
 
     def test_bool_functions(self):
-        self.__eval_test__("(or True False True)", TRUE)
-        self.__eval_test__("(or False False)", FALSE)
-        self.__eval_test__("(not True)", FALSE)
-        self.__eval_test__("(not False)", TRUE)
+        self.__eval_test__("(or true false true)", TRUE)
+        self.__eval_test__("(or false false)", FALSE)
+        self.__eval_test__("(not true)", FALSE)
+        self.__eval_test__("(not false)", TRUE)
 
     def test_list_operations(self):
         self.__eval_test__("(cons 1 2 3 '())", [Atom(1), Atom(2), Atom(3)])

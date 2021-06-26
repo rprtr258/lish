@@ -35,8 +35,8 @@ def get_atom_value(atom): return atom.value
 def atom_or_symbol(token):
     if token[0] == '"' and token[-1] == '"' and len(token) >= 2:
         return Atom(token[1 : -1])
-    if token in ["True", "False"]:
-        return Atom(token == "True")
+    if token in ["true", "false"]:
+        return Atom(token == "true")
     if token in [True, False]:
         return Atom(token)
     try:
@@ -434,16 +434,25 @@ def schemestr(exp):
         print("WTF IS THIS:", exp)
         return str(exp)
 
+# TODO: add Ctrl-D support
+# TODO: Shift-Enter for multiline input
 def repl():
     "A prompt-read-eval-print loop."
-    while True:
-        input_line = input(eval([Symbol("prompt")]).value)
-        if input_line.strip() == "":
+    from sys import stdin, stdout
+    print(eval([Symbol("prompt")]).value, end="")
+    stdout.flush()
+    for line in stdin:
+        prompt = eval([Symbol("prompt")]).value
+        if line.strip() == "":
+            print(prompt, end="")
+            stdout.flush()
             continue
-        input_line = fix_parens(input_line)
-        val = eval(parse(input_line))
+        line = fix_parens(line)
+        val = eval(parse(line))
         if val != []: # TODO: nil
             print(schemestr(val))
+            print(prompt, end="")
+            stdout.flush()
 
 ################ File load
 
