@@ -1,7 +1,7 @@
 from typing import List, Any, Union
 import re
 
-from LispSH.datatypes import Symbol, Atom, Keyword
+from LispSH.datatypes import Symbol, Atom, Keyword, Vector, Hashmap
 
 
 # TODO: remove
@@ -42,11 +42,16 @@ def tokenize(s: str) -> List[str]:
 
 def read_list(reader):
     L = []
-    reader.next() # remove '('
-    while reader.peek() != ')':
+    begin = reader.next()
+    constructor, end = {
+        '(': (list, ')'),
+        '[': (Vector, ']'),
+        '{': (Hashmap, '}')
+    }[begin]
+    while reader.peek() != end:
         L.append(read_form(reader))
-    reader.next() # remove ')'
-    return L
+    reader.next() # remove end
+    return constructor(L)
 
 def read_atom(token):
     # str
@@ -71,19 +76,27 @@ def read_form(reader):
         raise SyntaxError("Unexpected end of input")
     token = reader.peek()
     # LIST
-    if token == '(':
+    if token in ['(', '[', '{']:
         return read_list(reader)
+    # COMMENT
+    if token[0] == ";": return []
     # READER MACROSES
     token = reader.next() # remove reader macro
     if token == "'": return ["quote", read_form(reader)]
     if token == '`': return ["quasiquote", read_form(reader)]
     if token == '~': return ["unquote", read_form(reader)]
     if token == "~@": return ["splice-unquote", read_form(reader)]
+    if token == "@": return ["deref", read_form(reader)]
+    if token == "^":
+        meta = read_list(reader)
+        data = read_form(reader)
+        return ["with-meta", data, meta]
     if token == CLOSE_PAREN:
         raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
     # ATOM
     return read_atom(token)
 
+# TODO: make normal
 def check_parens(tokens):
     if tokens.count('(') != tokens.count(')'):
         raise SyntaxError("Different number of open and close parens")

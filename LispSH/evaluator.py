@@ -44,7 +44,7 @@ def EVAL(x, env=global_env):
     if isinstance(x, Symbol):
         # x
         # but x is symbol
-        return env.get(x)
+        return env.get(str(x))
     elif isinstance(x, Atom):
         # x
         # but x is atom (e.g. number)

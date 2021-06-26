@@ -3,7 +3,7 @@ import unittest
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
 from LispSH.reader import READ, tokenize
-from LispSH.datatypes import Symbol, Atom, Keyword
+from LispSH.datatypes import Symbol, Atom, Keyword, Vector, Hashmap
 
 
 class TestTokenizer(unittest.TestCase):
@@ -14,19 +14,13 @@ class TestTokenizer(unittest.TestCase):
     def test_atom_quote_list(self):
         self.__tokenizer_test__("(atom '(a b c))", [ATOM_SYMBOL, [QUOTE_SYMBOL, [A, B, C]]])
 
-    def test_list_border_spaces(self):
+    def test_list_spaces(self):
         self.__tokenizer_test__("(  a b )", [A, B])
-
-    def test_list_inner_spaces(self):
         self.__tokenizer_test__("(a  b    c)", [A, B, C])
-
-    def test_list_outer_spaces(self):
         self.__tokenizer_test__("   (a b)  ", [A, B])
 
-    def test_eq_quoted_equal(self):
+    def test_eq(self):
         self.__tokenizer_test__("(eq? 'a 'a)", [EQ_SYMBOL, QA, QA])
-
-    def test_eq_quoted_nils(self):
         self.__tokenizer_test__("(eq? '() '())", [EQ_SYMBOL, QNIL, QNIL])
 
     def test_quoted_nil(self):
@@ -35,6 +29,40 @@ class TestTokenizer(unittest.TestCase):
     def test_keyword(self):
         self.__tokenizer_test__(":ab", Keyword("ab"))
         self.__tokenizer_test__("(:ab :cd :kwwww)", [Keyword("ab"), Keyword("cd"), Keyword("kwwww")])
+
+    def test_vector(self):
+        self.__tokenizer_test__("[]", Vector([]))
+        self.__tokenizer_test__("   [    ]  ", Vector([]))
+        self.__tokenizer_test__("[+ 1 2]", Vector([Symbol("+"), Atom(1), Atom(2)]))
+        self.__tokenizer_test__("[[a b]]", Vector([Vector([A, B])]))
+        self.__tokenizer_test__("[+ 1 [* a b]]", Vector([Symbol("+"), Atom(1), Vector([Symbol("*"), A, B])]))
+        self.__tokenizer_test__("   [   +   1   [ *   a   b  ]   ]    ", Vector([Symbol("+"), Atom(1), Vector([Symbol("*"), A, B])]))
+        self.__tokenizer_test__("([])", [Vector([])])
+
+    def test_hashmap(self):
+        A_A, A_B, A_C = map(Atom, ["a", "b", "c"])
+        self.__tokenizer_test__("{}", Hashmap([]))
+        self.__tokenizer_test__("  {   } ", Hashmap([]))
+        self.__tokenizer_test__('{"abc" 1}', Hashmap([Atom("abc"), Atom(1)]))
+        self.__tokenizer_test__('{"a" {"b" 2}}', Hashmap([A_A, Hashmap([A_B, Atom(2)])]))
+        self.__tokenizer_test__('{"a" {"b" {"c" 3}}}', Hashmap([A_A, Hashmap([A_B, Hashmap([A_C, Atom(3)])])]))
+        self.__tokenizer_test__('{  "a"  {"b"   {  "cde"     3   }  }}', Hashmap([A_A, Hashmap([A_B, Hashmap([Atom("cde"), Atom(3)])])]))
+        self.__tokenizer_test__('{"a1" 1 "a2" 2 "a3" 3}', Hashmap([Atom("a1"), Atom(1), Atom("a2"), Atom(2), Atom("a3"), Atom(3)]))
+        self.__tokenizer_test__('{  :a  {:b   {  :cde     3   }  }}', Hashmap([Keyword("a"), Hashmap([Keyword("b"), Hashmap([Keyword("cde"), Atom(3)])])]))
+        self.__tokenizer_test__('{"1" 1}', Hashmap([Atom("1"), Atom(1)]))
+        self.__tokenizer_test__("({})", [Hashmap([])])
+
+    def test_comments(self):
+        self.__tokenizer_test__(";wow", [])
+        self.__tokenizer_test__(" ;;ff", [])
+        self.__tokenizer_test__("1 ;;ff", Atom(1))
+        self.__tokenizer_test__("1; ff", Atom(1))
+
+    def test_deref(self):
+        self.__tokenizer_test__("@a", [Symbol("deref"), A])
+
+    def test_deref(self):
+        self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), Vector([Atom(1), Atom(2), Atom(3)]), Hashmap([Atom("a"), Atom(1)])])
 
     def test_quote(self):
         self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])

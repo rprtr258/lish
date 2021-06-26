@@ -68,6 +68,7 @@ def default_env():
         "-": NamedFunction("-", lambda *x: reduce(lambda a, b: Atom(a.value - b.value), x[1:], x[0]) if len(x) > 1 else Atom(-x[0].value)),
         "*": NamedFunction("*", lambda *x: reduce(lambda a, b: Atom(a.value * b.value), x[1:], x[0])),
         "/": NamedFunction("/", lambda *x: reduce(lambda a, b: Atom(a.value // b.value), x[1:], x[0])),
+
         # MATH FUNCTIONS
         "rand": NamedFunction("rand", lambda:Atom(random())),
         "abs": NamedFunction("abs", lambda x: Atom(abs(x.value))),
@@ -75,6 +76,7 @@ def default_env():
         "max": NamedFunction("max", lambda *x: reduce(lambda a, b: Atom(max(a.value, b.value)), x[1:], x[0])),
         "min": NamedFunction("min", lambda *x: reduce(lambda a, b: Atom(min(a.value, b.value)), x[1:], x[0])),
         "round": NamedFunction("round", lambda x: Atom(round(x.value))),
+
         # COMPARISON OPERATORS
         ">": NamedFunction(">", lambda *x: Atom(all(map(lambda xy: op.gt(xy[0].value, xy[1].value), zip(x, x[1:]))))),
         "<": NamedFunction("<", lambda *x: Atom(all(map(lambda xy: op.lt(xy[0].value, xy[1].value), zip(x, x[1:]))))),
@@ -87,9 +89,11 @@ def default_env():
         "atom?": NamedFunction("atom?", lambda x: Atom(isinstance(x, Atom) or isinstance(x, Symbol) or isinstance(x, Keyword) or x == [])),
         "symbol?": lambda x: Atom(isinstance(x, Symbol)),
         "list?": NamedFunction("list?", lambda x: Atom(isinstance(x, list))),
+
         # BOOL FUNCTIONS
         "or": NamedFunction("or", lambda *x: reduce((lambda x, y: Atom(x.value or y.value)), x)),
         "not": NamedFunction("not", lambda x: Atom(op.not_(x.value))),
+
         # LIST OPERATIONS
         "cons": NamedFunction("cons", cons),
         "map": NamedFunction("map", lambda f, x: list(map(f, x))),
@@ -99,12 +103,15 @@ def default_env():
         "car": NamedFunction("car", lambda x: x[0]),
         "cdr": NamedFunction("cdr", lambda x: x[1:]),
         "list": NamedFunction("list", lambda *x: list(x)),
+
         # STRING FUNCTIONS
         "join": NamedFunction("join", lambda d, x: Atom(d.value.join(map(get_atom_value, x)))),
         "str": NamedFunction("str", lambda *x: Atom(" ".join(map(PRINT, x)))),
+
         # FILE OPERATIONS
         # TODO: tests
         "path-getsize": NamedFunction("path-getsize", lambda x: Atom(path.getsize(x.value))),
+
         # OTHER FUNCTIONS
         "ls-r": NamedFunction("ls-r", lambda x: [[Atom(dir_name), list(map(Atom, files))] for dir_name, _, files in walk(x.value)]),
         "echo":    NamedFunction("echo", echo),
