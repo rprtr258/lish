@@ -80,13 +80,21 @@ def read_form(reader):
         return read_atom(reader)
 
 def check_parens(tokens):
+    if tokens[0] not in ['(', "'"]:
+        raise SyntaxError("Not a form")
+    if tokens[-1] != ')':
+        raise SyntaxError("Form is not closed or there is garbage after form")
+    parens = list(filter(lambda x: x in ['(', ')'], tokens))
     paren_degree = 0
-    for token in tokens:
-        if token == '(':
+    for i, paren in enumerate(parens):
+        if paren == '(':
             paren_degree += 1
-        elif token == ')':
+        elif paren == ')':
             paren_degree -= 1
-    print(paren_degree)
+            if paren_degree < 0:
+                raise SyntaxError(f"Redundant close paren")
+            if paren_degree == 0 and i < len(parens) - 1 and any(map(lambda x: x in ['('], parens[i + 1:])):
+                raise SyntaxError(f"Another form found while parsing")
     if paren_degree != 0:
         if paren_degree > 0:
             raise SyntaxError(f"There are {paren_degree} open parens left unclosed")

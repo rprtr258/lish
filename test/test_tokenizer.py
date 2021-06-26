@@ -50,12 +50,22 @@ class TestTokenizer(unittest.TestCase):
     def test_not_enough_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b")
-        self.assertEqual(str(cm.exception), "There are 1 open parens left unclosed")
+        self.assertEqual(str(cm.exception), "Form is not closed or there is garbage after form")
 
     def test_too_much_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b))")
-        self.assertEqual(str(cm.exception), "There are 1 redundant closed parens")
+        self.assertEqual(str(cm.exception), "Redundant close paren")
+
+    def test_unclosed_string(self):
+        with self.assertRaises(SyntaxError) as cm:
+            READ('(echo )"abc)')
+        self.assertEqual(str(cm.exception), "Form is not closed or there is garbage after form")
+
+    def test_two_forms(self):
+        with self.assertRaises(SyntaxError) as cm:
+            READ('(+ 1 2)(* 2 3)')
+        self.assertEqual(str(cm.exception), "Another form found while parsing")
 
     def test_tokenize(self):
         self.assertEqual(
