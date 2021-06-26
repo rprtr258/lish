@@ -8,7 +8,7 @@ def PRINT(exp):
     if exp == []:
         return "nil"
     elif isinstance(exp, Symbol):
-        return exp.name
+        return exp
     elif isinstance(exp, Atom):
         if isinstance(exp.value, str):
             return f'"{_escape(exp.value)}"'

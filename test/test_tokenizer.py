@@ -2,13 +2,13 @@ import unittest
 
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
-from LispSH.reader import read_from_tokens, tokenize, no_quote_replace
+from LispSH.reader import READ, read_form, tokenize, Reader
 from LispSH.datatypes import Symbol, Atom
 
 
 class TestTokenizer(unittest.TestCase):
     def __tokenizer_test__(self, test_program, expected_result):
-        actual_result = read_from_tokens(tokenize(test_program))
+        actual_result = READ(test_program)
         self.assertEqual(actual_result, expected_result)
 
     def test_atom_quote_list(self):
@@ -48,36 +48,30 @@ class TestTokenizer(unittest.TestCase):
                     [Symbol("cons"), QA, Symbol("x")]]]])
 
     def test_not_enough_close_parens(self):
-        with self.assertRaises(ValueError) as cm:
-            read_from_tokens(tokenize("(a b"))
-        self.assertEqual(str(cm.exception), "Not enough close parens found")
+        with self.assertRaises(SyntaxError) as cm:
+            read_form(Reader(tokenize("(a b")))
+        self.assertEqual(str(cm.exception), "Unexpected end of input")
 
-    def test_no_quote_replace(self):
-        self.assertEqual(
-            no_quote_replace(
-                """a "b (("( c)")(")""", '(', ' ( '),
-                """a "b ((" (  c)")(")""")
-        # TODO: fix
-        # self.assertEqual(
-            # no_quote_replace("\"\" \"(\"", '(', ' ( '),
-            # "\"\\\"\" \"(\"")
+    # def test_too_much_close_parens(self):
+        # with self.assertRaises(SyntaxError) as cm:
+            # read_form(Reader(tokenize("(a b))")))
+        # self.assertEqual(str(cm.exception), "Not enough close parens found")
 
     def test_tokenize(self):
         self.assertEqual(
-            tokenize("""(+ "a" "(a b))))")"""),
-            ['(', '+', "\"a\"", "\"(a b))))\"", ')'])
-        SLASH = '\\'
-        DQUOTE = '"'
+            tokenize('(+ "a" "(a b))))")'),
+            ['(', '+', '"a"', '"(a b))))"', ')'])
+        M_SLASH = '\\\\'
+        M_DQUOTE = '\\"'
         self.assertEqual(
-            tokenize(f"(+ {DQUOTE}{SLASH}{SLASH}{SLASH}{DQUOTE}{DQUOTE} {DQUOTE}abc{DQUOTE})"),
-            ['(', '+', f"{DQUOTE}{SLASH}{DQUOTE}{DQUOTE}", f"{DQUOTE}abc{DQUOTE}", ')'])
-        # TODO: fix
-        # self.assertEqual(
-            # tokenize("""(+ "(" "\\"" ")" "\\\\")"""),
-            # ['(', '+', '"("', '"""', '")"', '"\\"', ')'])
+            tokenize(f'(+ "{M_SLASH}{M_DQUOTE}" "abc")'),
+            ['(', '+', f'"{M_SLASH}{M_DQUOTE}"', f'"abc"', ')'])
+        self.assertEqual(
+            tokenize(f'(+ "(" "{M_DQUOTE}" ")" "{M_SLASH}")'),
+            ['(', '+', '"("', f'"{M_DQUOTE}"', '")"', f'"{M_SLASH}"', ')'])
 
     def test_string(self):
-        self.__tokenizer_test__("""(+ "a" "(a b))))")""", [Symbol("+"), Atom("a"), Atom("(a b))))")])
+        self.__tokenizer_test__('(+ "a" "(a b))))")', [Symbol("+"), Atom("a"), Atom("(a b))))")])
 
 if __name__ == '__main__':
     unittest.main()

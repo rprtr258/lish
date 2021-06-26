@@ -33,9 +33,9 @@ def log_eval(eval):
 
 def macroexpand(macroform, env):
     macroname, *exps = macroform
-    res = env.get(macroname.name)
+    res = env.get(macroname)
     macroargs, macrobody = res.args, res.body
-    return EVAL(macrobody, Env([arg.name for arg in macroargs], exps, env))
+    return EVAL(macrobody, Env(macroargs, exps, env))
 
 #@log_eval
 # TODO: remove global_env from global vars
@@ -44,12 +44,12 @@ def EVAL(x, env=global_env):
     if isinstance(x, Symbol):
         # x
         # but x is symbol
-        return env.get(x.name)
+        return env.get(x)
     elif isinstance(x, Atom):
         # x
         # but x is atom (e.g. number)
         return x
-    elif isinstance(x[0], Symbol) and (res := env.get(x[0].name)) and isinstance(res, Macro):
+    elif isinstance(x[0], Symbol) and (res := env.get(x[0])) and isinstance(res, Macro):
         # (macroname exps...)
         macroexpansion = macroexpand(x, env)
         return EVAL(macroexpansion, env)
@@ -63,12 +63,7 @@ def EVAL(x, env=global_env):
             # (atom exp)
             _, exp = x
             exp = EVAL(exp, env)
-            return Atom(\
-                isinstance(exp, Atom) or \
-                isinstance(exp, Symbol) or \
-                isinstance(exp, str) or \
-                isinstance(exp, bool) or \
-                exp == [])
+            return Atom(isinstance(exp, Atom) or exp == [])
         elif form_word == Symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
             # (cond p1 e1 p2 e2 ... pn en)
             # or
@@ -83,11 +78,12 @@ def EVAL(x, env=global_env):
             # if default value is given
             if len(predicates_exps) % 2 == 1:
                 return EVAL(predicates_exps[-1], env)
-        elif form_word == Symbol("define"):         # (define var exp)
+        elif form_word == Symbol("define"):
+            # (define var exp)
             _, var, exp = x
             assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {PRINT(var)}"""
-            env[var.name] = EVAL(exp, env)
-            return env[var.name]
+            env[var] = EVAL(exp, env)
+            return env[var]
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
             _, macroform = x
@@ -95,13 +91,13 @@ def EVAL(x, env=global_env):
         elif form_word == Symbol("defmacro"):         # (defmacro macroname (args...) body)
             _, macroname, args, body = x
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
-            env[macroname.name] = Macro(args, body)
+            env[macroname] = Macro(args, body)
             return [] # TODO: nil
         elif form_word == Symbol("set!"):
             # (set! var exp)
             _, var, exp = x
             assert isinstance(var, Symbol), "Definition name is not a symbol"
-            var_name = var.name
+            var_name = var
             new_var_value = EVAL(exp, env)
             env.find(var_name)[var_name] = new_var_value
             return new_var_value
@@ -110,7 +106,7 @@ def EVAL(x, env=global_env):
             _, args, body = x
             for arg in args:
                 assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {PRINT(arg)}"
-            return Procedure([arg.name for arg in args], body, env)
+            return Procedure(args, body, env)
         elif form_word == Symbol("apply"):
             # (apply f (args...))
             _, proc, args = x

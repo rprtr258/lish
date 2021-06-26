@@ -5,6 +5,7 @@ from LispSH.datatypes import Symbol
 from LispSH.evaluator import EVAL
 from LispSH.printer import PRINT
 
+# TODO: move to reader
 def fix_parens(cmd_line):
     cmd_line = cmd_line.strip()
     if cmd_line[0] not in [OPEN_PAREN, QUOTE]:
@@ -28,8 +29,10 @@ def rep(line):
 
 # TODO: add Ctrl-D support
 # TODO: Shift-Enter for multiline input
+# TODO: line editing, parens?
 def repl():
     "A prompt-read-eval-print loop."
+    return
     while True:
         try:
             print_prompt()
@@ -41,22 +44,21 @@ def repl():
             print(e)
 
 ################ File load
-
+# TODO: move to some load function
 def load_file(filename):
     with open(filename, "r") as fd:
         deg = 0
         cmd = ""
         for line in fd:
-            line = line.strip("\n") # remove newline
             line = remove_comment(line)
-            line = line.strip()
+            line = line.strip("\n").strip()
             cmd += ' ' + line
             deg += line.count(OPEN_PAREN) - line.count(CLOSE_PAREN)
             if deg == 0 and cmd.strip() != "":
-                EVAL(READ(cmd))
+                rep(cmd)
                 cmd = ""
         if deg == 0:
             if cmd.strip() != "":
-                EVAL(READ(cmd))
+                rep(cmd)
         else:
             raise ValueError(f"There are {deg} close parens required")

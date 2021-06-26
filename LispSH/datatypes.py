@@ -2,18 +2,16 @@ from typing import List, Any, Union
 from dataclasses import dataclass
 
 
+class Symbol(str): pass
+
 @dataclass
-class Symbol:
-    name: str
+class Atom(object):
+    value: Union[bool, int, float]
 
 @dataclass
 class Macro:
     args: List[Symbol]
     body: List[Any]
-
-@dataclass
-class Atom:
-    value: Union[bool, int, float]
 
 def get_atom_value(atom): return atom.value
 
