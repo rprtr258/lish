@@ -2,7 +2,8 @@ import unittest
 
 from definitions import NIL
 from context import LispSH
-from LispSH import schemestr, Symbol, Atom
+from LispSH.printer import schemestr
+from LispSH.datatypes import Symbol, Atom
 
 
 class TestSchemestr(unittest.TestCase):

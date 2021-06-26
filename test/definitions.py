@@ -1,5 +1,5 @@
 from context import LispSH
-from LispSH import Symbol, Atom
+from LispSH.datatypes import Symbol, Atom
 
 NIL = []
 TRUE = Atom(True)

@@ -2,7 +2,10 @@ import unittest
 
 from definitions import NIL, A, B, C
 from context import LispSH
-from LispSH import parse, eval, default_env, Atom, Symbol
+from LispSH.reader import parse
+from LispSH.evaluator import eval
+from LispSH.env import default_env
+from LispSH.datatypes import Atom, Symbol
 
 
 class TestRepl(unittest.TestCase):

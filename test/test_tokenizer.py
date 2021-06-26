@@ -2,7 +2,8 @@ import unittest
 
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
-from LispSH import read_from_tokens, tokenize, Symbol, Atom, no_quote_replace
+from LispSH.reader import read_from_tokens, tokenize, no_quote_replace
+from LispSH.datatypes import Symbol, Atom
 
 
 class TestTokenizer(unittest.TestCase):

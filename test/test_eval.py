@@ -2,7 +2,9 @@ import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
 from context import LispSH
-from LispSH import parse, eval, Symbol, Atom
+from LispSH.reader import parse
+from LispSH.evaluator import eval
+from LispSH.datatypes import Symbol, Atom
 
 
 class TestEval(unittest.TestCase):
