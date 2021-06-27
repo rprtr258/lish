@@ -109,9 +109,25 @@ def EVAL(ast, env):
             return ast
         form_word = ast[0]
         if form_word == Symbol("quote"):
-            # (quote exp)
+            # (quote exp) or 'exp
             _, exp = ast
             return exp
+        if form_word == Symbol("quasiquote"):
+            # (quasiquote exp) or `exp
+            _, exp = ast
+            if isinstance(exp, list):
+                if len(exp) == 2 and exp[0] == Symbol("unquote"):
+                    return exp[1]
+                else:
+                    res = []
+                    for x in exp[-1::-1]:
+                        if isinstance(x, list) and len(x) == 2 and x[0] == Symbol("splice-unquote"):
+                            return [Symbol("+"), x, res]
+                        else:
+                            return ["+", res, [EVAL([Symbol("quasiquote"), x], env)]]
+                    return res
+            elif is_atom(exp) or isinstance(exp, Hashmap):
+                return [Symbol("quasiquote"), exp]
         elif isinstance(ast[0], Symbol) and (res := env.get(ast[0])) and isinstance(res, Macro):
             # (macroname exps...)
             macroexpansion = macroexpand(ast, env)

@@ -4,21 +4,14 @@
     (cond
         (nil? xs) '()
         (cons (f (car xs)) (map f (cdr xs))))))
-;(define map (lambda (f xs)
-;    (loop (res '() ys xs)
-;        (cond
-;            (nil? ys) '()
-;            (recur (cons (f (car ys)) res) (cdr ys))))))
 
-(defmacro swap! (x f) (list 'set! x (list f x)))
+(defmacro swap! (x f) ['set! x [f x]])
 
 (defmacro defun (f args body)
-    (list 'set! f
-        (list 'lambda args body)))
+    ['set! f
+        ['lambda args body]])
 (defmacro if (p x y)
-    (list 'cond
-        p x
-        y))
+    ['cond p x y])
 
 
 ; TODO: change to variadic func
