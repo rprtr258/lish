@@ -1,7 +1,7 @@
 from typing import List, Any, Union
 import re
 
-from LispSH.datatypes import Symbol, Keyword, Vector, Hashmap
+from LispSH.datatypes import Symbol, Keyword, Hashmap
 
 
 # TODO: remove
@@ -10,7 +10,7 @@ CLOSE_PAREN = ')'
 QUOTE = '\''
 # TODO: check , in the beginning of the line
 # TODO: check "? in the end of string
-TOKEN_REGEX = re.compile(r"""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]+)""")
+TOKEN_REGEX = re.compile(r"""[\s,]*(~@|[\[\]{}()'`~^]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]+)""")
 
 
 # TODO: remove, use tokenize instead
@@ -45,7 +45,7 @@ def read_list(reader):
     begin = reader.next()
     constructor, end = {
         '(': (list, ')'),
-        '[': (Vector, ']'),
+        '[': (lambda x: [Symbol("list")] + x, ']'),
         '{': (Hashmap, '}')
     }[begin]
     while reader.peek() != end:
@@ -81,7 +81,6 @@ def read_form(reader):
     if token == '`': return [Symbol("quasiquote"), read_form(reader)]
     if token == '~': return [Symbol("unquote"), read_form(reader)]
     if token == "~@": return [Symbol("splice-unquote"), read_form(reader)]
-    if token == "@": return [Symbol("deref"), read_form(reader)]
     if token == "^":
         meta = read_list(reader)
         data = read_form(reader)
@@ -106,7 +105,7 @@ def check_parens(tokens):
                 '}': '{'
             }[token]
             if len(stack) == 0 or stack.pop() != close_paren:
-                raise SyntaxError(f"Unexpected {paren}")
+                raise SyntaxError(f"Unexpected {token}")
     if len(stack) != 0:
         raise SyntaxError(f"There are {stack} parens unclosed")
 

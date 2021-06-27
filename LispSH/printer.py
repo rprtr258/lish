@@ -1,4 +1,4 @@
-from LispSH.datatypes import Symbol, Vector, Hashmap, is_atom
+from LispSH.datatypes import Symbol, Hashmap, is_atom
 
 # TODO: WHY THIS EXISTS?
 def pr_str_no_escape(exp):
@@ -6,6 +6,8 @@ def pr_str_no_escape(exp):
         return "nil"
     elif isinstance(exp, Symbol):
         return exp
+    elif isinstance(exp, Hashmap):
+        return '{' + ' '.join(map(lambda kv: pr_str_no_escape(kv[0]) + ' ' + pr_str_no_escape(kv[1]), exp.items())) + '}'
     elif is_atom(exp):
         if isinstance(exp, str):
             return exp
@@ -38,8 +40,6 @@ def pr_str(exp):
         return "nil"
     elif isinstance(exp, Symbol):
         return exp
-    elif isinstance(exp, Vector):
-        return '[' + ' '.join(map(pr_str, exp)) + ']'
     elif isinstance(exp, Hashmap):
         return '{' + ' '.join(map(lambda kv: pr_str(kv[0]) + ' ' + pr_str(kv[1]), exp.items())) + '}'
     elif is_atom(exp):

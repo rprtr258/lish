@@ -1,4 +1,4 @@
-from sys import stdin, stdout
+from sys import stdin, stdout, argv
 
 from LispSH.reader import remove_comment, OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
 from LispSH.datatypes import Symbol
@@ -32,6 +32,10 @@ def rep(line, env):
 # TODO: line editing, parens?
 def repl(env):
     "A prompt-read-eval-print loop."
+    env.set(Symbol("*argv*"), argv)
+    env.set(Symbol("eval"), lambda ast: EVAL(ast, env))
+    rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) ")")))))', env)
+    rep('(load-file ".lisprc")', env)
     while True:
         try:
             print_prompt(env)
@@ -42,23 +46,3 @@ def repl(env):
         except Exception as e:
             import logging
             logging.exception(f"{type(e).__name__}: {e}")
-
-################ File load
-# TODO: move to some load function
-def load_file(filename, env):
-    with open(filename, "r") as fd:
-        deg = 0
-        cmd = ""
-        for line in fd:
-            line = remove_comment(line)
-            line = line.strip("\n").strip()
-            cmd += ' ' + line
-            deg += line.count(OPEN_PAREN) - line.count(CLOSE_PAREN)
-            if deg == 0 and cmd.strip() != "":
-                rep(cmd, env)
-                cmd = ""
-        if deg == 0:
-            if cmd.strip() != "":
-                rep(cmd, env)
-        else:
-            raise ValueError(f"There are {deg} close parens required")

@@ -2,6 +2,17 @@ from LispSH.datatypes import Symbol
 from LispSH.core import ns
 
 
+class NamedFunction:
+    def __init__(self, name, body):
+        self.name = name
+        self.body = body
+
+    def __call__(self, *args, **kwargs):
+        return self.body(*args, **kwargs)
+
+    def __repr__(self):
+        return f"#{self.name}"
+
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
     def __init__(self, binds=[], exprs=[], outer=None):
@@ -33,5 +44,7 @@ def default_env():
     "An environment with some Scheme standard procedures."
     env = Env()
     # env.update(vars(math)) # sin, cos, sqrt, pi, ...
-    env.update(zip(map(Symbol, ns.keys()), ns.values()))
+    env.update({
+        Symbol(k): NamedFunction(k, v)
+        for k, v in ns.items()})
     return env

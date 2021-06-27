@@ -1,11 +1,11 @@
 from typing import List, Union, Any
 
 from LispSH.env import Env
-from LispSH.datatypes import Symbol, Vector, Hashmap, is_atom
+from LispSH.datatypes import Symbol, Hashmap, is_atom
 from LispSH.printer import PRINT
 
 
-Body = Union[List["Body"], Symbol, Vector, Hashmap, int, float, str]
+Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
 
 def FunctionCallError(proc, args, e):
@@ -94,8 +94,6 @@ def eval_ast(ast, env):
         # ast
         # but ast is atom (number or string)
         return ast
-    elif isinstance(ast, Vector):
-        return Vector([EVAL(x, env) for x in ast])
     elif isinstance(ast, Hashmap):
         res = []
         for k, v in ast.items():

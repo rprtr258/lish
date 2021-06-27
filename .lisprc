@@ -10,6 +10,7 @@
 ;            (nil? ys) '()
 ;            (recur (cons (f (car ys)) res) (cdr ys))))))
 
+(defmacro swap! (x f) (list 'set! x (list f x)))
 
 (defmacro defun (f args body)
     (list 'set! f

@@ -23,8 +23,6 @@ class Keyword(str):
 def is_atom(x):
     return isinstance(x, int) or isinstance(x, float) or isinstance(x, str)
 
-class Vector(list): pass
-
 class Hashmap(dict):
     def __init__(self, keys_vals):
         assert len(keys_vals) % 2 == 0

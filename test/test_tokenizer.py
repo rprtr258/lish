@@ -3,7 +3,7 @@ import unittest
 from context import LispSH
 from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
 from LispSH.reader import READ, tokenize
-from LispSH.datatypes import Symbol, Keyword, Vector, Hashmap
+from LispSH.datatypes import Symbol, Keyword, Hashmap
 
 
 class TestTokenizer(unittest.TestCase):
@@ -31,13 +31,13 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__("(:ab :cd :kwwww)", [Keyword("ab"), Keyword("cd"), Keyword("kwwww")])
 
     def test_vector(self):
-        self.__tokenizer_test__("[]", Vector([]))
-        self.__tokenizer_test__("   [    ]  ", Vector([]))
-        self.__tokenizer_test__("[+ 1 2]", Vector([Symbol("+"), 1, 2]))
-        self.__tokenizer_test__("[[a b]]", Vector([Vector([A, B])]))
-        self.__tokenizer_test__("[+ 1 [* a b]]", Vector([Symbol("+"), 1, Vector([Symbol("*"), A, B])]))
-        self.__tokenizer_test__("   [   +   1   [ *   a   b  ]   ]    ", Vector([Symbol("+"), 1, Vector([Symbol("*"), A, B])]))
-        self.__tokenizer_test__("([])", [Vector([])])
+        self.__tokenizer_test__("[]", [Symbol("list")])
+        self.__tokenizer_test__("   [    ]  ", [Symbol("list")])
+        self.__tokenizer_test__("[+ 1 2]", [Symbol("list"), Symbol("+"), 1, 2])
+        self.__tokenizer_test__("[[a b]]", [Symbol("list"), [Symbol("list"), A, B]])
+        self.__tokenizer_test__("[+ 1 [* a b]]", [Symbol("list"), Symbol("+"), 1, [Symbol("list"), Symbol("*"), A, B]])
+        self.__tokenizer_test__("   [   +   1   [ *   a   b  ]   ]    ", [Symbol("list"), Symbol("+"), 1, [Symbol("list"), Symbol("*"), A, B]])
+        self.__tokenizer_test__("([])", [[Symbol("list")]])
 
     def test_hashmap(self):
         A_A, A_B, A_C = "a", "b", "c"
@@ -62,7 +62,7 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__("@a", [Symbol("deref"), A])
 
     def test_deref(self):
-        self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), Vector([1, 2, 3]), Hashmap(["a", 1])])
+        self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), [Symbol("list"), 1, 2, 3], Hashmap(["a", 1])])
 
     def test_quote(self):
         self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])
