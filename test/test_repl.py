@@ -30,6 +30,7 @@ class TestRepl(unittest.TestCase):
 
     def test_if_macro(self):
         self.__test_cmds__([
+            "(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))",
             "(defmacro if (p x y) (list 'cond p x y))",
             ("(if (nil? '()) 1 2)", 1),
             ("(if (nil? '(a)) 1 2)", 2)
@@ -37,6 +38,7 @@ class TestRepl(unittest.TestCase):
 
     def test_defun_macro(self):
         self.__test_cmds__([
+            "(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))",
             "(defmacro if (p x y) (list 'cond p x y))",
             "(defmacro defun (f args body) (list 'set! f (list 'lambda args body)))",
             "(defun rev (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x)))))",
@@ -45,6 +47,7 @@ class TestRepl(unittest.TestCase):
 
     def test_if_in_recursive_function(self):
         self.__test_cmds__([
+            "(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))",
             "(defmacro if (p x y) (list 'cond p x y))",
             "(set! fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
             ("(fact 1)", 1),
@@ -72,12 +75,14 @@ class TestRepl(unittest.TestCase):
 
     def test_anaphoric_lambda(self):
         self.__test_cmds__([
+            "(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))",
             "(defmacro # (& body) (list 'lambda '(%) (cons 'progn body)))",
             ("((# (+ % 2)) 3)", 5)
         ])
 
     def test_triple_print_function(self):
         env = default_env()
+        EVAL(READ("(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))"), env)
         EVAL(READ("(defmacro defun (f args body) (list 'set! f (list 'lambda args body)))"), env)
         EVAL(READ("(defun p3f (x) (list x x x))"), env)
         result = EVAL(READ("(p3f (rand))"), env)
@@ -85,6 +90,7 @@ class TestRepl(unittest.TestCase):
 
     def test_triple_print_macro(self):
         env = default_env()
+        EVAL(READ("(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))"), env)
         EVAL(READ("(defmacro p3m (x) (list 'list x x x))"), env)
         result = EVAL(READ("(p3m (rand))"), env)
         self.assertNotEqual(result[0], result[1])
@@ -93,6 +99,7 @@ class TestRepl(unittest.TestCase):
 
     def test_rev_macro(self):
         self.__test_cmds__([
+            "(setmacro defmacro (lambda (m args body) `(setmacro ~m (lambda ~args ~body))))",
             "(defmacro rev (x) ((defun rev-helper (x) (cond (nil? x) x (+ (rev-helper (cdr x)) (list (car x))))) x))",
             ("(rev (1 str))", "1")
         ])

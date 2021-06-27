@@ -36,7 +36,7 @@ def repl(env):
     "A prompt-read-eval-print loop."
     env[Symbol("*argv*")] = argv
     env[Symbol("eval")] = lambda ast: EVAL(ast, env)
-    rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) ")")))))', env)
+    rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
     rep('(load-file ".lisprc")', env)
     while True:
         try:
@@ -46,7 +46,10 @@ def repl(env):
             line = fix_parens(line)
             print(rep(line, env))
         except Exception as e:
-            print(f"{type(e).__name__}: {e}")
+            if isinstance(e, BaseException):
+                print(f"{type(e).__name__}: {e}")
+            else:
+                print(f"EXCEPTION({type(e)}): {e}")
             print()
             print("=" * 34 + "STACK FRAMES" + "=" * 34)
             print()
@@ -62,11 +65,11 @@ def repl(env):
                     print(f"    {arg}={arg_value}")
                 print("  )")
                 if len(locals) > 0:
-                    print("Locals:")
+                    print("  Locals:")
                     for arg in locals:
                         arg_value = args.locals[arg]
                         print(f"    {arg}={repr(arg_value)}")
                 for code_line in frame.code_context:
-                    print("    " + code_line.strip())
+                    print(f"{'(' + str(frame.lineno) + ')':6s}" + code_line.strip())
                 print("=" * 80)
                 print()

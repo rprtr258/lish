@@ -10,48 +10,15 @@ Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
 def FunctionCallError(proc, args, e):
     form = " ".join(map(PRINT, [proc] + args))
-    error = "Recursed" if isinstance(e, RuntimeError) else e
     return RuntimeError(f"""Error during evaluation ({form}).
 Error is:
-{error}""")
-
-# TODO: abstractize Macro & Procedure
-class Macro:
-    def __init__(self, args: List[Symbol], body: List[Any], env: Env):
-        i = 0
-        self.pos_args = []
-        while i < len(args) and args[i] != "&":
-            self.pos_args.append(args[i])
-            i += 1
-        if i < len(args) and args[i] == "&":
-            assert i + 1 < len(args), "Rest argument is not named"
-            self.rest_arg: Symbol = args[i + 1]
-        else:
-            self.rest_arg = None
-        self.body = body
-        self.env = env
-    
-    def __call__(self, *args):
-        if self.rest_arg is None:
-            return EVAL(self.body, Env(self.pos_args, args, self.env))
-        else:
-            args = list(args)
-            pos_len = len(self.pos_args)
-            fun_args = self.pos_args + [self.rest_arg]
-            fun_exprs = args[:pos_len] + [args[pos_len:]]
-            return EVAL(self.body, Env(fun_args, fun_exprs, self.env))
-
-    def __str__(self):
-        if self.rest_arg is None:
-            return PRINT([Symbol("defmacro"), self.pos_args, self.body])
-        else:
-            return PRINT([Symbol("defmacro"), self.pos_args + [Symbol("&"), self.rest_arg], self.body])
+{e}""")
 
 # TODO: rename to function
 "A user-defined Lisp function."
 class Procedure:
     # TODO: add keyword args
-    def __init__(self, args: List[str], body: Body, env: Env):
+    def __init__(self, args: List[Symbol], body: Body, env: Env):
         i = 0
         self.pos_args = []
         while i < len(args) and args[i] != "&":
@@ -75,17 +42,35 @@ class Procedure:
             fun_exprs = args[:pos_len] + [args[pos_len:]]
             return EVAL(self.body, Env(fun_args, fun_exprs, self.env))
 
+    def __type__(self):
+        return "lambda"
+
     def __str__(self):
-        if self.rest_arg is None:
-            return PRINT([Symbol("lambda"), self.pos_args, self.body])
-        else:
-            return PRINT([Symbol("lambda"), self.pos_args + [Symbol("&"), self.rest_arg], self.body])
+        special_args = [] if self.rest_arg is None else [Symbol("&"), self.rest_arg]
+        return PRINT([Symbol(self.__type__()), self.pos_args + special_args, self.body])
+
+class Macro(Procedure):
+    def __init__(self, fn, env: Env):
+        self.__call__ = fn.__call__
+        self.rest_arg = fn.rest_arg
+        self.pos_args = fn.pos_args
+        self.body = fn.body
+        self.fn = fn
+        self.env = env
+    def __str__(self):
+        return "MACRO, based on " + str(self.fn)
 
 
-def macroexpand(macroform, env):
-    macroname, *exps = macroform
-    macro = env.get(macroname)
-    return macro(*exps)
+
+def macroexpand(ast, env):
+    while isinstance(ast, list) and \
+        len(ast) > 0 and \
+        isinstance(ast[0], Symbol) and \
+        (macro := env.get(ast[0])) and \
+        isinstance(macro, Macro):
+        _, *exprs = ast
+        ast = macro(*exprs)
+    return ast
 
 def eval_ast(ast, env):
     "Evaluate an expression in an environment."
@@ -122,12 +107,18 @@ def quasiquote(ast):
     elif is_atom(ast) or isinstance(ast, Hashmap):
         return [Symbol("quote"), ast]
 
+# TODO: add try-catch
 def EVAL(ast, env):
     while True:
+        # MACROEXPANSION
+        # (macroname exps...)
+        ast = macroexpand(ast, env)
+
         if type(ast) != list:
             return eval_ast(ast, env)
         if ast == []:
             return ast
+
         form_word = ast[0]
         if form_word == Symbol("quote"):
             # (quote exp) or 'exp
@@ -137,11 +128,6 @@ def EVAL(ast, env):
             # (quasiquote exp) or `exp
             _, exp = ast
             ast = quasiquote(exp)
-            continue # tail call optimisation
-        elif isinstance(ast[0], Symbol) and (res := env.get(ast[0])) and isinstance(res, Macro):
-            # (macroname exps...)
-            macroexpansion = macroexpand(ast, env)
-            ast = macroexpansion
             continue # tail call optimisation
         elif form_word == Symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
             # (cond p1 e1 p2 e2 ... pn en)
@@ -162,14 +148,14 @@ def EVAL(ast, env):
             # if default value is given
             ast = default_value
             continue # tail call optimisation
-        elif form_word == Symbol("set!"):
+        elif form_word == Symbol("set!"): # TODO: rename to set
             # (define var exp)
             _, var, exp = ast
             assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {PRINT(var)}"""
             value = EVAL(exp, env)
             env.set(var, value)
             return value
-        elif form_word == Symbol("let*"):
+        elif form_word == Symbol("let*"): # TODO: rename to let
             # (let* (v1 e1 v2 e2...) e)
             _, bindings, exp = ast
             assert len(bindings) % 2 == 0
@@ -183,11 +169,12 @@ def EVAL(ast, env):
             # (macroexpand (macro exps...))
             _, macroform = ast
             return macroexpand(macroform, env)
-        elif form_word == Symbol("defmacro"):
+        elif form_word == Symbol("setmacro"):
             # (defmacro macroname (args...) body)
-            _, macroname, args, body = ast
+            _, macroname, macrovalue = ast
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
-            env[macroname] = Macro(args, body, env)
+            macrofn = EVAL(macrovalue, env)
+            env.set(macroname, Macro(macrofn, env))
             return [] # TODO: nil
         elif form_word == Symbol("lambda"): # TODO: change to fn
             # (lambda (args...) body)
@@ -195,18 +182,6 @@ def EVAL(ast, env):
             for arg in args:
                 assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {PRINT(arg)}"
             return Procedure(args, body, env)
-        elif form_word == Symbol("apply"):
-            # (apply f (args...))
-            _, proc, args = ast
-            proc = EVAL(proc, env)
-            args = EVAL(args, env)
-            # TODO: fix
-            # if len(proc.args) != len(args):
-                # raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(args)}")
-            try:
-                return proc(*args)
-            except Exception as e:
-                raise FunctionCallError(proc, args, e)
         else:
             # (proc arg...)
             proc = EVAL(form_word, env)

@@ -32,6 +32,27 @@ def slurp(filename):
     with open(filename, "r") as fd:
         return fd.read()
 
+def get(coll, key):
+    if isinstance(coll, list):
+        assert isinstance(key, int), f"Index {key} is not int"
+        assert 0 <= key and key < len(coll), f"{key} is out of bounds"
+        return coll[key]
+    elif isinstance(coll, list):
+        assert key in coll, f"{key} is not in hashmap"
+        return coll[key]
+
+def throw(message):
+    raise RuntimeError(message) # TODO: own exception type
+
+def apply(proc, args):
+    # TODO: fix
+    # if len(proc.args) != len(args):
+        # raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(args)}")
+    try:
+        return proc(*args)
+    except Exception as e:
+        raise FunctionCallError(proc, args, e)
+
 ns = {
     # ARIPHMETIC OPERATORS
     "+": plus,
@@ -68,7 +89,7 @@ ns = {
     # TODO: f is identity by default
     "sorted-by": lambda x, f: sorted(x, key=lambda x: f(x)),
     "len": len,
-    "car": lambda x: x[0],
+    "car": lambda x: x[0], # TODO: add assert for list
     "cdr": lambda x: x[1:],
     "list": lambda *x: list(x),
 
@@ -82,6 +103,9 @@ ns = {
     "slurp": slurp,
 
     # OTHER FUNCTIONS
+    "apply": apply,
+    "throw": throw,
+    "get": get,
     "ls-r": lambda x: [[dir_name, files] for dir_name, _, files in walk(x)],
     "echo": echo,
     "name": lambda x: x if isinstance(x, Symbol) else [],
