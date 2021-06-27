@@ -16,7 +16,8 @@ class NamedFunction:
 class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
     def __init__(self, binds=[], exprs=[], outer=None):
-        self.update(zip(binds, exprs))
+        for var_name, var_value in zip(binds, exprs):
+            self[var_name] = var_value
         self.outer = outer
 
     def set(self, var, value):
@@ -38,7 +39,14 @@ class Env(dict):
         return env[var]
 
     def __repr__(self):
-        return "{\n  " + "  \n".join(f"{k}: {v}" for k, v in self.items()) + "\n}"
+        INDENT = "    "
+        res = "{\n" + \
+            f"{INDENT}" + \
+            f"\n{INDENT}".join(f"{k}: {v}" for k, v in self.items() if not isinstance(v, NamedFunction)) + \
+            "\n}"
+        if self.outer is not None:
+            res += " < " + repr(self.outer) + "\n"
+        return res
 
 def default_env():
     "An environment with some Scheme standard procedures."

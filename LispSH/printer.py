@@ -22,6 +22,9 @@ def pr_str_no_escape(exp):
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
         assert len(exp) == 2, f"Quote has zero or more than one argument: {exp}"
         return "'" + pr_str_no_escape(exp[1])
+    elif isinstance(exp, list) and exp[0] == Symbol("quasiquote"):
+        assert len(exp) == 2, f"Quasiquote has zero or more than one argument: {exp}"
+        return "'" + pr_str_no_escape(exp[1])
     elif isinstance(exp, list):
         return "(" + " ".join(map(pr_str_no_escape, exp)) + ")"
     elif exp is None:
@@ -54,8 +57,17 @@ def pr_str(exp):
     elif isinstance(exp, list) and exp[0] == Symbol("quote") and len(exp) == 1:
         return "(quote)"
     elif isinstance(exp, list) and exp[0] == Symbol("quote"):
-        assert len(exp) == 2, f"Quote has zero or more than one argument: {exp}"
+        assert len(exp) == 2, f"quote has zero or more than one argument: {exp}"
         return "'" + pr_str(exp[1])
+    elif isinstance(exp, list) and exp[0] == Symbol("quasiquote"):
+        assert len(exp) == 2, f"quasiquote has zero or more than one argument: {exp}"
+        return "`" + pr_str(exp[1])
+    elif isinstance(exp, list) and exp[0] == Symbol("unquote"):
+        assert len(exp) == 2, f"unquote has zero or more than one argument: {exp}"
+        return "~" + pr_str(exp[1])
+    elif isinstance(exp, list) and exp[0] == Symbol("splice-unquote"):
+        assert len(exp) == 2, f"splice-unquote has zero or more than one argument: {exp}"
+        return "~@" + pr_str(exp[1])
     elif isinstance(exp, list):
         return "(" + " ".join(map(pr_str, exp)) + ")"
     elif exp is None:

@@ -1,6 +1,6 @@
 from typing import List, Any, Union
 from dataclasses import dataclass
-
+# TODO: own list type with str = PRINT
 
 class Symbol(str):
     @property

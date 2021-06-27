@@ -1,4 +1,6 @@
 from sys import stdin, stdout, argv
+import os.path
+import inspect
 
 from LispSH.reader import remove_comment, OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
 from LispSH.datatypes import Symbol
@@ -32,8 +34,8 @@ def rep(line, env):
 # TODO: line editing, parens?
 def repl(env):
     "A prompt-read-eval-print loop."
-    env.set(Symbol("*argv*"), argv)
-    env.set(Symbol("eval"), lambda ast: EVAL(ast, env))
+    env[Symbol("*argv*")] = argv
+    env[Symbol("eval")] = lambda ast: EVAL(ast, env)
     rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) ")")))))', env)
     rep('(load-file ".lisprc")', env)
     while True:
@@ -44,5 +46,27 @@ def repl(env):
             line = fix_parens(line)
             print(rep(line, env))
         except Exception as e:
-            import logging
-            logging.exception(f"{type(e).__name__}: {e}")
+            print(f"{type(e).__name__}: {e}")
+            print()
+            print("=" * 34 + "STACK FRAMES" + "=" * 34)
+            print()
+            frames = inspect.trace()
+            for frame in frames:
+                args = inspect.getargvalues(frame.frame)
+                locals = [arg for arg in args.locals.keys() if arg not in args.args]
+                print("=" * 80)
+                filename = os.path.relpath(os.path.abspath(frame.filename), os.path.abspath("."))
+                print(f'  File "{filename}", line {frame.lineno}, in {frame.function}(')
+                for arg in args.args:
+                    arg_value = "\n      ".join(map(lambda x: x.strip(), str(args.locals[arg]).split('\n')))
+                    print(f"    {arg}={arg_value}")
+                print("  )")
+                if len(locals) > 0:
+                    print("Locals:")
+                    for arg in locals:
+                        arg_value = args.locals[arg]
+                        print(f"    {arg}={repr(arg_value)}")
+                for code_line in frame.code_context:
+                    print("    " + code_line.strip())
+                print("=" * 80)
+                print()

@@ -41,6 +41,12 @@ class Macro:
             fun_exprs = args[:pos_len] + [args[pos_len:]]
             return EVAL(self.body, Env(fun_args, fun_exprs, self.env))
 
+    def __str__(self):
+        if self.rest_arg is None:
+            return PRINT([Symbol("defmacro"), self.pos_args, self.body])
+        else:
+            return PRINT([Symbol("defmacro"), self.pos_args + [Symbol("&"), self.rest_arg], self.body])
+
 # TODO: rename to function
 "A user-defined Lisp function."
 class Procedure:
@@ -101,6 +107,21 @@ def eval_ast(ast, env):
             res.append(EVAL(v, env))
         return Hashmap(res)
 
+def quasiquote(ast):
+    if isinstance(ast, list):
+        if len(ast) == 2 and ast[0] == Symbol("unquote"):
+            return ast[1]
+        else:
+            res = []
+            for x in ast[-1::-1]:
+                if isinstance(x, list) and len(x) == 2 and x[0] == Symbol("splice-unquote"):
+                    res = [Symbol("+"), x[1], res]
+                else:
+                    res = [Symbol("cons"), quasiquote(x), res]
+            return res
+    elif is_atom(ast) or isinstance(ast, Hashmap):
+        return [Symbol("quote"), ast]
+
 def EVAL(ast, env):
     while True:
         if type(ast) != list:
@@ -115,19 +136,8 @@ def EVAL(ast, env):
         if form_word == Symbol("quasiquote"):
             # (quasiquote exp) or `exp
             _, exp = ast
-            if isinstance(exp, list):
-                if len(exp) == 2 and exp[0] == Symbol("unquote"):
-                    return exp[1]
-                else:
-                    res = []
-                    for x in exp[-1::-1]:
-                        if isinstance(x, list) and len(x) == 2 and x[0] == Symbol("splice-unquote"):
-                            return [Symbol("+"), x, res]
-                        else:
-                            return ["+", res, [EVAL([Symbol("quasiquote"), x], env)]]
-                    return res
-            elif is_atom(exp) or isinstance(exp, Hashmap):
-                return [Symbol("quasiquote"), exp]
+            ast = quasiquote(exp)
+            continue # tail call optimisation
         elif isinstance(ast[0], Symbol) and (res := env.get(ast[0])) and isinstance(res, Macro):
             # (macroname exps...)
             macroexpansion = macroexpand(ast, env)
@@ -166,7 +176,7 @@ def EVAL(ast, env):
             let_env = Env(outer=env)
             for i in range(0, len(bindings), 2):
                 var, var_exp = bindings[i : i + 2]
-                let_env.set(var, EVAL(var_exp, let_env))
+                let_env[var] = EVAL(var_exp, let_env)
             ast, env = exp, let_env
             continue # tail call optimisation
         elif form_word == Symbol("macroexpand"):
@@ -179,7 +189,7 @@ def EVAL(ast, env):
             assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
             env[macroname] = Macro(args, body, env)
             return [] # TODO: nil
-        elif form_word == Symbol("lambda"):
+        elif form_word == Symbol("lambda"): # TODO: change to fn
             # (lambda (args...) body)
             _, args, body = ast
             for arg in args:
@@ -206,7 +216,7 @@ def EVAL(ast, env):
             try:
                 if isinstance(proc, Procedure):
                     if not (len(proc.pos_args) == len(args) or len(proc.pos_args) < len(args) and proc.rest_arg):
-                        raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")
+                        raise RuntimeError(f"{proc} expected {len(proc.pos_args)} arguments, but got {len(ast[1:])}")
                     if proc.rest_arg is None:
                         fun_args = proc.pos_args
                         fun_exprs = args

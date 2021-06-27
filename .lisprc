@@ -5,47 +5,55 @@
         (nil? xs) '()
         (cons (f (car xs)) (map f (cdr xs))))))
 
-(defmacro swap! (x f) ['set! x [f x]])
+(defmacro swap! (x f) `(set! ~x (~f ~x)))
 
 (defmacro defun (f args body)
-    ['set! f
-        ['lambda args body]])
+    `(set! ~f
+        (lambda ~args ~body)))
+
 (defmacro if (p x y)
-    ['cond p x y])
+    `(cond ~p ~x ~y))
 
 
 ; TODO: change to variadic func
-(defmacro compose (f g) (list 'lambda '(x) (list f (list g 'x))))
+(defmacro compose (& fs)
+  `(lambda (x) ~((defun compose-helper (fs)
+    (if
+      (nil? fs)
+      'x
+      (let*
+        (cur-fun (car fs)
+        rest-funs (cdr fs))
+        `(~cur-fun ~(compose-helper rest-funs))))) fs)))
 (set! cadr (compose car cdr))
 (set! cddr (compose cdr cdr))
-(set! caddr (compose car cddr))
-(set! cdddr (compose cdr cddr))
+(set! caddr (compose car cdr cdr))
+(set! cdddr (compose cdr cdc cdr))
 (defmacro letfun (exps body)
-    (list 'let*
-        ((defun f (expss)
-            (if
-                (nil? expss)
-                ()
-                (let*
-                    (fun-name (car expss)
-                    fun-args (cadr expss)
-                    fun-body (caddr expss)
-                    rest (cdddr expss))
-                    (+
-                        (list fun-name (list 'defun fun-name fun-args fun-body)))
-                        (f rest)))) exps)
-        body))
+  `(let*
+    ~((defun f (expss)
+      (if
+        (nil? expss)
+        ()
+        (let*
+          (fun-name (car expss)
+          fun-args (cadr expss)
+          fun-body (caddr expss)
+          rest (cdddr expss))
+          `(~fun-name (defun ~fun-name ~fun-args ~fun-body) ~@(f rest)))))
+      exps)
+    ~body))
 
 (defmacro defun-trace (f args body)
-    (list 'defun f args
-        (list 'let*
-            (list 'res body)
-            (list 'progn
-                (list 'echo (name f) " " (cons 'list args) " " 'res)
-                'res))))
+    `(defun ~f ~args
+        (let*
+            (res ~body)
+            (progn
+                (echo ~(name f) " " (str ~@args) " = " 'res)
+                res))))
 
 ; anaphoric lambda, argument binds to %
-(defmacro # (& body) (list 'lambda '(%) body))
+(defmacro # (body) `(lambda (%) ~body))
 
 (defmacro doseq (seq-exprs body)
     ((defun doseq-helper (sxs body)
@@ -56,14 +64,15 @@
                 (nil? (cddr sxs))
                 body
                 (doseq-helper (cddr sxs) body)))
-            (list 'map
-                (list 'lambda (list var-name) the-body)
-                var-seq)))
+            `(map
+                (lambda (~var-name) ~the-body)
+                ~var-seq)))
     seq-exprs body))
 
-(defun single? (x) (= (len x) 1))
-(defmacro cons-if (p x y s) (list 'cons (list 'if p x y) s))
+(defmacro cons-if (p x y s)
+  `(cons (if ~p ~x ~y) s))
 
+(defun single? (x) (= (len x) 1))
 (defmacro -> (& x) ((defun ->-helper (y)
     (if
         (single? y)
@@ -91,16 +100,16 @@
             (>->-helper
                 (cons-if
                     (atom? next-f)
-                    (list next-f fst)
-                    (list (list 'lambda '(%%) next-f) fst))
+                    `(~next-f ~fst)
+                    `((lambda (%%) ~next-f) ~fst))
                     rest))))
     x))
 
 (defmacro juxt (& fs)
-    (list 'lambda '(x)
-        (list 'map
-            (list 'lambda '(f) '(f x))
-            (cons 'list fs))))
+    `(lambda (x)
+        (map
+            (lambda (f) (f x))
+            ~fs)))
 
 ; ============ FUNCTIONS SECTION ============
 
@@ -183,12 +192,22 @@
 
 (echo "el0chka")
 (doseq (x '(1 1 1) y '(1 3 5 7))
-    (echo (* "*"y)))
+    (echo (* "*" y)))
 
 (echo)
 (echo "almaz")
 (doseq (x '(1 3 5 7 5 3 1))
     (echo (* " " (- 7 x)) (* "*" (* x 2))))
+
+(echo (letfun (f (x) (+ 2 x) g (x) (* 3 x)) (f (g 4))))
+
+
+
+
+
+
+
+
 
 
 
