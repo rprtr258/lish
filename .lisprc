@@ -1,10 +1,9 @@
 ; ============ MACRO SECTION ============
 
-; not effective due to heavy recursion
-;(define map (lambda (f xs)
-;    (cond
-;        (nil? xs) '()
-;        (cons (f (car xs)) (map f (cdr xs))))))
+(set! map (lambda (f xs)
+    (cond
+        (nil? xs) '()
+        (cons (f (car xs)) (map f (cdr xs))))))
 ;(define map (lambda (f xs)
 ;    (loop (res '() ys xs)
 ;        (cond
@@ -52,7 +51,7 @@
                 'res))))
 
 ; anaphoric lambda, argument binds to %
-(defmacro # (body) (list 'lambda '(%) body))
+(defmacro # (& body) (list 'lambda '(%) body))
 
 (defmacro doseq (seq-exprs body)
     ((defun doseq-helper (sxs body)
@@ -69,47 +68,49 @@
     seq-exprs body))
 
 (defun single? (x) (= (len x) 1))
-;(defmacro cons-if (p x y s) (list 'cons (list 'if p x y) s))
+(defmacro cons-if (p x y s) (list 'cons (list 'if p x y) s))
 
-;(defmacro -> (x) ((defun ->-helper (y)
-;    (if
-;        (single? y)
-;        (car y)
-;        (let*
-;            (fst (car y)
-;            next-f (cadr y)
-;            rest (cddr y))
-;            (->-helper
-;                (cons-if
-;                    (atom? next-f)
-;                    (list next-f fst))
-;                    (cons (car next-f) fst (cdr next-f))
-;                    rest))))
-;    x))
+(defmacro -> (& x) ((defun ->-helper (y)
+    (if
+        (single? y)
+        (car y)
+        (let*
+            (fst (car y)
+            next-f (cadr y)
+            rest (cddr y))
+            (->-helper
+                (cons-if
+                    (atom? next-f)
+                    (list next-f fst))
+                    (cons (car next-f) fst (cdr next-f))
+                    rest))))
+    x))
 
-;(defmacro >-> (x) ((defun >->-helper (y)
-;    (if
-;        (single? y)
-;        (car y)
-;        (let*
-;            (fst (car y)
-;            next-f (cadr y)
-;            rest (cddr y))
-;            (>->-helper
-;                (cons-if
-;                    (atom? next-f)
-;                    (list next-f fst)
-;                    (list (list 'lambda '(%%) next-f) fst))
-;                    rest))))
-;    x))
+(defmacro >-> (x) ((defun >->-helper (y)
+    (if
+        (single? y)
+        (car y)
+        (let*
+            (fst (car y)
+            next-f (cadr y)
+            rest (cddr y))
+            (>->-helper
+                (cons-if
+                    (atom? next-f)
+                    (list next-f fst)
+                    (list (list 'lambda '(%%) next-f) fst))
+                    rest))))
+    x))
 
-(defmacro juxt (fs)
+(defmacro juxt (& fs)
     (list 'lambda '(x)
         (list 'map
-            (# (% x))
+            (list 'lambda '(f) '(f x))
             (cons 'list fs))))
 
 ; ============ FUNCTIONS SECTION ============
+
+(defun not (x) (if x false true))
 
 (defun dec (n) (- n 1))
 (defun inc (n) (+ n 1))

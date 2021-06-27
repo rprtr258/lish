@@ -37,11 +37,6 @@ class Hashmap(dict):
     def __repr__(self):
         return '{' + ",".join(map(lambda kv: f"{repr(kv[0])}: {kv[1]}", self.items())) + '}'
 
-@dataclass
-class Macro:
-    args: List[Symbol]
-    body: List[Any]
-
 def get_atom_value(atom): return atom.value
 
 def atom_or_symbol(token):

@@ -70,11 +70,10 @@ class TestRepl(unittest.TestCase):
             ("(fact 4)", 24)
         ])
 
-    def test_let(self):
+    def test_anaphoric_lambda(self):
         self.__test_cmds__([
-            ("(let* (x 1 y 2) x)", 1),
-            ("(str (let* (x 1 y 2) x))", "1"),
-            ("(str (let* (x 1 y 2) y))", "2")
+            "(defmacro # (& body) (list 'lambda '(%) (cons 'progn body)))",
+            ("((# (+ % 2)) 3)", 5)
         ])
 
     def test_triple_print_function(self):

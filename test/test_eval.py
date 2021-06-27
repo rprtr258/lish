@@ -116,13 +116,10 @@ class TestEVAL(unittest.TestCase):
     def test_bool_functions(self):
         self.__EVAL_test__("(or true false true)", TRUE)
         self.__EVAL_test__("(or false false)", FALSE)
-        self.__EVAL_test__("(not true)", FALSE)
-        self.__EVAL_test__("(not false)", TRUE)
 
     def test_list_operations(self):
         self.__EVAL_test__("(cons 1 2 3 '())", [1, 2, 3])
         self.__EVAL_test__("(cons 1 '(2 3))", [1, 2, 3])
-        self.__EVAL_test__("(map (lambda (x) (* 2 x)) '(2 3))", [4, 6])
         self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) abs)", [-1, 1, 2, -3, -4, 5])
         self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) (lambda (x) x))", [-4, -3, -1, 1, 2, 5])
         self.__EVAL_test__("(len '(-1 1 5 -3 2 -4))", 6)
@@ -142,6 +139,11 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(int 3.14)", 3)
         self.__EVAL_test__("(int 3.14)", 3)
         self.__EVAL_test__("(prompt)", "lis.py> ")
+
+    def test_let(self):
+        self.__EVAL_test__("(let* (x 1 y 2) x)", 1)
+        self.__EVAL_test__("(str (let* (x 1 y 2) x))", "1")
+        self.__EVAL_test__("(str (let* (x 1 y 2) y))", "2")
 
     def test_vector(self):
         self.__EVAL_test__("[]", Vector([]))
