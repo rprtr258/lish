@@ -8,9 +8,7 @@ from LispSH.datatypes import Symbol, Keyword, Hashmap
 OPEN_PAREN = '('
 CLOSE_PAREN = ')'
 QUOTE = '\''
-# TODO: check , in the beginning of the line
-# TODO: check "? in the end of string
-TOKEN_REGEX = re.compile(r"""[\s,]*(~@|[\[\]{}()'`~^]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]+)""")
+TOKEN_REGEX = re.compile(r"""[\s]*(~@|[\[\]{}()'`~^]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]+)""")
 
 
 # TODO: remove, use tokenize instead
@@ -28,6 +26,9 @@ class Reader:
         return self.position < len(self.tokens)
 
     def peek(self):
+        # skip comments
+        while self.tokens[self.position][0] == ";":
+            self.position += 1
         return self.tokens[self.position]
 
     def next(self):
@@ -71,10 +72,6 @@ def read_form(reader):
     # LIST
     if token in ['(', '[', '{']:
         return read_list(reader)
-    # COMMENT
-    if token[0] == ";":
-        reader.next()
-        return []
     # READER MACROSES
     token = reader.next() # remove reader macro
     if token == "'": return [Symbol("quote"), read_form(reader)]
@@ -86,7 +83,8 @@ def read_form(reader):
         data = read_form(reader)
         return [Symbol("with-meta"), data, meta]
     if token == CLOSE_PAREN:
-        raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
+        # TODO: print place
+        raise SyntaxError(f"Unexpected {CLOSE_PAREN} in {rest}")
     # ATOM
     return read_atom(token)
 
@@ -114,11 +112,9 @@ def read_str(line):
     check_parens(tokens)
     reader = Reader(tokens)
     ast = read_form(reader)
-    # TODO: fix
-    while reader.has_next() and reader.peek()[0] == ';':
-        reader.next()
     if reader.has_next():
-        raise SyntaxError("Tokens left after reading whole form, check parens")
+        # TODO: print error place
+        raise SyntaxError(f"Tokens left after reading whole form, check parens")
     return ast
 
 def READ(line):

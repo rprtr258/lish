@@ -81,6 +81,7 @@ ns = {
 
     # BOOL FUNCTIONS
     "or": lambda *x: reduce(lambda x, y: x or y, x),
+    "and": lambda *x: reduce(lambda x, y: x and y, x),
 
     # LIST OPERATIONS
     "list?": lambda x: isinstance(x, list),

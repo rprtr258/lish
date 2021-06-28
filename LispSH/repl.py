@@ -34,22 +34,24 @@ def rep(line, env):
 # TODO: line editing, parens?
 def repl(env):
     "A prompt-read-eval-print loop."
-    env[Symbol("*argv*")] = argv
-    env[Symbol("eval")] = lambda ast: EVAL(ast, env)
-    rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
-    rep('(load-file ".lisprc")', env)
-    while True:
-        try:
+    try:
+        env[Symbol("*argv*")] = argv
+        env[Symbol("*debug*")] = False
+        env[Symbol("eval")] = lambda ast: EVAL(ast, env)
+        rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
+        rep('(load-file ".lisprc")', env)
+        while True:
             print_prompt(env)
             line = input()
             if line.strip() == "": continue
             line = fix_parens(line)
             print(rep(line, env))
-        except Exception as e:
-            if isinstance(e, BaseException):
-                print(f"{type(e).__name__}: {e}")
-            else:
-                print(f"EXCEPTION({type(e)}): {e}")
+    except Exception as e:
+        if isinstance(e, RuntimeError):
+            print(f"Error: {e}")
+        else:
+            print(f"{type(e).__name__}: {e}")
+        if env[Symbol("*debug*")]:
             print()
             print("=" * 34 + "STACK FRAMES" + "=" * 34)
             print()

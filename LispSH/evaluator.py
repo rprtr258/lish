@@ -10,9 +10,8 @@ Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
 def FunctionCallError(proc, args, e):
     form = " ".join(map(PRINT, [proc] + args))
-    return RuntimeError(f"""Error during evaluation ({form}).
-Error is:
-{e}""")
+    return RuntimeError(f"""Error occured while evaluating ({form}).
+Error is: {e}""")
 
 # TODO: rename to function
 "A user-defined Lisp function."
@@ -25,7 +24,8 @@ class Procedure:
             self.pos_args.append(args[i])
             i += 1
         if i < len(args) and args[i] == "&":
-            assert i + 1 < len(args), "Rest argument is not named"
+            if i + 1 >= len(args):
+                raise RuntimeError("Rest argument is not named")
             self.rest_arg: Symbol = args[i + 1]
         else:
             self.rest_arg = None
@@ -108,6 +108,7 @@ def quasiquote(ast):
         return [Symbol("quote"), ast]
 
 # TODO: add try-catch
+# TODO: add implicit progn-s
 def EVAL(ast, env):
     while True:
         # MACROEXPANSION
@@ -151,14 +152,16 @@ def EVAL(ast, env):
         elif form_word == Symbol("set!"): # TODO: rename to set
             # (define var exp)
             _, var, exp = ast
-            assert isinstance(var, Symbol), f"""Definition name is not a symbol, but a {PRINT(var)}"""
+            if not isinstance(var, Symbol):
+                raise RuntimeError(f"""Definition name is not a symbol, but a {repr(var)}""")
             value = EVAL(exp, env)
             env.set(var, value)
             return value
         elif form_word == Symbol("let*"): # TODO: rename to let
             # (let* (v1 e1 v2 e2...) e)
             _, bindings, exp = ast
-            assert len(bindings) % 2 == 0
+            if len(bindings) % 2 != 0:
+                raise RuntimeError("let* has wrong bindings form")
             let_env = Env(outer=env)
             for i in range(0, len(bindings), 2):
                 var, var_exp = bindings[i : i + 2]
@@ -172,7 +175,8 @@ def EVAL(ast, env):
         elif form_word == Symbol("setmacro"):
             # (defmacro macroname (args...) body)
             _, macroname, macrovalue = ast
-            assert isinstance(macroname, Symbol), "Macro definition name is not a symbol"
+            if not isinstance(macroname, Symbol):
+                raise RuntimeError("Macro definition name is not a symbol")
             macrofn = EVAL(macrovalue, env)
             env.set(macroname, Macro(macrofn, env))
             return [] # TODO: nil
@@ -180,7 +184,8 @@ def EVAL(ast, env):
             # (lambda (args...) body)
             _, args, body = ast
             for arg in args:
-                assert isinstance(arg, Symbol), f"Argument name is not a symbol, but a {PRINT(arg)}"
+                if not isinstance(arg, Symbol):
+                    raise RuntimeError(f"Argument name is not a symbol, but a {repr(arg)}")
             return Procedure(args, body, env)
         else:
             # (proc arg...)

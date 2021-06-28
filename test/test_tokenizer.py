@@ -95,6 +95,11 @@ class TestTokenizer(unittest.TestCase):
                 [Symbol("lambda"), [Symbol("x")],
                     [Symbol("cons"), QA, Symbol("x")]]]])
 
+    def test_comments(self):
+        self.__tokenizer_test__("""(a
+; wow
+bc)""", [Symbol("a"), Symbol("bc")])
+
     def test_not_enough_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b")
@@ -108,7 +113,7 @@ class TestTokenizer(unittest.TestCase):
     def test_unclosed_string(self):
         with self.assertRaises(SyntaxError) as cm:
             READ('(echo )"abc)')
-        self.assertEqual(str(cm.exception), "Tokens left after reading whole form, check parens")
+        self.assertEqual(str(cm.exception), "Different number of open and close parens")
 
     def test_two_forms(self):
         with self.assertRaises(SyntaxError) as cm:
