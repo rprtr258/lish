@@ -1,0 +1,202 @@
+; ============ MACRO SECTION ============
+
+(setmacro defun (lambda (f args body)
+    `(set! ~f
+        (lambda ~args ~body))))
+
+(setmacro defmacro (lambda (m args body)
+    `(setmacro ~m
+        (lambda ~args ~body))))
+
+(defmacro if (p x y)
+    `(cond ~p ~x ~y))
+
+(defmacro when (p x)
+    `(cond ~p ~x ()))
+
+(defmacro compose (& fs)
+  (let*
+    (compose* (lambda (fs)
+      (if
+        (nil? fs)
+        `x
+        (let*
+          (cur-fun (car fs)
+          rest-funs (cdr fs))
+          `(~cur-fun ~(compose* rest-funs))))))
+    `(lambda (x) ~(compose* fs))))
+
+(defmacro swap! (x f) `(set! ~x (~f ~x)))
+
+(set! cadr (compose car cdr))
+(set! cddr (compose cdr cdr))
+(set! caddr (compose car cddr))
+(set! cdddr (compose cdr cddr))
+(defmacro letfun (exps body)
+  (let* (bindings ((defun f (expss)
+      (if
+        (nil? expss)
+        ()
+        (let*
+          (fun-name (car expss)
+          fun-args (cadr expss)
+          fun-body (caddr expss)
+          rest (cdddr expss))
+          `(~fun-name (defun ~fun-name ~fun-args ~fun-body) ~@(f rest)))))
+      exps))
+  `(let* ~bindings ~body)))
+
+; TODO: rewrite with meta and set!
+(defmacro defun-trace (f args body)
+  `(defun ~f ~args
+    (let*
+      (res ~body)
+      (progn
+        (echo "(" '~f " " (str ~@args) ") = " res)
+        res))))
+
+; anaphoric lambda, argument binds to %
+(defmacro # (body) `(lambda (%) ~body))
+
+; rename to for
+(defmacro doseq (seq-exprs body)
+  ((defun doseq* (sxs body)
+    (let*
+      (var-name (car sxs)
+      var-seq (cadr sxs)
+      the-body (if
+        (nil? (cddr sxs))
+        body
+        (doseq* (cddr sxs) body)))
+      `(map
+        (lambda (~var-name) ~the-body)
+        ~var-seq)))
+  seq-exprs body))
+
+(defmacro cons-if (p x y s)
+  `(cons (if ~p ~x ~y) s))
+
+(defmacro -> (& x)
+    (if
+        (= (len x) 1)
+        (car x)
+        (let*
+            (fst (car x)
+            next-f (cadr x)
+            rest (cddr x)
+            new-val (if
+              (atom? next-f)
+              `(~next-f ~fst)
+              (cons (car next-f) fst (cdr next-f))))
+            (apply -> `(~new-val ~@rest)))))
+
+(defmacro >-> (x)
+    (if
+        (= (len x) 1)
+        (car x)
+        (let*
+            (fst (car x)
+            next-f (cadr x)
+            rest (cddr x))
+            (>->
+                (cons-if
+                    (atom? next-f)
+                    `(~next-f ~fst)
+                    `((lambda (%%) ~next-f) ~fst))
+                    rest))))
+
+(defmacro juxt (& fs)
+    `(lambda (x)
+        (map
+            (lambda (f) (f x))
+            ~fs)))
+
+; ============ FUNCTIONS SECTION ============
+
+(defun not (x) (if x false true))
+
+(defun dec (n) (- n 1))
+(defun inc (n) (+ n 1))
+
+(defun-trace fact-t (n)
+    (if
+        (= n 1) 1
+        (* n (fact-t (dec n)))))
+
+(defun-trace fib (n)
+    (if
+        (< n 2) n
+        (+
+            (fib (- n 1))
+            (fib (- n 2)))))
+
+(defun fact (n)
+    (if
+        (= n 1)
+        1
+        (*
+            n
+            (fact (dec n)))))
+
+; TODO: make default argument value, args to (&key (start 0) (end 1) (step 1))
+; (range &start &end &step)
+(defun range (& args)
+    (let*
+      (start (if (>= (len args) 2) (get args 0) 0)
+      end (cond
+        (>= (len args) 2) (get args 1)
+        (>= (len args) 1) (get args 0)
+        1)
+      step (if (>= (len args) 3) (get args 2) 1)
+      ; TODO: move to implicit progn
+      _ (when
+        (or
+          (and (>= end start) (< step 0))
+          (and (<= end start) (> step 0)))
+        (throw (+ "Start " (str start) " is after end " (str end))))
+      _ (when (= step 0) (throw "Step is zero")))
+      (letfun
+        (range* (n k d)
+          (if
+            (or (and (>= k n) (> step 0)) (and (<= k n) (< step 0)))
+            ()
+            (cons k (range* n (+ k d) d))))
+        (range* end start step))))
+
+(set! map (lambda (f xs)
+    (if
+      (nil? xs)
+      ()
+      (cons (f (car xs)) (map f (cdr xs))))))
+
+; (map* * '((1 2 3) (-1 0 1))
+; (-1 0 3)
+(defun map* (f xss)
+    (if
+        (apply or (map nil? xss)) '()
+        (cons
+            (apply f (map car xss))
+            (map* f (map cdr xss)))))
+
+; (*map (# (list % (inc %))) '(1 2 3))
+; (1 2 2 3 3 4)
+(defun *map (f xs)
+    (if
+        (nil? xs) '()
+        (+
+            (f (car xs))
+            (*map f (cdr xs)))))
+
+(defun take (n x)
+    (if
+        (or (nil? x) (= n 0))
+        '()
+        (cons (car x) (take (dec n) (cdr x)))))
+
+(defun drop (n x)
+    (if
+        (or (nil? x) (= n 0))
+        x
+        (drop (dec n) (cdr x))))
+
+(defun id (x) x)
