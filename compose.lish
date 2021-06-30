@@ -1,3 +1,4 @@
+; TODO: add docs
 ; ============ MACRO SECTION ============
 
 (setmacro defun (lambda (f args body)
@@ -87,8 +88,8 @@
             new-val (if
               (atom? next-f)
               `(~next-f ~fst)
-              (cons (car next-f) fst (cdr next-f))))
-            (apply -> `(~new-val ~@rest)))))
+              `(~(car next-f) ~fst ~@(cdr next-f))))
+            `(-> ~new-val ~@rest))))
 
 (defmacro >-> (x)
     (if
