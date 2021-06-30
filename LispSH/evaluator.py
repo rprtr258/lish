@@ -159,9 +159,10 @@ def EVAL(ast, env):
             return value
         elif form_word == Symbol("let*"): # TODO: rename to let
             # (let* (v1 e1 v2 e2...) e)
+            assert len(ast) == 3, "Wrong args count to let*"
             _, bindings, exp = ast
             if len(bindings) % 2 != 0:
-                raise RuntimeError("let* has wrong bindings form")
+                raise RuntimeError(f"let* has {len(bindings)} items as bindings which is not even")
             let_env = Env(outer=env)
             for i in range(0, len(bindings), 2):
                 var, var_exp = bindings[i : i + 2]
