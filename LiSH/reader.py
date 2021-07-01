@@ -88,7 +88,7 @@ def read_form(reader):
         return [Symbol("with-meta"), data, meta]
     if token == CLOSE_PAREN:
         # TODO: print place
-        raise SyntaxError(f"Unexpected {CLOSE_PAREN} in {rest}")
+        raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
     # ATOM
     return read_atom(token)
 
