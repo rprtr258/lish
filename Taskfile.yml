@@ -1,0 +1,18 @@
+version: '3'
+
+tasks:
+  test:
+    cmds:
+      - reset
+      - pytest test
+  run:
+    cmds:
+      - reset
+      - python -m LiSH
+  commit:
+    cmds:
+      - reset
+      - git add *
+      - git status
+      - git commit -m "Some fixes"
+      - git push
