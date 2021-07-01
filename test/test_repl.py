@@ -15,7 +15,7 @@ class TestRepl(unittest.TestCase):
         env = default_env()
         env[Symbol("eval")] = lambda ast: EVAL(ast, env)
         EVAL(READ('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))'), env)
-        EVAL(READ('(load-file "test/macro-defs.lish")'), env)
+        EVAL(READ('(load-file "compose.lish")'), env)
         return env
 
     def __test_cmds__(self, cmds):

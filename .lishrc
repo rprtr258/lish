@@ -1,38 +1,7 @@
 (load-file "compose.lish")
-(-> *argv* str (echo " <- args"))
-
-;move to tests
-(echo "el0chka")
-(doseq (x '(1 1 1) y (range 1 9 2))
-   (echo (* "*" y)))
-
-
-(echo)
-(echo "almaz")
-(doseq (x (+ (range 1 9 2) (range 5 0 -2)))
-   (echo (* " " (- 7 x)) (* "*" (* x 2))))
-
-(echo (letfun (f (x) (+ 2 x) g (x) (* 3 x)) (-> 4 g f)))
-
-
-
-
-
-
-
-
-
-
-
 
 (set! prompt
   (let* (cnt 0)
     (lambda () (progn
       (swap! cnt inc)
       (+ "lis.py(" (str cnt) ")> ")))))
-
-
-
-(doseq (x '(-1 0 1)
-      y '(1 2 3))
-   (echo (* x y)))
