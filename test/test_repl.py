@@ -88,7 +88,6 @@ class TestRepl(unittest.TestCase):
 
     def test_anaphoric_lambda(self):
         self.__test_cmds__([
-            "(defmacro # (& body) (list 'lambda '(%) (cons 'progn body)))",
             ("((# (+ % 2)) 3)", 5)
         ])
 
@@ -187,6 +186,16 @@ lis.py(3)> 123
         self.__test_cmds__([
             ("(*map (juxt id inc) [1 2 3])", [1, 2, 2, 3, 3, 4])
         ])
+
+    def test_trace_fact(self):
+        self.__test_cmds_output__([
+            "(fact-t 5)"
+        ], """(fact-t 1) = 1
+(fact-t 2) = 2
+(fact-t 3) = 6
+(fact-t 4) = 24
+(fact-t 5) = 120
+""")
 
 
 if __name__ == '__main__':
