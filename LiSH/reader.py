@@ -19,16 +19,14 @@ def remove_comment(s: str) -> str:
 
 class Reader:
     def __init__(self, tokens):
-        self.tokens = tokens
+        # skip comments
+        self.tokens = list(filter(lambda x: x[0] != ';', tokens))
         self.position = 0
 
     def has_next(self):
         return self.position < len(self.tokens)
 
     def peek(self):
-        # skip comments
-        while self.tokens[self.position][0] == ";":
-            self.position += 1
         return self.tokens[self.position]
 
     def next(self):

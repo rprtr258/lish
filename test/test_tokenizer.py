@@ -52,13 +52,17 @@ class TestTokenizer(unittest.TestCase):
         self.__tokenizer_test__("({})", [Hashmap([])])
 
     def test_comments(self):
-        self.__tokenizer_test__(";wow", [])
-        self.__tokenizer_test__(" ;;ff", [])
+        with self.assertRaises(SyntaxError) as cm:
+            READ(";wow")
+        self.assertEqual(str(cm.exception), "Unexpected end of input")
+        with self.assertRaises(SyntaxError) as cm:
+            READ(" ;;ff")
+        self.assertEqual(str(cm.exception), "Unexpected end of input")
         self.__tokenizer_test__("1 ;;ff", 1)
         self.__tokenizer_test__("1; ff", 1)
-
-    def test_deref(self):
-        self.__tokenizer_test__("@a", [Symbol("deref"), A])
+        self.__tokenizer_test__("""(a
+; wow
+bc)""", [Symbol("a"), Symbol("bc")])
 
     def test_deref(self):
         self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), [Symbol("list"), 1, 2, 3], Hashmap(["a", 1])])
@@ -94,11 +98,6 @@ class TestTokenizer(unittest.TestCase):
                 [Symbol("lambda"), [Symbol("x")],
                     [Symbol("cons"), QA, Symbol("x")]]]])
 
-    def test_comments(self):
-        self.__tokenizer_test__("""(a
-; wow
-bc)""", [Symbol("a"), Symbol("bc")])
-
     def test_not_enough_close_parens(self):
         with self.assertRaises(SyntaxError) as cm:
             READ("(a b")
@@ -127,13 +126,14 @@ bc)""", [Symbol("a"), Symbol("bc")])
         M_DQUOTE = '\\"'
         self.assertEqual(
             tokenize(f'(+ "{M_SLASH}{M_DQUOTE}" "abc")'),
-            ['(', '+', f'"{M_SLASH}{M_DQUOTE}"', f'"abc"', ')'])
+            ['(', '+', f'"{M_SLASH}{M_DQUOTE}"', '"abc"', ')'])
         self.assertEqual(
             tokenize(f'(+ "(" "{M_DQUOTE}" ")" "{M_SLASH}")'),
             ['(', '+', '"("', f'"{M_DQUOTE}"', '")"', f'"{M_SLASH}"', ')'])
 
     def test_string(self):
         self.__tokenizer_test__('(+ "a" "(a b))))")', [Symbol("+"), "a", "(a b))))"])
+
 
 if __name__ == '__main__':
     unittest.main()

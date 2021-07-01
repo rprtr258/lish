@@ -5,6 +5,9 @@ tasks:
     cmds:
       - reset
       - pytest test
+  linter:
+    cmds:
+      - flake8 . --ignore=E501 --count
   run:
     cmds:
       - reset

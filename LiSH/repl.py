@@ -1,4 +1,4 @@
-from sys import stdin, stdout, argv
+from sys import stdout, argv
 import os.path
 import inspect
 
