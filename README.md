@@ -1,1 +1,2 @@
-# lisp-sh
+# lish
+Lisp SHell
