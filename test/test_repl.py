@@ -40,7 +40,6 @@ class TestRepl(unittest.TestCase):
 
     def test_cadr(self):
         self.__test_cmds__([
-            "(set! cadr (lambda (x) (car (cdr x))))",
             ("(cadr '(a (b c) d))", [B, C])
         ])
 
@@ -63,12 +62,12 @@ class TestRepl(unittest.TestCase):
 
     def test_if_in_recursive_function(self):
         self.__test_cmds__([
-            "(set! fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
+            "(defun fact (n) (if (= n 1) 1 (* n (fact (- n 1)))))",
             ("(fact 1)", 1),
             ("(fact 2)", 2),
             ("(fact 3)", 6),
             ("(fact 4)", 24),
-            "(set! rev (lambda (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x))))))",
+            "(defun rev (x) (if (nil? x) x (+ (rev (cdr x)) (list (car x)))))",
             ("(rev '(a b c))", [C, B, A])
         ])
 
@@ -80,7 +79,7 @@ class TestRepl(unittest.TestCase):
 
     def test_recursion(self):
         self.__test_cmds__([
-            "(set! fact (lambda (n) (cond (= n 1) 1 (* n (fact (- n 1))))))",
+            "(defun fact (n) (if (= n 1) 1 (* n (fact (- n 1)))))",
             ("(fact 1)", 1),
             ("(fact 2)", 2),
             ("(fact 3)", 6),
@@ -115,28 +114,6 @@ class TestRepl(unittest.TestCase):
     
     def test_print_elochka(self):
         self.__test_cmds_output__([
-            """(defun range (& args)
-                (let*
-                (start (if (>= (len args) 2) (get args 0) 0)
-                end (cond
-                    (>= (len args) 2) (get args 1)
-                    (>= (len args) 1) (get args 0)
-                    1)
-                step (if (>= (len args) 3) (get args 2) 1)
-                ; TODO: move to implicit progn
-                _ (when
-                    (or
-                    (and (>= end start) (< step 0))
-                    (and (<= end start) (> step 0)))
-                    (throw (+ "Start " (str start) " is after end " (str end))))
-                _ (when (= step 0) (throw "Step is zero")))
-                (letfun
-                    (range* (n k d)
-                    (if
-                        (or (and (>= k n) (> step 0)) (and (<= k n) (< step 0)))
-                        ()
-                        (cons k (range* n (+ k d) d))))
-                    (range* end start step))))""",
             """(echo "el0chka")""",
             """(doseq (x '(1 1 1) y (range 1 9 2))
                 (echo (* "*" y)))"""
@@ -157,28 +134,6 @@ class TestRepl(unittest.TestCase):
 
     def test_print_almaz(self):
         self.__test_cmds_output__([
-            """(defun range (& args)
-                (let*
-                (start (if (>= (len args) 2) (get args 0) 0)
-                end (cond
-                    (>= (len args) 2) (get args 1)
-                    (>= (len args) 1) (get args 0)
-                    1)
-                step (if (>= (len args) 3) (get args 2) 1)
-                ; TODO: move to implicit progn
-                _ (when
-                    (or
-                    (and (>= end start) (< step 0))
-                    (and (<= end start) (> step 0)))
-                    (throw (+ "Start " (str start) " is after end " (str end))))
-                _ (when (= step 0) (throw "Step is zero")))
-                (letfun
-                    (range* (n k d)
-                    (if
-                        (or (and (>= k n) (> step 0)) (and (<= k n) (< step 0)))
-                        ()
-                        (cons k (range* n (+ k d) d))))
-                    (range* end start step))))""",
             """(echo "almaz")""",
             """(doseq (x (+ (range 1 9 2) (range 5 0 -2)))
                 (echo (* " " (- 7 x)) (* "*" (* x 2))))"""
@@ -194,7 +149,6 @@ class TestRepl(unittest.TestCase):
 
     def test_prompt_counter(self):
         self.__test_cmds_output__([
-            "(defun inc (x) (+ 1 x))",
             """(set! prompt
                 (let* (cnt 0)
                     (lambda () (progn
