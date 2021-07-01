@@ -3,18 +3,15 @@ version: '3'
 tasks:
   test:
     cmds:
-      - reset
       - pytest test
   linter:
     cmds:
       - flake8 . --ignore=E501 --count --max-line-length=120
   run:
     cmds:
-      - reset
       - python -m LiSH
   commit:
     cmds:
-      - reset
       - git add *
       - git status
       - git commit -m "Some fixes"
