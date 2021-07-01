@@ -2,16 +2,12 @@ from typing import List, Union, Any
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
+from LiSH.errors import FunctionCallError
 from LiSH.printer import PRINT
 
 
 Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
-
-def FunctionCallError(proc, args, e):
-    form = " ".join(map(PRINT, [proc] + args))
-    return RuntimeError(f"""Error occured while evaluating ({form}).
-Error is: {e}""")
 
 # TODO: rename to function
 "A user-defined Lisp function."
