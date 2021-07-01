@@ -39,17 +39,17 @@ def get_atom_value(atom): return atom.value
 
 def atom_or_symbol(token):
     if token[0] == '"' and token[-1] == '"' and len(token) >= 2:
-        return Atom(token[1 : -1])
+        return token[1 : -1]
     if token in ["true", "false"]:
-        return Atom(token == "true")
+        return token == "true"
     if token in [True, False]:
-        return Atom(token)
+        return token
     try:
-        return Atom(int(token))
+        return int(token)
     except ValueError:
         pass
     try:
-        return Atom(float(token))
+        return float(token)
     except ValueError:
         pass
     return Symbol(token)
