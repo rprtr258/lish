@@ -1,9 +1,9 @@
 import unittest
 
 from definitions import NIL
-from context import LispSH
-from LispSH.printer import PRINT
-from LispSH.datatypes import Symbol
+from context import LiSH
+from LiSH.printer import PRINT
+from LiSH.datatypes import Symbol
 
 
 class TestPRINT(unittest.TestCase):

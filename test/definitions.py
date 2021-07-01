@@ -1,5 +1,5 @@
-from context import LispSH
-from LispSH.datatypes import Symbol
+from context import LiSH
+from LiSH.datatypes import Symbol
 
 NIL = []
 # TODO: inline

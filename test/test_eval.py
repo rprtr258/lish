@@ -1,11 +1,11 @@
 import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
-from context import LispSH
-from LispSH.datatypes import Symbol, Hashmap, Keyword
-from LispSH.env import default_env
-from LispSH.reader import READ
-from LispSH.evaluator import EVAL
+from context import LiSH
+from LiSH.datatypes import Symbol, Hashmap, Keyword
+from LiSH.env import default_env
+from LiSH.reader import READ
+from LiSH.evaluator import EVAL
 
 
 class TestEVAL(unittest.TestCase):
