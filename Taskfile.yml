@@ -7,7 +7,7 @@ tasks:
       - pytest test
   linter:
     cmds:
-      - flake8 . --ignore=E501 --count
+      - flake8 . --ignore=E501 --count --max-line-length=120
   run:
     cmds:
       - reset

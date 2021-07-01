@@ -10,4 +10,4 @@ sys.path.insert(
                 __file__
             ), '..')))
 
-import LiSH
+import LiSH  # noqa: F401, E402

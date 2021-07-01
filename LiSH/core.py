@@ -1,4 +1,3 @@
-import math
 import operator as op
 from random import random
 from math import cos
@@ -16,8 +15,9 @@ def plus(*x):
         if isinstance(x[0], int) or isinstance(x[0], float):
             return sum(x, 0)
         elif isinstance(x[0], str):
-            return "".join(x) # sum(x, "")
+            return "".join(x)  # sum(x, "")
     return sum(x, [])
+
 
 def echo(*x):
     for y in x:
@@ -25,13 +25,16 @@ def echo(*x):
     print()
     return []
 
+
 def cons(*x):
     x = list(x)
     return x[:-1] + x[-1]
 
+
 def slurp(filename):
     with open(filename, "r") as fd:
         return fd.read()
+
 
 def get(coll, key):
     if isinstance(coll, list):
@@ -42,17 +45,20 @@ def get(coll, key):
         assert key in coll, f"{key} is not in hashmap"
         return coll[key]
 
+
 def throw(message):
-    raise RuntimeError(message) # TODO: own exception type
+    raise RuntimeError(message)  # TODO: own exception type
+
 
 def apply(proc, args):
     # TODO: fix
     # if len(proc.args) != len(args):
-        # raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(args)}")
+    #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(args)}")
     try:
         return proc(*args)
     except Exception as e:
         raise FunctionCallError(proc, args, e)
+
 
 ns = {
     # ARIPHMETIC OPERATORS
@@ -91,7 +97,7 @@ ns = {
     # TODO: f is identity by default
     "sorted-by": lambda x, f: sorted(x, key=lambda x: f(x)),
     "len": len,
-    "car": lambda x: x[0], # TODO: add assert for list
+    "car": lambda x: x[0],  # TODO: add assert for list
     "cdr": lambda x: x[1:],
     "list": lambda *x: list(x),
 

@@ -1,4 +1,4 @@
-from typing import List, Any, Union
+from typing import List, Union
 import re
 
 from LiSH.datatypes import Symbol, Keyword, Hashmap
@@ -10,12 +10,8 @@ CLOSE_PAREN = ')'
 QUOTE = '\''
 TOKEN_REGEX = re.compile(r"""[\s]*(~@|[\[\]{}()'`~^]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]+)""")
 
+Expression = Union[int, float, str, Symbol, Keyword, Hashmap, List["Expression"]]
 
-# TODO: remove, use tokenize instead
-def remove_comment(s: str) -> str:
-    if ';' in s:
-        return s[:s.find(';')] # TODO: check (echo "wOwOw ;;;; ") ; fuck you
-    return s
 
 class Reader:
     def __init__(self, tokens):
@@ -34,10 +30,18 @@ class Reader:
         self.position += 1
         return res
 
+
 # TODO: test mirroring
 def tokenize(s: str) -> List[str]:
-    "Convert a string into a list of tokens"
+    """Convert a string into a list of tokens
+
+        Args:
+            s: string to tokenize
+
+        Returns:
+            list of tokens"""
     return TOKEN_REGEX.findall(s)
+
 
 def read_list(reader):
     L = []
@@ -49,21 +53,39 @@ def read_list(reader):
     }[begin]
     while reader.peek() != end:
         L.append(read_form(reader))
-    reader.next() # remove end
+    reader.next()  # remove end
     return constructor(L)
+
 
 def read_atom(token):
     # str
-    if token[0] == '"': return token[1:-1]
+    if token[0] == '"':
+        return token[1:-1]
     # bool
-    if token in ["true", "false"]: return (token == "true")
-    if token[0] == ':': return Keyword(token[1:])
-    if re.match(r"-?[0-9]+$", token): return int(token)
-    if re.match(r"-?[0-9][0-9.]*$", token): return float(token)
+    if token in ["true", "false"]:
+        return (token == "true")
+    if token[0] == ':':
+        return Keyword(token[1:])
+    if re.match(r"-?[0-9]+$", token):
+        return int(token)
+    if re.match(r"-?[0-9][0-9.]*$", token):
+        return float(token)
     return Symbol(token)
 
-def read_form(reader):
-    "Read an expression from a sequence of tokens"
+
+def read_form(reader: Reader) -> Expression:
+    """Read an expression from a sequence of tokens
+
+        Args:
+            reader: Reader instance with tokens of form to read
+
+        Returns:
+            expression that was read
+
+        Raises:
+            SyntaxError: in these cases:
+                - if unexpected end of input occured
+                - if found unexpected close paren"""
     if not reader.has_next():
         raise SyntaxError("Unexpected end of input")
     token = reader.peek()
@@ -72,12 +94,13 @@ def read_form(reader):
         return read_list(reader)
     # READER MACROSES
     # TODO: add reader macroses from config
-    token = reader.next() # remove reader macro
+    token = reader.next()  # remove reader macro
     for reader_macro, macro_word in [
         ("'", "quote"),
         ('`', "quasiquote"),
         ('~', "unquote"),
-        ("~@", "splice-unquote")]:
+        ("~@", "splice-unquote")
+    ]:
         if token == reader_macro:
             return [Symbol(macro_word), read_form(reader)]
     if token == "^":
@@ -89,6 +112,7 @@ def read_form(reader):
         raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
     # ATOM
     return read_atom(token)
+
 
 # TODO: make normal
 def check_parens(tokens):
@@ -109,6 +133,7 @@ def check_parens(tokens):
     if len(stack) != 0:
         raise SyntaxError(f"There are {stack} parens unclosed")
 
+
 def read_str(line):
     tokens = tokenize(line)
     check_parens(tokens)
@@ -116,9 +141,16 @@ def read_str(line):
     ast = read_form(reader)
     if reader.has_next():
         # TODO: print error place
-        raise SyntaxError(f"Tokens left after reading whole form, check parens")
+        raise SyntaxError("Tokens left after reading whole form, check parens")
     return ast
 
-def READ(line):
-    "Read an expression from a string"
+
+def READ(line: str) -> Expression:
+    """Read an expression from a string
+
+        Args:
+            line: string to read expression from
+
+        Returns:
+            form that was read"""
     return read_str(line)

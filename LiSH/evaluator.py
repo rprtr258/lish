@@ -1,4 +1,5 @@
-from typing import List, Union, Any
+from LiSH.reader import Expression
+from typing import List, Union
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
@@ -10,8 +11,8 @@ Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
 
 # TODO: rename to function
-"A user-defined Lisp function."
 class Procedure:
+    """A user-defined Lisp function."""
     # TODO: add keyword args
     def __init__(self, args: List[Symbol], body: Body, env: Env):
         i = 0
@@ -45,6 +46,7 @@ class Procedure:
         special_args = [] if self.rest_arg is None else [Symbol("&"), self.rest_arg]
         return PRINT([Symbol(self.__type__()), self.pos_args + special_args, self.body])
 
+
 class Macro(Procedure):
     def __init__(self, fn, env: Env):
         self.__call__ = fn.__call__
@@ -53,23 +55,34 @@ class Macro(Procedure):
         self.body = fn.body
         self.fn = fn
         self.env = env
+
     def __str__(self):
         return "MACRO, based on " + str(self.fn)
 
 
-
 def macroexpand(ast, env):
     while isinstance(ast, list) and \
-        len(ast) > 0 and \
-        isinstance(ast[0], Symbol) and \
-        (macro := env.get(ast[0])) and \
-        isinstance(macro, Macro):
+            len(ast) > 0 and \
+            isinstance(ast[0], Symbol) and \
+            (macro := env.get(ast[0])) and \
+            isinstance(macro, Macro):
         _, *exprs = ast
         ast = macro(*exprs)
     return ast
 
-def eval_ast(ast, env):
-    "Evaluate an expression in an environment."
+
+def eval_ast(ast: Expression, env: Env) -> Expression:
+    """Evaluate an expression in an environment.
+
+        Args:
+            ast: expression to evaluate
+            env: environment to use to lookup variable values
+
+        Returns:
+            result of evaluating expression
+
+        Raises:
+            RuntimeError: if expression is a symbol which value is not in environment"""
     if isinstance(ast, Symbol):
         # ast
         # but ast is symbol
@@ -88,6 +101,7 @@ def eval_ast(ast, env):
             res.append(EVAL(v, env))
         return Hashmap(res)
 
+
 def quasiquote(ast):
     if isinstance(ast, list):
         if len(ast) == 2 and ast[0] == Symbol("unquote"):
@@ -102,6 +116,7 @@ def quasiquote(ast):
             return res
     elif is_atom(ast) or isinstance(ast, Hashmap):
         return [Symbol("quote"), ast]
+
 
 # TODO: add try-catch
 # TODO: add implicit progn-s
@@ -125,8 +140,8 @@ def EVAL(ast, env):
             # (quasiquote exp) or `exp
             _, exp = ast
             ast = quasiquote(exp)
-            continue # tail call optimisation
-        elif form_word == Symbol("cond"): # TODO: test return default in (cond p1 e1 p2 e2 default)
+            continue  # tail call optimisation
+        elif form_word == Symbol("cond"):  # TODO: test return default in (cond p1 e1 p2 e2 default)
             # (cond p1 e1 p2 e2 ... pn en)
             # or
             # (cond p1 e1 p2 e2 ... pn en default)
@@ -135,17 +150,17 @@ def EVAL(ast, env):
                 predicates_exps, default_value = predicates_exps[:-1], predicates_exps[-1]
             found = False
             for i in range(0, len(predicates_exps), 2):
-                predicate, expression = predicates_exps[i : i + 2]
+                predicate, expression = predicates_exps[i: i + 2]
                 if EVAL(predicate, env):
                     found = True
                     ast = expression
                     break
             if found:
-                continue # tail call optimisation
+                continue  # tail call optimisation
             # if default value is given
             ast = default_value
-            continue # tail call optimisation
-        elif form_word == Symbol("set!"): # TODO: rename to set
+            continue  # tail call optimisation
+        elif form_word == Symbol("set!"):  # TODO: rename to set
             # (define var exp)
             _, var, exp = ast
             if not isinstance(var, Symbol):
@@ -153,7 +168,7 @@ def EVAL(ast, env):
             value = EVAL(exp, env)
             env.set(var, value)
             return value
-        elif form_word == Symbol("let*"): # TODO: rename to let
+        elif form_word == Symbol("let*"):  # TODO: rename to let
             # (let* (v1 e1 v2 e2...) e)
             assert len(ast) >= 3, "Wrong args count to let*"
             _, bindings, *exp = ast
@@ -161,10 +176,10 @@ def EVAL(ast, env):
                 raise RuntimeError(f"let* has {len(bindings)} items as bindings which is not even")
             let_env = Env(outer=env)
             for i in range(0, len(bindings), 2):
-                var, var_exp = bindings[i : i + 2]
+                var, var_exp = bindings[i: i + 2]
                 let_env[var] = EVAL(var_exp, let_env)
-            ast, env = [Symbol("progn")] + exp, let_env # implicit progn
-            continue # tail call optimisation
+            ast, env = [Symbol("progn")] + exp, let_env  # implicit progn
+            continue  # tail call optimisation
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
             _, macroform = ast
@@ -176,8 +191,8 @@ def EVAL(ast, env):
                 raise RuntimeError("Macro definition name is not a symbol")
             macrofn = EVAL(macrovalue, env)
             env.set(macroname, Macro(macrofn, env))
-            return [] # TODO: nil
-        elif form_word == Symbol("lambda"): # TODO: change to fn
+            return []  # TODO: nil
+        elif form_word == Symbol("lambda"):  # TODO: change to fn
             # (lambda (args...) body)
             _, args, body = ast
             for arg in args:
@@ -202,12 +217,12 @@ def EVAL(ast, env):
                         fun_args = proc.pos_args + [proc.rest_arg]
                         fun_exprs = args[:pos_len] + [args[pos_len:]]
                     ast, env = proc.body, Env(fun_args, fun_exprs, proc.env)
-                    continue # tail call optimisation
+                    continue  # tail call optimisation
                 else:
                     # (proc arg...)
                     # TODO: fix
                     # if len(proc.args) != len(ast[1:]):
-                        # raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")
+                    #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")
                     if (res := proc(*args)) is None:
                         print("FUCK YOU,", PRINT(ast), PRINT(args))
                     return res

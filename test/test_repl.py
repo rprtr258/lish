@@ -109,7 +109,7 @@ class TestRepl(unittest.TestCase):
             "(defmacro rev (x) ((defun rev-helper (x) (cond (nil? x) x (+ (rev-helper (cdr x)) (list (car x))))) x))",
             ("(rev (1 str))", "1")
         ])
-    
+
     def test_print_elochka(self):
         self.__test_cmds_output__([
             """(echo "el0chka")""",
@@ -160,7 +160,7 @@ lis.py(2)> 123
 lis.py(3)> 123
 """)
 
-    def test_prompt_counter(self):
+    def test_doseq(self):
         self.__test_cmds_output__([
             """(doseq (x '(-1 0 1)
                        y '(1 2 3))

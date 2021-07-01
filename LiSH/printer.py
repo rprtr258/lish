@@ -1,5 +1,6 @@
 from LiSH.datatypes import Symbol, Hashmap, is_atom
 
+
 # TODO: WHY THIS EXISTS?
 def pr_str_no_escape(exp):
     if exp == []:
@@ -34,6 +35,7 @@ def pr_str_no_escape(exp):
     else:
         print("WTF IS THIS:", exp)
         return str(exp)
+
 
 def pr_str(exp):
     def _escape(s):
@@ -78,6 +80,13 @@ def pr_str(exp):
         print("WTF IS THIS:", exp)
         return str(exp)
 
+
 def PRINT(exp):
-    "Convert an expression into a Lisp-readable string"
+    """Convert an expression into a Lisp-readable string
+
+        Args:
+            exp: expression to pretty print
+
+        Returns:
+            pretty printed expression"""
     return pr_str(exp)

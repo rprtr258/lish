@@ -2,10 +2,12 @@ from sys import stdout, argv
 import os.path
 import inspect
 
-from LiSH.reader import remove_comment, OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
+from LiSH.env import Env
+from LiSH.reader import OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
 from LiSH.datatypes import Symbol
 from LiSH.evaluator import EVAL
 from LiSH.printer import PRINT
+
 
 # TODO: move to reader
 def fix_parens(cmd_line):
@@ -21,13 +23,23 @@ def fix_parens(cmd_line):
         cmd_line + \
         CLOSE_PAREN * max(0, open_parens - close_parens)
 
+
 def print_prompt(env):
     print(EVAL([Symbol("prompt")], env), end="")
     stdout.flush()
 
-def rep(line, env):
-    "Read, Eval, Print line"
+
+def rep(line: str, env: Env) -> str:
+    """Read, Eval, Print line using provided environment
+
+        Args:
+            line: line of Lish to execute
+            env: environment to run EVAL in
+
+        Returns:
+            result of executing line pretty printed"""
     return PRINT(EVAL(READ(line), env))
+
 
 def trace_error(e, debug=False):
     if isinstance(e, RuntimeError):
@@ -59,11 +71,15 @@ def trace_error(e, debug=False):
             print("=" * 80)
             print()
 
+
 # TODO: add Ctrl-D support
 # TODO: Shift-Enter for multiline input
 # TODO: line editing, parens?
-def repl(env):
-    "A prompt-read-eval-print loop."
+def repl(env: Env):
+    """A prompt-read-eval-print loop.
+
+        Args:
+            env: environment to run repl with"""
     try:
         env[Symbol("*argv*")] = argv
         env[Symbol("*debug*")] = False
@@ -74,7 +90,8 @@ def repl(env):
             try:
                 print_prompt(env)
                 line = input()
-                if line.strip() == "": continue
+                if line.strip() == "":
+                    continue
                 line = fix_parens(line)
                 print(rep(line, env))
             except Exception as e:

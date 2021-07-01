@@ -30,5 +30,6 @@ class TestPRINT(unittest.TestCase):
     def test_list(self):
         self.__test_PRINT__([Symbol("f"), 42], "(f 42)")
 
+
 if __name__ == '__main__':
     unittest.main()

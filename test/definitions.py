@@ -1,4 +1,4 @@
-from context import LiSH
+from context import LiSH  # noqa: F401
 from LiSH.datatypes import Symbol
 
 NIL = []
