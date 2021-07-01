@@ -7,6 +7,7 @@ tasks:
       - pytest test
   run:
     cmds:
+      - reset
       - python -m LiSH
   commit:
     cmds:

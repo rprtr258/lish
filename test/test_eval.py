@@ -161,32 +161,5 @@ class TestEVAL(unittest.TestCase):
             self.__EVAL_test__("(abc 1 2 3)", None)
         self.assertEqual(str(cm.exception), "abc value not found")
 
-    # def test_label(self):
-        # self.__EVAL_test__(
-            # """((label subst
-                # (lambda (x y z)
-                    # (cond
-                        # ((atom? z) (cond
-                            # ((eq z y) x)
-                            # ('t z)))
-                        # ('t (cons (subst x y (car z))
-                            # (subst x y (cdr z)))))))
-                # 'm 'b '(a b (a b c) d))""",
-            # [A, Symbol("m"), [A, Symbol("m"), C], Symbol("d")])
-
-    # def test_defun_subst(self):
-        # self.__EVAL_test__(
-        # """((defun subst (x y z)
-            # (cond ((atom? z) (cond ((eq z y) x)
-                    # ('t z)))
-                # ('t (cons
-                    # (subst x y (car z))
-                    # (subst x y (cdr z))))))
-            # 'm 'b '(a b (a b c) d))""",
-            # [A, Symbol("m"), [A, Symbol("m"), C], Symbol("d")])
-
-    # def test_defun_cadr(self):
-        # self.__EVAL_test__("""((defun cadr (x) (car (cdr x))) '((a b) (c d) e))""", [C, Symbol("d")])
-
 if __name__ == '__main__':
     unittest.main()

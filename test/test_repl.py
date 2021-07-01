@@ -178,6 +178,16 @@ lis.py(3)> 123
 3
 """)
 
+    def test_mapstar(self):
+        self.__test_cmds__([
+            ("(map* * [[1 2 3] [-1 0 1]])", [-1, 0, 3])
+        ])
+
+    def test_starmap(self):
+        self.__test_cmds__([
+            ("(*map (juxt id inc) [1 2 3])", [1, 2, 2, 3, 3, 4])
+        ])
+
 
 if __name__ == '__main__':
     unittest.main()

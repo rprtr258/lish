@@ -110,7 +110,7 @@
     `(lambda (x)
         (map
             (lambda (f) (f x))
-            ~fs)))
+            (list ~@fs))))
 
 ; ============ FUNCTIONS SECTION ============
 
@@ -148,14 +148,13 @@
         (>= (len args) 2) (get args 1)
         (>= (len args) 1) (get args 0)
         1)
-      step (if (>= (len args) 3) (get args 2) 1)
-      ; TODO: move to implicit progn
-      _ (when
+      step (if (>= (len args) 3) (get args 2) 1))
+      (when
         (or
           (and (>= end start) (< step 0))
           (and (<= end start) (> step 0)))
         (throw (+ "Start " (str start) " is after end " (str end))))
-      _ (when (= step 0) (throw "Step is zero")))
+      (when (= step 0) (throw "Step is zero"))
       (letfun
         (range* (n k d)
           (if
@@ -170,8 +169,6 @@
       ()
       (cons (f (car xs)) (map f (cdr xs)))))
 
-; (map* * '((1 2 3) (-1 0 1))
-; (-1 0 3)
 (defun map* (f xss)
     (if
         (apply or (map nil? xss)) '()
@@ -179,8 +176,6 @@
             (apply f (map car xss))
             (map* f (map cdr xss)))))
 
-; (*map (# (list % (inc %))) '(1 2 3))
-; (1 2 2 3 3 4)
 (defun *map (f xs)
     (if
         (nil? xs) '()
