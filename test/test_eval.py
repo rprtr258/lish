@@ -1,7 +1,6 @@
 import unittest
 
 from definitions import A, B, C, NIL, TRUE, FALSE
-from context import LiSH
 from LiSH.datatypes import Symbol, Hashmap, Keyword
 from LiSH.env import default_env
 from LiSH.reader import READ

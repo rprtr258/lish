@@ -1,7 +1,6 @@
 import unittest
 
-from context import LiSH
-from definitions import A, B, C, QA, QB, QC, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
+from definitions import A, B, C, QA, QB, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
 from LiSH.reader import READ, tokenize
 from LiSH.datatypes import Symbol, Keyword, Hashmap
 

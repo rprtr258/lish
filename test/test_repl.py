@@ -2,8 +2,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 
-from definitions import NIL, A, B, C
-from context import LiSH
+from definitions import A, B, C
 from LiSH.reader import READ
 from LiSH.evaluator import EVAL
 from LiSH.env import default_env

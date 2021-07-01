@@ -1,7 +1,6 @@
 import unittest
 
 from definitions import NIL
-from context import LiSH
 from LiSH.printer import PRINT
 from LiSH.datatypes import Symbol
 
