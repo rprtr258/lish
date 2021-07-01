@@ -7,6 +7,9 @@ tasks:
   linter:
     cmds:
       - flake8 . --ignore=E501 --count --max-line-length=120
+  ci:
+    deps: [test, linter]
+    silent: true
   run:
     cmds:
       - python -m LiSH
@@ -14,5 +17,5 @@ tasks:
     cmds:
       - git add *
       - git status
-      - git commit -m "Some fixes"
+      - "read && git commit -m \"$REPLY\""
       - git push
