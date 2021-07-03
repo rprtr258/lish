@@ -119,8 +119,6 @@ class TestEVAL(unittest.TestCase):
     def test_list_operations(self):
         self.__EVAL_test__("(cons 1 2 3 '())", [1, 2, 3])
         self.__EVAL_test__("(cons 1 '(2 3))", [1, 2, 3])
-        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) abs)", [-1, 1, 2, -3, -4, 5])
-        self.__EVAL_test__("(sorted-by '(-1 1 5 -3 2 -4) (lambda (x) x))", [-4, -3, -1, 1, 2, 5])
         self.__EVAL_test__("(len '(-1 1 5 -3 2 -4))", 6)
         self.__EVAL_test__("(car '(-1 1 5 -3 2 -4))", -1)
         self.__EVAL_test__("(cdr '(-1 1 5 -3 2 -4))", [1, 5, -3, 2, -4])
@@ -159,6 +157,12 @@ class TestEVAL(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             self.__EVAL_test__("(abc 1 2 3)", None)
         self.assertEqual(str(cm.exception), "abc value not found")
+
+    def test_sort(self):
+        self.__EVAL_test__("(sort [9 6 5 8 7 6 3])", [3, 5, 6, 6, 7, 8, 9])
+        self.__EVAL_test__("(apply < (sort [9 6 5 8 7 3]))", True)
+        self.__EVAL_test__("(sort '(-1 1 5 -3 2 -4) abs)", [-1, 1, 2, -3, -4, 5])
+        self.__EVAL_test__("(sort '(-1 1 5 -3 2 -4) (lambda (x) x))", [-4, -3, -1, 1, 2, 5])
 
 
 if __name__ == '__main__':

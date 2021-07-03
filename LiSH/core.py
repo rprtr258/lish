@@ -60,6 +60,10 @@ def apply(proc, args):
         raise FunctionCallError(proc, args, e)
 
 
+def sort_by(xs, key=lambda x: x):
+    return sorted(xs, key=key)
+
+
 ns = {
     # ARIPHMETIC OPERATORS
     "+": plus,
@@ -94,8 +98,7 @@ ns = {
     "list?": lambda x: isinstance(x, list),
     "nil?": lambda x: x == [],
     "cons": cons,
-    # TODO: f is identity by default
-    "sorted-by": lambda x, f: sorted(x, key=lambda x: f(x)),
+    "sort": sort_by,
     "len": len,
     "car": lambda x: x[0],  # TODO: add assert for list
     "cdr": lambda x: x[1:],
