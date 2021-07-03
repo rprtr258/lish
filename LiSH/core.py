@@ -69,6 +69,15 @@ def car(xs):
     return xs[0]
 
 
+def hash_map(*args):
+    if len(args) % 2 != 0:
+        raise RuntimeError(f"Wrong number of args to hash-map{len(args)}")
+    return {
+        args[i]: args[i + 1]
+        for i in range(0, len(args), 2)
+    }
+
+
 ns = {
     # ARIPHMETIC OPERATORS
     "+": plus,
@@ -108,6 +117,9 @@ ns = {
     "car": car,
     "cdr": lambda x: x[1:],
     "list": lambda *x: list(x),
+
+    # HASHMAP OPERATIONS
+    "hash-map": hash_map,
 
     # STRING FUNCTIONS
     "join": lambda d, x: d.join(x),

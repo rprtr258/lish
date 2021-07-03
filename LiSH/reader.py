@@ -54,7 +54,7 @@ def read_list(reader):
     constructor, end = {
         '(': (list, ')'),
         '[': (lambda x: [Symbol("list")] + x, ']'),
-        '{': (Hashmap, '}')
+        '{': (lambda x: [Symbol("hash-map")] + x, '}')
     }[begin]
     while reader.peek() != end:
         L.append(read_form(reader))

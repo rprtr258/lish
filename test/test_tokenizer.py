@@ -2,7 +2,7 @@ import unittest
 
 from definitions import A, B, C, QA, QB, QNIL, ATOM_SYMBOL, QUOTE_SYMBOL, EQ_SYMBOL, COND_SYMBOL
 from LiSH.reader import READ, tokenize
-from LiSH.datatypes import Symbol, Keyword, Hashmap
+from LiSH.datatypes import Symbol, Keyword
 
 
 class TestTokenizer(unittest.TestCase):
@@ -40,16 +40,17 @@ class TestTokenizer(unittest.TestCase):
 
     def test_hashmap(self):
         A_A, A_B, A_C = "a", "b", "c"
-        self.__tokenizer_test__("{}", Hashmap([]))
-        self.__tokenizer_test__("  {   } ", Hashmap([]))
-        self.__tokenizer_test__('{"abc" 1}', Hashmap(["abc", 1]))
-        self.__tokenizer_test__('{"a" {"b" 2}}', Hashmap([A_A, Hashmap([A_B, 2])]))
-        self.__tokenizer_test__('{"a" {"b" {"c" 3}}}', Hashmap([A_A, Hashmap([A_B, Hashmap([A_C, 3])])]))
-        self.__tokenizer_test__('{  "a"  {"b"   {  "cde"     3   }  }}', Hashmap([A_A, Hashmap([A_B, Hashmap(["cde", 3])])]))
-        self.__tokenizer_test__('{"a1" 1 "a2" 2 "a3" 3}', Hashmap(["a1", 1, "a2", 2, "a3", 3]))
-        self.__tokenizer_test__('{  :a  {:b   {  :cde     3   }  }}', Hashmap([Keyword("a"), Hashmap([Keyword("b"), Hashmap([Keyword("cde"), 3])])]))
-        self.__tokenizer_test__('{"1" 1}', Hashmap(["1", 1]))
-        self.__tokenizer_test__("({})", [Hashmap([])])
+        HASHMAP = Symbol("hash-map")
+        self.__tokenizer_test__("{}", [HASHMAP])
+        self.__tokenizer_test__("  {   } ", [HASHMAP])
+        self.__tokenizer_test__('{"abc" 1}', [HASHMAP, "abc", 1])
+        self.__tokenizer_test__('{"a" {"b" 2}}', [HASHMAP, A_A, [HASHMAP, A_B, 2]])
+        self.__tokenizer_test__('{"a" {"b" {"c" 3}}}', [HASHMAP, A_A, [HASHMAP, A_B, [HASHMAP, A_C, 3]]])
+        self.__tokenizer_test__('{  "a"  {"b"   {  "cde"     3   }  }}', [HASHMAP, A_A, [HASHMAP, A_B, [HASHMAP, "cde", 3]]])
+        self.__tokenizer_test__('{"a1" 1 "a2" 2 "a3" 3}', [HASHMAP, "a1", 1, "a2", 2, "a3", 3])
+        self.__tokenizer_test__('{  :a  {:b   {  :cde     3   }  }}', [HASHMAP, Keyword("a"), [HASHMAP, Keyword("b"), [HASHMAP, Keyword("cde"), 3]]])
+        self.__tokenizer_test__('{"1" 1}', [HASHMAP, "1", 1])
+        self.__tokenizer_test__("({})", [[HASHMAP]])
 
     def test_comments(self):
         with self.assertRaises(SyntaxError) as cm:
@@ -65,7 +66,7 @@ class TestTokenizer(unittest.TestCase):
 bc)""", [Symbol("a"), Symbol("bc")])
 
     def test_deref(self):
-        self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), [Symbol("list"), 1, 2, 3], Hashmap(["a", 1])])
+        self.__tokenizer_test__('^{"a" 1} [1 2 3]', [Symbol("with-meta"), [Symbol("list"), 1, 2, 3], [Symbol("hash-map"), "a", 1]])
 
     def test_quote(self):
         self.__tokenizer_test__("'a", [QUOTE_SYMBOL, A])

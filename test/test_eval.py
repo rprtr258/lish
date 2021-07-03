@@ -150,8 +150,7 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__('{}', Hashmap([]))
         self.__EVAL_test__('{"a" (+ 1 2)}', Hashmap(["a", 3]))
         self.__EVAL_test__('{:a (+ 1 2)}', Hashmap([Keyword("a"), 3]))
-        # TODO: fix
-        # self.__EVAL_test__('{(+ 1 2) (+ 1 2)}', Hashmap([3, 3]))
+        self.__EVAL_test__('{(+ 1 2) (+ 1 2)}', Hashmap([3, 3]))
 
     def test_not_defined_function(self):
         with self.assertRaises(RuntimeError) as cm:
