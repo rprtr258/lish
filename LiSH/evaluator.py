@@ -10,8 +10,7 @@ from LiSH.printer import PRINT
 Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 
 
-# TODO: rename to function
-class Procedure:
+class Function:
     """A user-defined Lisp function."""
     # TODO: add keyword args
     def __init__(self, args: List[Symbol], body: Body, env: Env):
@@ -44,7 +43,7 @@ class Procedure:
         return PRINT([Symbol("fn"), self.pos_args + special_args, self.body])
 
 
-class Macro(Procedure):
+class Macro(Function):
     def __init__(self, fn, env: Env):
         self.__call__ = fn.__call__
         self.rest_arg = fn.rest_arg
@@ -195,15 +194,15 @@ def EVAL(ast, env):
             for arg in args:
                 if not isinstance(arg, Symbol):
                     raise RuntimeError(f"Argument name is not a symbol, but a {repr(arg)}")
-            return Procedure(args, body, env)
+            return Function(args, body, env)
         else:
             # (proc arg...)
             proc = EVAL(form_word, env)
-            if not callable(proc) and not isinstance(proc, Procedure):
+            if not callable(proc) and not isinstance(proc, Function):
                 raise RuntimeError(f"""{proc} (which is {PRINT(ast[0])}) is not a function call in {PRINT(ast)}.""")
             args = [EVAL(exp, env) for exp in ast[1:]]
             try:
-                if isinstance(proc, Procedure):
+                if isinstance(proc, Function):
                     if not (len(proc.pos_args) == len(args) or len(proc.pos_args) < len(args) and proc.rest_arg):
                         raise RuntimeError(f"{proc} expected {len(proc.pos_args)} arguments, but got {len(ast[1:])}")
                     if proc.rest_arg is None:

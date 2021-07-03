@@ -136,6 +136,9 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(int 3.14)", 3)
         self.__EVAL_test__("(int 3.14)", 3)
         self.__EVAL_test__("(prompt)", "lis.py> ")
+        self.__EVAL_test__("(fun? 1)", False)
+        self.__EVAL_test__("(fun? fun?)", True)
+        self.__EVAL_test__("(fun? (fn (k) k))", True)
 
     def test_let(self):
         self.__EVAL_test__("(let* (x 1 y 2) x)", 1)

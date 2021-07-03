@@ -100,7 +100,7 @@ ns = {
     "<=": lambda *x: all(map(lambda xy: op.le(xy[0], xy[1]), zip(x, x[1:]))),
     "=": lambda *x: all(map(lambda xy: op.eq(xy[0], xy[1]), zip(x, x[1:]))),
     "number?": lambda x: isinstance(x, int) or isinstance(x, float),
-    "procedure?": callable,
+    "fun?": callable,
     "atom?": lambda x: is_atom(x) or isinstance(x, Symbol) or isinstance(x, Keyword) or x == [],
     "symbol?": lambda x: isinstance(x, Symbol),
 
