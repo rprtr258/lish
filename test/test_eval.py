@@ -132,13 +132,9 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__('(str "OH" "LOL" "YA" 1)', '"OH" "LOL" "YA" 1')
 
     def test_callcc(self):
-        self.__EVAL_test__("(+ (call/cc (lambda (k) 2)) 2)", 4)  # call/cc does not clear stack to return 2
-        self.__EVAL_test__("(+ (call/cc (lambda (k) (k 2))) 2)", 6)
-        self.__EVAL_test__("""(let*
-            (x (call/cc (lambda (k) (lambda () (k (+ 2 3))))))
-            (cond
-                (number? x) (+ x (+ 4 5))
-                (x)))""", 14)
+        self.__EVAL_test__("(+ (call/cc (lambda (k) 2)) 2)", 2)
+        self.__EVAL_test__("(+ (call/cc (lambda (k) (k 2))) 2)", 4)
+        self.__EVAL_test__("(+ (call/cc (lambda (k) (k (+ 2 3)))) (+ 4 5))", 14)
 
     def test_progn(self):
         self.__EVAL_test__("(progn)", NIL)
@@ -155,6 +151,15 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(let* (x 1 y 2) x)", 1)
         self.__EVAL_test__("(str (let* (x 1 y 2) x))", "1")
         self.__EVAL_test__("(str (let* (x 1 y 2) y))", "2")
+
+    def test_let_fun(self):
+        # self.__EVAL_test__("""(let*
+        #     (! (lambda (n) (cond (= n 0) 1 (* n (! (- n 1))))))
+        #     (! 5))""", 120)
+        self.__EVAL_test__("""(let*
+            (f (lambda (n) (cond (< n 10) (g (+ n 1)) n))
+            g (lambda (n) (cond (< n 10) (f (+ n 1)) n)))
+            (f 0))""", 10)
 
     def test_vector(self):
         self.__EVAL_test__("[]", [])

@@ -3,7 +3,7 @@ version: '3'
 tasks:
   test:
     cmds:
-      - pytest test
+      - pytest test --exitfirst
   linter:
     cmds:
       - flake8 . --ignore=E501 --count --max-line-length=120

@@ -1,27 +1,31 @@
 (load-file "compose.lish")
 
-(defun print+sub (x y) (progn
-  (echo x " " y " -> ")
-  (- x y)))
+;(defun print+sub (x y) (progn
+;  (echo x " " y " -> ")
+;  (- x y)))
+;
+;(defun puzzle ()
+;  (call/cc
+;    (lambda (exit)
+;      (progn
+;        (defun local (e)
+;          (call/cc
+;            (lambda (local-exit)
+;              (exit
+;                (print+sub
+;                  e
+;                  (call/cc
+;                    (lambda (new-exit) (progn
+;                      (set! exit new-exit)
+;                      (local-exit false)))))))))
+;             (local 6)
+;             (exit 2)))))
+;
+;(set! x (puzzle))
 
-(defun puzzle ()
-  (call/cc
-    (lambda (exit)
-      (progn
-        (defun local (e)
-          (call/cc
-            (lambda (local-exit)
-              (exit
-                (print+sub
-                  e
-                  (call/cc
-                    (lambda (new-exit) (progn
-                      (set! exit new-exit)
-                      (local-exit false)))))))))
-             (local 6)
-             (exit 2)))))
-
-(set! x (puzzle))
+(defun cur/cc () (call/cc (lambda (k) k)))
+(set! n 10)
+(let* (r (cur/cc)) (echo n) (cond (= 0 n) 'done (progn (swap! n dec) (r r))))
 
 ;(set! prompt
 ; (let* (cnt 0)

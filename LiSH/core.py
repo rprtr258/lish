@@ -116,8 +116,8 @@ ns = {
     "ls-r": lambda x: [[dir_name, files] for dir_name, _, files in walk(x)],
     "echo": echo,
     "name": lambda x: x if isinstance(x, Symbol) else [],
-    "progn": lambda *x: x[-1] if len(x) > 0 else [],
     # TODO: rename to parse-int? / str->int
+    "progn": lambda *x: x[-1] if len(x) > 0 else [],
     "int": int,
     "exit": lambda: exit(0),
     "prompt": lambda: "lis.py> ",
