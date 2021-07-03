@@ -3,25 +3,10 @@ import os.path
 import inspect
 
 from LiSH.env import Env
-from LiSH.reader import OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
+from LiSH.reader import READ, fix_parens
 from LiSH.datatypes import Symbol
 from LiSH.evaluator import EVAL
 from LiSH.printer import PRINT
-
-
-# TODO: move to reader
-def fix_parens(cmd_line):
-    cmd_line = cmd_line.strip()
-    if cmd_line[0] not in [OPEN_PAREN, QUOTE]:
-        cmd_line = OPEN_PAREN + cmd_line
-    if cmd_line[-1] != CLOSE_PAREN:
-        cmd_line = cmd_line + CLOSE_PAREN
-    # TODO: don't count brackets in strings
-    open_parens, close_parens = cmd_line.count(OPEN_PAREN), cmd_line.count(CLOSE_PAREN)
-    return \
-        OPEN_PAREN * max(0, close_parens - open_parens) + \
-        cmd_line + \
-        CLOSE_PAREN * max(0, open_parens - close_parens)
 
 
 def print_prompt(env):

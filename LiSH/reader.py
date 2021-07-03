@@ -4,12 +4,17 @@ import re
 from LiSH.datatypes import Symbol, Keyword, Hashmap
 
 
-# TODO: remove
-OPEN_PAREN = '('
-CLOSE_PAREN = ')'
-QUOTE = '\''
 TOKEN_REGEX = re.compile(r"""[\s]*(~@|[\[\]{}()'`~^]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]+)""")
-
+CLOSE_2_OPEN_PARENS = {
+    ')': '(',
+    ']': '[',
+    '}': '{'
+}
+OPEN_2_CLOSE_PARENS = {
+    '(': ')',
+    '[': ']',
+    '{': '}'
+}
 Expression = Union[int, float, str, Symbol, Keyword, Hashmap, List["Expression"]]
 
 
@@ -107,9 +112,9 @@ def read_form(reader: Reader) -> Expression:
         meta = read_list(reader)
         data = read_form(reader)
         return [Symbol("with-meta"), data, meta]
-    if token == CLOSE_PAREN:
+    if token in [')', ']', '}']:
         # TODO: print place
-        raise SyntaxError(f"Unexpected {CLOSE_PAREN}")
+        raise SyntaxError(f"Unexpected {token}")
     # ATOM
     return read_atom(token)
 
@@ -123,11 +128,7 @@ def check_parens(tokens):
         if token in ['(', '[', '{']:
             stack.append(token)
         elif token in [')', ']', '}']:
-            close_paren = {
-                ')': '(',
-                ']': '[',
-                '}': '{'
-            }[token]
+            close_paren = CLOSE_2_OPEN_PARENS[token]
             if len(stack) == 0 or stack.pop() != close_paren:
                 raise SyntaxError(f"Unexpected {token}")
     if len(stack) != 0:
@@ -154,3 +155,23 @@ def READ(line: str) -> Expression:
         Returns:
             form that was read"""
     return read_str(line)
+
+
+# TODO: move to reader
+def fix_parens(cmd_line):
+    cmd_line = cmd_line.strip()
+    if cmd_line[0] not in ['(']:
+        cmd_line = '(' + cmd_line
+    paren_stack = []
+    tokens = tokenize(cmd_line)
+    for token in tokens:
+        if token in ['(', '[', '{']:
+            paren_stack.append(token)
+        elif token in [')', ']', '}']:
+            if len(paren_stack) == 0:
+                cmd_line = CLOSE_2_OPEN_PARENS[token] + cmd_line
+            elif paren_stack.pop() != CLOSE_2_OPEN_PARENS[token]:
+                raise RuntimeError(f"Unexpected {token}")
+    while len(paren_stack) > 0:
+        cmd_line = cmd_line + OPEN_2_CLOSE_PARENS[paren_stack.pop()]
+    return cmd_line
