@@ -7,7 +7,7 @@ from os import walk, path
 from LiSH.datatypes import is_atom, Keyword, Symbol
 from LiSH.reader import read_str
 from LiSH.error_reporting.errors import FunctionCallError
-from LiSH.printer import PRINT, pr_str_no_escape
+from LiSH.printer import PRINT, pr_str
 
 
 def plus(*x):
@@ -21,7 +21,7 @@ def plus(*x):
 
 def echo(*x):
     for y in x:
-        print(pr_str_no_escape(y), end="")
+        print(pr_str(y, None), end="")
     print()
     return []
 
