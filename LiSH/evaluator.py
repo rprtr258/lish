@@ -2,7 +2,8 @@ from typing import Callable, List, Union
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
-from LiSH.errors import FunctionCallError, errprint
+from LiSH.errors import FunctionCallError
+from LiSH.errprint import errprint
 from LiSH.reader import Expression
 from LiSH.printer import PRINT
 
@@ -31,21 +32,18 @@ class Procedure:
         self.stack = stack
 
     def __call__(self, *args):
+        args = list(args)
         if self.rest_arg is None:
             return EVAL(self.body, Env(self.pos_args, args, self.env), [], self.stack + [[str(self), args]])
         else:
-            args = list(args)
             pos_len = len(self.pos_args)
             fun_args = self.pos_args + [self.rest_arg]
             fun_exprs = args[:pos_len] + [args[pos_len:]]
             return EVAL(self.body, Env(fun_args, fun_exprs, self.env))
 
-    def __type__(self):
-        return "lambda"
-
     def __str__(self):
         special_args = [] if self.rest_arg is None else [Symbol("&"), self.rest_arg]
-        return PRINT([Symbol(self.__type__()), self.pos_args + special_args, self.body])
+        return PRINT([Symbol("lambda"), self.pos_args + special_args, self.body])
 
 
 class Macro(Procedure):
@@ -130,11 +128,16 @@ def gensym():
 # TODO: add try-catch
 # TODO: add implicit progn-s
 def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expression]] = [], stack: List[Expression] = []):
-    # DEBUG CALL STACK
-    # if type(ast) == list:
-    #     for frame in stack:
-    #         print(PRINT(frame))
-    #     print()
+    if False:  # TODO: cmd arg log cur eval
+        errprint(f"=========== EVAL {PRINT(ast)} ===========")
+    if type(ast) == list:
+        if False:  # TODO: cmd arg log eval stack
+            # DEBUG CALL STACK
+            errprint("=========== STACK ===========")
+            for frame in stack:
+                print(frame)
+                errprint(PRINT(frame))
+            errprint("=========== STACK ===========")
     gs = gensym()
     while True:
         # MACROEXPANSION
@@ -145,17 +148,20 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             return eval_ast(ast, env)
         if ast == []:
             return ast
-        errprint(env)
-        # DEBUG CONTINUATION
-        errprint(PRINT(ast), ":")
-        for zipp in zipper:
-            errprint("  ", PRINT(zipp(Symbol("<>"))))
-        errprint("OR AS CONTINUATION:")
-        res = Symbol("<>")
-        for zipp in zipper[::-1]:
-            res = zipp(res)
-        errprint("  ", PRINT(res))
-        errprint()
+        if False:  # TODO: cmd arg log eval env
+            errprint(env)
+        if False:  # TODO: cmd arg log eval continuation
+            # DEBUG CONTINUATION
+            errprint("=========== CONTINUATION ===========")
+            errprint(PRINT(ast), ":")
+            for zipp in zipper:
+                errprint("  ", PRINT(zipp(Symbol("<>"))))
+            errprint("OR AS CONTINUATION:")
+            res = Symbol("<>")
+            for zipp in zipper[::-1]:
+                res = zipp(res)
+            errprint("  ", PRINT(res))
+            errprint("=========== CONTINUATION ===========")
 
         form_word = ast[0]
         if form_word == Symbol("quote"):
@@ -242,6 +248,7 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             continuation = cont_arg
             for cont in zipper[::-1]:
                 continuation = cont(continuation)
+            # TODO: skip original continuation
             ast = [f, [Symbol("lambda"), [cont_arg], continuation]]
             continue  # tail call optimization
         else:

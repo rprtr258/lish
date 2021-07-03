@@ -10,7 +10,7 @@ class TestPRINT(unittest.TestCase):
         self.assertEqual(PRINT(expression), expected_str)
 
     def test_nil(self):
-        self.__test_PRINT__(NIL, "nil")
+        self.__test_PRINT__(NIL, "()")
 
     def test_quote(self):
         self.__test_PRINT__([Symbol("quote"), Symbol("a")], "'a")

@@ -134,6 +134,11 @@ class TestEVAL(unittest.TestCase):
     def test_callcc(self):
         self.__EVAL_test__("(+ (call/cc (lambda (k) 2)) 2)", 4)  # call/cc does not clear stack to return 2
         self.__EVAL_test__("(+ (call/cc (lambda (k) (k 2))) 2)", 6)
+        self.__EVAL_test__("""(let*
+            (x (call/cc (lambda (k) (lambda () (k (+ 2 3))))))
+            (cond
+                (number? x) (+ x (+ 4 5))
+                (x)))""", 14)
 
     def test_progn(self):
         self.__EVAL_test__("(progn)", NIL)

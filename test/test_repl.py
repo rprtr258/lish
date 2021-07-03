@@ -197,6 +197,31 @@ lis.py(3)> 123
 (fact-t 5) = 120
 """)
 
+    def test_curcc_n(self):
+        self.__test_cmds_output__([
+            "(defun cur/cc () (call/cc (lambda (k) k)))",
+            "(set! n 10)",
+            """(let*
+                (r (cur/cc))
+                (echo n)
+                (cond
+                    (= 0 n) 'done
+                    (progn
+                        (swap! n dec)
+                        (r r))))"""
+        ], """10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+""")
+
 
 if __name__ == '__main__':
     unittest.main()
