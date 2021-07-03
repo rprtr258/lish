@@ -2,6 +2,6 @@
 
 (set! prompt
   (let* (cnt 0)
-    (lambda () (progn
+    (fn () (progn
       (swap! cnt inc)
       (+ "lis.py(" (str cnt) ")> ")))))

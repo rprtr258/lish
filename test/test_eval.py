@@ -52,14 +52,14 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(cond (= 'a 'b) 'first 'second)", Symbol("second"))
 
     def test_lambda(self):
-        self.__EVAL_test__("((lambda (x) (cons x '(b))) 'a)", [A, B])
-        self.__EVAL_test__("((lambda (x y) (cons x (cdr y))) 'z '(a b c))", [Symbol("z"), B, C])
-        self.__EVAL_test__("((lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))", [A, B, C])
-        self.__EVAL_test__("((lambda (x & y) (list x y)) 2)", [2, NIL])
-        self.__EVAL_test__("((lambda (x & y) (list x y)) 2 3)", [2, [3]])
-        self.__EVAL_test__("((lambda (x & y) (list x y)) 2 3 4)", [2, [3, 4]])
-        self.__EVAL_test__("((lambda (x y & z) (list x y z)) 2 3 4)", [2, 3, [4]])
-        self.__EVAL_test__("((lambda (x & y) (* x (apply + y))) 2 3 4)", 14)
+        self.__EVAL_test__("((fn (x) (cons x '(b))) 'a)", [A, B])
+        self.__EVAL_test__("((fn (x y) (cons x (cdr y))) 'z '(a b c))", [Symbol("z"), B, C])
+        self.__EVAL_test__("((fn (f) (f '(b c))) (fn (x) (cons 'a x)))", [A, B, C])
+        self.__EVAL_test__("((fn (x & y) [x y]) 2)", [2, NIL])
+        self.__EVAL_test__("((fn (x & y) [x y]) 2 3)", [2, [3]])
+        self.__EVAL_test__("((fn (x & y) [x y]) 2 3 4)", [2, [3, 4]])
+        self.__EVAL_test__("((fn (x y & z) [x y z]) 2 3 4)", [2, 3, [4]])
+        self.__EVAL_test__("((fn (x & y) (* x (apply + y))) 2 3 4)", 14)
 
     def test_ariphmetic_operators(self):
         self.__EVAL_test__("(+ 1 2 3)", 6)
@@ -162,7 +162,7 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(sort [9 6 5 8 7 6 3])", [3, 5, 6, 6, 7, 8, 9])
         self.__EVAL_test__("(apply < (sort [9 6 5 8 7 3]))", True)
         self.__EVAL_test__("(sort '(-1 1 5 -3 2 -4) abs)", [-1, 1, 2, -3, -4, 5])
-        self.__EVAL_test__("(sort '(-1 1 5 -3 2 -4) (lambda (x) x))", [-4, -3, -1, 1, 2, 5])
+        self.__EVAL_test__("(sort '(-1 1 5 -3 2 -4) (fn (x) x))", [-4, -3, -1, 1, 2, 5])
 
 
 if __name__ == '__main__':
