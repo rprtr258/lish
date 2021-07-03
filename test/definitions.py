@@ -2,9 +2,6 @@ from context import LiSH  # noqa: F401
 from LiSH.datatypes import Symbol
 
 NIL = []
-# TODO: inline
-TRUE = True
-FALSE = False
 A = Symbol("a")
 B = Symbol("b")
 C = Symbol("c")

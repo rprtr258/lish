@@ -157,7 +157,6 @@ def READ(line: str) -> Expression:
     return read_str(line)
 
 
-# TODO: move to reader
 def fix_parens(cmd_line):
     cmd_line = cmd_line.strip()
     if cmd_line[0] not in ['(']:

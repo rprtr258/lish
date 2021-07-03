@@ -1,6 +1,6 @@
 import unittest
 
-from definitions import A, B, C, NIL, TRUE, FALSE
+from definitions import A, B, C, NIL
 from LiSH.datatypes import Symbol, Hashmap, Keyword
 from LiSH.env import default_env
 from LiSH.reader import READ
@@ -20,19 +20,19 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(quote ())", NIL)
 
     def test_atom(self):
-        self.__EVAL_test__("(atom? (quote a))", TRUE)
-        self.__EVAL_test__("(atom? (quote (a b c)))", FALSE)
-        self.__EVAL_test__("(atom? (quote ()))", TRUE)
-        self.__EVAL_test__("(atom? 'a)", TRUE)
-        self.__EVAL_test__("(atom? '(a b c))", FALSE)
-        self.__EVAL_test__("(atom? '())", TRUE)
-        self.__EVAL_test__("(atom? (atom? 'a))", TRUE)
-        self.__EVAL_test__("(atom? '(atom? 'a))", FALSE)
+        self.__EVAL_test__("(atom? (quote a))", True)
+        self.__EVAL_test__("(atom? (quote (a b c)))", False)
+        self.__EVAL_test__("(atom? (quote ()))", True)
+        self.__EVAL_test__("(atom? 'a)", True)
+        self.__EVAL_test__("(atom? '(a b c))", False)
+        self.__EVAL_test__("(atom? '())", True)
+        self.__EVAL_test__("(atom? (atom? 'a))", True)
+        self.__EVAL_test__("(atom? '(atom? 'a))", False)
 
     def test_eq(self):
-        self.__EVAL_test__("(= 'a 'a)", TRUE)
-        self.__EVAL_test__("(= 'a 'b)", FALSE)
-        self.__EVAL_test__("(= '() '())", TRUE)
+        self.__EVAL_test__("(= 'a 'a)", True)
+        self.__EVAL_test__("(= 'a 'b)", False)
+        self.__EVAL_test__("(= '() '())", True)
 
     def test_cons(self):
         self.__EVAL_test__("(cons 'a '(b c))", [A, B, C])
@@ -80,41 +80,41 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__("(round 3.14)", 3)
 
     def test_comparison_operators(self):
-        self.__EVAL_test__("(> 1 2 3)", FALSE)
-        self.__EVAL_test__("(> 3 2 1)", TRUE)
-        self.__EVAL_test__("(> 3 2 3)", FALSE)
-        self.__EVAL_test__("(> 3 2 2 1)", FALSE)
-        self.__EVAL_test__("(< 1 2 3)", TRUE)
-        self.__EVAL_test__("(< 3 2 1)", FALSE)
-        self.__EVAL_test__("(< 3 2 3)", FALSE)
-        self.__EVAL_test__("(< 3 2 2 1)", FALSE)
-        self.__EVAL_test__("(>= 1 2 3)", FALSE)
-        self.__EVAL_test__("(>= 3 2 1)", TRUE)
-        self.__EVAL_test__("(>= 3 2 2 1)", TRUE)
-        self.__EVAL_test__("(<= 1 2 3)", TRUE)
-        self.__EVAL_test__("(<= 3 2 1)", FALSE)
-        self.__EVAL_test__("(<= 3 2 3)", FALSE)
-        self.__EVAL_test__("(<= 1 2 2 3)", TRUE)
-        self.__EVAL_test__("(= 3 2 3)", FALSE)
-        self.__EVAL_test__("(= 2 (+ 1 1) (- 4 2))", TRUE)
-        self.__EVAL_test__("(nil? '())", TRUE)
-        self.__EVAL_test__("(nil? '(1))", FALSE)
-        self.__EVAL_test__("(list? '())", TRUE)
-        self.__EVAL_test__("(list? '(1))", TRUE)
-        self.__EVAL_test__("(number? '())", FALSE)
-        self.__EVAL_test__("(number? '(1))", FALSE)
-        self.__EVAL_test__("(number? 'a)", FALSE)
-        self.__EVAL_test__("(number? 11)", TRUE)
-        self.__EVAL_test__("(number? 11.22)", TRUE)
-        self.__EVAL_test__("(symbol? '())", FALSE)
-        self.__EVAL_test__("(symbol? '(1))", FALSE)
-        self.__EVAL_test__("(symbol? 'a)", TRUE)
-        self.__EVAL_test__("(symbol? 11)", FALSE)
-        self.__EVAL_test__("(symbol? 11.22)", FALSE)
+        self.__EVAL_test__("(> 1 2 3)", False)
+        self.__EVAL_test__("(> 3 2 1)", True)
+        self.__EVAL_test__("(> 3 2 3)", False)
+        self.__EVAL_test__("(> 3 2 2 1)", False)
+        self.__EVAL_test__("(< 1 2 3)", True)
+        self.__EVAL_test__("(< 3 2 1)", False)
+        self.__EVAL_test__("(< 3 2 3)", False)
+        self.__EVAL_test__("(< 3 2 2 1)", False)
+        self.__EVAL_test__("(>= 1 2 3)", False)
+        self.__EVAL_test__("(>= 3 2 1)", True)
+        self.__EVAL_test__("(>= 3 2 2 1)", True)
+        self.__EVAL_test__("(<= 1 2 3)", True)
+        self.__EVAL_test__("(<= 3 2 1)", False)
+        self.__EVAL_test__("(<= 3 2 3)", False)
+        self.__EVAL_test__("(<= 1 2 2 3)", True)
+        self.__EVAL_test__("(= 3 2 3)", False)
+        self.__EVAL_test__("(= 2 (+ 1 1) (- 4 2))", True)
+        self.__EVAL_test__("(nil? '())", True)
+        self.__EVAL_test__("(nil? '(1))", False)
+        self.__EVAL_test__("(list? '())", True)
+        self.__EVAL_test__("(list? '(1))", True)
+        self.__EVAL_test__("(number? '())", False)
+        self.__EVAL_test__("(number? '(1))", False)
+        self.__EVAL_test__("(number? 'a)", False)
+        self.__EVAL_test__("(number? 11)", True)
+        self.__EVAL_test__("(number? 11.22)", True)
+        self.__EVAL_test__("(symbol? '())", False)
+        self.__EVAL_test__("(symbol? '(1))", False)
+        self.__EVAL_test__("(symbol? 'a)", True)
+        self.__EVAL_test__("(symbol? 11)", False)
+        self.__EVAL_test__("(symbol? 11.22)", False)
 
     def test_bool_functions(self):
-        self.__EVAL_test__("(or true false true)", TRUE)
-        self.__EVAL_test__("(or false false)", FALSE)
+        self.__EVAL_test__("(or true false true)", True)
+        self.__EVAL_test__("(or false false)", False)
 
     def test_list_operations(self):
         self.__EVAL_test__("(cons 1 2 3 '())", [1, 2, 3])
