@@ -1,10 +1,11 @@
+from LiSH.errprint import errprint
 from LiSH.datatypes import Symbol, Hashmap, is_atom
 
 
 # TODO: WHY THIS EXISTS?
 def pr_str_no_escape(exp):
     if exp == []:
-        return "nil"
+        return "()"
     elif isinstance(exp, Symbol):
         return exp
     elif isinstance(exp, Hashmap):
@@ -29,12 +30,11 @@ def pr_str_no_escape(exp):
     elif isinstance(exp, list):
         return "(" + " ".join(map(pr_str_no_escape, exp)) + ")"
     elif exp is None:
-        print("[FEAR AND LOATHING IN NONE VEGAS]")
+        errprint("[FEAR AND LOATHING IN NONE VEGAS]")
     elif callable(exp):
         return str(exp)
     else:
-        print("WTF IS THIS:", exp)
-        return str(exp)
+        raise RuntimeError(f"Unprintable expression: {exp}")
 
 
 def pr_str(exp):
@@ -42,7 +42,7 @@ def pr_str(exp):
         return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
     if exp == []:
-        return "nil"
+        return "()"
     elif isinstance(exp, Symbol):
         return exp
     elif isinstance(exp, Hashmap):
@@ -77,8 +77,7 @@ def pr_str(exp):
     elif callable(exp):
         return str(exp)
     else:
-        print("WTF IS THIS:", exp)
-        return str(exp)
+        raise RuntimeError(f"Unprintable expression: {exp}")
 
 
 def PRINT(exp):

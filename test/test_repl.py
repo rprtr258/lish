@@ -3,16 +3,17 @@ from contextlib import redirect_stdout
 from io import StringIO
 
 from definitions import A, B, C
-from LiSH.reader import READ
+from LiSH.reader import READ, read_str
 from LiSH.evaluator import EVAL
-from LiSH.env import default_env
+from LiSH.env import NamedFunction, default_env
 from LiSH.datatypes import Symbol
 
 
 class TestRepl(unittest.TestCase):
     def __create_env__(self):
         env = default_env()
-        env[Symbol("eval")] = lambda ast: EVAL(ast, env)
+        env[Symbol("read")] = NamedFunction("read", read_str)
+        env[Symbol("eval")] = NamedFunction("eval", lambda ast: EVAL(ast, env))
         EVAL(READ('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))'), env)
         EVAL(READ('(load-file "compose.lish")'), env)
         return env
@@ -194,6 +195,31 @@ lis.py(3)> 123
 (fact-t 3) = 6
 (fact-t 4) = 24
 (fact-t 5) = 120
+""")
+
+    def test_curcc_n(self):
+        self.__test_cmds_output__([
+            "(defun cur/cc () (call/cc (lambda (k) k)))",
+            "(set! n 10)",
+            """(let*
+                (r (cur/cc))
+                (echo n)
+                (cond
+                    (= 0 n) 'done
+                    (progn
+                        (swap! n dec)
+                        (r r))))"""
+        ], """10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
 """)
 
 
