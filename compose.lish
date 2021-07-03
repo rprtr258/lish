@@ -1,13 +1,13 @@
 ; TODO: add docs
 ; ============ MACRO SECTION ============
 
-(setmacro defun (lambda (f args body)
+(setmacro defun (fn (f args body)
     `(set! ~f
-        (lambda ~args ~body))))
+        (fn ~args ~body))))
 
-(setmacro defmacro (lambda (m args body)
+(setmacro defmacro (fn (m args body)
     `(setmacro ~m
-        (lambda ~args ~body))))
+        (fn ~args ~body))))
 
 (defmacro if (p x y)
     `(cond ~p ~x ~y))
@@ -17,7 +17,7 @@
 
 (defmacro compose (& fs)
   (let*
-    (compose* (lambda (fs)
+    (compose* (fn (fs)
       (if
         (nil? fs)
         `x
@@ -25,7 +25,7 @@
           (cur-fun (car fs)
           rest-funs (cdr fs))
           `(~cur-fun ~(compose* rest-funs))))))
-    `(lambda (x) ~(compose* fs))))
+    `(fn (x) ~(compose* fs))))
 
 (defmacro swap! (x f) `(set! ~x (~f ~x)))
 
@@ -56,7 +56,7 @@
       res)))
 
 ; anaphoric lambda, argument binds to %
-(defmacro # (body) `(lambda (%) ~body))
+(defmacro # (body) `(fn (%) ~body))
 
 ; rename to for
 (defmacro doseq (seq-exprs body)
@@ -69,7 +69,7 @@
         body
         (doseq* (cddr sxs) body)))
       `(map
-        (lambda (~var-name) ~the-body)
+        (fn (~var-name) ~the-body)
         ~var-seq)))
   seq-exprs body))
 
@@ -102,13 +102,13 @@
                 (cons-if
                     (atom? next-f)
                     `(~next-f ~fst)
-                    `((lambda (%%) ~next-f) ~fst))
+                    `((fn (%%) ~next-f) ~fst))
                     rest))))
 
 (defmacro juxt (& fs)
-    `(lambda (x)
+    `(fn (x)
         (map
-            (lambda (f) (f x))
+            (fn (f) (f x))
             (list ~@fs))))
 
 ; ============ FUNCTIONS SECTION ============

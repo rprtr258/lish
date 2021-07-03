@@ -39,12 +39,9 @@ class Procedure:
             fun_exprs = args[:pos_len] + [args[pos_len:]]
             return EVAL(self.body, Env(fun_args, fun_exprs, self.env))
 
-    def __type__(self):
-        return "lambda"
-
     def __str__(self):
         special_args = [] if self.rest_arg is None else [Symbol("&"), self.rest_arg]
-        return PRINT([Symbol(self.__type__()), self.pos_args + special_args, self.body])
+        return PRINT([Symbol("fn"), self.pos_args + special_args, self.body])
 
 
 class Macro(Procedure):
@@ -57,7 +54,7 @@ class Macro(Procedure):
         self.env = env
 
     def __str__(self):
-        return "MACRO, based on " + str(self.fn)
+        return "MACRO: " + str(self.fn)
 
 
 def macroexpand(ast, env):
@@ -192,8 +189,8 @@ def EVAL(ast, env):
             macrofn = EVAL(macrovalue, env)
             env.set(macroname, Macro(macrofn, env))
             return []  # TODO: nil
-        elif form_word == Symbol("lambda"):  # TODO: change to fn
-            # (lambda (args...) body)
+        elif form_word == Symbol("fn"):
+            # (fn (args...) body)
             _, args, body = ast
             for arg in args:
                 if not isinstance(arg, Symbol):

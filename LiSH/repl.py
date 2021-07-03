@@ -69,7 +69,7 @@ def repl(env: Env):
         env[Symbol("*argv*")] = argv
         env[Symbol("*debug*")] = False
         env[Symbol("eval")] = lambda ast: EVAL(ast, env)
-        rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
+        rep('(set! load-file (fn (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
         rep('(load-file ".lishrc")', env)
         while True:
             try:
