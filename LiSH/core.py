@@ -64,6 +64,11 @@ def sort_by(xs, key=lambda x: x):
     return sorted(xs, key=key)
 
 
+def car(xs):
+    assert len(xs) > 0, "Tried to car empty array"
+    return xs[0]
+
+
 ns = {
     # ARIPHMETIC OPERATORS
     "+": plus,
@@ -100,7 +105,7 @@ ns = {
     "cons": cons,
     "sort": sort_by,
     "len": len,
-    "car": lambda x: x[0],  # TODO: add assert for list
+    "car": car,
     "cdr": lambda x: x[1:],
     "list": lambda *x: list(x),
 
@@ -121,7 +126,6 @@ ns = {
     "echo": echo,
     "name": lambda x: x if isinstance(x, Symbol) else [],
     "progn": lambda *x: x[-1],
-    # TODO: rename to parse-int? / str->int
     "int": int,
     "exit": lambda: exit(0),
     "prompt": lambda: "lis.py> ",
