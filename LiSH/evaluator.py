@@ -234,6 +234,8 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             return []  # TODO: nil
         elif form_word == Symbol("lambda"):  # TODO: change to fn
             # (lambda (args...) body)
+            # TODO: implicit progn
+            assert len(ast) == 3, f"Wrong lambda definition: {PRINT(ast)}"
             _, args, body = ast
             for arg in args:
                 if not isinstance(arg, Symbol):

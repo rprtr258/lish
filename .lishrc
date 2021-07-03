@@ -1,5 +1,28 @@
 (load-file "compose.lish")
 
+(defun print+sub (x y) (progn
+  (echo x " " y " -> ")
+  (- x y)))
+
+(defun puzzle ()
+  (call/cc
+    (lambda (exit)
+      (progn
+        (defun local (e)
+          (call/cc
+            (lambda (local-exit)
+              (exit
+                (print+sub
+                  e
+                  (call/cc
+                    (lambda (new-exit) (progn
+                      (set! exit new-exit)
+                      (local-exit false)))))))))
+             (local 6)
+             (exit 2)))))
+
+(set! x (puzzle))
+
 ;(set! prompt
 ; (let* (cnt 0)
 ;   (lambda () (progn
