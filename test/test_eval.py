@@ -131,9 +131,16 @@ class TestEVAL(unittest.TestCase):
         self.__EVAL_test__('(str \'("OH" "LOL" "YA"))', '("OH" "LOL" "YA")')
         self.__EVAL_test__('(str "OH" "LOL" "YA" 1)', '"OH" "LOL" "YA" 1')
 
+    def test_callcc(self):
+        self.__EVAL_test__("(+ (call/cc (lambda (k) 2)) 2)", 4)  # call/cc does not clear stack to return 2
+        self.__EVAL_test__("(+ (call/cc (lambda (k) (k 2))) 2)", 6)
+
+    def test_progn(self):
+        self.__EVAL_test__("(progn)", NIL)
+        self.__EVAL_test__("(progn 1 2 3)", 3)
+
     def test_other_functions(self):
         self.__EVAL_test__("(name 'a)", "a")
-        self.__EVAL_test__("(progn 1 2 3)", 3)
         self.__EVAL_test__('(int "234")', 234)
         self.__EVAL_test__("(int 3.14)", 3)
         self.__EVAL_test__("(int 3.14)", 3)

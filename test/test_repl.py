@@ -3,16 +3,17 @@ from contextlib import redirect_stdout
 from io import StringIO
 
 from definitions import A, B, C
-from LiSH.reader import READ
+from LiSH.reader import READ, read_str
 from LiSH.evaluator import EVAL
-from LiSH.env import default_env
+from LiSH.env import NamedFunction, default_env
 from LiSH.datatypes import Symbol
 
 
 class TestRepl(unittest.TestCase):
     def __create_env__(self):
         env = default_env()
-        env[Symbol("eval")] = lambda ast: EVAL(ast, env)
+        env[Symbol("read")] = NamedFunction("read", read_str)
+        env[Symbol("eval")] = NamedFunction("eval", lambda ast: EVAL(ast, env))
         EVAL(READ('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))'), env)
         EVAL(READ('(load-file "compose.lish")'), env)
         return env

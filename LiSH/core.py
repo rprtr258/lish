@@ -5,7 +5,6 @@ from functools import reduce
 from os import walk, path
 
 from LiSH.datatypes import is_atom, Keyword, Symbol
-from LiSH.reader import read_str
 from LiSH.errors import FunctionCallError
 from LiSH.printer import PRINT, pr_str_no_escape
 
@@ -117,10 +116,9 @@ ns = {
     "ls-r": lambda x: [[dir_name, files] for dir_name, _, files in walk(x)],
     "echo": echo,
     "name": lambda x: x if isinstance(x, Symbol) else [],
-    "progn": lambda *x: x[-1],
+    "progn": lambda *x: x[-1] if len(x) > 0 else [],
     # TODO: rename to parse-int? / str->int
     "int": int,
     "exit": lambda: exit(0),
     "prompt": lambda: "lis.py> ",
-    "read": read_str,
 }

@@ -15,7 +15,7 @@ tasks:
       - python -m LiSH
   commit:
     cmds:
-      - git add *
+      - git add * .lishrc
       - git status
       - "read && git commit -m \"$REPLY\""
       - git push

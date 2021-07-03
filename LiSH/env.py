@@ -50,10 +50,16 @@ class Env(dict):
 
     def __repr__(self):
         INDENT = "    "
-        res = "{\n" + \
-            f"{INDENT}" + \
-            f"\n{INDENT}".join(f"{k}: {v}" for k, v in self.items() if not isinstance(v, NamedFunction)) + \
-            "\n}"
+        res = "{\n" + f"{INDENT}"
+        for k, v in self.items():
+            if not isinstance(v, NamedFunction) and k not in map(Symbol, [
+                "car", "cdr", "*argv*", "*debug*", "load-file", "defun", "defmacro",
+                "if", "when", "compose", "swap!", "cadr", "cddr", "caddr", "cdddr",
+                "letfun", "defun-trace", "#", "doseq", "cons-if", "->", ">->", "juxt",
+                "not", "dec", "inc", "fact-t", "fib", "fact", "range", "map", "map*",
+                    "*map", "take", "drop", "id"]):
+                res += f"\n{INDENT}{k}: {v}"
+        res += "\n}"
         if self.outer is not None:
             res += " < " + repr(self.outer) + "\n"
         return res

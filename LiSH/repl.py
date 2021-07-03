@@ -2,8 +2,8 @@ from sys import stdout, argv
 import os.path
 import inspect
 
-from LiSH.env import Env
-from LiSH.reader import OPEN_PAREN, CLOSE_PAREN, QUOTE, READ
+from LiSH.env import Env, NamedFunction
+from LiSH.reader import OPEN_PAREN, CLOSE_PAREN, QUOTE, READ, read_str
 from LiSH.datatypes import Symbol
 from LiSH.evaluator import EVAL
 from LiSH.printer import PRINT
@@ -82,9 +82,13 @@ def repl(env: Env):
             env: environment to run repl with"""
     try:
         env[Symbol("*argv*")] = argv
+        # TODO: cmd argument
         env[Symbol("*debug*")] = False
-        env[Symbol("eval")] = lambda ast: EVAL(ast, env)
+        # TODO: move to core and remove here and from repl test
+        env[Symbol("read")] = NamedFunction("read", read_str)
+        env[Symbol("eval")] = NamedFunction("eval", lambda ast: EVAL(ast, env))
         rep('(set! load-file (lambda (f) (eval (read (+ "(progn " (slurp f) "\n)")))))', env)
+        # TODO: load file from command line arg
         rep('(load-file ".lishrc")', env)
         while True:
             try:

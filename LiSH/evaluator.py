@@ -1,9 +1,9 @@
-from LiSH.reader import Expression
-from typing import List, Union
+from typing import Callable, List, Union
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
-from LiSH.errors import FunctionCallError
+from LiSH.errors import FunctionCallError, errprint
+from LiSH.reader import Expression
 from LiSH.printer import PRINT
 
 
@@ -14,7 +14,7 @@ Body = Union[List["Body"], Symbol, Hashmap, int, float, str]
 class Procedure:
     """A user-defined Lisp function."""
     # TODO: add keyword args
-    def __init__(self, args: List[Symbol], body: Body, env: Env):
+    def __init__(self, args: List[Symbol], body: Body, env: Env, stack):
         i = 0
         self.pos_args = []
         while i < len(args) and args[i] != "&":
@@ -28,10 +28,11 @@ class Procedure:
             self.rest_arg = None
         self.body: Body = body
         self.env: Env = env
+        self.stack = stack
 
     def __call__(self, *args):
         if self.rest_arg is None:
-            return EVAL(self.body, Env(self.pos_args, args, self.env))
+            return EVAL(self.body, Env(self.pos_args, args, self.env), [], self.stack + [[str(self), args]])
         else:
             args = list(args)
             pos_len = len(self.pos_args)
@@ -48,13 +49,14 @@ class Procedure:
 
 
 class Macro(Procedure):
-    def __init__(self, fn, env: Env):
+    def __init__(self, fn, env: Env, stack):
         self.__call__ = fn.__call__
         self.rest_arg = fn.rest_arg
         self.pos_args = fn.pos_args
         self.body = fn.body
         self.fn = fn
         self.env = env
+        self.stack = stack
 
     def __str__(self):
         return "MACRO, based on " + str(self.fn)
@@ -118,9 +120,22 @@ def quasiquote(ast):
         return [Symbol("quote"), ast]
 
 
+def gensym():
+    i = 1
+    while True:
+        yield Symbol(f"#SYM_{i}")
+        i += 1
+
+
 # TODO: add try-catch
 # TODO: add implicit progn-s
-def EVAL(ast, env):
+def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expression]] = [], stack: List[Expression] = []):
+    # DEBUG CALL STACK
+    # if type(ast) == list:
+    #     for frame in stack:
+    #         print(PRINT(frame))
+    #     print()
+    gs = gensym()
     while True:
         # MACROEXPANSION
         # (macroname exps...)
@@ -130,6 +145,17 @@ def EVAL(ast, env):
             return eval_ast(ast, env)
         if ast == []:
             return ast
+        errprint(env)
+        # DEBUG CONTINUATION
+        errprint(PRINT(ast), ":")
+        for zipp in zipper:
+            errprint("  ", PRINT(zipp(Symbol("<>"))))
+        errprint("OR AS CONTINUATION:")
+        res = Symbol("<>")
+        for zipp in zipper[::-1]:
+            res = zipp(res)
+        errprint("  ", PRINT(res))
+        errprint()
 
         form_word = ast[0]
         if form_word == Symbol("quote"):
@@ -151,21 +177,26 @@ def EVAL(ast, env):
             found = False
             for i in range(0, len(predicates_exps), 2):
                 predicate, expression = predicates_exps[i: i + 2]
-                if EVAL(predicate, env):
+                cur = lambda c: [Symbol("cond")] + predicates_exps[: i] + [c] + predicates_exps[i + 1:]  # noqa E731, zipper cond predicate
+                if EVAL(predicate, env, zipper + [cur], stack + [ast]):
                     found = True
                     ast = expression
+                    new_cur = lambda c: [Symbol("cond")] + predicates_exps[: i + 1] + [c] + predicates_exps[i + 2:]  # noqa E731, zipper cond expression
                     break
             if found:
+                zipper = zipper + [new_cur]
                 continue  # tail call optimisation
-            # if default value is given
-            ast = default_value
+            # TODO: throw error if default value is not given
+            new_cur = lambda c: [Symbol("cond")] + predicates_exps + [c]  # noqa E731, zipper cond default
+            ast, zipper = default_value, zipper + [new_cur]
             continue  # tail call optimisation
         elif form_word == Symbol("set!"):  # TODO: rename to set
             # (define var exp)
             _, var, exp = ast
             if not isinstance(var, Symbol):
                 raise RuntimeError(f"""Definition name is not a symbol, but a {repr(var)}""")
-            value = EVAL(exp, env)
+            cur = lambda c: [Symbol("set!")] + [var] + [c]  # noqa E731, zipper value
+            value = EVAL(exp, env, zipper + [cur], stack + [ast])
             env.set(var, value)
             return value
         elif form_word == Symbol("let*"):  # TODO: rename to let
@@ -177,8 +208,11 @@ def EVAL(ast, env):
             let_env = Env(outer=env)
             for i in range(0, len(bindings), 2):
                 var, var_exp = bindings[i: i + 2]
-                let_env[var] = EVAL(var_exp, let_env)
-            ast, env = [Symbol("progn")] + exp, let_env  # implicit progn
+                cur = lambda c: [Symbol("let*")] + [bindings[: i + 1] + [c] + bindings[i + 2:]] + exp  # noqa E731, zipper var value
+                let_env[var] = EVAL(var_exp, let_env, zipper + [cur], stack + [ast])
+            new_cur = lambda c: [Symbol("let*")] + [bindings] + [c]  # noqa E731, zipper let expression
+            # TODO: test progn and continuation compatibility
+            ast, env, zipper = [Symbol("progn")] + exp, let_env, zipper + [new_cur]  # implicit progn
             continue  # tail call optimisation
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
@@ -189,8 +223,8 @@ def EVAL(ast, env):
             _, macroname, macrovalue = ast
             if not isinstance(macroname, Symbol):
                 raise RuntimeError("Macro definition name is not a symbol")
-            macrofn = EVAL(macrovalue, env)
-            env.set(macroname, Macro(macrofn, env))
+            macrofn = EVAL(macrovalue, env, zipper, stack + [ast])
+            env.set(macroname, Macro(macrofn, env, stack))
             return []  # TODO: nil
         elif form_word == Symbol("lambda"):  # TODO: change to fn
             # (lambda (args...) body)
@@ -198,13 +232,30 @@ def EVAL(ast, env):
             for arg in args:
                 if not isinstance(arg, Symbol):
                     raise RuntimeError(f"Argument name is not a symbol, but a {repr(arg)}")
-            return Procedure(args, body, env)
+            # TODO: pass zipper
+            return Procedure(args, body, env, stack)
+        elif form_word == Symbol("call/cc"):
+            # (call/cc f)
+            assert len(ast) == 2, "call/cc got no or more than one arguments"
+            _, f = ast
+            cont_arg = next(gs)
+            continuation = cont_arg
+            for cont in zipper[::-1]:
+                continuation = cont(continuation)
+            ast = [f, [Symbol("lambda"), [cont_arg], continuation]]
+            continue  # tail call optimization
         else:
             # (proc arg...)
-            proc = EVAL(form_word, env)
+            arg_exps = ast[1:]
+            cur = lambda c: [c] + arg_exps  # noqa E731, zipper procedure
+            proc = EVAL(form_word, env, zipper + [cur], stack + [ast])
             if not callable(proc) and not isinstance(proc, Procedure):
                 raise RuntimeError(f"""{proc} (which is {PRINT(ast[0])}) is not a function call in {PRINT(ast)}.""")
-            args = [EVAL(exp, env) for exp in ast[1:]]
+            args = []
+            for i, exp in enumerate(arg_exps):
+                # TODO: optimise arg_exps[: i] to args[: i] ???, mutability?
+                cur = lambda c: [form_word] + args + [c] + arg_exps[i + 1:]  # noqa E731, zipper procedure argument
+                args.append(EVAL(exp, env, zipper + [cur], stack + [ast]))
             try:
                 if isinstance(proc, Procedure):
                     if not (len(proc.pos_args) == len(args) or len(proc.pos_args) < len(args) and proc.rest_arg):
@@ -219,7 +270,6 @@ def EVAL(ast, env):
                     ast, env = proc.body, Env(fun_args, fun_exprs, proc.env)
                     continue  # tail call optimisation
                 else:
-                    # (proc arg...)
                     # TODO: fix
                     # if len(proc.args) != len(ast[1:]):
                     #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")

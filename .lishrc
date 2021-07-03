@@ -1,7 +1,7 @@
 (load-file "compose.lish")
 
-(set! prompt
-  (let* (cnt 0)
-    (lambda () (progn
-      (swap! cnt inc)
-      (+ "lis.py(" (str cnt) ")> ")))))
+;(set! prompt
+; (let* (cnt 0)
+;   (lambda () (progn
+;     (swap! cnt inc)
+;     (+ "lis.py(" (str cnt) ")> ")))))
