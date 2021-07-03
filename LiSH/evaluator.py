@@ -3,7 +3,7 @@ from typing import List, Union
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
-from LiSH.errors import FunctionCallError
+from LiSH.error_reporting.errors import FunctionCallError
 from LiSH.printer import PRINT
 
 

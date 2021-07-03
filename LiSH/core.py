@@ -6,7 +6,7 @@ from os import walk, path
 
 from LiSH.datatypes import is_atom, Keyword, Symbol
 from LiSH.reader import read_str
-from LiSH.errors import FunctionCallError
+from LiSH.error_reporting.errors import FunctionCallError
 from LiSH.printer import PRINT, pr_str_no_escape
 
 
