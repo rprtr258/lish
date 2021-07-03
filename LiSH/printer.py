@@ -1,3 +1,5 @@
+from LiSH.reader import Expression
+from typing import Callable
 from LiSH.datatypes import Symbol, Hashmap, is_atom
 
 
@@ -5,9 +7,17 @@ def escape(s):
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
 
-def pr_str(exp, escape=escape):
+def pr_str(exp: Expression, escape: Callable[[str], str] = escape) -> str:
+    """Pretty prints expression into string using string escaper
+
+    Args:
+        exp: expression to pretty print
+        escape: function used to escape string, if None strings will be put as is
+
+    Returns:
+        pretty printed expression string"""
     if exp == []:
-        return "nil"
+        return "()"
     elif isinstance(exp, Symbol):
         return exp
     elif isinstance(exp, Hashmap):
