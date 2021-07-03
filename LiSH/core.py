@@ -51,9 +51,6 @@ def throw(message):
 
 
 def apply(proc, args):
-    # TODO: fix
-    # if len(proc.args) != len(args):
-    #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(args)}")
     try:
         return proc(*args)
     except Exception as e:

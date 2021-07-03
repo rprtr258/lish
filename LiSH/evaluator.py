@@ -156,7 +156,7 @@ def EVAL(ast, env):
             # if default value is given
             ast = default_value
             continue  # tail call optimisation
-        elif form_word == Symbol("set!"):  # TODO: rename to set
+        elif form_word == Symbol("set"):
             # (define var exp)
             _, var, exp = ast
             if not isinstance(var, Symbol):
@@ -164,7 +164,7 @@ def EVAL(ast, env):
             value = EVAL(exp, env)
             env.set(var, value)
             return value
-        elif form_word == Symbol("let*"):  # TODO: rename to let
+        elif form_word == Symbol("let"):
             # (let* (v1 e1 v2 e2...) e)
             assert len(ast) >= 3, "Wrong args count to let*"
             _, bindings, *exp = ast
@@ -215,10 +215,6 @@ def EVAL(ast, env):
                     ast, env = proc.body, Env(fun_args, fun_exprs, proc.env)
                     continue  # tail call optimisation
                 else:
-                    # (proc arg...)
-                    # TODO: fix
-                    # if len(proc.args) != len(ast[1:]):
-                    #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")
                     if (res := proc(*args)) is None:
                         print("FUCK YOU,", PRINT(ast), PRINT(args))
                     return res

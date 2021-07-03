@@ -13,7 +13,7 @@ class TestRepl(unittest.TestCase):
     def __create_env__(self):
         env = default_env()
         env[Symbol("eval")] = lambda ast: EVAL(ast, env)
-        EVAL(READ('(set! load-file (fn (f) (eval (read (+ "(progn " (slurp f) "\n)")))))'), env)
+        EVAL(READ('(set load-file (fn (f) (eval (read (+ "(progn " (slurp f) "\n)")))))'), env)
         EVAL(READ('(load-file "compose.lish")'), env)
         return env
 
@@ -72,7 +72,7 @@ class TestRepl(unittest.TestCase):
 
     def test_self_combinator(self):
         self.__test_cmds__([
-            "(set! S (fn (y) (y y)))",
+            "(set S (fn (y) (y y)))",
             ("(S str)", "#str")
         ])
 
@@ -147,8 +147,8 @@ class TestRepl(unittest.TestCase):
 
     def test_prompt_counter(self):
         self.__test_cmds_output__([
-            """(set! prompt
-                (let* (cnt 0)
+            """(set prompt
+                (let (cnt 0)
                     (fn () (progn
                     (swap! cnt inc)
                     (+ "lis.py(" (str cnt) ")> 123")))))""",
