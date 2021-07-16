@@ -9,11 +9,8 @@
     `(setmacro ~m
         (lambda ~args ~body))))
 
-(defmacro if (p x y)
-    `(cond ~p ~x ~y))
-
 (defmacro when (p x)
-    `(cond ~p ~x ()))
+    `(if ~p ~x ()))
 
 (defmacro compose (& fs)
   (let*
@@ -110,6 +107,17 @@
         (map
             (lambda (f) (f x))
             (list ~@fs))))
+
+(defmacro cond (& pes)
+  (if
+    (= 1 (len pes))
+    (car pes)
+    (if
+      (= 0 (len pes))
+      ()
+      `(if
+        ~(car pes) ~(cadr pes)
+        ~(apply cond (cddr pes))))))
 
 ; ============ FUNCTIONS SECTION ============
 

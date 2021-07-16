@@ -1,4 +1,4 @@
-from typing import Callable, List, Union
+from typing import List, Union
 
 from LiSH.env import Env
 from LiSH.datatypes import Symbol, Hashmap, is_atom
@@ -92,9 +92,9 @@ def eval_ast(ast: Expression, env: Env) -> Expression:
         if res_env is None:
             raise RuntimeError(f"{ast} value not found")
         return res_env[ast]
-    elif is_atom(ast):
+    elif is_atom(ast) or callable(ast):
         # ast
-        # but ast is atom (number or string)
+        # but ast is atom (number or string) or callable
         return ast
     elif isinstance(ast, Hashmap):
         res = []
@@ -120,46 +120,42 @@ def quasiquote(ast):
         return [Symbol("quote"), ast]
 
 
-def gensym():
-    i = 1
-    while True:
-        yield Symbol(f"#SYM_{i}")
-        i += 1
-
-
-class Action(str): pass
-
-
-def debug_continuation(zipper):
-    errprint("=========== CONTINUATION ===========")
-    continuation = Symbol("<>")
-    for cont in zipper[::-1]:
-        continuation = cont(continuation)
-    errprint("CONTINUATION:", PRINT(continuation))
-    errprint("BY STEPS CONTINUATION:")
-    for cont in zipper[::-1]:
-        errprint("  ", PRINT(cont(Symbol("<>"))))
-    errprint("=========== CONTINUATION ===========")
+class Action(str):
+    pass
 
 
 # TODO: add try-catch
 # TODO: add implicit progn-s
-def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expression]] = []):
-    if False:  # TODO: cmd arg log cur eval
-        errprint(f"=========== EVAL {PRINT(ast)} ===========")
-    gs = gensym()
-    todo_stack = [(ast, env, zipper)]
-    done_stack = []
+def EVAL(ast: Expression, env: Env, todo_stack=None, done_stack=None):
+    todo_stack = ([(ast, env)] if todo_stack is None else todo_stack)
+    done_stack = [] if done_stack is None else done_stack
     while len(todo_stack) > 0:
-        # errprint("DONE:", done_stack)
-        # errprint("TODO:", [todo if isinstance(todo[0], Action) else ("EVAL", PRINT(todo[0])) for todo in todo_stack])
-        # errprint("TODO:")
-        # for todo in todo_stack:
-        #     if isinstance(todo[0], Action):
-        #         errprint(todo)
-        #     else:
-        #         errprint("EVAL", PRINT(todo[0]), "ENV", todo[1])
-        # errprint()
+        # TODO: cmd arg for debug
+        if True:
+            from tabulate import tabulate
+            from textwrap import wrap
+
+            def transpose(m):
+                n = max(map(len, [m[0], m[1]]))
+
+                def pr_todo(todo):
+                    if isinstance(todo[0], Action):
+                        return f"{todo}"
+                    else:
+                        return f'{(PRINT(todo[0]), "ENV", todo[1])}'
+                return [[m[0][i] if i < len(m[0]) else " ", "\n".join(wrap(pr_todo(m[1][i]))) if i < len(m[1]) else " "] for i in range(n)]
+            errprint(tabulate(transpose([done_stack, todo_stack]), headers=["DONE", "TODO"], tablefmt="grid"))
+            # errprint("DONE:")
+            # for done in done_stack:
+            #     errprint("  ", done)
+            # errprint("TODO:")
+            # for todo in todo_stack:
+            #     if isinstance(todo[0], Action):
+            #         errprint("  ", todo)
+            #     else:
+            #         errprint("  ", "EVAL", PRINT(todo[0]), "ENV", todo[1])
+            # errprint()
+            # errprint("TODO:", [todo if isinstance(todo[0], Action) else ("EVAL", PRINT(todo[0])) for todo in todo_stack])
         todo = todo_stack.pop()
         if isinstance(todo[0], Action):
             code = todo[0]
@@ -170,22 +166,20 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
                 done_stack.append(value)
                 continue  # return
             elif code == "LET*":
-                _, binds, ast, env, zipper = todo
-                # debug_continuation(zipper)
+                _, binds, ast, env = todo
                 let_env = Env(outer=env)
                 vals = done_stack[-len(binds):]
                 done_stack = done_stack[: -len(binds)]
                 for var, value in zip(binds, vals):
                     if isinstance(value, Procedure):
                         value.env = let_env
-                    let_env[var] = value
-                new_cur = lambda c: [Symbol("let*")] + [binds] + [vals] + [c]  # noqa E731, zipper let expression
+                    # let_env[var] = value
+                    let_env.set(var, value)
                 # TODO: test progn and continuation compatibility
-                todo_stack.append(([Symbol("progn")] + ast, let_env, zipper + [new_cur]))  # implicit progn
+                todo_stack.append(([Symbol("progn")] + ast, let_env))  # implicit progn
                 continue  # tail call optimisation
             elif code == "FUNCTION CALL":
-                _, args_cnt, zipper = todo
-                # debug_continuation(zipper)
+                _, args_cnt = todo
                 proc = done_stack[-args_cnt - 1]
                 args = done_stack[-args_cnt:] if args_cnt > 0 else []
                 done_stack = done_stack[: -args_cnt - 1]
@@ -201,12 +195,9 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
                         pos_len = len(proc.pos_args)
                         fun_args = proc.pos_args + [proc.rest_arg]
                         fun_exprs = args[:pos_len] + [args[pos_len:]]
-                    todo_stack.append((proc.body, Env(fun_args, fun_exprs, proc.env), zipper))
+                    todo_stack.append((proc.body, Env(fun_args, fun_exprs, proc.env)))
                     continue  # tail call optimisation
                 else:
-                    # TODO: fix
-                    # if len(proc.args) != len(ast[1:]):
-                    #     raise RuntimeError(f"{proc} expected {len(proc.args)} arguments, but got {len(ast[1:])}")
                     try:
                         if (res := proc(*args)) is None:
                             print("FUCK YOU,", PRINT(ast), PRINT(args))
@@ -220,10 +211,15 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
                 env.set(macroname, Macro(macrofn, env))
                 done_stack.append([])
                 continue
+            elif code == "IF":
+                _, x, y, env = todo
+                predicate = done_stack.pop()
+                todo_stack.append((x if predicate else y, env))
+                continue
             else:
                 print(f"UNKNOWN STACK EXECUTION ACTION: {code} in {todo}")
-        assert len(todo) == 3, f"Incorrect stack frame: {todo}"
-        ast, env, zipper = todo
+        assert len(todo) == 2, f"Incorrect stack frame: {todo}"
+        ast, env = todo
         # MACROEXPANSION
         # (macroname exps...)
         ast = macroexpand(ast, env)
@@ -234,10 +230,6 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
         if ast == []:
             done_stack.append([])
             continue  # return
-        if False:  # TODO: cmd arg log eval env
-            errprint(env)
-        if False:  # TODO: cmd arg log eval continuation
-            debug_continuation(zipper)
 
         form_word = ast[0]
         if form_word == Symbol("quote"):
@@ -248,39 +240,22 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
         elif form_word == Symbol("quasiquote"):
             # (quasiquote exp) or `exp
             _, exp = ast
-            todo_stack.append((quasiquote(exp), env, zipper))
+            todo_stack.append((quasiquote(exp), env))
             continue  # tail call optimisation
-        elif form_word == Symbol("cond"):  # TODO: test return default in (cond p1 e1 p2 e2 default)
-            # (cond p1 e1 p2 e2 ... pn en)
-            # or
-            # (cond p1 e1 p2 e2 ... pn en default)
-            predicates_exps = ast[1:]
-            if len(predicates_exps) % 2 == 1:
-                predicates_exps, default_value = predicates_exps[:-1], predicates_exps[-1]
-            found = False
-            for i in range(0, len(predicates_exps), 2):
-                predicate, expression = predicates_exps[i: i + 2]
-                cur = lambda c: [Symbol("cond")] + predicates_exps[: i] + [c] + predicates_exps[i + 1:]  # noqa E731, zipper cond predicate
-                if EVAL(predicate, env, zipper + [cur]):  # TODO: move to todo_stack
-                    found = True
-                    ast = expression
-                    new_cur = lambda c: [Symbol("cond")] + predicates_exps[: i + 1] + [c] + predicates_exps[i + 2:]  # noqa E731, zipper cond expression
-                    break
-            if found:
-                todo_stack.append((ast, env, zipper + [new_cur]))
-                continue  # tail call optimisation
-            # TODO: throw error if default value is not given
-            new_cur = lambda c: [Symbol("cond")] + predicates_exps + [c]  # noqa E731, zipper cond default
-            todo_stack.append((default_value, env, zipper + [new_cur]))
+        elif form_word == Symbol("if"):
+            # (if predicate then else)
+            assert len(ast) == 4, f"Wrong if form: {PRINT(ast)}"
+            _, p, x, y = ast
+            todo_stack.append((Action("IF"), x, y, env))
+            todo_stack.append((p, env))
             continue  # tail call optimisation
         elif form_word == Symbol("set!"):  # TODO: rename to set
             # (define var exp)
             _, var, exp = ast
             if not isinstance(var, Symbol):
                 raise RuntimeError(f"""Definition name is not a symbol, but a {repr(var)}""")
-            cur = lambda c: [Symbol("set!")] + [var] + [c]  # noqa E731, zipper value
             todo_stack.append((Action("SET VAR VALUE"), var))
-            todo_stack.append((exp, env, zipper + [cur]))
+            todo_stack.append((exp, env))
             continue  # ???
         elif form_word == Symbol("let*"):  # TODO: rename to let
             # (let* (v1 e1 v2 e2...) e)
@@ -288,11 +263,10 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             _, bindings, *exp = ast
             if len(bindings) % 2 != 0:
                 raise RuntimeError(f"let* has {len(bindings)} items as bindings which is not even")
-            todo_stack.append((Action("LET*"), bindings[::2], exp, env, zipper))
+            todo_stack.append((Action("LET*"), bindings[::2], exp, env))
             for i in range(len(bindings) - 2, -1, -2):
                 var, var_exp = bindings[i: i + 2]
-                cur = lambda c: [Symbol("let*")] + [bindings[: i + 1] + [c] + bindings[i + 2:]] + [exp]  # noqa E731, zipper var value
-                todo_stack.append((var_exp, env, zipper + [cur]))
+                todo_stack.append((var_exp, env))
             continue  # ???(tail call optimisation)
         elif form_word == Symbol("macroexpand"):
             # (macroexpand (macro exps...))
@@ -304,7 +278,7 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             if not isinstance(macroname, Symbol):
                 raise RuntimeError("Macro definition name is not a symbol")
             todo_stack.append((Action("MACRO SET"), macroname))
-            todo_stack.append((macrovalue, env, zipper))
+            todo_stack.append((macrovalue, env))
             continue  # ???
         elif form_word == Symbol("lambda"):  # TODO: change to fn
             # (lambda (args...) body)
@@ -314,34 +288,43 @@ def EVAL(ast: Expression, env: Env, zipper: List[Callable[[Expression], Expressi
             for arg in args:
                 if not isinstance(arg, Symbol):
                     raise RuntimeError(f"Argument name is not a symbol, but a {repr(arg)}")
-            # TODO: pass zipper
             done_stack.append(Procedure(args, body, env))
             continue  # return
         elif form_word == Symbol("call/cc"):
             # (call/cc f)
             assert len(ast) == 2, "call/cc got no or more than one arguments"
             _, f = ast
-            cont_arg = next(gs)
-            continuation = cont_arg
-            for cont in zipper[::-1]:
-                continuation = cont(continuation)
-            # TODO: skip original continuation
-            todo_stack = [([f, [Symbol("lambda"), [cont_arg], continuation]], env, zipper)]
-            done_stack = []
+
+            class Continuation:
+                def __init__(self, env):
+                    self.env: Env = env
+                    nonlocal todo_stack, done_stack
+                    self.todo_stack = todo_stack[::]
+                    self.done_stack = done_stack[::]
+
+                def __call__(self, arg):
+                    nonlocal todo_stack, done_stack
+                    todo_stack = []
+                    done_stack = []
+                    return EVAL(None, self.env, todo_stack=self.todo_stack[::] + [(arg, self.env)], done_stack=self.done_stack[::])
+
+                def __repr__(self):
+                    # return f"Continuation(TODO: {self.todo_stack}, DONE: {self.done_stack})"
+                    # return f"Cont(TODOs={len(self.todo_stack)}, DONEs={len(self.done_stack)}, todo={self.todo_stack[-1]})"
+                    return f"Cont(TODOs={len(self.todo_stack)}, DONEs={len(self.done_stack)})"
+            todo_stack.append(([f, Continuation(env)], env))
             continue  # tail call optimization
         else:
             # (proc arg...)
             arg_exps = ast[1:]
             arg_exps_rev = arg_exps[::-1]
             n = len(arg_exps)
-            todo_stack.append((Action("FUNCTION CALL"), n, zipper))
+            todo_stack.append((Action("FUNCTION CALL"), n))
             for i, exp in enumerate(arg_exps_rev):
                 # TODO: optimise arg_exps[: i] to args[: i] ???, mutability?
-                form_word_copy = form_word # fuck you python scoping
-                cur = lambda c: [form_word_copy] + arg_exps[: n - i - 1] + [c] + arg_exps[n - i:]  # noqa E731, zipper procedure argument
-                todo_stack.append((exp, env, zipper + [cur]))
-            cur = lambda c: [c] + arg_exps  # noqa E731, zipper procedure
-            todo_stack.append((form_word, env, zipper + [cur]))
+                form_word_copy = form_word  # noqa: F841 fuck you python scoping
+                todo_stack.append((exp, env))
+            todo_stack.append((form_word, env))
             continue  # ???
     assert len(done_stack) == 1
     return done_stack[0]

@@ -107,7 +107,15 @@ class TestRepl(unittest.TestCase):
 
     def test_rev_macro(self):
         self.__test_cmds__([
-            "(defmacro rev (x) ((defun rev-helper (x) (cond (nil? x) x (+ (rev-helper (cdr x)) (list (car x))))) x))",
+            """(defmacro rev (x)
+                ((defun rev-helper (x)
+                    (if
+                        (nil? x)
+                        x
+                        (+
+                            (rev-helper (cdr x))
+                            [(car x)])))
+                    x))""",
             ("(rev (1 str))", "1")
         ])
 
@@ -204,8 +212,9 @@ lis.py(3)> 123
             """(let*
                 (r (cur/cc))
                 (echo n)
-                (cond
-                    (= 0 n) 'done
+                (if
+                    (= 0 n)
+                    'done
                     (progn
                         (swap! n dec)
                         (r r))))"""
