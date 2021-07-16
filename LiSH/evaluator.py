@@ -90,6 +90,7 @@ def eval_ast(ast: Expression, env: Env) -> Expression:
         # but ast is symbol
         res_env = env.find(ast)
         if res_env is None:
+            # TODO: return ast.name
             raise RuntimeError(f"{ast} value not found")
         return res_env[ast]
     elif is_atom(ast) or callable(ast):
