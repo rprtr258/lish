@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
-use fnv::FnvHashMap;
+// use fnv::FnvHashMap;
 
-use crate::env::{Env};
+// use crate::env::{Env};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
     Nil,
     Bool(bool),
@@ -12,23 +12,23 @@ pub enum Atom {
     Float(f64),
     String(String),
     Symbol(String),
-    Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
+    // Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
     Func(fn(Args) -> LishRet, Rc<Atom>),
-    Lambda {
-        eval: fn(ast: Atom, env: Env) -> LishRet,
-        ast: Rc<Atom>,
-        env: Env,
-        params: Rc<Atom>,
-        is_macro: bool,
-        meta: Rc<Atom>,
-    },
+    // Lambda {
+    //     eval: fn(ast: Atom, env: Env) -> LishRet,
+    //     ast: Rc<Atom>,
+    //     env: Env,
+    //     params: Rc<Atom>,
+    //     is_macro: bool,
+    //     meta: Rc<Atom>,
+    // },
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LishErr {
     Message(String),
-    Val(Atom),
+    // Val(Atom),
 }
 
 pub type Args = Vec<Atom>;

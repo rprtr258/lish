@@ -49,6 +49,7 @@ where T: Iterator<Item=String> {
     }
 }
 
+// TODO: add braces implicitly
 pub fn read(cmd: &String) -> Atom {
     /* TODO:
     lazy_static! {

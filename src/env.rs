@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use fnv::FnvHashMap;
 
-use crate::types::{LishErr, LishRet, Atom, error, list};
+use crate::types::{/*LishErr, */LishRet, Atom, error/*, list*/};
 
 #[derive(Debug)]
 pub struct EnvStruct {
@@ -23,26 +23,26 @@ pub fn env_new(outer: Option<Env>) -> Env {
 }
 
 // TODO: mbinds and exprs as & types
-pub fn env_bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
-    let env = env_new(outer);
-    match mbinds {
-        Atom::List(binds, _) => {
-            for (i, b) in binds.iter().enumerate() {
-                match b {
-                    Atom::Symbol(s) if s == "&" => {
-                        env_set(&env, binds[i + 1].clone(), list(exprs[i..].to_vec()))?;
-                        break;
-                    }
-                    _ => {
-                        env_set(&env, b.clone(), exprs[i].clone())?;
-                    }
-                }
-            }
-            Ok(env)
-        }
-        _ => Err(LishErr::Message("env_bind binds not List/Vector".to_string())),
-    }
-}
+// pub fn env_bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
+//     let env = env_new(outer);
+//     match mbinds {
+//         Atom::List(binds, _) => {
+//             for (i, b) in binds.iter().enumerate() {
+//                 match b {
+//                     Atom::Symbol(s) if s == "&" => {
+//                         env_set(&env, binds[i + 1].clone(), list(exprs[i..].to_vec()))?;
+//                         break;
+//                     }
+//                     _ => {
+//                         env_set(&env, b.clone(), exprs[i].clone())?;
+//                     }
+//                 }
+//             }
+//             Ok(env)
+//         }
+//         _ => Err(LishErr::Message("env_bind binds not List/Vector".to_string())),
+//     }
+// }
 
 pub fn env_find(env: &Env, key: &str) -> Option<Env> {
     match (env.data.borrow().contains_key(key), env.outer.clone()) {
