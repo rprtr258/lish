@@ -1,0 +1,21 @@
+version: '3'
+
+tasks:
+  test:
+    cmds:
+      - cargo test
+  build:
+    cmds:
+      - cargo build
+  run:
+    cmds:
+      - cargo run
+  ci:
+    deps: [test, build]
+    silent: true
+  commit:
+    cmds:
+      - git add *
+      - git status
+      - git commit -m "Some fixes"
+      - git push
