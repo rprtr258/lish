@@ -15,7 +15,8 @@ tasks:
     silent: true
   commit:
     cmds:
-      - git add *
+      - git add * .lishrc
       - git status
-      - git commit -m "Some fixes"
+      - "read && git commit -m \"$REPLY\""
       - git push
+
