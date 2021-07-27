@@ -1,26 +1,43 @@
-#[derive(Clone)]
+use std::rc::Rc;
+
+use fnv::FnvHashMap;
+
+use crate::env::{Env};
+
+#[derive(Debug, Clone)]
 pub enum Atom {
+    Nil,
     Bool(bool),
     Int(i64),
     Float(f64),
     String(String),
     Symbol(String),
+    Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
+    Func(fn(Args) -> LishRet, Rc<Atom>),
+    Lambda {
+        eval: fn(ast: Atom, env: Env) -> LishRet,
+        ast: Rc<Atom>,
+        env: Env,
+        params: Rc<Atom>,
+        is_macro: bool,
+        meta: Rc<Atom>,
+    },
+    List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
-impl std::fmt::Display for Atom {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Atom::Bool(b) => write!(fmt, "{}", b),
-            Atom::Int(i) => write!(fmt, "{}", i),
-            Atom::Float(f) => write!(fmt, "{}", f),
-            Atom::String(s) => write!(fmt, "\"{}\"", s),
-            Atom::Symbol(s) => write!(fmt, "{}", s),
-        }
-    }
+#[derive(Debug)]
+pub enum LishErr {
+    Message(String),
+    Val(Atom),
 }
 
-#[derive(Debug, Clone)]
-pub enum Form {
-    List(Vec<Form>),
-    Atom(Atom),
+pub type Args = Vec<Atom>;
+pub type LishRet = Result<Atom, LishErr>;
+
+pub fn error(s: &str) -> LishRet {
+    Err(LishErr::Message(s.to_string()))
+}
+
+pub fn list(vals: Vec<Atom>) -> Atom {
+    Atom::List(Rc::new(vals), Rc::new(Atom::Nil))
 }

@@ -1,22 +1,18 @@
-use std::collections::HashMap;
 use std::io::{stdout, Write};
 
 use rustyline::{error::ReadlineError, Editor};
 
-mod reader; use reader::{read, Form};
-mod printer; use printer::{print};
+mod types;
+mod env;
+mod reader;
+mod printer;
+use types::{Atom};
+use env::{env_new};
+use reader::{read};
+use printer::{print};
 
-fn eval(cmd: &Form) -> Form {
-    let repl_env = {
-        let mut m = HashMap::<_, fn(_) -> _>::new();
-        m.insert("+", |x: Form| match x {
-            Form::List(xs) => xs.iter().fold(0, |a, b| a + b)
-        });
-        m.insert("-", |x| x - y);
-        m.insert("*", |x| x * y);
-        m.insert("/", |x| x / y);
-        m
-    }
+fn eval(cmd: &Atom) -> Atom {
+    let repl_env = env_new(None);
     cmd.clone()
 }
 

@@ -1,5 +1,5 @@
-use crate::reader::{Form};
+use crate::types::{Atom};
 
-pub fn print(cmd: &Form) -> String {
-    cmd.to_string()
+pub fn print(cmd: &Atom) -> String {
+    format!("{:?}", cmd)
 }
