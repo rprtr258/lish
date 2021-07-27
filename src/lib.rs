@@ -4,18 +4,28 @@ pub mod reader;
 mod printer;
 
 use crate::{
-    types::{Atom, LishRet/*, error*/, error_string},
+    types::{Atom, LishRet, list, error_string},
     env::{Env},
     reader::{read},
     printer::{print},
 };
 
 /*
-symbol "let*":
-    create a new environment using the current environment as the outer value and then use the first parameter as a list of new bindings in the "let*" environment. Take the second element of the binding list, call EVAL using the new "let*" environment as the evaluation environment, then call set on the "let*" environment using the first binding list element as the key and the evaluated second element as the value. This is repeated for each odd/even pair in the binding list. Note in particular, the bindings earlier in the list can be referred to by later bindings. Finally, the second parameter (third element) of the original let* form is evaluated using the new "let*" environment and the result is returned as the result of the let* (the new let environment is discarded upon completion). */
-pub fn eval(cmd: &Atom, env: &Env) -> LishRet {
-    match cmd {
+symbol: lookup the symbol in the environment structure and return the value or raise an error if no value is found
+list: return a new list that is the result of calling EVAL on each of the members of the list
+otherwise just return the original ast value
+*/
+
+fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
+    match ast {
         Atom::Symbol(var) => env.get(var),
+        Atom::List(items, _) => Ok(list(items.iter().map(|x| eval(&x, env).unwrap()).collect())),
+        x => Ok(x.clone()),
+    }
+}
+
+pub fn eval(ast: &Atom, env: &Env) -> LishRet {
+    match ast {
         Atom::List(items, _) => {
             match &items[0] {
                 Atom::Symbol(sym) => {
@@ -42,23 +52,40 @@ pub fn eval(cmd: &Atom, env: &Env) -> LishRet {
                             let body = &items[2];
                             eval(body, &let_env)
                         }
-                        fun_name => {
-                            let fun = env.get(fun_name)?;
-                            let args: Vec<Atom> = items.iter()
-                                .skip(1)
-                                .map(|x| eval(x, env).unwrap())
-                                .collect();
-                            match fun {
-                                Atom::Func(some_fun, _) => some_fun(args),
-                                _ => error_string(format!("{:?} is not callable in {:?}", fun, args)),
+                        _ => {
+                            let evaluated_list = eval_ast(ast, env)?;
+                            match evaluated_list {
+                                Atom::List(fun_call, _) => {
+                                    let fun = fun_call[0].clone();
+                                    let args = fun_call[1..].to_vec();
+                                    match fun {
+                                        Atom::Func(f, _) => f(args),
+                                        _ => error_string(format!("{:?} is not a function", fun)),
+                                    }
+                                }
+                                _ => unreachable!(),
                             }
                         }
                     }
                 }
-                _ => error_string(format!("{:?} is not callable in {:?}", items[0], items)),
+                _ => {
+                    let evaluated_list = eval_ast(ast, env)?;
+                    match evaluated_list {
+                        Atom::List(fun_call, _) => {
+                            let fun = fun_call[0].clone();
+                            let args = fun_call[1..].to_vec();
+                            match fun {
+                                Atom::Func(f, _) => f(args),
+                                _ => error_string(format!("{:?} is not a function", fun)),
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
             }
         }
-        x => Ok(x.clone())
+        Atom::Nil => Ok(ast.clone()),
+        _ => eval_ast(ast, env),
     }
 }
 
