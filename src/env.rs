@@ -67,16 +67,16 @@ pub fn env_get(env: &Env, key: &Atom) -> LishRet {
     }
 }
 
+pub fn env_sets(env: &Env, key: &str, val: Atom) {
+    env.data.borrow_mut().insert(key.to_string(), val);
+}
+
 pub fn env_set(env: &Env, key: Atom, val: Atom) -> LishRet {
     match key {
         Atom::Symbol(ref s) => {
-            env.data.borrow_mut().insert(s.to_string(), val.clone());
+            env_sets(env, &s.to_string(), val.clone());
             Ok(val)
         }
         _ => error("Env.set called with non-Str"),
     }
-}
-
-pub fn env_sets(env: &Env, key: &str, val: Atom) {
-    env.data.borrow_mut().insert(key.to_string(), val);
 }
