@@ -17,6 +17,7 @@ tasks:
     cmds:
       - git add * .lishrc
       - git status
+      - echo "Write commit message:"
       - "read && git commit -m \"$REPLY\""
       - git push
 
