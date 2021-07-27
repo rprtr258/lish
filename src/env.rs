@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use fnv::FnvHashMap;
 
-use crate::types::{LishErr, LishRet, Atom, error, list};
+use crate::types::{LishErr, LishRet, Atom, error, error_string, list};
 
 #[derive(Debug)]
 pub struct EnvStruct {
@@ -28,7 +28,7 @@ impl Env {
             Atom::Symbol("+".to_string()),
             Atom::Func(|vals| vals.iter().fold(Ok(Atom::Int(0)), |a: LishRet, b: &Atom| match (a, b) {
                 (Ok(Atom::Int(ai)), Atom::Int(bi)) => Ok(Atom::Int(ai + bi)),
-                _ => error(&format!("Can't eval (+ {:?})", vals).to_string()),
+                _ => error_string(format!("Can't eval (+ {:?})", vals)),
             }), Rc::new(Atom::Nil))).unwrap();
         env
     }
@@ -62,17 +62,14 @@ impl Env {
         }
     }
 
-    pub fn get(self: &Self, key: &Atom) -> LishRet {
-        match key {
-            Atom::Symbol(ref s) => match self.find(s) {
-                Some(e) => Ok(e.0.data
-                    .borrow()
-                    .get(s)
-                    .unwrap()
-                    .clone()),
-                _ => error(&format!("'{}' not found", s)),
-            },
-            _ => error("Env.get called with non-Str"),
+    pub fn get(self: &Self, key: &str) -> LishRet {
+        match self.find(key) {
+            Some(e) => Ok(e.0.data
+                .borrow()
+                .get(key)
+                .unwrap()
+                .clone()),
+            _ => error(&format!("Not found '{}'", key)),
         }
     }
 

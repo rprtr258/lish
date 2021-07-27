@@ -25,7 +25,7 @@ pub enum Atom {
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LishErr {
     Message(String),
     // Val(Atom),
@@ -34,8 +34,12 @@ pub enum LishErr {
 pub type Args = Vec<Atom>;
 pub type LishRet = Result<Atom, LishErr>;
 
+pub fn error_string(s: String) -> LishRet {
+    Err(LishErr::Message(s))
+}
+
 pub fn error(s: &str) -> LishRet {
-    Err(LishErr::Message(s.to_string()))
+    error_string(s.to_string())
 }
 
 pub fn list(vals: Vec<Atom>) -> Atom {
