@@ -34,10 +34,13 @@ where T: Iterator<Item=String> {
                     _ => res.push(read_form(token, tokens)),
                 }
             }
-            None => break
+            None => break,
         }
     }
-    list(res)
+    match res.len() {
+        0 => Atom::Nil,
+        _ => list(res),
+    }
 }
 
 // TODO: reader macro
@@ -61,4 +64,20 @@ pub fn read(cmd: &String) -> Atom {
         .map(|capture| capture[1].to_string())
         .filter(|s| s.chars().nth(0).unwrap() != ';');
     read_form(tokens_iter.next().unwrap(), &mut tokens_iter)
+}
+
+#[cfg(test)]
+mod reader_tests {
+    use crate::types::{Atom, list};
+    use super::{read};
+
+    #[test]
+    fn nil() {
+        assert_eq!(read(&"()".to_string()), Atom::Nil)
+    }
+
+    #[test]
+    fn set() {
+        assert_eq!(read(&"(set a 2)".to_string()), list(vec![Atom::Symbol("set".to_string()), Atom::Symbol("a".to_string()), Atom::Int(2)]));
+    }
 }
