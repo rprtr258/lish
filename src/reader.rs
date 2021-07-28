@@ -2,7 +2,10 @@ use std::iter::Iterator;
 
 use regex::Regex;
 
-use crate::types::{Atom, list};
+use crate::{
+    list_vec,
+    types::{Atom}
+};
 
 fn read_atom(token: String) -> Atom {
     match token.parse::<bool>() {
@@ -39,7 +42,7 @@ where T: Iterator<Item=String> {
     }
     match res.len() {
         0 => Atom::Nil,
-        _ => list(res),
+        _ => list_vec!(res),
     }
 }
 
@@ -68,7 +71,10 @@ pub fn read(cmd: String) -> Atom {
 
 #[cfg(test)]
 mod reader_tests {
-    use crate::types::{Atom, list};
+    use crate::{
+        form,
+        types::{Atom},
+    };
     use super::{read};
 
     #[test]
@@ -78,6 +84,6 @@ mod reader_tests {
 
     #[test]
     fn set() {
-        assert_eq!(read("(set a 2)".to_string()), list(vec![Atom::Symbol("set".to_string()), Atom::Symbol("a".to_string()), Atom::Int(2)]));
+        assert_eq!(read("(set a 2)".to_string()), form!["set", "a", 2]);
     }
 }

@@ -3,7 +3,10 @@ use std::rc::Rc;
 
 use fnv::FnvHashMap;
 
-use crate::types::{LishErr, LishRet, Atom, error, error_string, list};
+use crate::{
+    list_vec,
+    types::{LishErr, LishRet, Atom, error, error_string},
+};
 
 #[derive(Debug)]
 pub struct EnvStruct {
@@ -24,7 +27,6 @@ impl Env {
 
     pub fn new_repl() -> Env {
         let env = Env::new(None);
-        #[macro_export]
         macro_rules! set_int_bin_op {
             ($name:expr, $init:expr, $f:expr) => {
                 env.set(
@@ -75,7 +77,7 @@ impl Env {
                 for (i, b) in binds.iter().enumerate() {
                     match b {
                         Atom::Symbol(s) if s == "&" => {
-                            env.set(binds[i + 1].clone(), list(exprs[i..].to_vec()))?;
+                            env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
                             break;
                         }
                         _ => {

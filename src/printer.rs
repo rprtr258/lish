@@ -25,23 +25,24 @@ mod eval_tests {
     use std::rc::Rc;
 
     use crate::{
-        types::{list, Atom},
+        form,
+        types::{Atom},
     };
     use super::{print};
 
     #[test]
     fn print_true() {
-        assert_eq!(print(&Ok(Atom::Bool(true))), "true")
+        assert_eq!(print(&Ok(Atom::from(true))), "true")
     }
 
     #[test]
     fn print_false() {
-        assert_eq!(print(&Ok(Atom::Bool(false))), "false")
+        assert_eq!(print(&Ok(Atom::from(false))), "false")
     }
 
     #[test]
     fn print_pi() {
-        assert_eq!(print(&Ok(Atom::Float(3.14))), "3.14")
+        assert_eq!(print(&Ok(Atom::from(3.14))), "3.14")
     }
 
     #[test]
@@ -51,12 +52,12 @@ mod eval_tests {
 
     #[test]
     fn print_int() {
-        assert_eq!(print(&Ok(Atom::Int(92))), "92")
+        assert_eq!(print(&Ok(Atom::from(92))), "92")
     }
 
     #[test]
     fn print_list() {
-        assert_eq!(print(&Ok(list(vec![Atom::Int(1), Atom::Int(2)]))), "(1 2)")
+        assert_eq!(print(&Ok(form![1, 2])), "(1 2)")
     }
 
     #[test]
@@ -71,6 +72,6 @@ mod eval_tests {
 
     #[test]
     fn print_symbol() {
-        assert_eq!(print(&Ok(Atom::Symbol("abc".to_string()))), "abc")
+        assert_eq!(print(&Ok(Atom::from("abc"))), "abc")
     }
 }

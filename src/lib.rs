@@ -6,7 +6,7 @@ pub mod reader;
 mod printer;
 
 use crate::{
-    types::{Atom, LishRet, list, error_string},
+    types::{Atom, LishRet, error_string},
     env::{Env},
     reader::{read},
     printer::{print},
@@ -21,7 +21,7 @@ otherwise just return the original ast value
 fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
     match ast {
         Atom::Symbol(var) => env.get(var),
-        Atom::List(items, _) => Ok(list(items.iter().map(|x| eval(x.clone(), env.clone()).unwrap()).collect())),
+        Atom::List(items, _) => Ok(list_vec!(items.iter().map(|x| eval(x.clone(), env.clone()).unwrap()).collect())),
         x => Ok(x.clone()),
     }
 }
@@ -112,7 +112,8 @@ pub fn rep(input: String, env: Env) {
 #[cfg(test)]
 mod eval_tests {
     use crate::{
-        types::{list, error, Atom::{Symbol, Int, String, Bool, Nil}},
+        form,
+        types::{error, Atom, Atom::{String, Nil}},
         env::{Env},
     };
     use super::{eval};
@@ -120,39 +121,48 @@ mod eval_tests {
     #[test]
     fn set() {
         let repl_env = Env::new_repl();
+        // (set a 2)
         assert_eq!(eval(
-            list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["set", "a", 2],
+            repl_env.clone()), Ok(Atom::from(2)));
+        // (+ a 3)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Int(3)]),
-            repl_env.clone()), Ok(Int(5)));
+            form!["+", "a", 3],
+            repl_env.clone()), Ok(Atom::from(5)));
+        // (set b 3)
         assert_eq!(eval(
-            list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(3)]),
-            repl_env.clone()), Ok(Int(3)));
+            form!["set", "b", 3],
+            repl_env.clone()), Ok(Atom::from(3)));
+        // (+ a b)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Symbol("b".to_string())]),
-            repl_env.clone()), Ok(Int(5)));
+            form!["+", "a", "b"],
+            repl_env.clone()), Ok(Atom::from(5)));
+        // (set c (+ 1 2))
         assert_eq!(eval(
-            list(vec![Symbol("set".to_string()), Symbol("c".to_string()),
-                list(vec![Symbol("+".to_string()), Int(1), Int(2)])]),
-            repl_env.clone()), Ok(Int(3)));
+            form!["set", "c",
+                form!["+", 1, 2]],
+            repl_env.clone()), Ok(Atom::from(3)));
+        // (+ c 1)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Symbol("c".to_string()), Int(1)]),
-            repl_env.clone()), Ok(Int(4)));
+            form!["+", "c", 1],
+            repl_env.clone()), Ok(Atom::from(4)));
     }
 
     #[test]
     fn echo() {
         let repl_env = Env::new_repl();
+        // 92
         assert_eq!(eval(
-            Int(92),
-            repl_env.clone()), Ok(Int(92)));
+            Atom::from(92),
+            repl_env.clone()), Ok(Atom::from(92)));
+        // abc
         assert_eq!(eval(
-            Symbol("abc".to_string()),
+            Atom::from("abc"),
             repl_env.clone()), error("Not found 'abc'"));
+        // "abc"
         assert_eq!(eval(
             String("abc".to_string()),
-            repl_env.clone()), Ok(String("abc".to_string())));
+            repl_env.clone()), Ok(Atom::String("abc".to_string())));
     }
 
     #[test]
@@ -160,16 +170,16 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (*)
         assert_eq!(eval(
-            list(vec![Symbol("*".to_string()), Int(1)]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["*", 1],
+            repl_env.clone()), Ok(Atom::from(1)));
         // (* 2)
         assert_eq!(eval(
-            list(vec![Symbol("*".to_string()), Int(2)]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["*", 2],
+            repl_env.clone()), Ok(Atom::from(2)));
         // (* 1 2 3)
         assert_eq!(eval(
-            list(vec![Symbol("*".to_string()), Int(1), Int(2), Int(3)]),
-            repl_env.clone()), Ok(Int(6)));
+            form!["*", 1, 2, 3],
+            repl_env.clone()), Ok(Atom::from(6)));
     }
 
     #[test]
@@ -177,16 +187,16 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (/ 1)
         assert_eq!(eval(
-            list(vec![Symbol("/".to_string()), Int(1)]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["/", 1],
+            repl_env.clone()), Ok(Atom::from(1)));
         // (/ 5 2)
         assert_eq!(eval(
-            list(vec![Symbol("/".to_string()), Int(5), Int(2)]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["/", 5, 2],
+            repl_env.clone()), Ok(Atom::from(2)));
         // (/ 22 3 2)
         assert_eq!(eval(
-            list(vec![Symbol("/".to_string()), Int(22), Int(3), Int(2)]),
-            repl_env.clone()), Ok(Int(3)));
+            form!["/", 22, 3, 2],
+            repl_env.clone()), Ok(Atom::from(3)));
     }
 
     #[test]
@@ -194,12 +204,12 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (- 1)
         assert_eq!(eval(
-            list(vec![Symbol("-".to_string()), Int(1)]),
-            repl_env.clone()), Ok(Int(-1)));
+            form!["-", 1],
+            repl_env.clone()), Ok(Atom::from(-1)));
         // (- 1 2 3)
         assert_eq!(eval(
-            list(vec![Symbol("-".to_string()), Int(1), Int(2), Int(3)]),
-            repl_env.clone()), Ok(Int(-4)));
+            form!["-", 1, 2, 3],
+            repl_env.clone()), Ok(Atom::from(-4)));
     }
 
     #[test]
@@ -207,20 +217,20 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (+)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string())]),
-            repl_env.clone()), Ok(Int(0)));
+            form!["+"],
+            repl_env.clone()), Ok(Atom::from(0)));
         // (+ 1)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Int(1)]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["+", 1],
+            repl_env.clone()), Ok(Atom::from(1)));
         // (+ 1 2 3)
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Int(1), Int(2), Int(3)]),
-            repl_env.clone()), Ok(Int(6)));
+            form!["+", 1, 2, 3],
+            repl_env.clone()), Ok(Atom::from(6)));
         // (+ 1 2 (+ 1 2))
         assert_eq!(eval(
-            list(vec![Symbol("+".to_string()), Int(1), Int(2), list(vec![Symbol("+".to_string()), Int(1), Int(2)])]),
-            repl_env.clone()), Ok(Int(6)));
+            form!["+", 1, 2, form!["+", 1, 2]],
+            repl_env.clone()), Ok(Atom::from(6)));
     }
 
     #[test]
@@ -228,30 +238,30 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (set a 2)
         assert_eq!(eval(
-            list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["set", "a", 2],
+            repl_env.clone()), Ok(Atom::from(2)));
         // (let (a 1) a)
         assert_eq!(eval(
-            list(vec![Symbol("let".to_string()), 
-                list(vec![Symbol("a".to_string()), Int(1)]),
-                Symbol("a".to_string())]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["let", 
+                form!["a", 1],
+                "a"],
+            repl_env.clone()), Ok(Atom::from(1)));
         // a
         assert_eq!(eval(
-            Symbol("a".to_string()),
-            repl_env.clone()), Ok(Int(2)));
+            Atom::from("a"),
+            repl_env.clone()), Ok(Atom::from(2)));
         // (let (a 1 b 2) (+ a b))
         assert_eq!(eval(
-            list(vec![Symbol("let".to_string()), 
-                list(vec![Symbol("a".to_string()), Int(1), Symbol("b".to_string()), Int(2)]),
-                list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Symbol("b".to_string())])]),
-            repl_env.clone()), Ok(Int(3)));
+            form!["let", 
+                form!["a", 1, "b", 2],
+                form!["+", "a", "b"]],
+            repl_env.clone()), Ok(Atom::from(3)));
         // (let (a 1 b a) b)
         assert_eq!(eval(
-            list(vec![Symbol("let".to_string()), 
-                list(vec![Symbol("a".to_string()), Int(1), Symbol("b".to_string()), Symbol("a".to_string())]),
-                Symbol("b".to_string())]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["let", 
+                form!["a", 1, "b", "a"],
+                "b"],
+            repl_env.clone()), Ok(Atom::from(1)));
     }
 
     #[test]
@@ -259,15 +269,15 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (progn (set a 92) (+ a 8))
         assert_eq!(eval(
-            list(vec![Symbol("progn".to_string()),
-                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(92)]),
-                list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Int(8)]),
-            ]),
-            repl_env.clone()), Ok(Int(100)));
+            form!["progn",
+                form!["set", "a", 92],
+                form!["+", "a", 8]
+            ],
+            repl_env.clone()), Ok(Atom::from(100)));
         // a
         assert_eq!(eval(
-            Symbol("a".to_string()),
-            repl_env.clone()), Ok(Int(92)));
+            Atom::from("a"),
+            repl_env.clone()), Ok(Atom::from(92)));
     }
 
     #[test]
@@ -275,42 +285,42 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (if true 1 2)
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(true), Int(1), Int(2)]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["if", true, 1, 2],
+            repl_env.clone()), Ok(Atom::from(1)));
         // (if false 1 2)
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(false), Int(1), Int(2)]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["if", false, 1, 2],
+            repl_env.clone()), Ok(Atom::from(2)));
         // (if true 1)
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(true), Int(1)]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["if", true, 1],
+            repl_env.clone()), Ok(Atom::from(1)));
         // (if false 1)
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(false), Int(1)]),
+            form!["if", false, 1],
             repl_env.clone()), Ok(Nil));
         // (if true (set a 1) (set a 2))
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(true),
-                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(1)]),
-                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
-            ]),
-            repl_env.clone()), Ok(Int(1)));
+            form!["if", true,
+                form!["set", "a", 1],
+                form!["set", "a", 2]
+            ],
+            repl_env.clone()), Ok(Atom::from(1)));
         // a
         assert_eq!(eval(
-            Symbol("a".to_string()),
-            repl_env.clone()), Ok(Int(1)));
+            Atom::from("a"),
+            repl_env.clone()), Ok(Atom::from(1)));
         // (if false (set b 1) (set b 2))
         assert_eq!(eval(
-            list(vec![Symbol("if".to_string()), Bool(false),
-                list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(1)]),
-                list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(2)]),
-            ]),
-            repl_env.clone()), Ok(Int(2)));
+            form!["if", false,
+                form!["set", "b", 1],
+                form!["set", "b", 2]
+            ],
+            repl_env.clone()), Ok(Atom::from(2)));
         // b
         assert_eq!(eval(
-            Symbol("b".to_string()),
-            repl_env.clone()), Ok(Int(2)));
+            Atom::from("b"),
+            repl_env.clone()), Ok(Atom::from(2)));
     }
 
     #[test]
@@ -318,22 +328,23 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // ((fn (x y) (+ x y)) 1 2)
         assert_eq!(eval(
-            list(vec![
-                list(vec![Symbol("fn".to_string()),
-                    list(vec![Symbol("x".to_string()), Symbol("y".to_string())]),
-                    list(vec![Symbol("+".to_string()), Symbol("x".to_string()), Symbol("y".to_string())])]),
-                Int(1), Int(2)]),
-            repl_env.clone()), Ok(Int(3)));
+            form![
+                form!["fn",
+                    form!["x", "y"],
+                    form!["+", "x", "y"]],
+                1, 2],
+            repl_env.clone()), Ok(Atom::from(3)));
         // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
         assert_eq!(eval(
-            list(vec![
-                list(vec![Symbol("fn".to_string()),
-                    list(vec![Symbol("f".to_string()), Symbol("x".to_string())]),
-                    list(vec![Symbol("f".to_string()), list(vec![Symbol("f".to_string()), Symbol("x".to_string())])])]),
-                list(vec![Symbol("fn".to_string()),
-                    list(vec![Symbol("x".to_string())]),
-                    list(vec![Symbol("*".to_string()), Symbol("x".to_string()), Int(2)])]),
-                Int(3)]),
-            repl_env), Ok(Int(12)));
+            form![
+                form!["fn",
+                    form!["f", "x"],
+                    form!["f",
+                        form!["f", "x"]]],
+                form!["fn",
+                    form!["x"],
+                    form!["*", "x", 2]],
+                3],
+            repl_env), Ok(Atom::from(12)));
     }
 }
