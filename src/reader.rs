@@ -77,13 +77,15 @@ mod reader_tests {
     };
     use super::{read};
 
-    #[test]
-    fn nil() {
-        assert_eq!(read("()".to_string()), Atom::Nil)
+    macro_rules! test_parse {
+        ($test_name:ident, $input:expr, $res:expr) => {
+            #[test]
+            fn $test_name() {
+                assert_eq!(read($input.to_string()), $res)
+            }
+        }
     }
 
-    #[test]
-    fn set() {
-        assert_eq!(read("(set a 2)".to_string()), form!["set", "a", 2]);
-    }
+    test_parse!(parse_nil, "()", Atom::Nil);
+    test_parse!(parse_set, "(set a 2)", form!["set", "a", 2]);
 }

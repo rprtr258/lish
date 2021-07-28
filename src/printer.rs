@@ -30,48 +30,31 @@ mod eval_tests {
     };
     use super::{print};
 
-    #[test]
-    fn print_true() {
-        assert_eq!(print(&Ok(Atom::from(true))), "true")
+    macro_rules! test_print_primitive {
+        ($test_name:ident, $ast:expr, $res:expr) => {
+            #[test]
+            fn $test_name() {
+                assert_eq!(print(&Ok(Atom::from($ast))), $res)
+            }
+        }
     }
 
-    #[test]
-    fn print_false() {
-        assert_eq!(print(&Ok(Atom::from(false))), "false")
+    macro_rules! test_print {
+        ($test_name:ident, $atom:expr, $res:expr) => {
+            #[test]
+            fn $test_name() {
+                assert_eq!(print(&Ok($atom)), $res)
+            }
+        }
     }
 
-    #[test]
-    fn print_pi() {
-        assert_eq!(print(&Ok(Atom::from(3.14))), "3.14")
-    }
-
-    #[test]
-    fn print_func() {
-        assert_eq!(print(&Ok(Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)))), "#fn")
-    }
-
-    #[test]
-    fn print_int() {
-        assert_eq!(print(&Ok(Atom::from(92))), "92")
-    }
-
-    #[test]
-    fn print_list() {
-        assert_eq!(print(&Ok(form![1, 2])), "(1 2)")
-    }
-
-    #[test]
-    fn print_nil() {
-        assert_eq!(print(&Ok(Atom::Nil)), "()")
-    }
-
-    #[test]
-    fn print_string() {
-        assert_eq!(print(&Ok(Atom::String("abc".to_string()))), r#""abc""#)
-    }
-
-    #[test]
-    fn print_symbol() {
-        assert_eq!(print(&Ok(Atom::from("abc"))), "abc")
-    }
+    test_print_primitive!(print_true, true, "true");
+    test_print_primitive!(print_false, false, "false");
+    test_print_primitive!(print_float, 3.14, "3.14");
+    test_print_primitive!(print_int, 92, "92");
+    test_print_primitive!(print_list, form![1, 2], "(1 2)");
+    test_print_primitive!(print_symbol, "abc", "abc");
+    test_print!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
+    test_print!(print_nil, Atom::Nil, "()");
+    test_print!(print_string, Atom::String("abc".to_string()), r#""abc""#);
 }

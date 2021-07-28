@@ -117,6 +117,7 @@ mod eval_tests {
         env::{Env},
     };
     use super::{eval};
+
     macro_rules! test_eval {
         ($ast:expr, $res:expr, $env:expr) => {
             assert_eq!(eval($ast, $env.clone()), Ok(Atom::from($res)));
