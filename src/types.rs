@@ -1,4 +1,7 @@
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    cmp::Ordering,
+};
 
 // use fnv::FnvHashMap;
 
@@ -33,6 +36,21 @@ impl<T> From<Vec<T>> for Atom where Atom: From<T>, T: Clone {
     fn from(x: Vec<T>) -> Atom {
         use crate::list_vec;
         list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect())
+    }
+}
+
+impl PartialOrd for Atom {
+    fn partial_cmp(self: &Self, other: &Atom) -> Option<Ordering> {
+        match (self, other) {
+            (Atom::Nil, Atom::Nil) => Some(Ordering::Equal),
+            (Atom::Bool(ref a), Atom::Bool(ref b)) => a.partial_cmp(b),
+            (Atom::Int(ref a), Atom::Int(ref b)) => a.partial_cmp(b),
+            (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
+            (Atom::Symbol(ref a), Atom::Symbol(ref b)) => a.partial_cmp(b),
+            (Atom::List(ref a, _), Atom::List(ref b, _)) => a.partial_cmp(b),
+            // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
+            _ => None,
+        }
     }
 }
 

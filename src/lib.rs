@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 pub mod types;
+mod core;
 pub mod env;
 pub mod reader;
 mod printer;
@@ -110,6 +111,7 @@ pub fn rep(input: String, env: Env) {
 // TODO: add tests from history.txt
 // TODO: do fucking macro
 #[cfg(test)]
+#[allow(unused_parens)]
 mod eval_tests {
     use crate::{
         form,
@@ -119,152 +121,220 @@ mod eval_tests {
     use super::{eval};
 
     macro_rules! test_eval {
-        ($ast:expr, $res:expr, $env:expr) => {
-            assert_eq!(eval($ast, $env.clone()), Ok(Atom::from($res)));
+        ($test_name:ident, $($ast:expr => $res:tt), *) => {
+            #[test]
+            fn $test_name() {
+                let repl_env = Env::new_repl();
+                $( assert_eq!(eval($ast, repl_env.clone()), Ok(Atom::from($res))); )*
+            }
         }
     }
 
-    #[test]
-    fn set() {
-        let repl_env = Env::new_repl();
-        // (set a 2)
-        test_eval!(form!["set", "a", 2], 2, repl_env);
-        // (+ a 3)
-        test_eval!(form!["+", "a", 3], 5, repl_env);
-        // (set b 3)
-        test_eval!(form!["set", "b", 3], 3, repl_env);
-        // (+ a b)
-        test_eval!(form!["+", "a", "b"], 5, repl_env);
-        // (set c (+ 1 2))
-        test_eval!(form!["set", "c", form!["+", 1, 2]], 3, repl_env);
-        // (+ c 1)
-        test_eval!(form!["+", "c", 1], 4, repl_env);
-    }
+    // (set a 2)
+    // (+ a 3)
+    // (set b 3)
+    // (+ a b)
+    test_eval!(
+        set,
+        form!["set", "a", 2] => 2,
+        form!["+", "a", 3] => 5,
+        form!["set", "b", 3] => 3,
+        form!["+", "a", "b"] => 5
+    );
 
+    // (set c (+ 1 2))
+    // (+ c 1)
+    test_eval!(
+        set_expr,
+        form!["set", "c", form!["+", 1, 2]] => 3,
+        form!["+", "c", 1] => 4
+    );
+
+    // 92
+    test_eval!(
+        eval_int,
+        Atom::from(92) => 92
+    );
+
+    // abc
     #[test]
-    fn echo() {
+    fn eval_symbol() {
         let repl_env = Env::new_repl();
-        // 92
-        test_eval!(Atom::from(92), 92, repl_env);
-        // abc
         assert_eq!(eval(
             Atom::from("abc"),
             repl_env.clone()), error("Not found 'abc'"));
-        // "abc"
+    }
+
+    // "abc"
+    #[test]
+    fn eval_string() {
+        let repl_env = Env::new_repl();
         assert_eq!(eval(
             String("abc".to_string()),
             repl_env.clone()), Ok(Atom::String("abc".to_string())));
     }
 
-    #[test]
-    fn multiply() {
-        let repl_env = Env::new_repl();
-        // (*)
-        test_eval!(form!["*"], 1, repl_env);
-        // (* 2)
-        test_eval!(form!["*", 2], 2, repl_env);
-        // (* 1 2 3)
-        test_eval!(form!["*", 1, 2, 3], 6, repl_env);
-    }
+    // (*)
+    test_eval!(
+        multiply_nullary,
+        form!["*"] => 1
+    );
 
-    #[test]
-    fn divide() {
-        let repl_env = Env::new_repl();
-        // (/ 1)
-        test_eval!(form!["/", 1], 1, repl_env);
-        // (/ 5 2)
-        test_eval!(form!["/", 5, 2], 2, repl_env);
-        // (/ 22 3 2)
-        test_eval!(form!["/", 22, 3, 2], 3, repl_env);
-    }
+    // (* 2)
+    test_eval!(
+        multiply_unary,
+        form!["*", 2] => 2
+    );
 
-    #[test]
-    fn minus() {
-        let repl_env = Env::new_repl();
-        // (- 1)
-        test_eval!(form!["-", 1], -1, repl_env);
-        // (- 1 2 3)
-        test_eval!(form!["-", 1, 2, 3], -4, repl_env);
-    }
+    // (* 1 2 3)
+    test_eval!(
+        multiply_ternary,
+        form!["*", 1, 2, 3] => 6
+    );
 
-    #[test]
-    fn plus() {
-        let repl_env = Env::new_repl();
-        // (+)
-        test_eval!(form!["+"], 0, repl_env);
-        // (+ 1)
-        test_eval!(form!["+", 1], 1, repl_env);
-        // (+ 1 2 3)
-        test_eval!(form!["+", 1, 2, 3], 6, repl_env);
-        // (+ 1 2 (+ 1 2))
-        test_eval!(form!["+", 1, 2, form!["+", 1, 2]], 6, repl_env);
-    }
+    // (/ 1)
+    test_eval!(
+        divide_unary,
+        form!["/", 1] => 1
+    );
 
-    #[test]
-    fn let_statement() {
-        let repl_env = Env::new_repl();
-        // (set a 2)
-        test_eval!(form!["set", "a", 2], 2, repl_env);
-        // (let (a 1) a)
-        test_eval!(form!["let", form!["a", 1], "a"], 1, repl_env);
-        // a
-        test_eval!(Atom::from("a"), 2, repl_env);
-        // (let (a 1 b 2) (+ a b))
-        test_eval!(form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]], 3, repl_env);
-        // (let (a 1 b a) b)
-        test_eval!(form!["let", form!["a", 1, "b", "a"], "b"], 1, repl_env);
-    }
+    // (/ 5 2)
+    test_eval!(
+        divide_binary,
+        form!["/", 5, 2] => 2
+    );
 
-    #[test]
-    fn progn_statement() {
-        let repl_env = Env::new_repl();
-        // (progn (set a 92) (+ a 8))
-        test_eval!(form!["progn", form!["set", "a", 92], form!["+", "a", 8]], 100, repl_env);
-        // a
-        test_eval!(Atom::from("a"), 92, repl_env);
-    }
+    // (/ 22 3 2)
+    test_eval!(
+        divide_ternary,
+        form!["/", 22, 3, 2] => 3
+    );
 
-    #[test]
-    fn if_statement() {
-        let repl_env = Env::new_repl();
-        // (if true 1 2)
-        test_eval!(form!["if", true, 1, 2], 1, repl_env);
-        // (if false 1 2)
-        test_eval!(form!["if", false, 1, 2], 2, repl_env);
-        // (if true 1)
-        test_eval!(form!["if", true, 1], 1, repl_env);
-        // (if false 1)
-        assert_eq!(eval(
-            form!["if", false, 1],
-            repl_env.clone()), Ok(Nil));
-        // (if true (set a 1) (set a 2))
-        test_eval!(form!["if", true, form!["set", "a", 1], form!["set", "a", 2] ], 1, repl_env);
-        // a
-        test_eval!(Atom::from("a"), 1, repl_env);
-        // (if false (set b 1) (set b 2))
-        test_eval!(form!["if", false, form!["set", "b", 1], form!["set", "b", 2] ], 2, repl_env);
-        // b
-        test_eval!(Atom::from("b"), 2, repl_env);
-    }
+    // (- 1)
+    test_eval!(
+        minus_unary,
+        form!["-", 1] => (-1)
+    );
 
-    #[test]
-    fn fn_statement() {
-        let repl_env = Env::new_repl();
-        // ((fn (x y) (+ x y)) 1 2)
-        test_eval!(form![
+    // (- 1 2 3)
+    test_eval!(
+        minus_ternary,
+        form!["-", 1, 2, 3] => (-4)
+    );
+
+    // (+)
+    test_eval!(
+        plus_nullary,
+        form!["+"] => 0
+    );
+
+    // (+ 1)
+    test_eval!(
+        plus_unary,
+        form!["+", 1] => 1
+    );
+
+    // (+ 1 2 3)
+    test_eval!(
+        plus_ternary,
+        form!["+", 1, 2, 3] => 6
+    );
+
+    // (+ 1 2 (+ 1 2))
+    test_eval!(
+        plus_expr,
+        form!["+", 1, 2, form!["+", 1, 2]] => 6
+    );
+
+    // (set a 2)
+    // (let (a 1) a)
+    // a
+    test_eval!(
+        let_statement,
+        form!["set", "a", 2] => 2,
+        form!["let", form!["a", 1], "a"] => 1,
+        Atom::from("a") => 2
+    );
+
+    // (let (a 1 b 2) (+ a b))
+    test_eval!(
+        let_twovars_statement,
+        form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]] => 3
+    );
+
+    // (let (a 1 b a) b)
+    test_eval!(
+        let_star_statement,
+        form!["let", form!["a", 1, "b", "a"], "b"] => 1
+    );
+
+    // (progn (set a 92) (+ a 8))
+    // a
+    test_eval!(
+        progn_statement,
+        form!["progn", form!["set", "a", 92], form!["+", "a", 8]] => 100,
+        Atom::from("a") => 92
+    );
+
+    // (if true 1 2)
+    test_eval!(
+        if_true_statement,
+        form!["if", true, 1, 2] => 1
+    );
+
+    // (if false 1 2)
+    test_eval!(
+        if_false_statement,
+        form!["if", false, 1, 2] => 2
+    );
+
+    // (if true 1)
+    test_eval!(
+        if_true_noelse_statement,
+        form!["if", true, 1] => 1
+    );
+
+    // (if false 1)
+    test_eval!(
+        if_false_noelse_statement,
+        form!["if", false, 1] => Nil
+    );
+
+    // (if true (set a 1) (set a 2))
+    // a
+    test_eval!(
+        if_set_true_statement,
+        form!["if", true, form!["set", "a", 1], form!["set", "a", 2]] => 1,
+        Atom::from("a") => 1
+    );
+
+    // (if false (set b 1) (set b 2))
+    // b
+    test_eval!(
+        if_set_false_statement,
+        form!["if", false, form!["set", "b", 1], form!["set", "b", 2]] => 2,
+        Atom::from("b") => 2
+    );
+
+    // ((fn (x y) (+ x y)) 1 2)
+    test_eval!(
+        fn_statement,
+        form![
             form![
                 "fn",
                 form!["x", "y"],
                 form!["+", "x", "y"]],
-            1, 2], 3, repl_env);
-        // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
-        test_eval!(form![
+            1, 2] => 3);
+
+    // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
+    test_eval!(
+        fn_double_statement,
+        form![
             form!["fn",
                 form!["f", "x"],
                 form!["f",
                     form!["f", "x"]]],
                 form!["fn",
                     form!["x"],
-                    form!["*", "x", 2]], 3], 12, repl_env);
-    }
+                    form!["*", "x", 2]], 3] => 12);
 }
