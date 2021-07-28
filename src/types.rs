@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 // use fnv::FnvHashMap;
 
-// use crate::env::{Env};
+use crate::env::{Env};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Atom {
     Nil,
     Bool(bool),
@@ -14,18 +14,34 @@ pub enum Atom {
     Symbol(String),
     // Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
     Func(fn(Args) -> LishRet, Rc<Atom>),
-    // Lambda {
-    //     eval: fn(ast: Atom, env: Env) -> LishRet,
-    //     ast: Rc<Atom>,
-    //     env: Env,
-    //     params: Rc<Atom>,
-    //     is_macro: bool,
-    //     meta: Rc<Atom>,
-    // },
+    Lambda {
+        eval: fn(ast: Atom, env: Env) -> LishRet,
+        ast: Rc<Atom>,
+        env: Env,
+        params: Rc<Atom>,
+        is_macro: bool,
+        meta: Rc<Atom>,
+    },
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+impl PartialEq for Atom {
+    fn eq(&self, other: &Atom) -> bool {
+        use Atom::{Nil, Bool, Int, String, Symbol, List};
+        match (self, other) {
+            (Nil, Nil) => true,
+            (Bool(ref a), Bool(ref b)) => a == b,
+            (Int(ref a), Int(ref b)) => a == b,
+            (String(ref a), String(ref b)) => a == b,
+            (Symbol(ref a), Symbol(ref b)) => a == b,
+            (List(ref a, _), List(ref b, _)) => a == b,
+            // (Hash(ref a, _), Hash(ref b, _)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum LishErr {
     Message(String),
     // Val(Atom),

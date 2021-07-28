@@ -14,7 +14,7 @@ fn main() {
         match input_buffer {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                rep(&line, &repl_env);
+                rep(line, repl_env.clone());
             },
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");

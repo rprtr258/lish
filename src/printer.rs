@@ -12,6 +12,7 @@ pub fn print(val: &LishRet) -> String {
             Atom::String(y) => format!("{:?}", y),
             Atom::Symbol(y) => format!("{}", y),
             Atom::Func(_, _) => "#fn".to_string(),
+            Atom::Lambda {ast, params, is_macro, ..} => format!("({} {:?} {:?})", if *is_macro {"defmacro"} else {"fn"}, params, ast),
             #[allow(unstable_name_collisions)] // intersperse
             Atom::List(items, _) => format!("({})", items.iter().map(|x| print(&Ok(x.clone()))).intersperse(" ".to_string()).collect::<String>()),
         }

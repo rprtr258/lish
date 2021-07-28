@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 pub mod types;
 pub mod env;
 pub mod reader;
@@ -19,20 +21,20 @@ otherwise just return the original ast value
 fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
     match ast {
         Atom::Symbol(var) => env.get(var),
-        Atom::List(items, _) => Ok(list(items.iter().map(|x| eval(&x, env).unwrap()).collect())),
+        Atom::List(items, _) => Ok(list(items.iter().map(|x| eval(x.clone(), env.clone()).unwrap()).collect())),
         x => Ok(x.clone()),
     }
 }
 
-pub fn eval(ast: &Atom, env: &Env) -> LishRet {
-    match ast {
+pub fn eval(ast: Atom, env: Env) -> LishRet {
+    match ast.clone() {
         Atom::List(items, _) => {
             match &items[0] {
                 Atom::Symbol(sym) => {
                     match &sym[..] {
                         "set" => {
                             assert_eq!(items.len(), 3);
-                            let value: Atom = eval(&items[2], env)?;
+                            let value: Atom = eval(items[2].clone(), env.clone())?;
                             env.set(items[1].clone(), value)
                         }
                         "let" => {
@@ -45,15 +47,43 @@ pub fn eval(ast: &Atom, env: &Env) -> LishRet {
                             let let_env = Env::new(Some(env.clone()));
                             while i < bindings.len() {
                                 let var_name = bindings[i].clone();
-                                let var_value = eval(&bindings[i + 1], &let_env)?;
+                                let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
                                 let_env.set(var_name, var_value)?;
                                 i += 2;
                             }
-                            let body = &items[2];
-                            eval(body, &let_env)
+                            let body = items[2].clone();
+                            eval(body, let_env)
+                        }
+                        "progn" => Ok(items.iter()
+                            .skip(1)
+                            .map(|x| eval(x.clone(), env.clone()).unwrap())
+                            .last()
+                            .unwrap()),
+                        "if" => {
+                            let predicate = eval(items[1].clone(), env.clone());
+                            match predicate {
+                                Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
+                                    eval(items[3].clone(), env)
+                                } else {
+                                    Ok(Atom::Nil)
+                                },
+                                _ => eval(items[2].clone(), env),
+                            }
+                        }
+                        "fn" => {
+                            let args = items[1].clone();
+                            let body = items[2].clone();
+                            Ok(Atom::Lambda {
+                                eval: eval,
+                                ast: Rc::new(body),
+                                env: env.clone(),
+                                params: Rc::new(args),
+                                is_macro: false,
+                                meta: Rc::new(Atom::Nil),
+                            })
                         }
                         _ => {
-                            let evaluated_list = eval_ast(ast, env)?;
+                            let evaluated_list = eval_ast(&ast, &env)?;
                             match evaluated_list {
                                 Atom::List(fun_call, _) => {
                                     let fun = fun_call[0].clone();
@@ -69,7 +99,7 @@ pub fn eval(ast: &Atom, env: &Env) -> LishRet {
                     }
                 }
                 _ => {
-                    let evaluated_list = eval_ast(ast, env)?;
+                    let evaluated_list = eval_ast(&ast, &env)?;
                     match evaluated_list {
                         Atom::List(fun_call, _) => {
                             let fun = fun_call[0].clone();
@@ -85,12 +115,12 @@ pub fn eval(ast: &Atom, env: &Env) -> LishRet {
             }
         }
         Atom::Nil => Ok(ast.clone()),
-        _ => eval_ast(ast, env),
+        _ => eval_ast(&ast, &env),
     }
 }
 
-pub fn rep(input: &String, env: &Env) {
-    let result = eval(&read(input), env);
+pub fn rep(input: String, env: Env) {
+    let result = eval(read(input), env);
     println!("{}", print(&result));
 }
 
@@ -99,7 +129,7 @@ pub fn rep(input: &String, env: &Env) {
 #[cfg(test)]
 mod eval_tests {
     use crate::{
-        types::{list, error, Atom::{Symbol, Int, String}},
+        types::{list, error, Atom::{Symbol, Int, String, Bool, Nil}},
         env::{Env},
     };
     use super::{eval};
@@ -108,32 +138,38 @@ mod eval_tests {
     fn set() {
         let repl_env = Env::new_repl();
         assert_eq!(eval(
-            &list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
-            &repl_env).unwrap(), Int(2));
+            list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
+            repl_env.clone()), Ok(Int(2)));
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Int(3)]),
-            &repl_env).unwrap(), Int(5));
+            list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Int(3)]),
+            repl_env.clone()), Ok(Int(5)));
         assert_eq!(eval(
-            &list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(3)]),
-            &repl_env).unwrap(), Int(3));
+            list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(3)]),
+            repl_env.clone()), Ok(Int(3)));
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Symbol("b".to_string())]),
-            &repl_env).unwrap(), Int(5));
+            list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Symbol("b".to_string())]),
+            repl_env.clone()), Ok(Int(5)));
         assert_eq!(eval(
-            &list(vec![Symbol("set".to_string()), Symbol("c".to_string()),
+            list(vec![Symbol("set".to_string()), Symbol("c".to_string()),
                 list(vec![Symbol("+".to_string()), Int(1), Int(2)])]),
-            &repl_env).unwrap(), Int(3));
+            repl_env.clone()), Ok(Int(3)));
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Symbol("c".to_string()), Int(1)]),
-            &repl_env).unwrap(), Int(4));
+            list(vec![Symbol("+".to_string()), Symbol("c".to_string()), Int(1)]),
+            repl_env.clone()), Ok(Int(4)));
     }
 
     #[test]
     fn echo() {
         let repl_env = Env::new_repl();
-        assert_eq!(eval(&Int(92), &repl_env).unwrap(), Int(92));
-        assert_eq!(eval(&Symbol("abc".to_string()), &repl_env).err().unwrap(), error("Not found 'abc'").err().unwrap());
-        assert_eq!(eval(&String("abc".to_string()), &repl_env).unwrap(), String("abc".to_string()));
+        assert_eq!(eval(
+            Int(92),
+            repl_env.clone()), Ok(Int(92)));
+        assert_eq!(eval(
+            Symbol("abc".to_string()),
+            repl_env.clone()), error("Not found 'abc'"));
+        assert_eq!(eval(
+            String("abc".to_string()),
+            repl_env.clone()), Ok(String("abc".to_string())));
     }
 
     #[test]
@@ -141,16 +177,16 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (*)
         assert_eq!(eval(
-            &list(vec![Symbol("*".to_string()), Int(1)]),
-            &repl_env).unwrap(), Int(1));
+            list(vec![Symbol("*".to_string()), Int(1)]),
+            repl_env.clone()), Ok(Int(1)));
         // (* 2)
         assert_eq!(eval(
-            &list(vec![Symbol("*".to_string()), Int(2)]),
-            &repl_env).unwrap(), Int(2));
+            list(vec![Symbol("*".to_string()), Int(2)]),
+            repl_env.clone()), Ok(Int(2)));
         // (* 1 2 3)
         assert_eq!(eval(
-            &list(vec![Symbol("*".to_string()), Int(1), Int(2), Int(3)]),
-            &repl_env).unwrap(), Int(6));
+            list(vec![Symbol("*".to_string()), Int(1), Int(2), Int(3)]),
+            repl_env.clone()), Ok(Int(6)));
     }
 
     #[test]
@@ -158,16 +194,16 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (/ 1)
         assert_eq!(eval(
-            &list(vec![Symbol("/".to_string()), Int(1)]),
-            &repl_env).unwrap(), Int(1));
+            list(vec![Symbol("/".to_string()), Int(1)]),
+            repl_env.clone()), Ok(Int(1)));
         // (/ 5 2)
         assert_eq!(eval(
-            &list(vec![Symbol("/".to_string()), Int(5), Int(2)]),
-            &repl_env).unwrap(), Int(2));
+            list(vec![Symbol("/".to_string()), Int(5), Int(2)]),
+            repl_env.clone()), Ok(Int(2)));
         // (/ 22 3 2)
         assert_eq!(eval(
-            &list(vec![Symbol("/".to_string()), Int(22), Int(3), Int(2)]),
-            &repl_env).unwrap(), Int(3));
+            list(vec![Symbol("/".to_string()), Int(22), Int(3), Int(2)]),
+            repl_env.clone()), Ok(Int(3)));
     }
 
     #[test]
@@ -175,12 +211,12 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (- 1)
         assert_eq!(eval(
-            &list(vec![Symbol("-".to_string()), Int(1)]),
-            &repl_env).unwrap(), Int(-1));
+            list(vec![Symbol("-".to_string()), Int(1)]),
+            repl_env.clone()), Ok(Int(-1)));
         // (- 1 2 3)
         assert_eq!(eval(
-            &list(vec![Symbol("-".to_string()), Int(1), Int(2), Int(3)]),
-            &repl_env).unwrap(), Int(-4));
+            list(vec![Symbol("-".to_string()), Int(1), Int(2), Int(3)]),
+            repl_env.clone()), Ok(Int(-4)));
     }
 
     #[test]
@@ -188,20 +224,20 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (+)
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string())]),
-            &repl_env).unwrap(), Int(0));
+            list(vec![Symbol("+".to_string())]),
+            repl_env.clone()), Ok(Int(0)));
         // (+ 1)
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Int(1)]),
-            &repl_env).unwrap(), Int(1));
+            list(vec![Symbol("+".to_string()), Int(1)]),
+            repl_env.clone()), Ok(Int(1)));
         // (+ 1 2 3)
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Int(1), Int(2), Int(3)]),
-            &repl_env).unwrap(), Int(6));
+            list(vec![Symbol("+".to_string()), Int(1), Int(2), Int(3)]),
+            repl_env.clone()), Ok(Int(6)));
         // (+ 1 2 (+ 1 2))
         assert_eq!(eval(
-            &list(vec![Symbol("+".to_string()), Int(1), Int(2), list(vec![Symbol("+".to_string()), Int(1), Int(2)])]),
-            &repl_env).unwrap(), Int(6));
+            list(vec![Symbol("+".to_string()), Int(1), Int(2), list(vec![Symbol("+".to_string()), Int(1), Int(2)])]),
+            repl_env.clone()), Ok(Int(6)));
     }
 
     #[test]
@@ -209,27 +245,88 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // (set a 2)
         assert_eq!(eval(
-            &list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
-            &repl_env).unwrap(), Int(2));
+            list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
+            repl_env.clone()), Ok(Int(2)));
         // (let (a 1) a)
         assert_eq!(eval(
-            &list(vec![Symbol("let".to_string()), 
+            list(vec![Symbol("let".to_string()), 
                 list(vec![Symbol("a".to_string()), Int(1)]),
                 Symbol("a".to_string())]),
-            &repl_env).unwrap(), Int(1));
+            repl_env.clone()), Ok(Int(1)));
         // a
-        assert_eq!(eval(&Symbol("a".to_string()), &repl_env).unwrap(), Int(2));
+        assert_eq!(eval(
+            Symbol("a".to_string()),
+            repl_env.clone()), Ok(Int(2)));
         // (let (a 1 b 2) (+ a b))
         assert_eq!(eval(
-            &list(vec![Symbol("let".to_string()), 
+            list(vec![Symbol("let".to_string()), 
                 list(vec![Symbol("a".to_string()), Int(1), Symbol("b".to_string()), Int(2)]),
                 list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Symbol("b".to_string())])]),
-            &repl_env).unwrap(), Int(3));
+            repl_env.clone()), Ok(Int(3)));
         // (let (a 1 b a) b)
         assert_eq!(eval(
-            &list(vec![Symbol("let".to_string()), 
+            list(vec![Symbol("let".to_string()), 
                 list(vec![Symbol("a".to_string()), Int(1), Symbol("b".to_string()), Symbol("a".to_string())]),
                 Symbol("b".to_string())]),
-            &repl_env).unwrap(), Int(1));
+            repl_env.clone()), Ok(Int(1)));
+    }
+
+    #[test]
+    fn progn_statement() {
+        let repl_env = Env::new_repl();
+        // (progn (set a 92) (+ a 8))
+        assert_eq!(eval(
+            list(vec![Symbol("progn".to_string()),
+                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(92)]),
+                list(vec![Symbol("+".to_string()), Symbol("a".to_string()), Int(8)]),
+            ]),
+            repl_env.clone()), Ok(Int(100)));
+        // a
+        assert_eq!(eval(
+            Symbol("a".to_string()),
+            repl_env.clone()), Ok(Int(92)));
+    }
+
+    #[test]
+    fn if_statement() {
+        let repl_env = Env::new_repl();
+        // (if true 1 2)
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(true), Int(1), Int(2)]),
+            repl_env.clone()), Ok(Int(1)));
+        // (if false 1 2)
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(false), Int(1), Int(2)]),
+            repl_env.clone()), Ok(Int(2)));
+        // (if true 1)
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(true), Int(1)]),
+            repl_env.clone()), Ok(Int(1)));
+        // (if false 1)
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(false), Int(1)]),
+            repl_env.clone()), Ok(Nil));
+        // (if true (set a 1) (set a 2))
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(true),
+                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(1)]),
+                list(vec![Symbol("set".to_string()), Symbol("a".to_string()), Int(2)]),
+            ]),
+            repl_env.clone()), Ok(Int(1)));
+        // a
+        assert_eq!(eval(
+            Symbol("a".to_string()),
+            repl_env.clone()), Ok(Int(1)));
+        // (if false (set b 1) (set b 2))
+        assert_eq!(eval(
+            list(vec![Symbol("if".to_string()), Bool(false),
+                list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(1)]),
+                list(vec![Symbol("set".to_string()), Symbol("b".to_string()), Int(2)]),
+            ]),
+            repl_env.clone()), Ok(Int(2)));
+        // b
+        assert_eq!(eval(
+            Symbol("b".to_string()),
+            repl_env.clone()), Ok(Int(2)));
     }
 }

@@ -53,14 +53,14 @@ where T: Iterator<Item=String> {
 }
 
 // TODO: add braces implicitly
-pub fn read(cmd: &String) -> Atom {
+pub fn read(cmd: String) -> Atom {
     /* TODO:
     lazy_static! {
         static ref RE: Regex = Regex::new("...").unwrap();
     }
     */
     let re = Regex::new(r#"[\s]*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)"#).unwrap();
-    let mut tokens_iter = re.captures_iter(cmd)
+    let mut tokens_iter = re.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string())
         .filter(|s| s.chars().nth(0).unwrap() != ';');
     read_form(tokens_iter.next().unwrap(), &mut tokens_iter)
@@ -73,11 +73,11 @@ mod reader_tests {
 
     #[test]
     fn nil() {
-        assert_eq!(read(&"()".to_string()), Atom::Nil)
+        assert_eq!(read("()".to_string()), Atom::Nil)
     }
 
     #[test]
     fn set() {
-        assert_eq!(read(&"(set a 2)".to_string()), list(vec![Atom::Symbol("set".to_string()), Atom::Symbol("a".to_string()), Atom::Int(2)]));
+        assert_eq!(read("(set a 2)".to_string()), list(vec![Atom::Symbol("set".to_string()), Atom::Symbol("a".to_string()), Atom::Int(2)]));
     }
 }
