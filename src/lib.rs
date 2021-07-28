@@ -117,44 +117,34 @@ mod eval_tests {
         env::{Env},
     };
     use super::{eval};
+    macro_rules! test_eval {
+        ($ast:expr, $res:expr, $env:expr) => {
+            assert_eq!(eval($ast, $env.clone()), Ok(Atom::from($res)));
+        }
+    }
 
     #[test]
     fn set() {
         let repl_env = Env::new_repl();
         // (set a 2)
-        assert_eq!(eval(
-            form!["set", "a", 2],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["set", "a", 2], 2, repl_env);
         // (+ a 3)
-        assert_eq!(eval(
-            form!["+", "a", 3],
-            repl_env.clone()), Ok(Atom::from(5)));
+        test_eval!(form!["+", "a", 3], 5, repl_env);
         // (set b 3)
-        assert_eq!(eval(
-            form!["set", "b", 3],
-            repl_env.clone()), Ok(Atom::from(3)));
+        test_eval!(form!["set", "b", 3], 3, repl_env);
         // (+ a b)
-        assert_eq!(eval(
-            form!["+", "a", "b"],
-            repl_env.clone()), Ok(Atom::from(5)));
+        test_eval!(form!["+", "a", "b"], 5, repl_env);
         // (set c (+ 1 2))
-        assert_eq!(eval(
-            form!["set", "c",
-                form!["+", 1, 2]],
-            repl_env.clone()), Ok(Atom::from(3)));
+        test_eval!(form!["set", "c", form!["+", 1, 2]], 3, repl_env);
         // (+ c 1)
-        assert_eq!(eval(
-            form!["+", "c", 1],
-            repl_env.clone()), Ok(Atom::from(4)));
+        test_eval!(form!["+", "c", 1], 4, repl_env);
     }
 
     #[test]
     fn echo() {
         let repl_env = Env::new_repl();
         // 92
-        assert_eq!(eval(
-            Atom::from(92),
-            repl_env.clone()), Ok(Atom::from(92)));
+        test_eval!(Atom::from(92), 92, repl_env);
         // abc
         assert_eq!(eval(
             Atom::from("abc"),
@@ -169,182 +159,111 @@ mod eval_tests {
     fn multiply() {
         let repl_env = Env::new_repl();
         // (*)
-        assert_eq!(eval(
-            form!["*", 1],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["*"], 1, repl_env);
         // (* 2)
-        assert_eq!(eval(
-            form!["*", 2],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["*", 2], 2, repl_env);
         // (* 1 2 3)
-        assert_eq!(eval(
-            form!["*", 1, 2, 3],
-            repl_env.clone()), Ok(Atom::from(6)));
+        test_eval!(form!["*", 1, 2, 3], 6, repl_env);
     }
 
     #[test]
     fn divide() {
         let repl_env = Env::new_repl();
         // (/ 1)
-        assert_eq!(eval(
-            form!["/", 1],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["/", 1], 1, repl_env);
         // (/ 5 2)
-        assert_eq!(eval(
-            form!["/", 5, 2],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["/", 5, 2], 2, repl_env);
         // (/ 22 3 2)
-        assert_eq!(eval(
-            form!["/", 22, 3, 2],
-            repl_env.clone()), Ok(Atom::from(3)));
+        test_eval!(form!["/", 22, 3, 2], 3, repl_env);
     }
 
     #[test]
     fn minus() {
         let repl_env = Env::new_repl();
         // (- 1)
-        assert_eq!(eval(
-            form!["-", 1],
-            repl_env.clone()), Ok(Atom::from(-1)));
+        test_eval!(form!["-", 1], -1, repl_env);
         // (- 1 2 3)
-        assert_eq!(eval(
-            form!["-", 1, 2, 3],
-            repl_env.clone()), Ok(Atom::from(-4)));
+        test_eval!(form!["-", 1, 2, 3], -4, repl_env);
     }
 
     #[test]
     fn plus() {
         let repl_env = Env::new_repl();
         // (+)
-        assert_eq!(eval(
-            form!["+"],
-            repl_env.clone()), Ok(Atom::from(0)));
+        test_eval!(form!["+"], 0, repl_env);
         // (+ 1)
-        assert_eq!(eval(
-            form!["+", 1],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["+", 1], 1, repl_env);
         // (+ 1 2 3)
-        assert_eq!(eval(
-            form!["+", 1, 2, 3],
-            repl_env.clone()), Ok(Atom::from(6)));
+        test_eval!(form!["+", 1, 2, 3], 6, repl_env);
         // (+ 1 2 (+ 1 2))
-        assert_eq!(eval(
-            form!["+", 1, 2, form!["+", 1, 2]],
-            repl_env.clone()), Ok(Atom::from(6)));
+        test_eval!(form!["+", 1, 2, form!["+", 1, 2]], 6, repl_env);
     }
 
     #[test]
     fn let_statement() {
         let repl_env = Env::new_repl();
         // (set a 2)
-        assert_eq!(eval(
-            form!["set", "a", 2],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["set", "a", 2], 2, repl_env);
         // (let (a 1) a)
-        assert_eq!(eval(
-            form!["let", 
-                form!["a", 1],
-                "a"],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["let", form!["a", 1], "a"], 1, repl_env);
         // a
-        assert_eq!(eval(
-            Atom::from("a"),
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(Atom::from("a"), 2, repl_env);
         // (let (a 1 b 2) (+ a b))
-        assert_eq!(eval(
-            form!["let", 
-                form!["a", 1, "b", 2],
-                form!["+", "a", "b"]],
-            repl_env.clone()), Ok(Atom::from(3)));
+        test_eval!(form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]], 3, repl_env);
         // (let (a 1 b a) b)
-        assert_eq!(eval(
-            form!["let", 
-                form!["a", 1, "b", "a"],
-                "b"],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["let", form!["a", 1, "b", "a"], "b"], 1, repl_env);
     }
 
     #[test]
     fn progn_statement() {
         let repl_env = Env::new_repl();
         // (progn (set a 92) (+ a 8))
-        assert_eq!(eval(
-            form!["progn",
-                form!["set", "a", 92],
-                form!["+", "a", 8]
-            ],
-            repl_env.clone()), Ok(Atom::from(100)));
+        test_eval!(form!["progn", form!["set", "a", 92], form!["+", "a", 8]], 100, repl_env);
         // a
-        assert_eq!(eval(
-            Atom::from("a"),
-            repl_env.clone()), Ok(Atom::from(92)));
+        test_eval!(Atom::from("a"), 92, repl_env);
     }
 
     #[test]
     fn if_statement() {
         let repl_env = Env::new_repl();
         // (if true 1 2)
-        assert_eq!(eval(
-            form!["if", true, 1, 2],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["if", true, 1, 2], 1, repl_env);
         // (if false 1 2)
-        assert_eq!(eval(
-            form!["if", false, 1, 2],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["if", false, 1, 2], 2, repl_env);
         // (if true 1)
-        assert_eq!(eval(
-            form!["if", true, 1],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["if", true, 1], 1, repl_env);
         // (if false 1)
         assert_eq!(eval(
             form!["if", false, 1],
             repl_env.clone()), Ok(Nil));
         // (if true (set a 1) (set a 2))
-        assert_eq!(eval(
-            form!["if", true,
-                form!["set", "a", 1],
-                form!["set", "a", 2]
-            ],
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(form!["if", true, form!["set", "a", 1], form!["set", "a", 2] ], 1, repl_env);
         // a
-        assert_eq!(eval(
-            Atom::from("a"),
-            repl_env.clone()), Ok(Atom::from(1)));
+        test_eval!(Atom::from("a"), 1, repl_env);
         // (if false (set b 1) (set b 2))
-        assert_eq!(eval(
-            form!["if", false,
-                form!["set", "b", 1],
-                form!["set", "b", 2]
-            ],
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(form!["if", false, form!["set", "b", 1], form!["set", "b", 2] ], 2, repl_env);
         // b
-        assert_eq!(eval(
-            Atom::from("b"),
-            repl_env.clone()), Ok(Atom::from(2)));
+        test_eval!(Atom::from("b"), 2, repl_env);
     }
 
     #[test]
     fn fn_statement() {
         let repl_env = Env::new_repl();
         // ((fn (x y) (+ x y)) 1 2)
-        assert_eq!(eval(
+        test_eval!(form![
             form![
-                form!["fn",
-                    form!["x", "y"],
-                    form!["+", "x", "y"]],
-                1, 2],
-            repl_env.clone()), Ok(Atom::from(3)));
+                "fn",
+                form!["x", "y"],
+                form!["+", "x", "y"]],
+            1, 2], 3, repl_env);
         // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
-        assert_eq!(eval(
-            form![
-                form!["fn",
-                    form!["f", "x"],
-                    form!["f",
-                        form!["f", "x"]]],
+        test_eval!(form![
+            form!["fn",
+                form!["f", "x"],
+                form!["f",
+                    form!["f", "x"]]],
                 form!["fn",
                     form!["x"],
-                    form!["*", "x", 2]],
-                3],
-            repl_env), Ok(Atom::from(12)));
+                    form!["*", "x", 2]], 3], 12, repl_env);
     }
 }
