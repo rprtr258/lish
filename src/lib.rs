@@ -30,73 +30,55 @@ pub fn eval(ast: Atom, env: Env) -> LishRet {
     match ast.clone() {
         Atom::List(items, _) => {
             match &items[0] {
-                Atom::Symbol(sym) => {
-                    match &sym[..] {
-                        "set" => {
-                            assert_eq!(items.len(), 3);
-                            let value: Atom = eval(items[2].clone(), env.clone())?;
-                            env.set(items[1].clone(), value)
-                        }
-                        "let" => {
-                            let bindings = match &items[1] {
-                                Atom::List(xs, _) => xs,
-                                _ => return error_string(format!("Let bindings is not a list, but a {:?}", items[1])),
-                            };
-                            assert_eq!(bindings.len() % 2, 0);
-                            let mut i = 0;
-                            let let_env = Env::new(Some(env.clone()));
-                            while i < bindings.len() {
-                                let var_name = bindings[i].clone();
-                                let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
-                                let_env.set(var_name, var_value)?;
-                                i += 2;
-                            }
-                            let body = items[2].clone();
-                            eval(body, let_env)
-                        }
-                        "progn" => Ok(items.iter()
-                            .skip(1)
-                            .map(|x| eval(x.clone(), env.clone()).unwrap())
-                            .last()
-                            .unwrap()),
-                        "if" => {
-                            let predicate = eval(items[1].clone(), env.clone());
-                            match predicate {
-                                Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
-                                    eval(items[3].clone(), env)
-                                } else {
-                                    Ok(Atom::Nil)
-                                },
-                                _ => eval(items[2].clone(), env),
-                            }
-                        }
-                        "fn" => {
-                            let args = items[1].clone();
-                            let body = items[2].clone();
-                            Ok(Atom::Lambda {
-                                eval: eval,
-                                ast: Rc::new(body),
-                                env: env.clone(),
-                                params: Rc::new(args),
-                                is_macro: false,
-                                meta: Rc::new(Atom::Nil),
-                            })
-                        }
-                        _ => {
-                            let evaluated_list = eval_ast(&ast, &env)?;
-                            match evaluated_list {
-                                Atom::List(fun_call, _) => {
-                                    let fun = fun_call[0].clone();
-                                    let args = fun_call[1..].to_vec();
-                                    match fun {
-                                        Atom::Func(f, _) => f(args),
-                                        _ => error_string(format!("{:?} is not a function", fun)),
-                                    }
-                                }
-                                _ => unreachable!(),
-                            }
-                        }
+                Atom::Symbol(s) if s == "set" => {
+                    assert_eq!(items.len(), 3);
+                    let value: Atom = eval(items[2].clone(), env.clone())?;
+                    env.set(items[1].clone(), value)
+                }
+                Atom::Symbol(s) if s == "let" => {
+                    let bindings = match &items[1] {
+                        Atom::List(xs, _) => xs,
+                        _ => return error_string(format!("Let bindings is not a list, but a {:?}", items[1])),
+                    };
+                    assert_eq!(bindings.len() % 2, 0);
+                    let mut i = 0;
+                    let let_env = Env::new(Some(env.clone()));
+                    while i < bindings.len() {
+                        let var_name = bindings[i].clone();
+                        let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
+                        let_env.set(var_name, var_value)?;
+                        i += 2;
                     }
+                    let body = items[2].clone();
+                    eval(body, let_env)
+                }
+                Atom::Symbol(s) if s == "progn" => Ok(items.iter()
+                    .skip(1)
+                    .map(|x| eval(x.clone(), env.clone()).unwrap())
+                    .last()
+                    .unwrap()),
+                Atom::Symbol(s) if s == "if" => {
+                    let predicate = eval(items[1].clone(), env.clone());
+                    match predicate {
+                        Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
+                            eval(items[3].clone(), env)
+                        } else {
+                            Ok(Atom::Nil)
+                        },
+                        _ => eval(items[2].clone(), env),
+                    }
+                }
+                Atom::Symbol(s) if s == "fn" => {
+                    let args = items[1].clone();
+                    let body = items[2].clone();
+                    Ok(Atom::Lambda {
+                        eval: eval,
+                        ast: Rc::new(body),
+                        env: env.clone(),
+                        params: Rc::new(args),
+                        is_macro: false,
+                        meta: Rc::new(Atom::Nil),
+                    })
                 }
                 _ => {
                     let evaluated_list = eval_ast(&ast, &env)?;
@@ -106,6 +88,7 @@ pub fn eval(ast: Atom, env: Env) -> LishRet {
                             let args = fun_call[1..].to_vec();
                             match fun {
                                 Atom::Func(f, _) => f(args),
+                                Atom::Lambda {ast, env, params, ..} => eval((*ast).clone(), Env::bind(Some(env), (*params).clone(), args).unwrap()),
                                 _ => error_string(format!("{:?} is not a function", fun)),
                             }
                         }
@@ -328,5 +311,29 @@ mod eval_tests {
         assert_eq!(eval(
             Symbol("b".to_string()),
             repl_env.clone()), Ok(Int(2)));
+    }
+
+    #[test]
+    fn fn_statement() {
+        let repl_env = Env::new_repl();
+        // ((fn (x y) (+ x y)) 1 2)
+        assert_eq!(eval(
+            list(vec![
+                list(vec![Symbol("fn".to_string()),
+                    list(vec![Symbol("x".to_string()), Symbol("y".to_string())]),
+                    list(vec![Symbol("+".to_string()), Symbol("x".to_string()), Symbol("y".to_string())])]),
+                Int(1), Int(2)]),
+            repl_env.clone()), Ok(Int(3)));
+        // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
+        assert_eq!(eval(
+            list(vec![
+                list(vec![Symbol("fn".to_string()),
+                    list(vec![Symbol("f".to_string()), Symbol("x".to_string())]),
+                    list(vec![Symbol("f".to_string()), list(vec![Symbol("f".to_string()), Symbol("x".to_string())])])]),
+                list(vec![Symbol("fn".to_string()),
+                    list(vec![Symbol("x".to_string())]),
+                    list(vec![Symbol("*".to_string()), Symbol("x".to_string()), Int(2)])]),
+                Int(3)]),
+            repl_env), Ok(Int(12)));
     }
 }

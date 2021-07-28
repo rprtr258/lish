@@ -85,7 +85,7 @@ impl Env {
                 }
                 Ok(env)
             }
-            _ => Err(LishErr::Message("Env::bind binds not List/Vector".to_string())),
+            _ => Err(LishErr::Message("Env::bind binds not List".to_string())),
         }
     }
 
