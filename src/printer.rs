@@ -21,7 +21,7 @@ pub fn print(val: &LishRet) -> String {
 }
 
 #[cfg(test)]
-mod eval_tests {
+mod printer_tests {
     use std::rc::Rc;
 
     use crate::{

@@ -65,7 +65,7 @@ pub fn read(cmd: String) -> Atom {
     let re = Regex::new(r#"[\s]*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)"#).unwrap();
     let mut tokens_iter = re.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string())
-        .filter(|s| s.chars().nth(0).unwrap() != ';');
+        .filter(|s| s.chars().nth(0).map(|x| x != ';').unwrap_or(true));
     read_form(tokens_iter.next().unwrap(), &mut tokens_iter)
 }
 
@@ -73,19 +73,94 @@ pub fn read(cmd: String) -> Atom {
 mod reader_tests {
     use crate::{
         form,
-        types::{Atom},
+        types::{Atom, Atom::{Nil, String}},
     };
     use super::{read};
 
     macro_rules! test_parse {
-        ($test_name:ident, $input:expr, $res:expr) => {
-            #[test]
-            fn $test_name() {
-                assert_eq!(read($input.to_string()), $res)
-            }
+        ($($test_name:ident, $input:expr, $res:expr),* $(,)?) => {
+            $(
+                #[test]
+                fn $test_name() {
+                    assert_eq!(read($input.to_string()), $res)
+                }
+            )*
         }
     }
+    test_parse!(
+        num, "1", Atom::from(1),
+        num_spaces, "   7   ", Atom::from(7),
+        negative_num, "-12", Atom::from(-12),
+        r#true, "true", Atom::from(true),
+        r#false, "false", Atom::from(false),
+        plus, "+", Atom::from("+"),
+        minus, "-", Atom::from("-"),
+        dash_abc, "-abc", Atom::from("-abc"),
+        dash_arrow, "->>", Atom::from("->>"),
+        abc, "abc", Atom::from("abc"),
+        abc_spaces, "   abc   ", Atom::from("abc"),
+        abc5, "abc5", Atom::from("abc5"),
+        abc_dash_def, "abc-def", Atom::from("abc-def"),
+        nil, "()", Atom::Nil,
+        nil_spaces, "(   )", Nil,
+        set, "(set a 2)", form!["set", "a", 2],
+        list_nil, "(())", form![Nil],
+        list_nil_2, "(()())", form![Nil, Nil],
+        list_list, "((3 4))", form![form![3, 4]],
+        list_inner, "(+ 1 (+ 3 4))", form!["+", 1, form!["+", 3, 4]],
+        list_inner_spaces, "  ( +   1   (+   2 3   )   )  ", form!["+", 1, form!["+", 2, 3]],
+        plus_expr, "(+ 1 2)", form!["+", 1, 2],
+        star_expr, "(* 1 2)", form!["*", 1, 2],
+        pow_expr, "(** 1 2)", form!["**", 1, 2],
+        star_negnum_expr, "(* -1 2)", form!["*", -1, 2],
+        string_spaces, r#"   "abc"   "#, String("abc".to_string()),
+    );
+    // TODO: parse_nothing, "", None,
 
-    test_parse!(parse_nil, "()", Atom::Nil);
-    test_parse!(parse_set, "(set a 2)", form!["set", "a", 2]);
+    mod string {
+        use crate::types::Atom::{String};
+        use super::{read};
+        macro_rules! test_parse_string {
+            ($($test_name:ident, $input:expr),* $(,)?) => {
+                $(
+                    #[test]
+                    fn $test_name() {
+                        assert_eq!(read(format!(r#""{}""#, $input).to_string()), String($input.to_string()))
+                    }
+                )*
+            }
+        }
+
+        test_parse_string!(
+            abc, "abc",
+            with_parens, "abc (+ 1)",
+            qutoe, "abc \\\" def",
+            empty, "",
+            two_backslashes, r"\\",
+            eight_backslashes, r"\\\\\\\\",
+            ampersand, "&",
+            singlequote, "'",
+            openparen, "(",
+            closeparen, ")",
+            star, "*",
+            plus, "+",
+            comma, ",",
+            minus, "-",
+            slash, "/",
+            colon, ":",
+            semicolon, ";",
+            less, "<",
+            equal, "=",
+            greate, ">",
+            question, "?",
+            dog, "@",
+            caret, "^",
+            underscore, "_",
+            backquote, "`",
+            opencurly, "{",
+            closecurly, "}",
+            tilde, "~",
+            exclamation, "!",
+        );
+    }
 }

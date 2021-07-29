@@ -27,79 +27,83 @@ fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
     }
 }
 
-pub fn eval(ast: Atom, env: Env) -> LishRet {
-    match ast.clone() {
-        Atom::List(items, _) => {
-            match &items[0] {
-                Atom::Symbol(s) if s == "set" => {
-                    assert_eq!(items.len(), 3);
-                    let value: Atom = eval(items[2].clone(), env.clone())?;
-                    env.set(items[1].clone(), value)
-                }
-                Atom::Symbol(s) if s == "let" => {
-                    let bindings = match &items[1] {
-                        Atom::List(xs, _) => xs,
-                        _ => return error_string(format!("Let bindings is not a list, but a {:?}", items[1])),
-                    };
-                    assert_eq!(bindings.len() % 2, 0);
-                    let mut i = 0;
-                    let let_env = Env::new(Some(env.clone()));
-                    while i < bindings.len() {
-                        let var_name = bindings[i].clone();
-                        let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
-                        let_env.set(var_name, var_value)?;
-                        i += 2;
+pub fn eval(_ast: Atom, _env: Env) -> LishRet {
+    let mut ast = _ast.clone();
+    let mut env = _env.clone();
+    loop {
+        match ast.clone() {
+            Atom::List(items, _) => {
+                match &items[0] {
+                    Atom::Symbol(s) if s == "set" => {
+                        assert_eq!(items.len(), 3);
+                        let value: Atom = eval(items[2].clone(), env.clone())?;
+                        return env.set(items[1].clone(), value)
                     }
-                    let body = items[2].clone();
-                    eval(body, let_env)
-                }
-                Atom::Symbol(s) if s == "progn" => Ok(items.iter()
-                    .skip(1)
-                    .map(|x| eval(x.clone(), env.clone()).unwrap())
-                    .last()
-                    .unwrap()),
-                Atom::Symbol(s) if s == "if" => {
-                    let predicate = eval(items[1].clone(), env.clone());
-                    match predicate {
-                        Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
-                            eval(items[3].clone(), env)
-                        } else {
-                            Ok(Atom::Nil)
-                        },
-                        _ => eval(items[2].clone(), env),
+                    Atom::Symbol(s) if s == "let" => {
+                        let bindings = match &items[1] {
+                            Atom::List(xs, _) => xs,
+                            _ => return error_string(format!("Let bindings is not a list, but a {:?}", items[1])),
+                        };
+                        assert_eq!(bindings.len() % 2, 0);
+                        let mut i = 0;
+                        let let_env = Env::new(Some(env.clone()));
+                        while i < bindings.len() {
+                            let var_name = bindings[i].clone();
+                            let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
+                            let_env.set(var_name, var_value)?;
+                            i += 2;
+                        }
+                        ast = items[2].clone();
+                        env = let_env;
                     }
-                }
-                Atom::Symbol(s) if s == "fn" => {
-                    let args = items[1].clone();
-                    let body = items[2].clone();
-                    Ok(Atom::Lambda {
-                        eval: eval,
-                        ast: Rc::new(body),
-                        env: env.clone(),
-                        params: Rc::new(args),
-                        is_macro: false,
-                        meta: Rc::new(Atom::Nil),
-                    })
-                }
-                _ => {
-                    let evaluated_list = eval_ast(&ast, &env)?;
-                    match evaluated_list {
-                        Atom::List(fun_call, _) => {
-                            let fun = fun_call[0].clone();
-                            let args = fun_call[1..].to_vec();
-                            match fun {
-                                Atom::Func(f, _) => f(args),
-                                Atom::Lambda {ast, env, params, ..} => eval((*ast).clone(), Env::bind(Some(env), (*params).clone(), args).unwrap()),
-                                _ => error_string(format!("{:?} is not a function", fun)),
+                    Atom::Symbol(s) if s == "progn" => {
+                        let body_items = items.len() - 1;
+                        for i in 1..body_items {
+                            eval(items[i].clone(), env.clone()).unwrap();
+                        }
+                        ast = items[body_items].clone()
+                    }
+                    Atom::Symbol(s) if s == "if" => {
+                        let predicate = eval(items[1].clone(), env.clone());
+                        match predicate {
+                            Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
+                                ast = items[3].clone()
+                            } else {
+                                return Ok(Atom::Nil)
+                            },
+                            _ => {
+                                ast = items[2].clone()
                             }
                         }
-                        _ => unreachable!(),
+                    }
+                    Atom::Symbol(s) if s == "fn" => {
+                        let args = items[1].clone();
+                        let body = items[2].clone();
+                        return Ok(Atom::Lambda {
+                            eval: eval,
+                            ast: Rc::new(body),
+                            env: env.clone(),
+                            params: Rc::new(args),
+                            is_macro: false,
+                            meta: Rc::new(Atom::Nil),
+                        })
+                    }
+                    _ => {
+                        let evaluated_list = eval_ast(&ast, &env)?;
+                        match evaluated_list {
+                            Atom::List(fun_call, _) => {
+                                let fun = fun_call[0].clone();
+                                let args = fun_call[1..].to_vec();
+                                return fun.apply(args)
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                 }
             }
+            Atom::Nil => return Ok(Atom::Nil),
+            _ => return eval_ast(&ast, &env),
         }
-        Atom::Nil => Ok(ast.clone()),
-        _ => eval_ast(&ast, &env),
     }
 }
 
@@ -109,7 +113,6 @@ pub fn rep(input: String, env: Env) {
 }
 
 // TODO: add tests from history.txt
-// TODO: do fucking macro
 #[cfg(test)]
 #[allow(unused_parens)]
 mod eval_tests {
@@ -121,7 +124,7 @@ mod eval_tests {
     use super::{eval};
 
     macro_rules! test_eval {
-        ($test_name:ident, $($ast:expr => $res:tt), *) => {
+        ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
             #[test]
             fn $test_name() {
                 let repl_env = Env::new_repl();
@@ -139,7 +142,7 @@ mod eval_tests {
         form!["set", "a", 2] => 2,
         form!["+", "a", 3] => 5,
         form!["set", "b", 3] => 3,
-        form!["+", "a", "b"] => 5
+        form!["+", "a", "b"] => 5,
     );
 
     // (set c (+ 1 2))
@@ -147,13 +150,13 @@ mod eval_tests {
     test_eval!(
         set_expr,
         form!["set", "c", form!["+", 1, 2]] => 3,
-        form!["+", "c", 1] => 4
+        form!["+", "c", 1] => 4,
     );
 
     // 92
     test_eval!(
         eval_int,
-        Atom::from(92) => 92
+        Atom::from(92) => 92,
     );
 
     // abc
@@ -174,76 +177,10 @@ mod eval_tests {
             repl_env.clone()), Ok(Atom::String("abc".to_string())));
     }
 
-    // (*)
-    test_eval!(
-        multiply_nullary,
-        form!["*"] => 1
-    );
-
-    // (* 2)
-    test_eval!(
-        multiply_unary,
-        form!["*", 2] => 2
-    );
-
-    // (* 1 2 3)
-    test_eval!(
-        multiply_ternary,
-        form!["*", 1, 2, 3] => 6
-    );
-
-    // (/ 1)
-    test_eval!(
-        divide_unary,
-        form!["/", 1] => 1
-    );
-
-    // (/ 5 2)
-    test_eval!(
-        divide_binary,
-        form!["/", 5, 2] => 2
-    );
-
-    // (/ 22 3 2)
-    test_eval!(
-        divide_ternary,
-        form!["/", 22, 3, 2] => 3
-    );
-
-    // (- 1)
-    test_eval!(
-        minus_unary,
-        form!["-", 1] => (-1)
-    );
-
-    // (- 1 2 3)
-    test_eval!(
-        minus_ternary,
-        form!["-", 1, 2, 3] => (-4)
-    );
-
-    // (+)
-    test_eval!(
-        plus_nullary,
-        form!["+"] => 0
-    );
-
-    // (+ 1)
-    test_eval!(
-        plus_unary,
-        form!["+", 1] => 1
-    );
-
-    // (+ 1 2 3)
-    test_eval!(
-        plus_ternary,
-        form!["+", 1, 2, 3] => 6
-    );
-
     // (+ 1 2 (+ 1 2))
     test_eval!(
         plus_expr,
-        form!["+", 1, 2, form!["+", 1, 2]] => 6
+        form!["+", 1, 2, form!["+", 1, 2]] => 6,
     );
 
     // (set a 2)
@@ -253,19 +190,19 @@ mod eval_tests {
         let_statement,
         form!["set", "a", 2] => 2,
         form!["let", form!["a", 1], "a"] => 1,
-        Atom::from("a") => 2
+        Atom::from("a") => 2,
     );
 
     // (let (a 1 b 2) (+ a b))
     test_eval!(
         let_twovars_statement,
-        form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]] => 3
+        form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]] => 3,
     );
 
     // (let (a 1 b a) b)
     test_eval!(
         let_star_statement,
-        form!["let", form!["a", 1, "b", "a"], "b"] => 1
+        form!["let", form!["a", 1, "b", "a"], "b"] => 1,
     );
 
     // (progn (set a 92) (+ a 8))
@@ -273,31 +210,31 @@ mod eval_tests {
     test_eval!(
         progn_statement,
         form!["progn", form!["set", "a", 92], form!["+", "a", 8]] => 100,
-        Atom::from("a") => 92
+        Atom::from("a") => 92,
     );
 
     // (if true 1 2)
     test_eval!(
         if_true_statement,
-        form!["if", true, 1, 2] => 1
+        form!["if", true, 1, 2] => 1,
     );
 
     // (if false 1 2)
     test_eval!(
         if_false_statement,
-        form!["if", false, 1, 2] => 2
+        form!["if", false, 1, 2] => 2,
     );
 
     // (if true 1)
     test_eval!(
         if_true_noelse_statement,
-        form!["if", true, 1] => 1
+        form!["if", true, 1] => 1,
     );
 
     // (if false 1)
     test_eval!(
         if_false_noelse_statement,
-        form!["if", false, 1] => Nil
+        form!["if", false, 1] => Nil,
     );
 
     // (if true (set a 1) (set a 2))
@@ -305,7 +242,7 @@ mod eval_tests {
     test_eval!(
         if_set_true_statement,
         form!["if", true, form!["set", "a", 1], form!["set", "a", 2]] => 1,
-        Atom::from("a") => 1
+        Atom::from("a") => 1,
     );
 
     // (if false (set b 1) (set b 2))
@@ -313,7 +250,7 @@ mod eval_tests {
     test_eval!(
         if_set_false_statement,
         form!["if", false, form!["set", "b", 1], form!["set", "b", 2]] => 2,
-        Atom::from("b") => 2
+        Atom::from("b") => 2,
     );
 
     // ((fn (x y) (+ x y)) 1 2)
