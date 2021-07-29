@@ -28,18 +28,6 @@ pub enum Atom {
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
-impl Atom {
-    pub fn apply(self: &Self, args: Args) -> LishRet {
-        use crate::eval;
-
-        match self {
-            Atom::Func(f, _) => f(args),
-            Atom::Lambda {ast, env, params, ..} => eval((**ast).clone(), Env::bind(Some(env.clone()), (**params).clone(), args).unwrap()),
-            _ => error_string(format!("{:?} is not a function", self)),
-        }
-    }
-}
-
 impl From<i64> for Atom { fn from(x: i64) -> Atom { Atom::Int(x) } }
 impl From<f64> for Atom { fn from(x: f64) -> Atom { Atom::Float(x) } }
 impl From<bool> for Atom { fn from(x: bool) -> Atom { Atom::Bool(x) } }

@@ -94,7 +94,14 @@ pub fn eval(_ast: Atom, _env: Env) -> LishRet {
                             Atom::List(fun_call, _) => {
                                 let fun = fun_call[0].clone();
                                 let args = fun_call[1..].to_vec();
-                                return fun.apply(args)
+                                match fun {
+                                    Atom::Func(f, _) => return f(args),
+                                    Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                        ast = (*lambda_ast).clone();
+                                        env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
+                                    },
+                                    _ => return error_string(format!("{:?} is not a function", fun)),
+                                }
                             }
                             _ => unreachable!(),
                         }

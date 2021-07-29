@@ -131,8 +131,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
 mod core_tests {
     use crate::{
         args,
-        types::{/*error, */Atom/*, Atom::{String, Nil}*/},
-        // env::{Env},
+        types::{Atom, error_string},
     };
     use super::{namespace};
 
@@ -141,7 +140,11 @@ mod core_tests {
             #[test]
             fn $test_name() {
                 let ns = namespace();
-                $( assert_eq!(ns.get($fun).unwrap().apply($args), Ok(Atom::from($res))); )*
+                $( assert_eq!(match ns.get($fun) {
+                    Some(Atom::Func(f, _)) => f($args),
+                    Some(_) => error_string(format!("{:?} is not a function", $fun)),
+                    None => error_string(format!("{:?} was not found", $fun)),
+                }, Ok(Atom::from($res))); )*
             }
         }
     }
