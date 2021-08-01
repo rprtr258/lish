@@ -143,7 +143,7 @@ mod reader_tests {
                 $(
                     #[test]
                     fn $test_name() {
-                        assert_eq!(read(format!(r#""{}""#, $input)), String(format!("{}", $input).to_string()))
+                        assert_eq!(read(format!(r#""{}""#, $input)), String(format!("{}", $input)))
                     }
                 )*
             }
@@ -154,7 +154,7 @@ mod reader_tests {
                 $(
                     #[test]
                     fn $test_name() {
-                        assert_eq!(read(format!("{:?}", $input)), String(format!("{}", $input).to_string()))
+                        assert_eq!(read(format!("{:?}", $input)), String(format!("{}", $input)))
                     }
                 )*
             }
