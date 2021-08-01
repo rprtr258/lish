@@ -3,6 +3,7 @@ use std::rc::Rc;
 use fnv::FnvHashMap;
 
 use crate::{
+    reader::read,
     types::{Atom, LishRet, error_string, error},
     printer::{print},
 };
@@ -119,6 +120,15 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                         Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() >= init))),
                         _ => error_string(format!("Can't eval ({} {:?})", ">=", vals)),
                     })
+            }, Rc::new(Atom::Nil))),
+        ("read",
+            Atom::Func(|args| {
+                assert_eq!(args.len(), 1);
+                let arg = args[0].clone();
+                match arg {
+                    Atom::String(s) => Ok(read(s)),
+                    _ => error_string(format!("{:?} is not a string", arg))
+                }
             }, Rc::new(Atom::Nil))),
     ] {
         ns.insert(key.to_string(), val);

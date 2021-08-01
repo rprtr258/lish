@@ -1,11 +1,28 @@
 use std::iter::Iterator;
 
-use regex::Regex;
+use regex::{Captures, Regex};
 
 use crate::{
     list_vec,
     types::{Atom}
 };
+
+fn unescape_str(s: &str) -> String {
+    // lazy_static! {
+        /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
+    // }
+    re.replace_all(&s, |caps: &Captures| {
+        let mut res = caps[0].to_string();
+        for c in ['n', '"', '\\'] {
+            if caps[0].chars().nth(1).unwrap() == c {
+                println!("DO: {:?}", res);
+                res = String::from(c);
+                println!("POSLE: {:?}", res);
+            }
+        }
+        res
+    }).to_string()
+}
 
 fn read_atom(token: String) -> Atom {
     match token.parse::<bool>() {
@@ -21,7 +38,7 @@ fn read_atom(token: String) -> Atom {
         Err(_) => {}
     };
     if token.chars().nth(0).unwrap() == '"' {
-        return Atom::String(token[1..token.len()-1].to_string())
+        return Atom::String(unescape_str(&token[1..token.len()-1]))
     };
     Atom::Symbol(token)
 }
@@ -120,24 +137,41 @@ mod reader_tests {
     mod string {
         use crate::types::Atom::{String};
         use super::{read};
+
         macro_rules! test_parse_string {
             ($($test_name:ident, $input:expr),* $(,)?) => {
                 $(
                     #[test]
                     fn $test_name() {
-                        assert_eq!(read(format!(r#""{}""#, $input).to_string()), String($input.to_string()))
+                        assert_eq!(read(format!(r#""{}""#, $input)), String(format!("{}", $input).to_string()))
                     }
                 )*
             }
         }
 
+        macro_rules! test_mirror_parse_string {
+            ($($test_name:ident, $input:expr),* $(,)?) => {
+                $(
+                    #[test]
+                    fn $test_name() {
+                        assert_eq!(read(format!("{:?}", $input)), String(format!("{}", $input).to_string()))
+                    }
+                )*
+            }
+        }
+
+        test_mirror_parse_string!(
+            mirror_doublequote, r#""1""#,
+            slash_n, r#"\n"#,
+            eight_backslashes, r#"\\\\"#,
+            two_backslashes, r#"\"#,
+            quote, r#"abc " def"#,
+        );
+
         test_parse_string!(
             abc, "abc",
             with_parens, "abc (+ 1)",
-            qutoe, "abc \\\" def",
             empty, "",
-            two_backslashes, r"\\",
-            eight_backslashes, r"\\\\\\\\",
             ampersand, "&",
             singlequote, "'",
             openparen, "(",

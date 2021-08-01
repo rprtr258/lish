@@ -57,4 +57,7 @@ mod printer_tests {
     test_print!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
     test_print!(print_nil, Atom::Nil, "()");
     test_print!(print_string, Atom::String("abc".to_string()), r#""abc""#);
+    test_print!(print_string_with_slash, Atom::String(r"\".to_string()), r#""\\""#);
+    test_print!(print_string_with_2slashes, Atom::String(r"\\".to_string()), r#""\\\\""#);
+    test_print!(print_string_with_newline, Atom::String("\n".to_string()), "\"\\n\"");
 }

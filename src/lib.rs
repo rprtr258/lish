@@ -13,12 +13,6 @@ use crate::{
     printer::{print},
 };
 
-/*
-symbol: lookup the symbol in the environment structure and return the value or raise an error if no value is found
-list: return a new list that is the result of calling EVAL on each of the members of the list
-otherwise just return the original ast value
-*/
-
 fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
     match ast {
         Atom::Symbol(var) => env.get(var),
@@ -66,7 +60,7 @@ pub fn eval(_ast: Atom, _env: Env) -> LishRet {
                     Atom::Symbol(s) if s == "if" => {
                         let predicate = eval(items[1].clone(), env.clone());
                         match predicate {
-                            Ok(Atom::Bool(false)) | Ok(Atom::Nil) => if items.len() == 4 {
+                            Ok(Atom::Bool(false) | Atom::Nil) => if items.len() == 4 {
                                 ast = items[3].clone()
                             } else {
                                 return Ok(Atom::Nil)
@@ -119,7 +113,6 @@ pub fn rep(input: String, env: Env) {
     println!("{}", print(&result));
 }
 
-// TODO: add tests from history.txt
 #[cfg(test)]
 #[allow(unused_parens)]
 mod eval_tests {
@@ -135,7 +128,9 @@ mod eval_tests {
             #[test]
             fn $test_name() {
                 let repl_env = Env::new_repl();
-                $( assert_eq!(eval($ast, repl_env.clone()), Ok(Atom::from($res))); )*
+                $(
+                    assert_eq!(eval($ast, repl_env.clone()), Ok(Atom::from($res)));
+                )*
             }
         }
     }
@@ -274,11 +269,88 @@ mod eval_tests {
     test_eval!(
         fn_double_statement,
         form![
-            form!["fn",
+            form![
+                "fn",
                 form!["f", "x"],
-                form!["f",
-                    form!["f", "x"]]],
-                form!["fn",
-                    form!["x"],
-                    form!["*", "x", 2]], 3] => 12);
+                form![
+                    "f",
+                    form!["f", "x"]
+                ]
+            ],
+            form![
+                "fn",
+                form!["x"],
+                form!["*", "x", 2]
+            ],
+            3
+        ] => 12);
+
+    // (set sum2 (fn (n acc) (if (= n 0) acc (sum2 (- n 1) (+ n acc)))))
+    // (sum2 10000 0)
+    #[test]
+    fn tco_recur() {
+        let repl_env = Env::new_repl();
+        eval(form![
+            "set",
+            "sum",
+            form![
+                "fn",
+                form!["n", "acc"],
+                form![
+                    "if",
+                    form!["=", "n", 0],
+                    "acc",
+                    form![
+                        "sum",
+                        form!["-", "n", 1],
+                        form!["+", "n", "acc"]
+                    ]
+                ]
+            ],
+        ], repl_env.clone()).unwrap();
+        assert_eq!(eval(form!["sum", 10000, 0], repl_env.clone()), Ok(Atom::from(50005000)));
+    }
+
+    // (set foo (fn (n) (if (= n 0) 0 (bar (- n 1)))))
+    // (set bar (fn (n) (if (= n 0) 0 (foo (- n 1)))))
+    // (foo 10000)
+    #[test]
+    fn tco_mutual_recur() {
+        let repl_env = Env::new_repl();
+        eval(form![
+            "set",
+            "foo",
+            form![
+                "fn",
+                form!["n"],
+                form![
+                    "if",
+                    form!["=", "n", 0],
+                    0,
+                    form![
+                        "bar",
+                        form!["-", "n", 1]
+                    ]
+                ]
+            ],
+        ], repl_env.clone()).unwrap();
+        eval(form![
+            "set",
+            "bar",
+            form![
+                "fn",
+                form!["n"],
+                form![
+                    "if",
+                    form!["=", "n", 0],
+                    0,
+                    form![
+                        "foo",
+                        form!["-", "n", 1]
+                    ]
+                ]
+            ],
+        ], repl_env.clone()).unwrap();
+        assert_eq!(eval(form!["foo", 10000], repl_env.clone()), Ok(Atom::from(0)));
+    }
 }
