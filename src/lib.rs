@@ -415,4 +415,40 @@ mod eval_tests {
         ], repl_env.clone()).unwrap();
         assert_eq!(eval(form!["foo", 10000], repl_env.clone()), Ok(Atom::from(0)));
     }
+
+    // (set c '(1 2 3))
+    // `(c ,c ,@c)
+    #[test]
+    fn quasiquote_unquote_spliceunquote() {
+        let repl_env = Env::new_repl();
+        eval(form![
+            "set",
+            "c",
+            form![
+                "quote",
+                form![1, 2, 3],
+            ],
+        ], repl_env.clone()).unwrap();
+        assert_eq!(eval(form![
+            "quasiquote",
+            form![
+                "c",
+                form![
+                    "unquote",
+                    "c",
+                ],
+                form![
+                    "splice-unquote",
+                    "c",
+                ],
+            ],
+        ], repl_env.clone()),
+        Ok(form![
+            "c",
+            form![1, 2, 3],
+            1,
+            2,
+            3,
+        ]));
+    }
 }

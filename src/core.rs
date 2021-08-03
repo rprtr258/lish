@@ -78,11 +78,11 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         }), Rc::new(Atom::Nil))),
         // TODO: change to +
         // TODO: support Nil
-        ("concat", Atom::Func(|vals| {
-            Ok(Atom::List(Rc::new(vals.into_iter().map(|x| match x {
+        ("concat", Atom::Func(|vals| Ok(Atom::List(Rc::new(vals.into_iter().map(|x| match x {
                 Atom::List(xs, _) => (*xs).clone(),
+                Atom::Nil => vec![],
                 _ => panic!("Trying to concat not list"),
-        }).flatten().collect()), Rc::new(Atom::Nil)))}, Rc::new(Atom::Nil))),
+        }).flatten().collect()), Rc::new(Atom::Nil))), Rc::new(Atom::Nil))),
         ("list", Atom::Func(|vals| Ok(Atom::List(Rc::new(vals), Rc::new(Atom::Nil))), Rc::new(Atom::Nil))),
         ("list?", Atom::Func(|vals| Ok(Atom::Bool(match &vals[0] {
             Atom::List(xs, _) => xs.len() > 0,
