@@ -6,7 +6,7 @@ use fnv::FnvHashMap;
 use crate::{
     list_vec,
     core::{namespace},
-    types::{LishErr, LishRet, Atom, error},
+    types::{LishErr, LishResult, Atom},
 };
 
 #[derive(Debug)]
@@ -51,7 +51,7 @@ impl Env {
                 }
                 Ok(env)
             }
-            _ => Err(LishErr::Message("Env::bind binds not List".to_string())),
+            _ => Err(LishErr::from("Env::bind binds not List")),
         }
     }
 
@@ -63,14 +63,14 @@ impl Env {
         }
     }
 
-    pub fn get(self: &Self, key: &str) -> LishRet {
+    pub fn get(self: &Self, key: &str) -> LishResult {
         match self.find(key) {
             Some(e) => Ok(e.0.data
                 .borrow()
                 .get(key)
                 .unwrap()
                 .clone()),
-            _ => error(&format!("Not found '{}'", key)),
+            _ => Err(LishErr::from(&format!("Not found '{}'", key))),
         }
     }
 
@@ -78,13 +78,13 @@ impl Env {
         self.0.data.borrow_mut().insert(key.to_string(), val);
     }
 
-    pub fn set(self: &Self, key: Atom, val: Atom) -> LishRet {
+    pub fn set(self: &Self, key: Atom, val: Atom) -> LishResult {
         match key {
             Atom::Symbol(ref s) => {
                 self.sets(&s.to_string(), val.clone());
                 Ok(val)
             }
-            _ => error("Env.set called with non-Str"),
+            _ => Err(LishErr::from("Env.set called with non-Str")),
         }
     }
 }

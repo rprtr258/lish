@@ -9,9 +9,6 @@
     `(setmacro ~m
         (lambda ~args ~body))))
 
-(defmacro when (p x)
-    `(if ~p ~x ()))
-
 (defmacro compose (& fs)
   (let*
     (compose* (lambda (fs)
@@ -23,8 +20,6 @@
           rest-funs (cdr fs))
           `(~cur-fun ~(compose* rest-funs))))))
     `(lambda (x) ~(compose* fs))))
-
-(defmacro swap! (x f) `(set! ~x (~f ~x)))
 
 (set! cadr (compose car cdr))
 (set! cddr (compose cdr cdr))

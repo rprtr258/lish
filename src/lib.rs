@@ -7,21 +7,26 @@ pub mod reader;
 mod printer;
 
 use crate::{
-    types::{Atom, LishRet, error_string},
+    types::{Atom, LishResult, LishErr},
     env::{Env},
     reader::{read},
     printer::{print},
 };
 
-fn eval_ast(ast: &Atom, env: &Env) -> LishRet {
+fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
     match ast {
         Atom::Symbol(var) => env.get(var),
-        Atom::List(items, _) => Ok(list_vec!(items.iter().map(|x| eval(x.clone(), env.clone()).unwrap()).collect())),
+        Atom::List(items, _) => {
+            let list = items.iter()
+                .map(|x| eval(x.clone(), env.clone()))
+                .collect::<Result<Vec<Atom>, LishErr>>()?;
+            Ok(Atom::List(Rc::new(list), Rc::new(Atom::Nil)))
+        },
         x => Ok(x.clone()),
     }
 }
 
-pub fn eval(_ast: Atom, _env: Env) -> LishRet {
+pub fn eval(_ast: Atom, _env: Env) -> LishResult {
     let mut ast = _ast.clone();
     let mut env = _env.clone();
     loop {
@@ -36,7 +41,7 @@ pub fn eval(_ast: Atom, _env: Env) -> LishRet {
                     Atom::Symbol(s) if s == "let" => {
                         let bindings = match &items[1] {
                             Atom::List(xs, _) => xs,
-                            _ => return error_string(format!("Let bindings is not a list, but a {:?}", items[1])),
+                            _ => return Err(LishErr::from(format!("Let bindings is not a list, but a {:?}", items[1]))),
                         };
                         assert_eq!(bindings.len() % 2, 0);
                         let mut i = 0;
@@ -70,6 +75,12 @@ pub fn eval(_ast: Atom, _env: Env) -> LishRet {
                             }
                         }
                     }
+                    Atom::Symbol(s) if s == "eval" => {
+                        assert_eq!(items.len(), 2);
+                        ast = eval(items[1].clone(), env.clone())?;
+                        println!("{:?}", env);
+                        continue;
+                    }
                     Atom::Symbol(s) if s == "fn" => {
                         let args = items[1].clone();
                         let body = items[2].clone();
@@ -94,7 +105,7 @@ pub fn eval(_ast: Atom, _env: Env) -> LishRet {
                                         ast = (*lambda_ast).clone();
                                         env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
                                     },
-                                    _ => return error_string(format!("{:?} is not a function", fun)),
+                                    _ => return Err(LishErr::from(format!("{:?} is not a function", fun))),
                                 }
                             }
                             _ => unreachable!(),
@@ -118,7 +129,7 @@ pub fn rep(input: String, env: Env) {
 mod eval_tests {
     use crate::{
         form,
-        types::{error, Atom, Atom::{String, Nil}},
+        types::{LishErr, Atom, Atom::{String, Nil}},
         env::{Env},
     };
     use super::{eval};
@@ -167,7 +178,8 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         assert_eq!(eval(
             Atom::from("abc"),
-            repl_env.clone()), error("Not found 'abc'"));
+            // TODO: Error for not found symbol
+            repl_env.clone()), Err(LishErr::from("Not found 'abc'")));
     }
 
     // "abc"

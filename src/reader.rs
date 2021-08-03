@@ -12,15 +12,12 @@ fn unescape_str(s: &str) -> String {
         /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
     // }
     re.replace_all(&s, |caps: &Captures| {
-        let mut res = caps[0].to_string();
-        for c in ['n', '"', '\\'] {
-            if caps[0].chars().nth(1).unwrap() == c {
-                println!("DO: {:?}", res);
-                res = String::from(c);
-                println!("POSLE: {:?}", res);
-            }
-        }
-        res
+        match caps[0].chars().nth(1).unwrap() {
+            'n' => '\n',
+            '"' => '"',
+            '\\' => '\\',
+            _ => unimplemented!("Can't mirror this"),
+        }.to_string()
     }).to_string()
 }
 
@@ -104,6 +101,7 @@ mod reader_tests {
             )*
         }
     }
+
     test_parse!(
         num, "1", Atom::from(1),
         num_spaces, "   7   ", Atom::from(7),

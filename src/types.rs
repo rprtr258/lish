@@ -1,9 +1,8 @@
 use std::{
+    fmt::Display,
     rc::Rc,
     cmp::Ordering,
 };
-
-// use fnv::FnvHashMap;
 
 use crate::env::{Env};
 
@@ -16,11 +15,12 @@ pub enum Atom {
     String(String),
     Symbol(String),
     // Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
-    Func(fn(Args) -> LishRet, Rc<Atom>),
+    Func(fn(Args) -> LishResult, Rc<Atom>),
     Lambda {
-        eval: fn(ast: Atom, env: Env) -> LishRet,
+        eval: fn(ast: Atom, env: Env) -> LishResult,
         ast: Rc<Atom>,
         env: Env,
+        // TODO: Vec<str>
         params: Rc<Atom>,
         is_macro: bool,
         meta: Rc<Atom>,
@@ -71,21 +71,17 @@ impl PartialEq for Atom {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum LishErr {
-    Message(String),
-    // Val(Atom),
+pub struct LishErr(String);
+
+impl<T: Display> From<T> for LishErr {
+    fn from(message: T) -> Self {
+        LishErr(format!("{}", message))
+    }
 }
+
+pub type LishResult = Result<Atom, LishErr>;
 
 pub type Args = Vec<Atom>;
-pub type LishRet = Result<Atom, LishErr>;
-
-pub fn error_string(s: String) -> LishRet {
-    Err(LishErr::Message(s))
-}
-
-pub fn error(s: &str) -> LishRet {
-    error_string(s.to_string())
-}
 
 // TODO: remove mod?
 mod macros {

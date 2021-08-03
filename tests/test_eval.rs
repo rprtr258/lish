@@ -1,7 +1,7 @@
 use lish::{eval};
 use lish::env::{Env};
 use lish::reader::{read};
-use lish::types::{Atom, error};
+use lish::types::{Atom, LishErr};
 
 #[test]
 fn set() {
@@ -21,7 +21,7 @@ fn parse() {
 fn echo() {
     let repl_env = Env::new_repl();
     assert_eq!(eval(read("92".to_string()), repl_env.clone()), Ok(Atom::Int(92)));
-    assert_eq!(eval(read("abc".to_string()), repl_env.clone()), error("Not found 'abc'"));
+    assert_eq!(eval(read("abc".to_string()), repl_env.clone()), Err(LishErr::from("Not found 'abc'")));
     assert_eq!(eval(read(r#""abc""#.to_string()), repl_env), Ok(Atom::String("abc".to_string())));
 }
 

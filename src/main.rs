@@ -1,7 +1,9 @@
 use rustyline::{error::ReadlineError, Editor};
 
-use lish::{rep};
-use lish::env::{Env};
+use lish::{
+    rep,
+    env::Env,
+};
 
 fn main() {
     let mut rl = Editor::<()>::new();
@@ -9,6 +11,7 @@ fn main() {
         println!("No previous history.");
     }
     let repl_env = Env::new_repl();
+    rep(r#"(set load-file (fn (f) (eval (read (str "(progn " (slurp f) "\n())")))))"#.to_string(), repl_env.clone());
     loop {
         let input_buffer = rl.readline("user> ");
         match input_buffer {
