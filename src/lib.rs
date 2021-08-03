@@ -26,13 +26,62 @@ fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
     }
 }
 
+fn quasiquote(ast: Atom) -> Atom {
+    match ast {
+        Atom::List(xs, _) => {
+            if xs.len() == 2 && xs[0] == Atom::Symbol("unquote".to_string()) {
+                xs[1].clone()
+            } else {
+                let mut res = vec![];
+                for x in xs.iter().rev() {
+                    match x {
+                        Atom::List(ys, _) if ys[0] == Atom::Symbol("splice-unquote".to_string()) => {
+                            assert_eq!(ys.len(), 2);
+                            res = vec![
+                                Atom::Symbol("concat".to_string()),
+                                ys[1].clone(),
+                                Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
+                            ];
+                        }
+                        _ => {
+                            res = vec![
+                                Atom::Symbol("cons".to_string()),
+                                quasiquote(x.clone()),
+                                Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
+                            ];
+                        }
+                    }
+                }
+                Atom::List(Rc::new(res), Rc::new(Atom::Nil))
+            }
+        }
+        _ => Atom::List(Rc::new(vec![Atom::Symbol("quote".to_string()), ast]), Rc::new(Atom::Nil))
+    }
+}
+
 pub fn eval(_ast: Atom, _env: Env) -> LishResult {
     let mut ast = _ast.clone();
     let mut env = _env.clone();
     loop {
         match ast.clone() {
             Atom::List(items, _) => {
+                if items.len() == 0 {
+                    return Ok(Atom::Nil)
+                }
                 match &items[0] {
+                    Atom::Symbol(s) if s == "quote" => {
+                        assert_eq!(items.len(), 2);
+                        return Ok(items[1].clone())
+                    }
+                    Atom::Symbol(s) if s == "quasiquoteexpand" => {
+                        assert_eq!(items.len(), 2);
+                        return Ok(quasiquote(items[1].clone()));
+                    }
+                    Atom::Symbol(s) if s == "quasiquote" => {
+                        assert_eq!(items.len(), 2);
+                        ast = quasiquote(items[1].clone());
+                        continue
+                    }
                     Atom::Symbol(s) if s == "set" => {
                         assert_eq!(items.len(), 3);
                         let value: Atom = eval(items[2].clone(), env.clone())?;
@@ -78,7 +127,7 @@ pub fn eval(_ast: Atom, _env: Env) -> LishResult {
                     Atom::Symbol(s) if s == "eval" => {
                         assert_eq!(items.len(), 2);
                         ast = eval(items[1].clone(), env.clone())?;
-                        println!("{:?}", env);
+                        env = env.get_root().clone();
                         continue;
                     }
                     Atom::Symbol(s) if s == "fn" => {
@@ -99,6 +148,7 @@ pub fn eval(_ast: Atom, _env: Env) -> LishResult {
                             Atom::List(fun_call, _) => {
                                 let fun = fun_call[0].clone();
                                 let args = fun_call[1..].to_vec();
+                                // TODO: apply hashmap
                                 match fun {
                                     Atom::Func(f, _) => return f(args),
                                     Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
@@ -119,9 +169,9 @@ pub fn eval(_ast: Atom, _env: Env) -> LishResult {
     }
 }
 
-pub fn rep(input: String, env: Env) {
-    let result = eval(read(input), env);
-    println!("{}", print(&result));
+pub fn rep(input: String, env: Env) -> String {
+    let result = read(input).and_then(|ast| eval(ast, env));
+    print(&result)
 }
 
 #[cfg(test)]

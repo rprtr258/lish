@@ -3,6 +3,7 @@ use std::{
     rc::Rc,
 };
 
+use itertools::Itertools;
 use fnv::FnvHashMap;
 
 use crate::{
@@ -36,7 +37,7 @@ macro_rules! set_int_bin_op {
 
 pub fn namespace() -> FnvHashMap<String, Atom> {
     let mut ns = FnvHashMap::default();
-    for (key, val) in vec![
+    vec![
         set_int_bin_op!("+", 0, |x, y| x + y),
         set_int_bin_op!("*", 1, |x, y| x * y),
         set_int_bin_op!("/", |x, y| x / y),
@@ -54,14 +55,34 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     })
                 }
             }, Rc::new(Atom::Nil))),
+        // TODO: remove/rename?
         ("prn", Atom::Func(|vals| {
-            println!("{}", print(&Ok(Atom::List(Rc::new(vals), Rc::new(Atom::Nil)))));
+            println!("{}", vals.into_iter().map(|x| print(&Ok(x))).join(" "));
             Ok(Atom::Nil)
         }, Rc::new(Atom::Nil))),
         ("echo", Atom::Func(|vals| {
-            println!("{}", print_nice(&Ok(Atom::List(Rc::new(vals), Rc::new(Atom::Nil)))));
+            println!("{}", vals.into_iter().map(|x| print_nice(&Ok(x))).join(" "));
             Ok(Atom::Nil)
         }, Rc::new(Atom::Nil))),
+        ("cons", Atom::Func(|vals| Ok({
+            assert!(vals.len() >= 2);
+            let elems = &vals[..vals.len()-1];
+            let lst = {
+                match vals.last().unwrap() {
+                    Atom::List(xs, _) => xs.clone(),
+                    Atom::Nil => Rc::new(vec![]),
+                    _ => panic!("Trying to cons not a list"),
+                }
+            };
+            Atom::List(Rc::new(elems.iter().chain(lst.iter()).map(|x| x.clone()).collect()), Rc::new(Atom::Nil))
+        }), Rc::new(Atom::Nil))),
+        // TODO: change to +
+        // TODO: support Nil
+        ("concat", Atom::Func(|vals| {
+            Ok(Atom::List(Rc::new(vals.into_iter().map(|x| match x {
+                Atom::List(xs, _) => (*xs).clone(),
+                _ => panic!("Trying to concat not list"),
+        }).flatten().collect()), Rc::new(Atom::Nil)))}, Rc::new(Atom::Nil))),
         ("list", Atom::Func(|vals| Ok(Atom::List(Rc::new(vals), Rc::new(Atom::Nil))), Rc::new(Atom::Nil))),
         ("list?", Atom::Func(|vals| Ok(Atom::Bool(match &vals[0] {
             Atom::List(xs, _) => xs.len() > 0,
@@ -133,7 +154,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 assert_eq!(args.len(), 1);
                 let arg = args[0].clone();
                 match arg {
-                    Atom::String(s) => Ok(read(s)),
+                    Atom::String(s) => Ok(read(s)?),
                     _ => Err(LishErr::from(format!("{:?} is not a string", arg)))
                 }
             }, Rc::new(Atom::Nil))),
@@ -168,10 +189,10 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     .collect();
                 Ok(Atom::String(result))
             }, Rc::new(Atom::Nil))),
-    ] {
+    ].into_iter().for_each(|(key, val)| {
         // TODO: change all &str.to_string to to_owned
         ns.insert(key.to_string(), val);
-    }
+    });
     ns
 }
 

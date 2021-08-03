@@ -63,6 +63,14 @@ impl Env {
         }
     }
 
+    pub fn get_root(self: &Self) -> &Self {
+        let mut node = self;
+        while let Some(ref e) = node.0.outer {
+            node = e;
+        }
+        node
+    }
+
     pub fn get(self: &Self, key: &str) -> LishResult {
         match self.find(key) {
             Some(e) => Ok(e.0.data

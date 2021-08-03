@@ -4,8 +4,30 @@ use regex::{Captures, Regex};
 
 use crate::{
     list_vec,
-    types::{Atom}
+    types::{Atom, LishErr, LishResult}
 };
+
+#[derive(Debug, Clone)]
+struct Reader {
+    tokens: Vec<String>,
+    pos: usize,
+}
+
+impl Reader {
+    fn next(&mut self) -> Result<String, LishErr> {
+        let result = self.peek();
+        self.pos = self.pos + 1;
+        result
+    }
+    fn peek(&self) -> Result<String, LishErr> {
+        Ok(self
+            .tokens
+            .get(self.pos)
+            // TODO: write explicitly what is expected
+            .ok_or(LishErr("Unexpected end of input".to_string()))?
+            .to_string())
+    }
+}
 
 fn unescape_str(s: &str) -> String {
     // lazy_static! {
@@ -21,6 +43,7 @@ fn unescape_str(s: &str) -> String {
     }).to_string()
 }
 
+// TODO: regexes
 fn read_atom(token: String) -> Atom {
     match token.parse::<bool>() {
         Ok(b) => return Atom::Bool(b),
@@ -40,47 +63,70 @@ fn read_atom(token: String) -> Atom {
     Atom::Symbol(token)
 }
 
-fn read_list<T>(tokens: &mut T) -> Atom
-where T: Iterator<Item=String> {
+fn read_list(tokens: &mut Reader) -> LishResult {
     let mut res = Vec::new();
     loop {
-        match tokens.next() {
-            Some(token) => {
-                match &token[..] {
-                    ")" => break,
-                    _ => res.push(read_form(token, tokens)),
-                }
+        match &tokens.peek()?[..] {
+            ")" => {
+                tokens.next().unwrap();
+                break
             }
-            None => break,
+            _ => res.push(read_form(tokens)?),
         }
     }
-    match res.len() {
+    Ok(match res.len() {
         0 => Atom::Nil,
         _ => list_vec!(res),
-    }
+    })
 }
 
 // TODO: reader macro
-fn read_form<T>(token: String, tokens: &mut T) -> Atom
-where T: Iterator<Item=String> {
-    match &token[..] {
-        "(" => read_list(tokens),
-        _ => read_atom(token),
+fn read_form(tokens: &mut Reader) -> LishResult {
+    match &tokens.peek()?[..] {
+        "(" => {
+            tokens.next().unwrap();
+            read_list(tokens)
+        },
+        "'" => {
+            tokens.next().unwrap();
+            Ok(list_vec!(vec![Atom::Symbol("quote".to_string()), read_form(tokens)?]))
+        },
+        "`" => {
+            tokens.next().unwrap();
+            Ok(list_vec!(vec![Atom::Symbol("quasiquote".to_string()), read_form(tokens)?]))
+        },
+        "," => {
+            tokens.next().unwrap();
+            Ok(list_vec!(vec![Atom::Symbol("unquote".to_string()), read_form(tokens)?]))
+        },
+        ",@" => {
+            tokens.next().unwrap();
+            Ok(list_vec!(vec![Atom::Symbol("splice-unquote".to_string()), read_form(tokens)?]))
+        },
+        _ => Ok(read_atom(tokens.next()?)),
     }
 }
 
 // TODO: add braces implicitly
-pub fn read(cmd: String) -> Atom {
+pub fn read(cmd: String) -> LishResult {
     /* TODO:
     lazy_static! {
         static ref RE: Regex = Regex::new("...").unwrap();
     }
     */
-    let re = Regex::new(r#"[\s]*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)"#).unwrap();
-    let mut tokens_iter = re.captures_iter(cmd.as_str())
+    let re = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
+    let mut reader = Reader {
+        tokens: re.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string())
-        .filter(|s| s.chars().nth(0).map(|x| x != ';').unwrap_or(true));
-    read_form(tokens_iter.next().unwrap(), &mut tokens_iter)
+        .inspect(|x| println!("{:?}", x))
+        .filter(|s| s.chars()
+            .nth(0)
+            .map(|x| x != ';')
+            .unwrap())
+        .collect(),
+        pos: 0,
+    };
+    read_form(&mut reader)
 }
 
 #[cfg(test)]
@@ -96,7 +142,7 @@ mod reader_tests {
             $(
                 #[test]
                 fn $test_name() {
-                    assert_eq!(read($input.to_string()), $res)
+                    assert_eq!(read($input.to_string()), Ok($res))
                 }
             )*
         }
@@ -141,7 +187,7 @@ mod reader_tests {
                 $(
                     #[test]
                     fn $test_name() {
-                        assert_eq!(read(format!(r#""{}""#, $input)), String(format!("{}", $input)))
+                        assert_eq!(read(format!(r#""{}""#, $input)), Ok(String(format!("{}", $input))))
                     }
                 )*
             }
@@ -152,7 +198,7 @@ mod reader_tests {
                 $(
                     #[test]
                     fn $test_name() {
-                        assert_eq!(read(format!("{:?}", $input)), String(format!("{}", $input)))
+                        assert_eq!(read(format!("{:?}", $input)), Ok(String(format!("{}", $input))))
                     }
                 )*
             }

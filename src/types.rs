@@ -71,7 +71,7 @@ impl PartialEq for Atom {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct LishErr(String);
+pub struct LishErr(pub String);
 
 impl<T: Display> From<T> for LishErr {
     fn from(message: T) -> Self {
