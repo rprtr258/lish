@@ -118,7 +118,6 @@ pub fn read(cmd: String) -> LishResult {
     let mut reader = Reader {
         tokens: re.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string())
-        .inspect(|x| println!("{:?}", x))
         .filter(|s| s.chars()
             .nth(0)
             .map(|x| x != ';')
