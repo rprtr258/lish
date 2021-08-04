@@ -18,6 +18,7 @@ pub fn print_nice(val: &LishResult) -> String {
                         Atom::Symbol(arg_name) => arg_name,
                         _ => panic!("Lambda arg is not symbol"),
                     }).join(" "),
+                    Atom::Nil => "()".to_string(),
                     _ => panic!("Lambda args is not list"),
                 };
                 format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print_nice(&Ok((**ast).clone())))
@@ -44,9 +45,10 @@ pub fn print(val: &LishResult) -> String {
                         Atom::Symbol(arg_name) => arg_name,
                         _ => panic!("Lambda arg is not symbol"),
                     }).join(" "),
+                    Atom::Nil => "()".to_string(),
                     _ => panic!("Lambda args is not list"),
                 };
-                format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
+                format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
             },
             Atom::List(items, _) => format!("({})", items.iter().map(|x| print(&Ok(x.clone()))).join(" ")),
         }

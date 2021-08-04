@@ -51,6 +51,7 @@ impl Env {
                 }
                 Ok(env)
             }
+            Atom::Nil => Ok(env),
             _ => Err(LishErr::from("Env::bind binds not List")),
         }
     }

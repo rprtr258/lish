@@ -28,6 +28,15 @@ pub enum Atom {
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
+impl Atom {
+    pub fn is_macro(self: &Self) -> bool {
+        match self {
+            Atom::Lambda {is_macro, ..} => *is_macro,
+            _ => false,
+        }
+    }
+}
+
 impl From<i64> for Atom { fn from(x: i64) -> Atom { Atom::Int(x) } }
 impl From<f64> for Atom { fn from(x: f64) -> Atom { Atom::Float(x) } }
 impl From<bool> for Atom { fn from(x: bool) -> Atom { Atom::Bool(x) } }

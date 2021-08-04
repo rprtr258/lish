@@ -7,9 +7,10 @@ use itertools::Itertools;
 use fnv::FnvHashMap;
 
 use crate::{
-    reader::read,
-    types::{Atom, LishResult, LishErr},
+    list_vec,
     printer::{print, print_nice},
+    reader::read,
+    types::{Atom, LishResult, LishErr}
 };
 
 macro_rules! set_int_bin_op {
@@ -84,6 +85,27 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 _ => panic!("Trying to concat not list"),
         }).flatten().collect()), Rc::new(Atom::Nil))), Rc::new(Atom::Nil))),
         ("list", Atom::Func(|vals| Ok(Atom::List(Rc::new(vals), Rc::new(Atom::Nil))), Rc::new(Atom::Nil))),
+        ("first", Atom::Func(|vals| {
+            assert_eq!(vals.len(), 1);
+            match vals[0].clone() {
+                Atom::List(xs, _) => Ok(xs[0].clone()),
+                _ => Err(LishErr("Trying to get first of not list".to_string())),
+            }
+        }, Rc::new(Atom::Nil))),
+        ("rest", Atom::Func(|vals| {
+            assert_eq!(vals.len(), 1);
+            match vals[0].clone() {
+                Atom::List(xs, _) => Ok(list_vec!(xs[1..].to_vec().clone())),
+                _ => Err(LishErr("Trying to get rest of not list".to_string())),
+            }
+        }, Rc::new(Atom::Nil))),
+        ("len", Atom::Func(|vals| {
+            assert_eq!(vals.len(), 1);
+            match vals[0].clone() {
+                Atom::List(xs, _) => Ok(Atom::Int(xs.len() as i64)),
+                _ => Err(LishErr("Trying to get len of not list".to_string())),
+            }
+        }, Rc::new(Atom::Nil))),
         ("list?", Atom::Func(|vals| Ok(Atom::Bool(match &vals[0] {
             Atom::List(xs, _) => xs.len() > 0,
             Atom::Nil => true,
@@ -105,7 +127,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 vals.iter()
                     .skip(1)
                     .fold(Ok(Atom::Bool(true)), |a: LishResult, b: &Atom| match a {
-                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() == init))),
+                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (init == b.clone()))),
                         _ => Err(LishErr::from(format!("Can't eval ({} {:?})", "=", vals))),
                     })
             }, Rc::new(Atom::Nil))),
@@ -115,7 +137,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 vals.iter()
                     .skip(1)
                     .fold(Ok(Atom::Bool(true)), |a: LishResult, b: &Atom| match a {
-                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() < init))),
+                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (init < b.clone()))),
                         _ => Err(LishErr::from(format!("Can't eval ({} {:?})", "<", vals))),
                     })
             }, Rc::new(Atom::Nil))),
@@ -125,7 +147,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 vals.iter()
                     .skip(1)
                     .fold(Ok(Atom::Bool(true)), |a: LishResult, b: &Atom| match a {
-                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() <= init))),
+                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (init <= b.clone()))),
                         _ => Err(LishErr::from(format!("Can't eval ({} {:?})", "<=", vals))),
                     })
             }, Rc::new(Atom::Nil))),
@@ -135,7 +157,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 vals.iter()
                     .skip(1)
                     .fold(Ok(Atom::Bool(true)), |a: LishResult, b: &Atom| match a {
-                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() > init))),
+                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (init > b.clone()))),
                         _ => Err(LishErr::from(format!("Can't eval ({} {:?})", ">", vals))),
                     })
             }, Rc::new(Atom::Nil))),
@@ -145,7 +167,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 vals.iter()
                     .skip(1)
                     .fold(Ok(Atom::Bool(true)), |a: LishResult, b: &Atom| match a {
-                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (b.clone() >= init))),
+                        Ok(Atom::Bool(ai)) => Ok(Atom::Bool(ai && (init >= b.clone()))),
                         _ => Err(LishErr::from(format!("Can't eval ({} {:?})", ">=", vals))),
                     })
             }, Rc::new(Atom::Nil))),

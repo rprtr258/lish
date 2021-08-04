@@ -59,9 +59,47 @@ fn quasiquote(ast: Atom) -> Atom {
     }
 }
 
-pub fn eval(_ast: Atom, _env: Env) -> LishResult {
-    let mut ast = _ast.clone();
-    let mut env = _env.clone();
+fn is_macro_call(ast: &Atom, env: &Env) -> bool {
+    match ast {
+        Atom::List(xs, _) => {
+            if xs.len() == 0 {
+                return false;
+            }
+            match &xs[0] {
+                Atom::Symbol(macroname) => env.get(&macroname)
+                    .map(|x| x.is_macro())
+                    .unwrap_or(false),
+                _ => false,
+            }
+        }
+        _ => false,
+    }
+}
+
+fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
+    while is_macro_call(&ast, env) {
+        let macro_call = ast;
+        match macro_call {
+            Atom::List(fun_call, _) => {
+                let the_macro = eval(fun_call[0].clone(), env.clone()).unwrap();
+                let args = fun_call[1..].to_vec();
+                match the_macro {
+                    Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                        let lambda_ast = (*lambda_ast).clone();
+                        let lambda_env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
+                        ast = eval(lambda_ast, lambda_env)?;
+                    },
+                    _ => unreachable!(),
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+    Ok(ast)
+}
+
+pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
+    ast = macroexpand(ast, &env)?;
     loop {
         match ast.clone() {
             Atom::List(items, _) => {
@@ -82,10 +120,34 @@ pub fn eval(_ast: Atom, _env: Env) -> LishResult {
                         ast = quasiquote(items[1].clone());
                         continue
                     }
+                    Atom::Symbol(s) if s == "macroexpand" => {
+                        assert_eq!(items.len(), 2);
+                        match items[1].clone() {
+                            Atom::List(xs, _) => {eval(xs[0].clone(), env.clone())?;},
+                            _ => unreachable!(),
+                        }
+                        return macroexpand(items[1].clone(), &env);
+                    }
                     Atom::Symbol(s) if s == "set" => {
                         assert_eq!(items.len(), 3);
                         let value: Atom = eval(items[2].clone(), env.clone())?;
                         return env.set(items[1].clone(), value)
+                    }
+                    Atom::Symbol(s) if s == "setmacro" => {
+                        assert_eq!(items.len(), 3);
+                        return match eval(items[2].clone(), env.clone())? {
+                            Atom::Lambda {
+                                eval, ast, env, params, meta, ..
+                            } => env.set(items[1].clone(), Atom::Lambda {
+                                eval,
+                                ast,
+                                params,
+                                meta,
+                                env: env.clone(),
+                                is_macro: true,
+                            }),
+                            _ => Err(LishErr("Macro is not lambda".to_string())),
+                        }
                     }
                     Atom::Symbol(s) if s == "let" => {
                         let bindings = match &items[1] {
@@ -112,9 +174,9 @@ pub fn eval(_ast: Atom, _env: Env) -> LishResult {
                         ast = items[body_items].clone()
                     }
                     Atom::Symbol(s) if s == "if" => {
-                        let predicate = eval(items[1].clone(), env.clone());
+                        let predicate = eval(items[1].clone(), env.clone())?;
                         match predicate {
-                            Ok(Atom::Bool(false) | Atom::Nil) => if items.len() == 4 {
+                            Atom::Bool(false) | Atom::Nil => if items.len() == 4 {
                                 ast = items[3].clone()
                             } else {
                                 return Ok(Atom::Nil)
