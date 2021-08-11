@@ -4,6 +4,7 @@ use regex::{Captures, Regex};
 
 use crate::{
     list_vec,
+    symbol,
     types::{Atom, LishErr, LishResult}
 };
 
@@ -60,7 +61,7 @@ fn read_atom(token: String) -> Atom {
     if token.chars().nth(0).unwrap() == '"' {
         return Atom::String(unescape_str(&token[1..token.len()-1]))
     };
-    Atom::Symbol(token)
+    symbol!(token)
 }
 
 fn read_list(tokens: &mut Reader) -> LishResult {
@@ -89,19 +90,19 @@ fn read_form(tokens: &mut Reader) -> LishResult {
         },
         "'" => {
             tokens.next().unwrap();
-            Ok(list_vec!(vec![Atom::Symbol("quote".to_string()), read_form(tokens)?]))
+            Ok(list_vec!(vec![symbol!("quote"), read_form(tokens)?]))
         },
         "`" => {
             tokens.next().unwrap();
-            Ok(list_vec!(vec![Atom::Symbol("quasiquote".to_string()), read_form(tokens)?]))
+            Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
         },
         "," => {
             tokens.next().unwrap();
-            Ok(list_vec!(vec![Atom::Symbol("unquote".to_string()), read_form(tokens)?]))
+            Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
         },
         ",@" => {
             tokens.next().unwrap();
-            Ok(list_vec!(vec![Atom::Symbol("splice-unquote".to_string()), read_form(tokens)?]))
+            Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
         },
         _ => Ok(read_atom(tokens.next()?)),
     }

@@ -28,20 +28,39 @@ pub enum Atom {
     List(Rc<Vec<Atom>>, Rc<Atom>),
 }
 
+use Atom::{Nil, Bool, Int, Float, Symbol, Lambda, List};
+
 impl Atom {
     pub fn is_macro(self: &Self) -> bool {
         match self {
-            Atom::Lambda {is_macro, ..} => *is_macro,
+            Lambda {is_macro, ..} => *is_macro,
             _ => false,
         }
     }
 }
 
-impl From<i64> for Atom { fn from(x: i64) -> Atom { Atom::Int(x) } }
-impl From<f64> for Atom { fn from(x: f64) -> Atom { Atom::Float(x) } }
-impl From<bool> for Atom { fn from(x: bool) -> Atom { Atom::Bool(x) } }
-impl From<&str> for Atom { fn from(x: &str) -> Atom { Atom::Symbol(x.to_string()) } }
-impl<T> From<Vec<T>> for Atom where Atom: From<T>, T: Clone {
+impl From<i64> for Atom {
+    fn from(x: i64) -> Atom {
+        Int(x)
+    }
+}
+impl From<f64> for Atom {
+    fn from(x: f64) -> Atom {
+        Float(x)
+    }
+}
+impl From<bool> for Atom {
+    fn from(x: bool) -> Atom {
+        Bool(x)
+    }
+}
+impl From<&str> for Atom {
+    fn from(x: &str) -> Atom {
+        Symbol(x.to_owned())
+    }
+}
+impl<T: Clone> From<Vec<T>> for Atom
+where Atom: From<T> {
     fn from(x: Vec<T>) -> Atom {
         use crate::list_vec;
         list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect::<Vec<Atom>>())
@@ -51,12 +70,12 @@ impl<T> From<Vec<T>> for Atom where Atom: From<T>, T: Clone {
 impl PartialOrd for Atom {
     fn partial_cmp(self: &Self, other: &Atom) -> Option<Ordering> {
         match (self, other) {
-            (Atom::Nil, Atom::Nil) => Some(Ordering::Equal),
-            (Atom::Bool(ref a), Atom::Bool(ref b)) => a.partial_cmp(b),
-            (Atom::Int(ref a), Atom::Int(ref b)) => a.partial_cmp(b),
+            (Nil, Nil) => Some(Ordering::Equal),
+            (Bool(ref a), Bool(ref b)) => a.partial_cmp(b),
+            (Int(ref a), Int(ref b)) => a.partial_cmp(b),
             (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
-            (Atom::Symbol(ref a), Atom::Symbol(ref b)) => a.partial_cmp(b),
-            (Atom::List(ref a, _), Atom::List(ref b, _)) => a.partial_cmp(b),
+            (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
+            (List(ref a, _), List(ref b, _)) => a.partial_cmp(b),
             // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
             _ => None,
         }
@@ -65,7 +84,7 @@ impl PartialOrd for Atom {
 
 impl PartialEq for Atom {
     fn eq(&self, other: &Atom) -> bool {
-        use Atom::{Nil, Bool, Int, String, Symbol, List};
+        use Atom::String;
         match (self, other) {
             (Nil, Nil) => true,
             (Bool(ref a), Bool(ref b)) => a == b,
@@ -97,7 +116,7 @@ mod macros {
     #[macro_export]
     macro_rules! symbol {
         ($name:expr) => {{
-            Symbol($name.to_string())
+            Atom::Symbol($name.to_owned())
         }}
     }
 

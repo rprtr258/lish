@@ -5,7 +5,7 @@ use fnv::FnvHashMap;
 
 use crate::{
     list_vec,
-    core::{namespace},
+    core::namespace,
     types::{LishErr, LishResult, Atom},
 };
 

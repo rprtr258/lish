@@ -29,23 +29,23 @@ fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
 fn quasiquote(ast: Atom) -> Atom {
     match ast {
         Atom::List(xs, _) => {
-            if xs.len() == 2 && xs[0] == Atom::Symbol("unquote".to_string()) {
+            if xs.len() == 2 && xs[0] == symbol!("unquote") {
                 xs[1].clone()
             } else {
                 let mut res = vec![];
                 for x in xs.iter().rev() {
                     match x {
-                        Atom::List(ys, _) if ys[0] == Atom::Symbol("splice-unquote".to_string()) => {
+                        Atom::List(ys, _) if ys[0] == symbol!("splice-unquote") => {
                             assert_eq!(ys.len(), 2);
                             res = vec![
-                                Atom::Symbol("concat".to_string()),
+                                symbol!("concat"),
                                 ys[1].clone(),
                                 Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
                             ];
                         }
                         _ => {
                             res = vec![
-                                Atom::Symbol("cons".to_string()),
+                                symbol!("cons"),
                                 quasiquote(x.clone()),
                                 Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
                             ];
@@ -55,7 +55,7 @@ fn quasiquote(ast: Atom) -> Atom {
                 Atom::List(Rc::new(res), Rc::new(Atom::Nil))
             }
         }
-        _ => Atom::List(Rc::new(vec![Atom::Symbol("quote".to_string()), ast]), Rc::new(Atom::Nil))
+        _ => list_vec!(vec![symbol!("quote"), ast]),
     }
 }
 
@@ -164,7 +164,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             i += 2;
                         }
                         let mut body = Vec::with_capacity(items.len() - 2 + 1);
-                        body.push(Atom::Symbol("progn".to_owned()));
+                        body.push(symbol!("progn"));
                         body.extend_from_slice(&items[2..]);
                         ast = list_vec![body];
                         env = let_env;
@@ -244,22 +244,11 @@ pub fn rep(input: String, env: Env) -> String {
 mod eval_tests {
     use crate::{
         form,
+        symbol,
         types::{LishErr, Atom, Atom::{String, Nil}},
         env::Env,
     };
     use super::{eval, eval_ast};
-
-    macro_rules! test_eval_ast {
-        ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
-            #[test]
-            fn $test_name() {
-                let repl_env = Env::new_repl();
-                $(
-                    assert_eq!(eval_ast($ast, repl_env.clone()), Ok(Atom::from($res)));
-                )*
-            }
-        }
-    }
 
     macro_rules! test_eval {
         ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
@@ -277,13 +266,30 @@ mod eval_tests {
     fn eval_ast_symbol_found() {
         let env = Env::new(None);
         env.sets("a", Atom::Int(1));
-        assert_eq!(eval_ast(&Atom::Symbol("a".to_owned()), &env), Ok(Atom::Int(1)));
+        assert_eq!(eval_ast(&symbol!("a"), &env), Ok(Atom::Int(1)));
     }
 
     #[test]
     fn eval_ast_symbol_not_found() {
         let env = Env::new(None);
         assert_eq!(eval_ast(&form!["a"], &env), Err(LishErr::from("Not found 'a'")));
+    }
+
+    #[test]
+    fn eval_ast_list() {
+        let repl_env = Env::new_repl();
+        let res = eval_ast(&form!["+", 2, 2], &repl_env);
+        match res {
+            Ok(Atom::List(items, _)) => {
+                assert_eq!(items[1], Atom::Int(2));
+                assert_eq!(items[2], Atom::Int(2));
+                match &items[0] {
+                    &Atom::Func(_, _) => (),
+                    _ => unreachable!(),
+                }
+            }
+            _ => unreachable!(),
+        }
     }
 
     // (set a 2)
