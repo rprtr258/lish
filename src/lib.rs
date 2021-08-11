@@ -29,30 +29,36 @@ fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
 fn quasiquote(ast: Atom) -> Atom {
     match ast {
         Atom::List(xs, _) => {
-            if xs.len() == 2 && xs[0] == symbol!("unquote") {
+            if xs.len() >= 2 && xs[0] == symbol!("unquote") {
                 xs[1].clone()
             } else {
                 let mut res = vec![];
                 for x in xs.iter().rev() {
                     match x {
                         Atom::List(ys, _) if ys[0] == symbol!("splice-unquote") => {
-                            assert_eq!(ys.len(), 2);
-                            res = vec![
+                            res = match ys.len() {
+                            1 => vec![
+                                symbol!("cons"),
+                                form!("splice-unquote"),
+                                list!(res),
+                            ],
+                            _ => vec![
                                 symbol!("concat"),
                                 ys[1].clone(),
-                                Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
-                            ];
+                                list!(res),
+                            ],
+                            }
                         }
                         _ => {
                             res = vec![
                                 symbol!("cons"),
                                 quasiquote(x.clone()),
-                                Atom::List(Rc::new(res), Rc::new(Atom::Nil)),
+                                list!(res),
                             ];
                         }
                     }
                 }
-                Atom::List(Rc::new(res), Rc::new(Atom::Nil))
+                list!(res)
             }
         }
         _ => list_vec!(vec![symbol!("quote"), ast]),
@@ -172,7 +178,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     Atom::Symbol(s) if s == "progn" => {
                         let body_items = items.len() - 1;
                         for item in &items[1..body_items] {
-                            eval(item.clone(), env.clone()).unwrap();
+                            eval(item.clone(), env.clone())?;
                         }
                         ast = items[body_items].clone()
                     }
@@ -242,13 +248,161 @@ pub fn rep(input: String, env: Env) -> String {
 #[cfg(test)]
 #[allow(unused_parens)]
 mod eval_tests {
+    mod eval_ast_tests {
+        use crate::{
+            form,
+            symbol,
+            types::{LishErr, Atom},
+            env::Env,
+            eval_ast,
+        };
+
+        #[test]
+        fn symbol_found() {
+            let env = Env::new(None);
+            env.sets("a", Atom::Int(1));
+            assert_eq!(eval_ast(&symbol!("a"), &env), Ok(Atom::Int(1)));
+        }
+
+        #[test]
+        fn symbol_not_found() {
+            let env = Env::new(None);
+            assert_eq!(eval_ast(&form!["a"], &env), Err(LishErr::from("Not found 'a'")));
+        }
+
+        #[test]
+        fn list() {
+            let repl_env = Env::new_repl();
+            let res = eval_ast(&form!["+", 2, 2], &repl_env);
+            match res {
+                Ok(Atom::List(items, _)) => {
+                    assert_eq!(items[1], Atom::Int(2));
+                    assert_eq!(items[2], Atom::Int(2));
+                    match &items[0] {
+                        &Atom::Func(_, _) => (),
+                        _ => unreachable!(),
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        #[test]
+        fn id() {
+            let env = Env::new(None);
+            assert_eq!(eval_ast(&Atom::Int(1), &env), Ok(Atom::Int(1)));
+        }
+    }
+
+    mod quasiquote_tests {
+        use crate::{
+            form,
+            symbol,
+            types::Atom,
+            quasiquote,
+        };
+
+        #[test]
+        fn unquote_symbol() {
+            assert_eq!(quasiquote(form!["unquote", "a"]), symbol!("a"));
+        }
+
+        #[test]
+        fn unquote_nothing() {
+            assert_eq!(
+                quasiquote(form!["unquote"]),
+                form![
+                    "cons",
+                    form![
+                        "quote",
+                        "unquote",
+                    ],
+                    Vec::<Atom>::new(),
+                ]
+            );
+        }
+
+        #[test]
+        fn unquote_many() {
+            assert_eq!(
+                quasiquote(form!["unquote", "a", "b", "c"]),
+                symbol!("a")
+            );
+        }
+
+        #[test]
+        fn splice_unquote_symbol() {
+            assert_eq!(
+                quasiquote(form![form!["splice-unquote", "a"]]),
+                form![
+                    "concat",
+                    "a",
+                    Vec::<Atom>::new(),
+                ]
+            );
+        }
+
+        #[test]
+        fn splice_unquote_many() {
+            assert_eq!(
+                quasiquote(form![form!["splice-unquote", "a", "b", "c"]]),
+                form![
+                    "concat",
+                    "a",
+                    Vec::<Atom>::new(),
+                ]
+            );
+        }
+
+        #[test]
+        fn splice_unquote_nothing() {
+            assert_eq!(
+                quasiquote(form![form!["splice-unquote"]]),
+                form![
+                    "cons",
+                    form![
+                        "splice-unquote"
+                    ],
+                    Vec::<Atom>::new(),
+                ]
+            );
+        }
+
+        #[test]
+        fn quasiquote_list() {
+            assert_eq!(
+                quasiquote(form!["a", "b", "c"]),
+                form![
+                    "cons",
+                    form!["quote", "a"],
+                    form![
+                        "cons",
+                        form!["quote", "b"],
+                        form![
+                            "cons",
+                            form!["quote", "c"],
+                            Vec::<Atom>::new(),
+                        ]
+                    ],
+                ]
+            );
+        }
+
+        #[test]
+        fn quasiquote_symbol() {
+            assert_eq!(
+                quasiquote(symbol!("a")),
+                form!["quote", "a"],
+            );
+        }
+    }
+
     use crate::{
         form,
-        symbol,
-        types::{LishErr, Atom, Atom::{String, Nil}},
         env::Env,
+        types::{LishErr, Atom, Atom::{String, Nil}},
+        eval,
     };
-    use super::{eval, eval_ast};
 
     macro_rules! test_eval {
         ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
@@ -259,36 +413,6 @@ mod eval_tests {
                     assert_eq!(eval($ast, repl_env.clone()), Ok(Atom::from($res)));
                 )*
             }
-        }
-    }
-
-    #[test]
-    fn eval_ast_symbol_found() {
-        let env = Env::new(None);
-        env.sets("a", Atom::Int(1));
-        assert_eq!(eval_ast(&symbol!("a"), &env), Ok(Atom::Int(1)));
-    }
-
-    #[test]
-    fn eval_ast_symbol_not_found() {
-        let env = Env::new(None);
-        assert_eq!(eval_ast(&form!["a"], &env), Err(LishErr::from("Not found 'a'")));
-    }
-
-    #[test]
-    fn eval_ast_list() {
-        let repl_env = Env::new_repl();
-        let res = eval_ast(&form!["+", 2, 2], &repl_env);
-        match res {
-            Ok(Atom::List(items, _)) => {
-                assert_eq!(items[1], Atom::Int(2));
-                assert_eq!(items[2], Atom::Int(2));
-                match &items[0] {
-                    &Atom::Func(_, _) => (),
-                    _ => unreachable!(),
-                }
-            }
-            _ => unreachable!(),
         }
     }
 

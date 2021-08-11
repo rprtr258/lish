@@ -121,26 +121,31 @@ mod macros {
     }
 
     #[macro_export]
-    macro_rules! list_vec {
+    macro_rules! list {
         ($vec:expr) => {{
             use std::rc::Rc;
-            Atom::List(Rc::new(Vec::from($vec)), Rc::new(Atom::Nil))
+            Atom::List(Rc::new($vec), Rc::new(Atom::Nil))
         }}
+    }
+
+    #[macro_export]
+    macro_rules! list_vec {
+        ($vec:expr) => {
+            crate::list!(Vec::from($vec))
+        }
     }
 
     #[macro_export]
     macro_rules! args {
-        ($($val:expr),* $(,)?) => {{
+        ($($val:expr),* $(,)?) => {
             vec![$(Atom::from($val), )*]
-        }}
+        }
     }
 
     #[macro_export]
     macro_rules! form {
-        ($($val:expr),* $(,)?) => {{
-            use std::rc::Rc;
-            use crate::args;
-            Atom::List(Rc::new(args![$($val, )*]), Rc::new(Atom::Nil))
-        }}
+        ($($val:expr),* $(,)?) => {
+            crate::list!(crate::args![$($val, )*])
+        }
     }
 }
