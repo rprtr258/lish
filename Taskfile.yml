@@ -11,8 +11,10 @@ tasks:
     cmds:
       - cargo run
   ci:
-    deps: [test, build]
+    deps: [test]
     silent: true
+    cmds:
+      - cargo check
   commit:
     cmds:
       - git add * .lishrc
