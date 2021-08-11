@@ -9,7 +9,7 @@ tasks:
       - cargo build
   run:
     cmds:
-      - cargo run
+      - cargo run compose.lish
   ci:
     deps: [test]
     silent: true

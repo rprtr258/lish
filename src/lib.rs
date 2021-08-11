@@ -8,9 +8,9 @@ mod printer;
 
 use crate::{
     types::{Atom, LishResult, LishErr},
-    env::{Env},
-    reader::{read},
-    printer::{print},
+    env::Env,
+    reader::read,
+    printer::print,
 };
 
 fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
@@ -163,13 +163,16 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             let_env.set(var_name, var_value)?;
                             i += 2;
                         }
-                        ast = items[2].clone();
+                        let mut body = Vec::with_capacity(items.len() - 2 + 1);
+                        body.push(Atom::Symbol("progn".to_owned()));
+                        body.extend_from_slice(&items[2..]);
+                        ast = list_vec![body];
                         env = let_env;
                     }
                     Atom::Symbol(s) if s == "progn" => {
                         let body_items = items.len() - 1;
-                        for i in 1..body_items {
-                            eval(items[i].clone(), env.clone()).unwrap();
+                        for item in &items[1..body_items] {
+                            eval(item.clone(), env.clone()).unwrap();
                         }
                         ast = items[body_items].clone()
                     }
@@ -242,9 +245,21 @@ mod eval_tests {
     use crate::{
         form,
         types::{LishErr, Atom, Atom::{String, Nil}},
-        env::{Env},
+        env::Env,
     };
-    use super::{eval};
+    use super::{eval, eval_ast};
+
+    macro_rules! test_eval_ast {
+        ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
+            #[test]
+            fn $test_name() {
+                let repl_env = Env::new_repl();
+                $(
+                    assert_eq!(eval_ast($ast, repl_env.clone()), Ok(Atom::from($res)));
+                )*
+            }
+        }
+    }
 
     macro_rules! test_eval {
         ($test_name:ident, $($ast:expr => $res:expr),* $(,)?) => {
@@ -256,6 +271,19 @@ mod eval_tests {
                 )*
             }
         }
+    }
+
+    #[test]
+    fn eval_ast_symbol_found() {
+        let env = Env::new(None);
+        env.sets("a", Atom::Int(1));
+        assert_eq!(eval_ast(&Atom::Symbol("a".to_owned()), &env), Ok(Atom::Int(1)));
+    }
+
+    #[test]
+    fn eval_ast_symbol_not_found() {
+        let env = Env::new(None);
+        assert_eq!(eval_ast(&form!["a"], &env), Err(LishErr::from("Not found 'a'")));
     }
 
     // (set a 2)

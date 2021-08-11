@@ -44,7 +44,7 @@ impl From<&str> for Atom { fn from(x: &str) -> Atom { Atom::Symbol(x.to_string()
 impl<T> From<Vec<T>> for Atom where Atom: From<T>, T: Clone {
     fn from(x: Vec<T>) -> Atom {
         use crate::list_vec;
-        list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect())
+        list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect::<Vec<Atom>>())
     }
 }
 
@@ -105,7 +105,7 @@ mod macros {
     macro_rules! list_vec {
         ($vec:expr) => {{
             use std::rc::Rc;
-            Atom::List(Rc::new($vec), Rc::new(Atom::Nil))
+            Atom::List(Rc::new(Vec::from($vec)), Rc::new(Atom::Nil))
         }}
     }
 

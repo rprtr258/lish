@@ -20,10 +20,15 @@ fn main() {
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
+    let cmd_args: Vec<String> = args().collect();
+
     let repl_env = Env::new_repl();
-    repl_env.sets("*ARGV*", Atom::List(Rc::new(args().map(|x| Atom::String(x)).collect()), Rc::new(Atom::Nil)));
-    // TODO: rename to load?
+    repl_env.sets("*ARGV*", Atom::List(Rc::new(cmd_args.iter().map(|x| Atom::String(x.clone())).collect()), Rc::new(Atom::Nil)));
+    // TODO: rename to load ?
     rep(r#"(set load-file (fn (f) (eval (read (str "(progn " (slurp f) "\n())")))))"#.to_string(), repl_env.clone());
+    cmd_args.get(1).map(|filename|
+        rep(format!(r#"(load-file "{}")"#, filename), repl_env.clone())
+    );
     loop {
         let input_buffer = rl.readline("user> ");
         match input_buffer {

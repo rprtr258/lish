@@ -10,7 +10,9 @@ use crate::{
     list_vec,
     printer::{print, print_nice},
     reader::read,
-    types::{Atom, LishResult, LishErr}
+    types::{Atom, LishResult, LishErr},
+    env::Env,
+    eval,
 };
 
 macro_rules! set_int_bin_op {
@@ -64,6 +66,18 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         ("echo", Atom::Func(|vals| {
             println!("{}", vals.into_iter().map(|x| print_nice(&Ok(x))).join(" "));
             Ok(Atom::Nil)
+        }, Rc::new(Atom::Nil))),
+        ("apply", Atom::Func(|vals| {
+            let fun = vals[0].clone();
+            let args = vals[1..].to_vec();
+            // TODO: apply hashmap
+            match fun {
+                Atom::Func(f, _) => return f(args),
+                Atom::Lambda {
+                    ast: lambda_ast, env: lambda_env, params, ..
+                } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
+                _ => return Err(LishErr::from(format!("{:?} is not a function", fun))),
+            }
         }, Rc::new(Atom::Nil))),
         ("cons", Atom::Func(|vals| Ok({
             assert!(vals.len() >= 2);
@@ -196,19 +210,12 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             }, Rc::new(Atom::Nil))),
         ("str",
             Atom::Func(|args| {
-                if args.iter().any(|x| match x {
-                    Atom::String(_) => false,
-                    _ => true
-                }) {
-                    return Err(LishErr::from(format!("Can't eval ({} {:?})", "str", args)))
-                }
-                let result: String = args.iter()
+                let result: String = args.into_iter()
                     .map(|x| match x {
                         Atom::String(s) => s,
-                        _ => unreachable!(),
+                        _ => print(&Ok(x)).to_owned(),
                     })
-                    .flat_map(|s| s.chars())
-                    .collect();
+                    .join("");
                 Ok(Atom::String(result))
             }, Rc::new(Atom::Nil))),
     ].into_iter().for_each(|(key, val)| {
