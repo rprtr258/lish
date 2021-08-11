@@ -114,10 +114,13 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                 }
                 match &items[0] {
                     Atom::Symbol(s) if s == "quote" => {
-                        assert_eq!(items.len(), 2);
+                        if items.len() != 2 {
+                            return Err(LishErr::from(format!("'quote' requires 1 argument, but got {} in {}", items.len() - 1, print(&Ok(ast.clone())))));
+                        }
                         return Ok(items[1].clone())
                     }
                     Atom::Symbol(s) if s == "quasiquoteexpand" => {
+                        // TODO: change assert to meaningful message, add tests
                         assert_eq!(items.len(), 2);
                         return Ok(quasiquote(items[1].clone()));
                     }
@@ -302,99 +305,95 @@ mod eval_tests {
             quasiquote,
         };
 
-        #[test]
-        fn unquote_symbol() {
-            assert_eq!(quasiquote(form!["unquote", "a"]), symbol!("a"));
+        macro_rules! test_quasiquote {
+            ($test_name:ident, $ast:expr, $res:expr) => {
+                #[test]
+                fn $test_name() {
+                    assert_eq!(quasiquote($ast), $res);
+                }
+            }
         }
 
-        #[test]
-        fn unquote_nothing() {
-            assert_eq!(
-                quasiquote(form!["unquote"]),
+        test_quasiquote!(
+            unquote_symbol,
+            form!["unquote", "a"],
+            symbol!("a")
+        );
+
+        test_quasiquote!(
+            unquote_nothing,
+            form!["unquote"],
+            form![
+                "cons",
+                form![
+                    "quote",
+                    "unquote",
+                ],
+                Vec::<Atom>::new(),
+            ]
+        );
+
+        test_quasiquote!(
+            unquote_many,
+            form!["unquote", "a", "b", "c"],
+            symbol!("a")
+        );
+
+        test_quasiquote!(
+            splice_unquote_symbol,
+            form![form!["splice-unquote", "a"]],
+            form![
+                "concat",
+                "a",
+                Vec::<Atom>::new(),
+            ]
+        );
+
+        test_quasiquote!(
+            splice_unquote_many,
+            form![form!["splice-unquote", "a", "b", "c"]],
+            form![
+                "concat",
+                "a",
+                Vec::<Atom>::new(),
+            ]
+        );
+
+        test_quasiquote!(
+            splice_unquote_nothing,
+            form![form!["splice-unquote"]],
+            form![
+                "cons",
+                form![
+                    "splice-unquote"
+                ],
+                Vec::<Atom>::new(),
+            ]
+        );
+
+        test_quasiquote!(
+            quasiquote_list,
+            form!["a", "b", "c"],
+            form![
+                "cons",
+                form!["quote", "a"],
                 form![
                     "cons",
-                    form![
-                        "quote",
-                        "unquote",
-                    ],
-                    Vec::<Atom>::new(),
-                ]
-            );
-        }
-
-        #[test]
-        fn unquote_many() {
-            assert_eq!(
-                quasiquote(form!["unquote", "a", "b", "c"]),
-                symbol!("a")
-            );
-        }
-
-        #[test]
-        fn splice_unquote_symbol() {
-            assert_eq!(
-                quasiquote(form![form!["splice-unquote", "a"]]),
-                form![
-                    "concat",
-                    "a",
-                    Vec::<Atom>::new(),
-                ]
-            );
-        }
-
-        #[test]
-        fn splice_unquote_many() {
-            assert_eq!(
-                quasiquote(form![form!["splice-unquote", "a", "b", "c"]]),
-                form![
-                    "concat",
-                    "a",
-                    Vec::<Atom>::new(),
-                ]
-            );
-        }
-
-        #[test]
-        fn splice_unquote_nothing() {
-            assert_eq!(
-                quasiquote(form![form!["splice-unquote"]]),
-                form![
-                    "cons",
-                    form![
-                        "splice-unquote"
-                    ],
-                    Vec::<Atom>::new(),
-                ]
-            );
-        }
-
-        #[test]
-        fn quasiquote_list() {
-            assert_eq!(
-                quasiquote(form!["a", "b", "c"]),
-                form![
-                    "cons",
-                    form!["quote", "a"],
+                    form!["quote", "b"],
                     form![
                         "cons",
-                        form!["quote", "b"],
-                        form![
-                            "cons",
-                            form!["quote", "c"],
-                            Vec::<Atom>::new(),
-                        ]
-                    ],
-                ]
-            );
-        }
+                        form!["quote", "c"],
+                        Vec::<Atom>::new(),
+                    ]
+                ],
+            ]
+        );
 
-        #[test]
-        fn quasiquote_symbol() {
-            assert_eq!(
-                quasiquote(symbol!("a")),
-                form!["quote", "a"],
-            );
-        }
+        test_quasiquote!(
+            quasiquote_symbol,
+            symbol!("a"),
+            form!["quote", "a"]
+        );
     }
 
     use crate::{
@@ -414,6 +413,139 @@ mod eval_tests {
                 )*
             }
         }
+    }
+
+    // (quote a)
+    test_eval!(
+        quote_symbol,
+        form!["quote", "a"] => "a",
+    );
+
+    // (quote 1)
+    test_eval!(
+        quote_int,
+        form!["quote", 1] => 1,
+    );
+
+    // (quote)
+    #[test]
+    fn quote_0_args() {
+        let repl_env = Env::new_repl();
+        assert_eq!(
+            eval(form!["quote"], repl_env.clone()),
+            Err(LishErr::from("'quote' requires 1 argument, but got 0 in (quote)"))
+        );
+    }
+
+    // (quote a b c 1 2 3)
+    #[test]
+    fn quote_many_args() {
+        let repl_env = Env::new_repl();
+        assert_eq!(
+            eval(form!["quote", "a", "b", "c", 1, 2, 3], repl_env.clone()),
+            Err(LishErr::from("'quote' requires 1 argument, but got 6 in (quote a b c 1 2 3)"))
+        );
+    }
+
+    // (quasiquoteexpand (c ,c ,@c))
+    #[test]
+    fn quasiquoteexpand() {
+        let repl_env = Env::new_repl();
+        assert_eq!(
+            eval(form!["quasiquoteexpand", form!["c", form!["unquote", "c"], form!["splice-unquote", "c"]]], repl_env.clone()),
+            Ok(form![
+                "cons",
+                form![
+                    "quote", "c"
+                ],
+                form![
+                    "cons",
+                    "c",
+                    form![
+                        "concat",
+                        "c",
+                        Vec::<Atom>::new()
+                    ]
+                ]
+            ]),
+        );
+    }
+
+    // (set c '(1 2 3))
+    // `(c ,c ,@c)
+    #[test]
+    fn quasiquote() {
+        let repl_env = Env::new_repl();
+        eval(form![
+            "set",
+            "c",
+            form![
+                "quote",
+                form![1, 2, 3],
+            ],
+        ], repl_env.clone()).unwrap();
+        assert_eq!(
+            eval(form![
+                "quasiquote",
+                form![
+                    "c",
+                    form![
+                        "unquote",
+                        "c",
+                    ],
+                    form![
+                        "splice-unquote",
+                        "c",
+                    ],
+                ],
+            ], repl_env.clone()),
+            Ok(form![
+                "c",
+                form![1, 2, 3],
+                1,
+                2,
+                3,
+            ])
+        );
+    }
+    
+    // (setmacro m (fn (x) `(,x ,x)))
+    // (macroexpand (m (Y f)))
+    #[test]
+    fn set_macro_then_macroexpand() {
+        let repl_env = Env::new_repl();
+        // TODO: remove all unwraps
+        eval(form![
+            "setmacro",
+            "m",
+            form![
+                "fn",
+                form!["x"],
+                form![
+                    "quasiquote",
+                    form![
+                        form!["unquote", "x"],
+                        form!["unquote", "x"]
+                    ]
+                ]
+            ]
+        ], repl_env.clone()).unwrap();
+        assert_eq!(
+            eval(form![
+                "macroexpand",
+                form![
+                    "m",
+                    form![
+                        "Y",
+                        "f",
+                    ]
+                ],
+            ], repl_env.clone()),
+            Ok(form![
+                form!["Y", "f"],
+                form!["Y", "f"]
+            ])
+        );
     }
 
     // (set a 2)
@@ -477,6 +609,12 @@ mod eval_tests {
         Atom::from("a") => 2,
     );
 
+    // (let (a 1) 2 3 4 5 a)
+    test_eval!(
+        let_implicit_progn,
+        form!["let", form!["a", 1], 2, 3, 4, 5, "a"] => 1,
+    );
+
     // (let (a 1 b 2) (+ a b))
     test_eval!(
         let_twovars_statement,
@@ -535,6 +673,12 @@ mod eval_tests {
         if_set_false_statement,
         form!["if", false, form!["set", "b", 1], form!["set", "b", 2]] => 2,
         Atom::from("b") => 2,
+    );
+
+    // (eval (+ 2 2))
+    test_eval!(
+        eval_plus_two_two,
+        form!["eval", form!["+", 2, 2]] => 4,
     );
 
     // ((fn (x y) (+ x y)) 1 2)
@@ -634,41 +778,5 @@ mod eval_tests {
             ],
         ], repl_env.clone()).unwrap();
         assert_eq!(eval(form!["foo", 10000], repl_env.clone()), Ok(Atom::from(0)));
-    }
-
-    // (set c '(1 2 3))
-    // `(c ,c ,@c)
-    #[test]
-    fn quasiquote_unquote_spliceunquote() {
-        let repl_env = Env::new_repl();
-        eval(form![
-            "set",
-            "c",
-            form![
-                "quote",
-                form![1, 2, 3],
-            ],
-        ], repl_env.clone()).unwrap();
-        assert_eq!(eval(form![
-            "quasiquote",
-            form![
-                "c",
-                form![
-                    "unquote",
-                    "c",
-                ],
-                form![
-                    "splice-unquote",
-                    "c",
-                ],
-            ],
-        ], repl_env.clone()),
-        Ok(form![
-            "c",
-            form![1, 2, 3],
-            1,
-            2,
-            3,
-        ]));
     }
 }
