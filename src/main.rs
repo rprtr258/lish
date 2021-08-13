@@ -32,27 +32,27 @@ fn main() {
     loop {
         let input_buffer = rl.readline("user> ");
         match input_buffer {
-            Ok(line) => {
-                if line == "" {
-                    continue;
-                }
-                rl.add_history_entry(line.as_str());
-                let result = rep(line, repl_env.clone());
-                if result != "()" {
-                    println!("{}", result);
-                }
-            },
-            Err(ReadlineError::Interrupted) => {
-                println!("CTRL-C");
-            },
-            Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
-                break
-            },
-            Err(err) => {
-                println!("Error: {:?}", err);
-                break
+        Ok(line) => {
+            if line == "" {
+                continue;
             }
+            rl.add_history_entry(line.as_str());
+            let result = rep(line, repl_env.clone());
+            if result != "()" {
+                println!("{}", result);
+            }
+        },
+        Err(ReadlineError::Interrupted) => {
+            println!("CTRL-C");
+        },
+        Err(ReadlineError::Eof) => {
+            println!("CTRL-D");
+            break
+        },
+        Err(err) => {
+            println!("Error: {:?}", err);
+            break
+        }
         }
     }
     rl.save_history("history.txt").unwrap();

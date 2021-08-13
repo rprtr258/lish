@@ -11,10 +11,10 @@ tasks:
     cmds:
       - cargo run compose.lish
   ci:
-    deps: [test]
     silent: true
     cmds:
       - cargo check
+      - cargo test
   commit:
     cmds:
       - git add * .lishrc

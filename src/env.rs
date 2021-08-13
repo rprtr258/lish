@@ -5,6 +5,7 @@ use fnv::FnvHashMap;
 
 use crate::{
     list_vec,
+    lisherr,
     core::namespace,
     types::{LishErr, LishResult, Atom},
 };
@@ -22,7 +23,7 @@ impl Env {
     pub fn new(outer: Option<Env>) -> Env {
         Env(Rc::new(EnvStruct {
             data: RefCell::new(FnvHashMap::default()),
-            outer: outer,
+            outer,
         }))
     }
 
@@ -37,30 +38,30 @@ impl Env {
     pub fn bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
         let env = Env::new(outer);
         match mbinds {
-            Atom::List(binds, _) => {
-                for (i, b) in binds.iter().enumerate() {
-                    match b {
-                        Atom::Symbol(s) if s == "&" => {
-                            env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
-                            break;
-                        }
-                        _ => {
-                            env.set(b.clone(), exprs[i].clone())?;
-                        }
-                    }
+        Atom::List(binds, _) => {
+            for (i, b) in binds.iter().enumerate() {
+                match b {
+                Atom::Symbol(s) if s == "&" => {
+                    env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
+                    break;
                 }
-                Ok(env)
+                _ => {
+                    env.set(b.clone(), exprs[i].clone())?;
+                }
+                }
             }
-            Atom::Nil => Ok(env),
-            _ => Err(LishErr::from("Env::bind binds not List")),
+            Ok(env)
+        }
+        Atom::Nil => Ok(env),
+        _ => lisherr!("Env::bind binds not List"),
         }
     }
 
     pub fn find(self: &Self, key: &str) -> Option<Env> {
-        match (self.0.data.borrow().contains_key(key), self.0.outer.clone()) {
-            (true, _) => Some(self.clone()),
-            (false, Some(outer_env)) => outer_env.find(key),
-            _ => None,
+        if self.0.data.borrow().contains_key(key) {
+            Some(self.clone())
+        } else {
+            self.0.outer.clone().and_then(|outer_env| outer_env.find(key))
         }
     }
 
@@ -79,7 +80,7 @@ impl Env {
                 .get(key)
                 .unwrap()
                 .clone()),
-            _ => Err(LishErr::from(&format!("Not found '{}'", key))),
+            _ => lisherr!(&format!("Not found '{}'", key)),
         }
     }
 
@@ -89,11 +90,11 @@ impl Env {
 
     pub fn set(self: &Self, key: Atom, val: Atom) -> LishResult {
         match key {
-            Atom::Symbol(ref s) => {
-                self.sets(&s.to_string(), val.clone());
-                Ok(val)
-            }
-            _ => Err(LishErr::from("Env.set called with non-Str")),
+        Atom::Symbol(ref s) => {
+            self.sets(&s.to_string(), val.clone());
+            Ok(val)
+        }
+        _ => lisherr!("Env.set called with non-Str"),
         }
     }
 }

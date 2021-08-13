@@ -8,6 +8,7 @@ use crate::env::{Env};
 
 #[derive(Debug, Clone)]
 pub enum Atom {
+    // TODO: remove Nil, cause it's the same as empty List
     Nil,
     Bool(bool),
     Int(i64),
@@ -33,8 +34,8 @@ use Atom::{Nil, Bool, Int, Float, Symbol, Lambda, List};
 impl Atom {
     pub fn is_macro(self: &Self) -> bool {
         match self {
-            Lambda {is_macro, ..} => *is_macro,
-            _ => false,
+        Lambda {is_macro, ..} => *is_macro,
+        _ => false,
         }
     }
 }
@@ -70,14 +71,14 @@ where Atom: From<T> {
 impl PartialOrd for Atom {
     fn partial_cmp(self: &Self, other: &Atom) -> Option<Ordering> {
         match (self, other) {
-            (Nil, Nil) => Some(Ordering::Equal),
-            (Bool(ref a), Bool(ref b)) => a.partial_cmp(b),
-            (Int(ref a), Int(ref b)) => a.partial_cmp(b),
-            (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
-            (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
-            (List(ref a, _), List(ref b, _)) => a.partial_cmp(b),
-            // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
-            _ => None,
+        (Nil, Nil) => Some(Ordering::Equal),
+        (Bool(ref a), Bool(ref b)) => a.partial_cmp(b),
+        (Int(ref a), Int(ref b)) => a.partial_cmp(b),
+        (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
+        (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
+        (List(ref a, _), List(ref b, _)) => a.partial_cmp(b),
+        // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
+        _ => None,
         }
     }
 }
@@ -86,14 +87,14 @@ impl PartialEq for Atom {
     fn eq(&self, other: &Atom) -> bool {
         use Atom::String;
         match (self, other) {
-            (Nil, Nil) => true,
-            (Bool(ref a), Bool(ref b)) => a == b,
-            (Int(ref a), Int(ref b)) => a == b,
-            (String(ref a), String(ref b)) => a == b,
-            (Symbol(ref a), Symbol(ref b)) => a == b,
-            (List(ref a, _), List(ref b, _)) => a == b,
-            // (Hash(ref a, _), Hash(ref b, _)) => a == b,
-            _ => false,
+        (Nil, Nil) => true,
+        (Bool(ref a), Bool(ref b)) => a == b,
+        (Int(ref a), Int(ref b)) => a == b,
+        (String(ref a), String(ref b)) => a == b,
+        (Symbol(ref a), Symbol(ref b)) => a == b,
+        (List(ref a, _), List(ref b, _)) => a == b,
+        // (Hash(ref a, _), Hash(ref b, _)) => a == b,
+        _ => false,
         }
     }
 }
@@ -147,5 +148,40 @@ mod macros {
         ($($val:expr),* $(,)?) => {
             crate::list!(crate::args![$($val, )*])
         }
+    }
+
+    #[macro_export]
+    macro_rules! func {
+        ($args:ident, $body:expr) => {
+            Atom::Func(|$args| {$body}, Rc::new(Atom::Nil))
+        }
+    }
+
+    #[macro_export]
+    macro_rules! func_ok {
+        ($args:ident, $body:expr) => {
+            crate::func!($args, Ok($body))
+        }
+    }
+
+    #[macro_export]
+    macro_rules! func_nil {
+        ($args:ident, $body:expr) => {
+            crate::func!($args, {
+                $body;
+                Ok(Atom::Nil)
+            })
+        }
+    }
+
+    #[macro_export]
+    macro_rules! lisherr {
+        ($message:expr) => {{
+            use crate::LishErr;
+            Err(LishErr::from($message))
+        }};
+        ($message:expr $(, $params:expr)+) => {{
+            lisherr!(format!($message $(, $params)+))
+        }}
     }
 }

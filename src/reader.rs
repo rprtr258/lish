@@ -36,10 +36,10 @@ fn unescape_str(s: &str) -> String {
     // }
     re.replace_all(&s, |caps: &Captures| {
         match caps[0].chars().nth(1).unwrap() {
-            'n' => '\n',
-            '"' => '"',
-            '\\' => '\\',
-            _ => unimplemented!("Can't mirror this"),
+        'n' => '\n',
+        '"' => '"',
+        '\\' => '\\',
+        _ => unimplemented!("Can't mirror this"),
         }.to_string()
     }).to_string()
 }
@@ -47,16 +47,16 @@ fn unescape_str(s: &str) -> String {
 // TODO: regexes
 fn read_atom(token: String) -> Atom {
     match token.parse::<bool>() {
-        Ok(b) => return Atom::Bool(b),
-        Err(_) => {}
+    Ok(b) => return Atom::Bool(b),
+    Err(_) => {}
     };
     match token.parse::<i64>() {
-        Ok(n) => return Atom::Int(n),
-        Err(_) => {}
+    Ok(n) => return Atom::Int(n),
+    Err(_) => {}
     };
     match token.parse::<f64>() {
-        Ok(x) => return Atom::Float(x),
-        Err(_) => {}
+    Ok(x) => return Atom::Float(x),
+    Err(_) => {}
     };
     if token.chars().nth(0).unwrap() == '"' {
         return Atom::String(unescape_str(&token[1..token.len()-1]))
@@ -68,43 +68,43 @@ fn read_list(tokens: &mut Reader) -> LishResult {
     let mut res = Vec::new();
     loop {
         match &tokens.peek()?[..] {
-            ")" => {
-                tokens.next().unwrap();
-                break
-            }
-            _ => res.push(read_form(tokens)?),
+        ")" => {
+            tokens.next().unwrap();
+            break
+        }
+        _ => res.push(read_form(tokens)?),
         }
     }
     Ok(match res.len() {
-        0 => Atom::Nil,
-        _ => list_vec!(res),
+    0 => Atom::Nil,
+    _ => list_vec!(res),
     })
 }
 
 // TODO: reader macro
 fn read_form(tokens: &mut Reader) -> LishResult {
     match &tokens.peek()?[..] {
-        "(" => {
-            tokens.next().unwrap();
-            read_list(tokens)
-        },
-        "'" => {
-            tokens.next().unwrap();
-            Ok(list_vec!(vec![symbol!("quote"), read_form(tokens)?]))
-        },
-        "`" => {
-            tokens.next().unwrap();
-            Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
-        },
-        "," => {
-            tokens.next().unwrap();
-            Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
-        },
-        ",@" => {
-            tokens.next().unwrap();
-            Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
-        },
-        _ => Ok(read_atom(tokens.next()?)),
+    "(" => {
+        tokens.next().unwrap();
+        read_list(tokens)
+    },
+    "'" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("quote"), read_form(tokens)?]))
+    },
+    "`" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
+    },
+    "," => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
+    },
+    ",@" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
+    },
+    _ => Ok(read_atom(tokens.next()?)),
     }
 }
 
