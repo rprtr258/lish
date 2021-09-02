@@ -17,6 +17,7 @@ tasks:
       - cargo test
   commit:
     cmds:
+      - git push
       - git add * .lishrc
       - git restore --staged history.txt
       - git status
