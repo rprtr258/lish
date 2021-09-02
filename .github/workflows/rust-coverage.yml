@@ -1,10 +1,32 @@
-name: Test build
+name: Test & generate coverage report
 
 on: [push]
 
 jobs:
-  check:
-    name: Rust project
+  test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUSTFLAGS: '-Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
+          RUSTDOCFLAGS: '-Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
+
+  coverage_gen:
+    name: Build & test & update coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -39,3 +61,4 @@ jobs:
         with:
           name: code-coverage-report
           path: ${{ steps.coverage.outputs.report }}
+
