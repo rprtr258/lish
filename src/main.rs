@@ -7,6 +7,38 @@ use rustyline::{
 
 use lish::{env::Env, list, rep, types::Atom};
 
+fn make_repl_env(cmd_args: Vec<String>) -> Env {
+    let repl_env = Env::new_repl();
+    repl_env.sets(
+        "*ARGV*",
+        list!(cmd_args
+            .iter()
+            .map(Atom::from)
+            .collect()
+        )
+    );
+    // TODO: rename to load ?
+    rep(
+        r#"(set load-file (fn (f) (eval (read (str "(progn\n" (slurp f) "\n())")))))"#.to_owned(),
+        repl_env.clone()
+    );
+    cmd_args
+        .get(1)
+        .map(|filename| rep(
+            format!(r#"(load-file "{}")"#, filename),
+            repl_env.clone()
+        ));
+    repl_env
+}
+
+fn make_editor(history_file: &str) -> Editor<()> {
+    let mut rl = Editor::<()>::new();
+    if rl.load_history(history_file).is_err() {
+        println!("No previous history.");
+    }
+    rl
+}
+
 fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
     loop {
         let input_buffer = rl.readline("user> ");
@@ -38,26 +70,10 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
 
 // TODO: load file from cmd args
 fn main() {
-    let mut rl = Editor::<()>::new();
-    if rl.load_history("history.txt").is_err() {
-        println!("No previous history.");
-    }
-    let cmd_args: Vec<String> = args().collect();
-
-    let repl_env = Env::new_repl();
-    repl_env.sets(
-        "*ARGV*",
-        list!(cmd_args
-            .iter()
-            .map(Atom::from)
-            .collect()
-        )
-    );
-    // TODO: rename to load ?
-    rep(r#"(set load-file (fn (f) (eval (read (str "(progn " (slurp f) "\n())")))))"#.to_string(), repl_env.clone());
-    cmd_args.get(1).map(|filename|
-        rep(format!(r#"(load-file "{}")"#, filename), repl_env.clone())
-    );
-    main_loop(&mut rl, repl_env);
-    rl.save_history("history.txt").unwrap();
+    // TODO: rename to .lish_history
+    const HISTORY_FILE: &str = "history.txt";
+    let mut editor = make_editor(HISTORY_FILE);
+    let repl_env: Env = make_repl_env(args().collect());
+    main_loop(&mut editor, repl_env);
+    editor.save_history(HISTORY_FILE).unwrap();
 }
