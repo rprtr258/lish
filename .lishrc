@@ -1,7 +1,70 @@
-(load-file "compose.lish")
+;; (load-file "compose.lish")
+
+(set! return (lambda (f) (f f)))
+(set! cur/cc (lambda () (call/cc return)))
+
+(set! n 10)
+(let*
+  (r (cur/cc))
+  (echo n)
+  (if
+    (= 0 n) 'done
+    (progn
+      (set! n (- n 1))
+      (return r))))
+
+
+
+
+
+
+
+
+
+
+
+
+;; (defun pair? (x) (and (list? x) (not (nil? x))))
+
+;; (set! fail-stack '())
+;; (defun fail ()
+;;   (if
+;;     (not (pair? fail-stack))
+;;     (throw "back-tracking stack exhausted!")
+;;     (let* (backtrack (car fail-stack))
+;;       (swap! fail-stack cdr)
+;;       (return backtrack))))
+
+;; (defun amb (choices var)
+;;   (let* (cc (cur/cc))
+;;     (cond
+;;       (nil? choices) (fail)
+;;       (pair? choices) (let* (choice (car choices))
+;;         (swap! choices cdr)
+;;         (echo var " " choices)
+;;         (swap! fail-stack (# (cons cc %)))
+;;         choice))))
+
+;; (defun assert (a b) (progn
+;;   (echo "ASSERT " a " " b " " (< a b))
+;;   (if (< a b) true (fail))))
+
+;; (let* (a (amb [3 6] "a")
+;;       b (amb [3 8] "b"))
+;;   (echo "    < " [a b])
+;;   (assert a b)
+;;   (echo "        & " [a b]))
+
+
+
+
+
+
+
+
 
 (set! prompt
-  (let* (cnt 0)
-    (lambda () (progn
-      (swap! cnt inc)
-      (+ "lis.py(" (str cnt) ")> ")))))
+ (let* (cnt 0)
+   (lambda () (progn
+     (set! cnt (+ 1 cnt))
+     (+ "lis.py(" (str cnt) ")> ")))))
