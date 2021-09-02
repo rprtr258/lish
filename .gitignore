@@ -2,4 +2,4 @@ LiSH/*
 target/*
 test/*
 .vscode/*
-history.txt
+.lish_history

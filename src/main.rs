@@ -70,8 +70,7 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
 
 // TODO: load file from cmd args
 fn main() {
-    // TODO: rename to .lish_history
-    const HISTORY_FILE: &str = "history.txt";
+    const HISTORY_FILE: &str = ".lish_history";
     let mut editor = make_editor(HISTORY_FILE);
     let repl_env: Env = make_repl_env(args().collect());
     main_loop(&mut editor, repl_env);

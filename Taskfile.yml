@@ -18,8 +18,7 @@ tasks:
   commit:
     cmds:
       - git push
-      - git add * .lishrc
-      - git restore --staged history.txt
+      - git add * .lishrc .gitignore
       - git status
       - "echo \"Write commit message:\" && read && git commit -m \"$REPLY\""
       - git push
