@@ -60,6 +60,11 @@ impl From<&str> for Atom {
         Atom::String(x.to_owned())
     }
 }
+impl From<&String> for Atom {
+    fn from(x: &String) -> Atom {
+        Atom::String(x.clone())
+    }
+}
 impl<T: Clone> From<Vec<T>> for Atom
 where Atom: From<T> {
     fn from(x: Vec<T>) -> Atom {

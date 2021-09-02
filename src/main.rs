@@ -1,34 +1,13 @@
-use std::{
-    env::args,
-    rc::Rc,
-};
+use std::env::args;
 
 use rustyline::{
     error::ReadlineError,
     Editor,
 };
 
-use lish::{
-    rep,
-    env::Env,
-    types::Atom,
-};
+use lish::{env::Env, list, rep, types::Atom};
 
-// TODO: load file from cmd args
-fn main() {
-    let mut rl = Editor::<()>::new();
-    if rl.load_history("history.txt").is_err() {
-        println!("No previous history.");
-    }
-    let cmd_args: Vec<String> = args().collect();
-
-    let repl_env = Env::new_repl();
-    repl_env.sets("*ARGV*", Atom::List(Rc::new(cmd_args.iter().map(|x| Atom::String(x.clone())).collect()), Rc::new(Atom::Nil)));
-    // TODO: rename to load ?
-    rep(r#"(set load-file (fn (f) (eval (read (str "(progn " (slurp f) "\n())")))))"#.to_string(), repl_env.clone());
-    cmd_args.get(1).map(|filename|
-        rep(format!(r#"(load-file "{}")"#, filename), repl_env.clone())
-    );
+fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
     loop {
         let input_buffer = rl.readline("user> ");
         match input_buffer {
@@ -55,5 +34,30 @@ fn main() {
         }
         }
     }
+}
+
+// TODO: load file from cmd args
+fn main() {
+    let mut rl = Editor::<()>::new();
+    if rl.load_history("history.txt").is_err() {
+        println!("No previous history.");
+    }
+    let cmd_args: Vec<String> = args().collect();
+
+    let repl_env = Env::new_repl();
+    repl_env.sets(
+        "*ARGV*",
+        list!(cmd_args
+            .iter()
+            .map(Atom::from)
+            .collect()
+        )
+    );
+    // TODO: rename to load ?
+    rep(r#"(set load-file (fn (f) (eval (read (str "(progn " (slurp f) "\n())")))))"#.to_string(), repl_env.clone());
+    cmd_args.get(1).map(|filename|
+        rep(format!(r#"(load-file "{}")"#, filename), repl_env.clone())
+    );
+    main_loop(&mut rl, repl_env);
     rl.save_history("history.txt").unwrap();
 }
