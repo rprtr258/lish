@@ -74,7 +74,8 @@ mod printer_tests {
 
     use crate::{
         form,
-        types::{Atom},
+        symbol,
+        types::Atom,
     };
     use super::{print};
 
@@ -91,7 +92,7 @@ mod printer_tests {
         ($test_name:ident, $atom:expr, $res:expr) => {
             #[test]
             fn $test_name() {
-                assert_eq!(print(&Ok($atom)), $res)
+                assert_eq!(print(&Ok(Atom::from($atom))), $res)
             }
         }
     }
@@ -101,11 +102,11 @@ mod printer_tests {
     test_print_primitive!(print_float, 3.14, "3.14");
     test_print_primitive!(print_int, 92, "92");
     test_print_primitive!(print_list, form![1, 2], "(1 2)");
-    test_print_primitive!(print_symbol, "abc", "abc");
+    test_print_primitive!(print_symbol, symbol!("abc"), "abc");
     test_print!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
     test_print!(print_nil, Atom::Nil, "()");
-    test_print!(print_string, Atom::String("abc".to_string()), r#""abc""#);
-    test_print!(print_string_with_slash, Atom::String(r"\".to_string()), r#""\\""#);
-    test_print!(print_string_with_2slashes, Atom::String(r"\\".to_string()), r#""\\\\""#);
-    test_print!(print_string_with_newline, Atom::String("\n".to_string()), "\"\\n\"");
+    test_print!(print_string, "abc", r#""abc""#);
+    test_print!(print_string_with_slash, r"\", r#""\\""#);
+    test_print!(print_string_with_2slashes, r"\\", r#""\\\\""#);
+    test_print!(print_string_with_newline, "\n", "\"\\n\"");
 }

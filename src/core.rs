@@ -123,23 +123,23 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             Atom::Lambda {
                 ast: lambda_ast, env: lambda_env, params, ..
             } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
-            _ => return lisherr!("{:?} is not a function", fun),
+            _ => return lisherr!("{} is not a function", print(&Ok(fun))),
             }
         })),
-        ("cons", func_ok!(args, {
+        ("cons", func!(args, {
             assert!(args.len() >= 2);
             let elems = &args[..args.len()-1];
             let lst = {
                 match args.last().unwrap() {
                 List(xs, _) => xs.clone(),
                 Nil => Rc::new(vec![]),
-                _ => panic!("Trying to cons not a list"),
+                _ => return lisherr!("Trying to cons not a list"),
                 }
             };
-            list!(elems.iter()
+            Ok(list!(elems.iter()
                 .chain(lst.iter())
                 .map(|x| x.clone())
-                .collect())
+                .collect()))
         })),
         // TODO: change to +
         // TODO: support Nil
@@ -196,20 +196,12 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             _ => false,
             })
         )),
-        ("count?", func_ok!(
-            args,
-            match &args[0] {
-            List(xs, _) => Int(xs.len() as i64),
-            Nil => Int(0),
-            _ => Nil
-            }
-        )),
         ("read", func!(args, {
             assert_eq!(args.len(), 1);
             let arg = args[0].clone();
             match arg {
             Atom::String(s) => Ok(read(s)?),
-            _ => lisherr!("{:?} is not a string", arg)
+            _ => lisherr!("{} is not a string", print(&Ok(arg)))
             }
         })),
         ("slurp", func!(args, {
@@ -223,6 +215,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             _ => lisherr!("{:?} is not a string", arg)
             }
         })),
+        // TODO: change into +
         ("str", func_ok!(args, {
             let result: String = args.into_iter()
                 .map(|x| match x {
@@ -246,9 +239,19 @@ mod core_tests {
     use crate::{
         lisherr,
         args,
-        types::Atom,
+        form,
+        symbol,
+        types::{Atom, Args, LishResult},
     };
     use super::namespace;
+
+    fn get_fn(name: &str) -> fn(Args) -> LishResult {
+        let ns = namespace();
+        match ns.get(name) {
+            Some(Atom::Func(f, _)) => f.clone(),
+            _ => unreachable!(),
+        }
+    }
 
     macro_rules! test_function {
         ($test_name:ident, $($fun:expr, $args:expr => $res:expr),* $(,)?) => {
@@ -331,4 +334,245 @@ mod core_tests {
         plus_ternary,
         "+", args![1, 2, 3] => 6
     );
+
+    test_function!(
+        not_equal_ints,
+        "=", args![1, 2] => false
+    );
+
+    test_function!(
+        equal_ints,
+        "=", args![2, 2] => true
+    );
+
+    test_function!(
+        less_true,
+        "<", args![1, 2] => true
+    );
+
+    test_function!(
+        less_false,
+        "<", args![2, 1] => false
+    );
+
+    test_function!(
+        less_equal_true,
+        "<=", args![1, 1] => true
+    );
+
+    test_function!(
+        less_equal_false,
+        "<=", args![2, 1] => false
+    );
+
+    test_function!(
+        greater_true,
+        ">", args![2, 1] => true
+    );
+
+    test_function!(
+        greater_false,
+        ">", args![1, 2] => false
+    );
+
+    test_function!(
+        greater_equal_true,
+        ">=", args![2, 2] => true
+    );
+
+    test_function!(
+        greater_equal_false,
+        ">=", args![1, 2] => false
+    );
+
+    /* TODO: rewrite to using write!
+    test_function!(
+        print_int,
+        "prn", args![92] => "92"
+    );
+
+    test_function!(
+        print_ints,
+        "prn", args![1, 2, 3] => "1 2 3"
+    );
+
+    test_function!(
+        print_strs,
+        "prn", "a", "b", "c"] => "a b c"
+    );
+
+    test_function!(
+        print_multiline_str,
+        "prn", "a\nc"] => "a\\nc"
+    );
+
+    test_function!(
+        echo_multiline_str,
+        "echo", "a\nc"] => "a\nc"
+    );
+    */
+
+    #[test]
+    fn apply_plus() {
+        let ns = namespace();
+        assert_eq!(
+            get_fn("apply")(args![ns.get("+").unwrap().clone(), 1, 2, 3]),
+            Ok(Atom::from(6))
+        )
+    }
+
+    #[test]
+    fn apply_lambda() {
+        use std::rc::Rc;
+        use crate::{eval, env::Env};
+        let lambda = Atom::Lambda {
+            eval: eval,
+            params: Rc::new(form![
+                symbol!("&"),
+                symbol!("x")
+            ]),
+            ast: Rc::new(symbol!("x")),
+            env: Env::new(None),
+            is_macro: false,
+            meta: Rc::new(Atom::Nil),
+        };
+        assert_eq!(
+            get_fn("apply")(args![lambda, 1, 2, 3]),
+            Ok(form![1, 2, 3])
+        );
+    }
+
+    #[test]
+    fn apply_int_not_a_function() {
+        assert_eq!(
+            get_fn("apply")(args![1, 2, 3]),
+            lisherr!("1 is not a function")
+        )
+    }
+
+    #[test]
+    fn cons_int_not_a_list() {
+        assert_eq!(
+            get_fn("cons")(args![1, 2]),
+            lisherr!("Trying to cons not a list")
+        )
+    }
+
+    test_function!(
+        cons_int,
+        "cons", args![1, form![]] => form![1]
+    );
+
+    test_function!(
+        concat_int_lists,
+        "concat", args![
+            form![],
+            form![1],
+            form![2, 3],
+            form![4, 5, 6, 7]
+        ] => form![1, 2, 3, 4, 5, 6, 7]
+    );
+
+    test_function!(
+        concat_int_and_str_lists,
+        "concat", args![
+            form![1, 2, 3],
+            form!["a", "b", "c"]
+        ] => form![1, 2, 3, "a", "b", "c"]
+    );
+    
+    test_function!(
+        list_ints,
+        "list", args![1, 2, 3] => form![1, 2, 3]
+    );
+    
+    test_function!(
+        first_ints,
+        "first", args![form![1, 2, 3]] => 1
+    );
+
+    #[test]
+    fn first_int_not_a_list() {
+        assert_eq!(
+            get_fn("first")(args![1]),
+            lisherr!("Trying to get first of not list")
+        )
+    }
+
+    test_function!(
+        rest_ints,
+        "rest", args![form![1, 2, 3]] => args![2, 3]
+    );
+
+    #[test]
+    fn rest_int_not_a_list() {
+        assert_eq!(
+            get_fn("rest")(args![1]),
+            lisherr!("Trying to get rest of not list")
+        )
+    }
+
+    test_function!(
+        len_ints,
+        "len", args![form![1, 2, 3]] => 3
+    );
+
+    #[test]
+    fn len_int_not_a_list() {
+        assert_eq!(
+            get_fn("len")(args![1]),
+            lisherr!("Trying to get len of not list")
+        )
+    }
+
+    test_function!(
+        islist_nil,
+        "list?", args![form![]] => true
+    );
+
+    test_function!(
+        islist_int,
+        "list?", args![1] => false
+    );
+
+    test_function!(
+        islist_ints,
+        "list?", args![form![1, 2, 3]] => true
+    );
+
+    test_function!(
+        isempty_nil,
+        "empty?", args![form![]] => true
+    );
+
+    test_function!(
+        isempty_ints,
+        "empty?", args![form![1, 2, 3]] => false
+    );
+
+    test_function!(
+        read_str,
+        "read", args!["(+ 1 2)"] => form![symbol!("+"), 1, 2]
+    );
+
+
+    #[test]
+    fn read_int() {
+        assert_eq!(
+            get_fn("read")(args![1]),
+            lisherr!("1 is not a string")
+        )
+    }
+
+    test_function!(
+        str_ints,
+        "str", args![1, 2, 3] => "123"
+    );
+
+    test_function!(
+        str_newline_str,
+        "str", args!["a\nc"] => "a\nc"
+    );
+
+    // TODO: test slurp
 }

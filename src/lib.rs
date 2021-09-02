@@ -39,7 +39,9 @@ fn quasiquote(ast: Atom) -> Atom {
                     res = match ys.len() {
                     1 => vec![
                         symbol!("cons"),
-                        form!("splice-unquote"),
+                        form![
+                            symbol!("splice-unquote")
+                        ],
                         list!(res),
                     ],
                     _ => vec![
@@ -245,6 +247,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
 
 pub fn rep(input: String, env: Env) -> String {
     let result = read(input).and_then(|ast| eval(ast, env));
+    // TODO: add "=> " before result
     print(&result)
 }
 
@@ -271,13 +274,16 @@ mod eval_tests {
         #[test]
         fn symbol_not_found() {
             let env = Env::new(None);
-            assert_eq!(eval_ast(&form!["a"], &env), lisherr!("Not found 'a'"));
+            assert_eq!(
+                eval_ast(&form![symbol!("a")], &env),
+                lisherr!("Not found 'a'")
+            );
         }
 
         #[test]
         fn list() {
             let repl_env = Env::new_repl();
-            let res = eval_ast(&form!["+", 2, 2], &repl_env);
+            let res = eval_ast(&form![symbol!("+"), 2, 2], &repl_env);
             match res {
             Ok(Atom::List(items, _)) => {
                 assert_eq!(items[1], Atom::Int(2));
@@ -317,18 +323,18 @@ mod eval_tests {
 
         test_quasiquote!(
             unquote_symbol,
-            form!["unquote", "a"],
+            form![symbol!("unquote"), symbol!("a")],
             symbol!("a")
         );
 
         test_quasiquote!(
             unquote_nothing,
-            form!["unquote"],
+            form![symbol!("unquote")],
             form![
-                "cons",
+                symbol!("cons"),
                 form![
-                    "quote",
-                    "unquote",
+                    symbol!("quote"),
+                    symbol!("unquote"),
                 ],
                 Vec::<Atom>::new(),
             ]
@@ -336,37 +342,41 @@ mod eval_tests {
 
         test_quasiquote!(
             unquote_many,
-            form!["unquote", "a", "b", "c"],
+            form![symbol!("unquote"), symbol!("a"), symbol!("b"), symbol!("c")],
             symbol!("a")
         );
 
         test_quasiquote!(
             splice_unquote_symbol,
-            form![form!["splice-unquote", "a"]],
+            form![form![symbol!("splice-unquote"), symbol!("a")]],
             form![
-                "concat",
-                "a",
+                symbol!("concat"),
+                symbol!("a"),
                 Vec::<Atom>::new(),
             ]
         );
 
         test_quasiquote!(
             splice_unquote_many,
-            form![form!["splice-unquote", "a", "b", "c"]],
+            form![form![symbol!("splice-unquote"), symbol!("a"), symbol!("b"), symbol!("c")]],
             form![
-                "concat",
-                "a",
+                symbol!("concat"),
+                symbol!("a"),
                 Vec::<Atom>::new(),
             ]
         );
 
         test_quasiquote!(
             splice_unquote_nothing,
-            form![form!["splice-unquote"]],
             form![
-                "cons",
                 form![
-                    "splice-unquote"
+                    symbol!("splice-unquote")
+                ]
+            ],
+            form![
+                symbol!("cons"),
+                form![
+                    symbol!("splice-unquote")
                 ],
                 Vec::<Atom>::new(),
             ]
@@ -374,16 +384,16 @@ mod eval_tests {
 
         test_quasiquote!(
             quasiquote_list,
-            form!["a", "b", "c"],
+            form![symbol!("a"), symbol!("b"), symbol!("c")],
             form![
-                "cons",
-                form!["quote", "a"],
+                symbol!("cons"),
+                form![symbol!("quote"), symbol!("a")],
                 form![
-                    "cons",
-                    form!["quote", "b"],
+                    symbol!("cons"),
+                    form![symbol!("quote"), symbol!("b")],
                     form![
-                        "cons",
-                        form!["quote", "c"],
+                        symbol!("cons"),
+                        form![symbol!("quote"), symbol!("c")],
                         Vec::<Atom>::new(),
                     ]
                 ],
@@ -393,15 +403,16 @@ mod eval_tests {
         test_quasiquote!(
             quasiquote_symbol,
             symbol!("a"),
-            form!["quote", "a"]
+            form![symbol!("quote"), symbol!("a")]
         );
     }
 
     use crate::{
         lisherr,
         form,
+        symbol,
         env::Env,
-        types::{Atom, Atom::{String, Nil}},
+        types::{Atom, Atom::Nil},
         eval,
     };
 
@@ -420,13 +431,13 @@ mod eval_tests {
     // (quote a)
     test_eval!(
         quote_symbol,
-        form!["quote", "a"] => "a",
+        form![symbol!("quote"), symbol!("a")] => symbol!("a"),
     );
 
     // (quote 1)
     test_eval!(
         quote_int,
-        form!["quote", 1] => 1,
+        form![symbol!("quote"), 1] => 1,
     );
 
     // (quote)
@@ -434,7 +445,7 @@ mod eval_tests {
     fn quote_0_args() {
         let repl_env = Env::new_repl();
         assert_eq!(
-            eval(form!["quote"], repl_env.clone()),
+            eval(form![symbol!("quote")], repl_env.clone()),
             lisherr!("'quote' requires 1 argument, but got 0 in (quote)")
         );
     }
@@ -444,7 +455,7 @@ mod eval_tests {
     fn quote_many_args() {
         let repl_env = Env::new_repl();
         assert_eq!(
-            eval(form!["quote", "a", "b", "c", 1, 2, 3], repl_env.clone()),
+            eval(form![symbol!("quote"), symbol!("a"), symbol!("b"), symbol!("c"), 1, 2, 3], repl_env.clone()),
             lisherr!("'quote' requires 1 argument, but got 6 in (quote a b c 1 2 3)")
         );
     }
@@ -454,18 +465,18 @@ mod eval_tests {
     fn quasiquoteexpand() {
         let repl_env = Env::new_repl();
         assert_eq!(
-            eval(form!["quasiquoteexpand", form!["c", form!["unquote", "c"], form!["splice-unquote", "c"]]], repl_env.clone()),
+            eval(form![symbol!("quasiquoteexpand"), form![symbol!("c"), form![symbol!("unquote"), symbol!("c")], form![symbol!("splice-unquote"), symbol!("c")]]], repl_env.clone()),
             Ok(form![
-                "cons",
+                symbol!("cons"),
                 form![
-                    "quote", "c"
+                    symbol!("quote"), symbol!("c")
                 ],
                 form![
-                    "cons",
-                    "c",
+                    symbol!("cons"),
+                    symbol!("c"),
                     form![
-                        "concat",
-                        "c",
+                        symbol!("concat"),
+                        symbol!("c"),
                         Vec::<Atom>::new()
                     ]
                 ]
@@ -479,34 +490,32 @@ mod eval_tests {
     fn quasiquote() {
         let repl_env = Env::new_repl();
         eval(form![
-            "set",
-            "c",
+            symbol!("set"),
+            symbol!("c"),
             form![
-                "quote",
+                symbol!("quote"),
                 form![1, 2, 3],
             ],
         ], repl_env.clone()).unwrap();
         assert_eq!(
             eval(form![
-                "quasiquote",
+                symbol!("quasiquote"),
                 form![
-                    "c",
+                    symbol!("c"),
                     form![
-                        "unquote",
-                        "c",
+                        symbol!("unquote"),
+                        symbol!("c"),
                     ],
                     form![
-                        "splice-unquote",
-                        "c",
+                        symbol!("splice-unquote"),
+                        symbol!("c"),
                     ],
                 ],
             ], repl_env.clone()),
             Ok(form![
-                "c",
+                symbol!("c"),
                 form![1, 2, 3],
-                1,
-                2,
-                3,
+                1, 2, 3,
             ])
         );
     }
@@ -518,34 +527,34 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         // TODO: remove all unwraps
         eval(form![
-            "setmacro",
-            "m",
+            symbol!("setmacro"),
+            symbol!("m"),
             form![
-                "fn",
-                form!["x"],
+                symbol!("fn"),
+                form![symbol!("x")],
                 form![
-                    "quasiquote",
+                    symbol!("quasiquote"),
                     form![
-                        form!["unquote", "x"],
-                        form!["unquote", "x"]
+                        form![symbol!("unquote"), symbol!("x")],
+                        form![symbol!("unquote"), symbol!("x")]
                     ]
                 ]
             ]
         ], repl_env.clone()).unwrap();
         assert_eq!(
             eval(form![
-                "macroexpand",
+                symbol!("macroexpand"),
                 form![
-                    "m",
+                    symbol!("m"),
                     form![
-                        "Y",
-                        "f",
+                        symbol!("Y"),
+                        symbol!("f"),
                     ]
                 ],
             ], repl_env.clone()),
             Ok(form![
-                form!["Y", "f"],
-                form!["Y", "f"]
+                form![symbol!("Y"), symbol!("f")],
+                form![symbol!("Y"), symbol!("f")]
             ])
         );
     }
@@ -556,18 +565,18 @@ mod eval_tests {
     // (+ a b)
     test_eval!(
         set,
-        form!["set", "a", 2] => 2,
-        form!["+", "a", 3] => 5,
-        form!["set", "b", 3] => 3,
-        form!["+", "a", "b"] => 5,
+        form![symbol!("set"), symbol!("a"), 2] => 2,
+        form![symbol!("+"), symbol!("a"), 3] => 5,
+        form![symbol!("set"), symbol!("b"), 3] => 3,
+        form![symbol!("+"), symbol!("a"), symbol!("b")] => 5,
     );
 
     // (set c (+ 1 2))
     // (+ c 1)
     test_eval!(
         set_expr,
-        form!["set", "c", form!["+", 1, 2]] => 3,
-        form!["+", "c", 1] => 4,
+        form![symbol!("set"), symbol!("c"), form![symbol!("+"), 1, 2]] => 3,
+        form![symbol!("+"), symbol!("c"), 1] => 4,
     );
 
     // 92
@@ -580,25 +589,34 @@ mod eval_tests {
     #[test]
     fn eval_symbol() {
         let repl_env = Env::new_repl();
-        assert_eq!(eval(
-            Atom::from("abc"),
+        assert_eq!(
             // TODO: Error for not found symbol
-            repl_env.clone()), lisherr!("Not found 'abc'"));
+            eval(symbol!("abc"), repl_env.clone()),
+            lisherr!("Not found 'abc'")
+        );
     }
 
     // "abc"
     #[test]
     fn eval_string() {
         let repl_env = Env::new_repl();
-        assert_eq!(eval(
-            String("abc".to_string()),
-            repl_env.clone()), Ok(Atom::String("abc".to_string())));
+        assert_eq!(
+            eval(Atom::from("abc"), repl_env.clone()),
+            Ok(Atom::from("abc"))
+        );
     }
 
     // (+ 1 2 (+ 1 2))
     test_eval!(
         plus_expr,
-        form!["+", 1, 2, form!["+", 1, 2]] => 6,
+        form![
+            symbol!("+"),
+            1, 2,
+            form![
+                symbol!("+"),
+                1, 2
+            ]
+        ] => 6,
     );
 
     // (set a 2)
@@ -606,81 +624,81 @@ mod eval_tests {
     // a
     test_eval!(
         let_statement,
-        form!["set", "a", 2] => 2,
-        form!["let", form!["a", 1], "a"] => 1,
-        Atom::from("a") => 2,
+        form![symbol!("set"), symbol!("a"), 2] => 2,
+        form![symbol!("let"), form![symbol!("a"), 1], symbol!("a")] => 1,
+        Atom::from(symbol!("a")) => 2,
     );
 
     // (let (a 1) 2 3 4 5 a)
     test_eval!(
         let_implicit_progn,
-        form!["let", form!["a", 1], 2, 3, 4, 5, "a"] => 1,
+        form![symbol!("let"), form![symbol!("a"), 1], 2, 3, 4, 5, symbol!("a")] => 1,
     );
 
     // (let (a 1 b 2) (+ a b))
     test_eval!(
         let_twovars_statement,
-        form!["let", form!["a", 1, "b", 2], form!["+", "a", "b"]] => 3,
+        form![symbol!("let"), form![symbol!("a"), 1, symbol!("b"), 2], form![symbol!("+"), symbol!("a"), symbol!("b")]] => 3,
     );
 
     // (let (a 1 b a) b)
     test_eval!(
         let_star_statement,
-        form!["let", form!["a", 1, "b", "a"], "b"] => 1,
+        form![symbol!("let"), form![symbol!("a"), 1, symbol!("b"), symbol!("a")], symbol!("b")] => 1,
     );
 
     // (progn (set a 92) (+ a 8))
     // a
     test_eval!(
         progn_statement,
-        form!["progn", form!["set", "a", 92], form!["+", "a", 8]] => 100,
-        Atom::from("a") => 92,
+        form![symbol!("progn"), form![symbol!("set"), symbol!("a"), 92], form![symbol!("+"), symbol!("a"), 8]] => 100,
+        Atom::from(symbol!("a")) => 92,
     );
 
     // (if true 1 2)
     test_eval!(
         if_true_statement,
-        form!["if", true, 1, 2] => 1,
+        form![symbol!("if"), true, 1, 2] => 1,
     );
 
     // (if false 1 2)
     test_eval!(
         if_false_statement,
-        form!["if", false, 1, 2] => 2,
+        form![symbol!("if"), false, 1, 2] => 2,
     );
 
     // (if true 1)
     test_eval!(
         if_true_noelse_statement,
-        form!["if", true, 1] => 1,
+        form![symbol!("if"), true, 1] => 1,
     );
 
     // (if false 1)
     test_eval!(
         if_false_noelse_statement,
-        form!["if", false, 1] => Nil,
+        form![symbol!("if"), false, 1] => Nil,
     );
 
     // (if true (set a 1) (set a 2))
     // a
     test_eval!(
         if_set_true_statement,
-        form!["if", true, form!["set", "a", 1], form!["set", "a", 2]] => 1,
-        Atom::from("a") => 1,
+        form![symbol!("if"), true, form![symbol!("set"), symbol!("a"), 1], form![symbol!("set"), symbol!("a"), 2]] => 1,
+        Atom::from(symbol!("a")) => 1,
     );
 
     // (if false (set b 1) (set b 2))
     // b
     test_eval!(
         if_set_false_statement,
-        form!["if", false, form!["set", "b", 1], form!["set", "b", 2]] => 2,
-        Atom::from("b") => 2,
+        form![symbol!("if"), false, form![symbol!("set"), symbol!("b"), 1], form![symbol!("set"), symbol!("b"), 2]] => 2,
+        Atom::from(symbol!("b")) => 2,
     );
 
     // (eval (+ 2 2))
     test_eval!(
         eval_plus_two_two,
-        form!["eval", form!["+", 2, 2]] => 4,
+        form![symbol!("eval"), form![symbol!("+"), 2, 2]] => 4,
     );
 
     // ((fn (x y) (+ x y)) 1 2)
@@ -688,27 +706,28 @@ mod eval_tests {
         fn_statement,
         form![
             form![
-                "fn",
-                form!["x", "y"],
-                form!["+", "x", "y"]],
-            1, 2] => 3);
+                symbol!("fn"),
+                form![symbol!("x"), symbol!("y")],
+                form![symbol!("+"), symbol!("x"), symbol!("y")]],
+            1, 2
+        ] => 3);
 
     // ((fn (f x) (f (f x))) (fn (x) (* x 2)) 3)
     test_eval!(
         fn_double_statement,
         form![
             form![
-                "fn",
-                form!["f", "x"],
+                symbol!("fn"),
+                form![symbol!("f"), symbol!("x")],
                 form![
-                    "f",
-                    form!["f", "x"]
+                    symbol!("f"),
+                    form![symbol!("f"), symbol!("x")]
                 ]
             ],
             form![
-                "fn",
-                form!["x"],
-                form!["*", "x", 2]
+                symbol!("fn"),
+                form![symbol!("x")],
+                form![symbol!("*"), symbol!("x"), 2]
             ],
             3
         ] => 12);
@@ -719,24 +738,24 @@ mod eval_tests {
     fn tco_recur() {
         let repl_env = Env::new_repl();
         eval(form![
-            "set",
-            "sum",
+            symbol!("set"),
+            symbol!("sum"),
             form![
-                "fn",
-                form!["n", "acc"],
+                symbol!("fn"),
+                form![symbol!("n"), symbol!("acc")],
                 form![
-                    "if",
-                    form!["=", "n", 0],
-                    "acc",
+                    symbol!("if"),
+                    form![symbol!("="), symbol!("n"), 0],
+                    symbol!("acc"),
                     form![
-                        "sum",
-                        form!["-", "n", 1],
-                        form!["+", "n", "acc"]
+                        symbol!("sum"),
+                        form![symbol!("-"), symbol!("n"), 1],
+                        form![symbol!("+"), symbol!("n"), symbol!("acc")]
                     ]
                 ]
             ],
         ], repl_env.clone()).unwrap();
-        assert_eq!(eval(form!["sum", 10000, 0], repl_env.clone()), Ok(Atom::from(50005000)));
+        assert_eq!(eval(form![symbol!("sum"), 10000, 0], repl_env.clone()), Ok(Atom::from(50005000)));
     }
 
     // (set foo (fn (n) (if (= n 0) 0 (bar (- n 1)))))
@@ -746,39 +765,39 @@ mod eval_tests {
     fn tco_mutual_recur() {
         let repl_env = Env::new_repl();
         eval(form![
-            "set",
-            "foo",
+            symbol!("set"),
+            symbol!("foo"),
             form![
-                "fn",
-                form!["n"],
+                symbol!("fn"),
+                form![symbol!("n")],
                 form![
-                    "if",
-                    form!["=", "n", 0],
+                    symbol!("if"),
+                    form![symbol!("="), symbol!("n"), 0],
                     0,
                     form![
-                        "bar",
-                        form!["-", "n", 1]
+                        symbol!("bar"),
+                        form![symbol!("-"), symbol!("n"), 1]
                     ]
                 ]
             ],
         ], repl_env.clone()).unwrap();
         eval(form![
-            "set",
-            "bar",
+            symbol!("set"),
+            symbol!("bar"),
             form![
-                "fn",
-                form!["n"],
+                symbol!("fn"),
+                form![symbol!("n")],
                 form![
-                    "if",
-                    form!["=", "n", 0],
+                    symbol!("if"),
+                    form![symbol!("="), symbol!("n"), 0],
                     0,
                     form![
-                        "foo",
-                        form!["-", "n", 1]
+                        symbol!("foo"),
+                        form![symbol!("-"), symbol!("n"), 1]
                     ]
                 ]
             ],
         ], repl_env.clone()).unwrap();
-        assert_eq!(eval(form!["foo", 10000], repl_env.clone()), Ok(Atom::from(0)));
+        assert_eq!(eval(form![symbol!("foo"), 10000], repl_env.clone()), Ok(Atom::from(0)));
     }
 }

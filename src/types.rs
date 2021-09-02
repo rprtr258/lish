@@ -57,7 +57,7 @@ impl From<bool> for Atom {
 }
 impl From<&str> for Atom {
     fn from(x: &str) -> Atom {
-        Symbol(x.to_owned())
+        Atom::String(x.to_owned())
     }
 }
 impl<T: Clone> From<Vec<T>> for Atom
@@ -145,6 +145,9 @@ mod macros {
 
     #[macro_export]
     macro_rules! form {
+        () => {
+            Atom::Nil
+        };
         ($($val:expr),* $(,)?) => {
             crate::list!(crate::args![$($val, )*])
         }

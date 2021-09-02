@@ -133,48 +133,49 @@ pub fn read(cmd: String) -> LishResult {
 mod reader_tests {
     use crate::{
         form,
-        types::{Atom, Atom::{Nil, String}},
+        symbol,
+        types::{Atom, Atom::Nil},
     };
-    use super::{read};
+    use super::read;
 
     macro_rules! test_parse {
         ($($test_name:ident, $input:expr, $res:expr),* $(,)?) => {
             $(
                 #[test]
                 fn $test_name() {
-                    assert_eq!(read($input.to_string()), Ok($res))
+                    assert_eq!(read($input.to_string()), Ok(Atom::from($res)))
                 }
             )*
         }
     }
 
     test_parse!(
-        num, "1", Atom::from(1),
-        num_spaces, "   7   ", Atom::from(7),
-        negative_num, "-12", Atom::from(-12),
-        r#true, "true", Atom::from(true),
-        r#false, "false", Atom::from(false),
-        plus, "+", Atom::from("+"),
-        minus, "-", Atom::from("-"),
-        dash_abc, "-abc", Atom::from("-abc"),
-        dash_arrow, "->>", Atom::from("->>"),
-        abc, "abc", Atom::from("abc"),
-        abc_spaces, "   abc   ", Atom::from("abc"),
-        abc5, "abc5", Atom::from("abc5"),
-        abc_dash_def, "abc-def", Atom::from("abc-def"),
-        nil, "()", Atom::Nil,
+        num, "1", 1,
+        num_spaces, "   7   ", 7,
+        negative_num, "-12", -12,
+        r#true, "true", true,
+        r#false, "false", false,
+        plus, "+", symbol!("+"),
+        minus, "-", symbol!("-"),
+        dash_abc, "-abc", symbol!("-abc"),
+        dash_arrow, "->>", symbol!("->>"),
+        abc, "abc", symbol!("abc"),
+        abc_spaces, "   abc   ", symbol!("abc"),
+        abc5, "abc5", symbol!("abc5"),
+        abc_dash_def, "abc-def", symbol!("abc-def"),
+        nil, "()", Nil,
         nil_spaces, "(   )", Nil,
-        set, "(set a 2)", form!["set", "a", 2],
+        set, "(set a 2)", form![symbol!("set"), symbol!("a"), 2],
         list_nil, "(())", form![Nil],
         list_nil_2, "(()())", form![Nil, Nil],
         list_list, "((3 4))", form![form![3, 4]],
-        list_inner, "(+ 1 (+ 3 4))", form!["+", 1, form!["+", 3, 4]],
-        list_inner_spaces, "  ( +   1   (+   2 3   )   )  ", form!["+", 1, form!["+", 2, 3]],
-        plus_expr, "(+ 1 2)", form!["+", 1, 2],
-        star_expr, "(* 1 2)", form!["*", 1, 2],
-        pow_expr, "(** 1 2)", form!["**", 1, 2],
-        star_negnum_expr, "(* -1 2)", form!["*", -1, 2],
-        string_spaces, r#"   "abc"   "#, String("abc".to_string()),
+        list_inner, "(+ 1 (+ 3 4))", form![symbol!("+"), 1, form![symbol!("+"), 3, 4]],
+        list_inner_spaces, "  ( +   1   (+   2 3   )   )  ", form![symbol!("+"), 1, form![symbol!("+"), 2, 3]],
+        plus_expr, "(+ 1 2)", form![symbol!("+"), 1, 2],
+        star_expr, "(* 1 2)", form![symbol!("*"), 1, 2],
+        pow_expr, "(** 1 2)", form![symbol!("**"), 1, 2],
+        star_negnum_expr, "(* -1 2)", form![symbol!("*"), -1, 2],
+        string_spaces, r#"   "abc"   "#, "abc",
     );
     // TODO: parse_nothing, "", None,
 
