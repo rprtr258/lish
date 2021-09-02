@@ -246,8 +246,8 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    let result = read(input).and_then(|ast| eval(ast, env));
-    // TODO: add "=> " before result
+    let result = read(input)
+        .and_then(|ast| eval(ast, env));
     print(&result)
 }
 

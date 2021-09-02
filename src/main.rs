@@ -50,7 +50,7 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
             rl.add_history_entry(line.as_str());
             let result = rep(line, repl_env.clone());
             if result != "()" {
-                println!("{}", result);
+                println!("=> {}", result);
             }
         },
         Err(ReadlineError::Interrupted) => {
