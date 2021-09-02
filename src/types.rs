@@ -175,9 +175,9 @@ mod macros {
     #[macro_export]
     macro_rules! func_nil {
         ($args:ident, $body:expr) => {
-            crate::func!($args, {
+            crate::func_ok!($args, {
                 $body;
-                Ok(Atom::Nil)
+                Atom::Nil
             })
         }
     }
