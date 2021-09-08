@@ -2,10 +2,10 @@ use std::{
     fs,
     rc::Rc,
 };
-
-use itertools::Itertools;
-use fnv::FnvHashMap;
-
+use {
+    itertools::Itertools,
+    fnv::FnvHashMap,
+};
 use crate::{
     list,
     func,
