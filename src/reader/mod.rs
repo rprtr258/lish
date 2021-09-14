@@ -1,11 +1,15 @@
 use std::iter::Iterator;
-use itertools::interleave;
-
-use crate::{
-    lisherr,
-    list_vec,
-    symbol,
-    types::{Atom, LishErr, LishResult}
+mod atoms;
+mod numbers;
+mod utils;
+use {
+    atoms::atom,
+    utils::spaces,
+    crate::{
+        lisherr,
+        list_vec,
+        types::{Atom, LishResult}
+    }
 };
 
 type ParseResult<'a, Output> = Result<(&'a str, Output), &'a str>;
@@ -183,41 +187,6 @@ fn whitespace<'a>() -> impl Parser<'a, char> {
     any_char.pred(|c| c.is_whitespace())
 }
 
-
-// fn unescape_str(s: &str) -> String {
-//     // lazy_static! {
-//         /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
-//     // }
-//     re.replace_all(&s, |caps: &Captures| {
-//         match caps[0].chars().nth(1).unwrap() {
-//         'n' => '\n',
-//         '"' => '"',
-//         '\\' => '\\',
-//         _ => unimplemented!("Can't mirror this"),
-//         }.to_string()
-//     }).to_string()
-// }
-fn quoted_string<'a>() -> impl Parser<'a, String> {
-    right(
-        match_str(r#"""#),
-        left(
-            zero_or_more(
-                any_char.pred(|c| *c != '"')
-            ),
-            match_str(r#"""#),
-        )
-    ).map(|chars| chars.into_iter().collect())
-}
-
-fn either<'a, P1, P2, R>(parser1: P1, parser2: P2) -> impl Parser<'a, R> where
-P1: Parser<'a, R>,
-P2: Parser<'a, R> {
-    move |input| match parser1.parse(input) {
-        ok @ Ok(_) => ok,
-        Err(_) => parser2.parse(input),
-    }
-}
-
 fn and_then<'a, P1, P2, F, R1, R2>(parser: P1, f: F) -> impl Parser<'a, R2> where
 P1: Parser<'a, R1>,
 P2: Parser<'a, R2>,
@@ -248,27 +217,6 @@ P2: Parser<'a, R2> + 'a {
     move |input| Err("Not implemented")
 }
 
-fn parse_int<'a>() -> impl Parser<'a, Atom> {
-    |_| Err("Not implemented")
-}
-
-fn parse_float<'a>() -> impl Parser<'a, Atom> {
-    |_| Err("Not implemented")
-}
-
-fn parse_bool<'a>() -> impl Parser<'a, Atom> {
-    |_| Err("Not implemented")
-}
-
-fn parse_string<'a>() -> impl Parser<'a, Atom> {
-    quoted_string()
-        .map(Atom::String)
-}
-
-fn parse_symbol<'a>() -> impl Parser<'a, Atom> {
-    |_| Err("Not implemented")
-}
-
 pub fn lish<'a>() -> impl Parser<'a, Atom> {
     let zero_or_more_spaces = zero_or_more(whitespace());
     let list_content = interleave_parsers(
@@ -286,44 +234,10 @@ pub fn lish<'a>() -> impl Parser<'a, Atom> {
             match_str(")")
         ),
     ).map(|lst| list_vec!(lst));
-    let atom = either(
-        parse_int(),
-        either(
-            parse_float(),
-            either(
-                parse_bool(),
-                either(
-                    parse_string(),
-                    parse_symbol()
-                )
-            )
-        )
-    );
-    either(
-        list,
-        atom
-    )
+    // TODO: fix error transform
+    //alt((list, |input| atom(input).map_err(|e| "Error parsing atom")))
+    |_| Ok(("", Atom::Nil))
 }
-
-// // TODO: regexes
-// fn read_atom(token: String) -> Atom {
-//     match token.parse::<bool>() {
-//     Ok(b) => return Atom::Bool(b),
-//     Err(_) => {}
-//     };
-//     match token.parse::<i64>() {
-//     Ok(n) => return Atom::Int(n),
-//     Err(_) => {}
-//     };
-//     match token.parse::<f64>() {
-//     Ok(x) => return Atom::Float(x),
-//     Err(_) => {}
-//     };
-//     if token.chars().nth(0).unwrap() == '"' {
-//         return Atom::String(unescape_str(&token[1..token.len()-1]))
-//     };
-//     symbol!(token)
-// }
 
 // fn read_list(tokens: &mut Reader) -> LishResult {
 //     let mut res = Vec::new();
