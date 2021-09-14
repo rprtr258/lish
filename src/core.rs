@@ -182,7 +182,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             args,
             Bool(
                 match &args[0] {
-                List(xs, _) => xs.len() > 0,
+                List(_, _) => true,
                 Nil => true,
                 _ => false,
                 }

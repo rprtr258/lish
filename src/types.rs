@@ -151,9 +151,6 @@ mod macros {
 
     #[macro_export]
     macro_rules! form {
-        () => {
-            Atom::Nil
-        };
         ($($val:expr),* $(,)?) => {
             crate::list!(crate::args![$($val, )*])
         }

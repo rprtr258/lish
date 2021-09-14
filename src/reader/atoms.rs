@@ -5,22 +5,22 @@ use nom::{
     combinator::{map, map_res},
 };
 use {
-    crate::types::{Atom, Atom::{Bool, Symbol, String}},
+    crate::types::{Atom, Atom::{Bool, Symbol, String, Int, Float}},
     super::{numbers::{int, float}, string::string, symbol::symbol},
 };
 
-fn bool_parse(input: &str) -> IResult<&str, Atom> {
+fn parse_bool(input: &str) -> IResult<&str, bool> {
     map_res(
         alt((tag("false"), tag("true"))),
-        |b: &str| b.parse::<bool>().map(Bool)
+        |b: &str| b.parse::<bool>()
     )(input)
 }
 
 pub fn atom(input: &str) -> IResult<&str, Atom> {
     alt((
-        int,
-        float,
-        bool_parse,
+        map(int, Int),
+        map(float, Float),
+        map(parse_bool, Bool),
         map(string, String),
         map(symbol, Symbol),
     ))(input)
@@ -28,16 +28,15 @@ pub fn atom(input: &str) -> IResult<&str, Atom> {
 
 #[cfg(test)]
 mod tests {
-    // use crate::{types::{Atom, Atom::{Bool, String}}};
-    // use super::{bool_parse};
+    use super::parse_bool;
 
-    // #[test]
-    // fn parse_true() {
-    //     assert_eq!(bool_parse("true"), Ok(("", Bool(true))));
-    // }
+    #[test]
+    fn parse_true() {
+        assert_eq!(parse_bool("true"), Ok(("", true)));
+    }
 
-    // #[test]
-    // fn parse_false() {
-    //     assert_eq!(bool_parse("false"), Ok(("", Bool(false))));
-    // }
+    #[test]
+    fn parse_false() {
+        assert_eq!(parse_bool("false"), Ok(("", false)));
+    }
 }
