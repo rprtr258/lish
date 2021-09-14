@@ -1,7 +1,8 @@
 use nom::IResult;
-mod atoms;
 mod string;
+mod symbol;
 mod numbers;
+mod atoms;
 mod utils;
 use {
     atoms::atom,

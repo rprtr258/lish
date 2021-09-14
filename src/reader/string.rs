@@ -36,6 +36,7 @@ pub fn string(input: &str) -> IResult<&str, String> {
 
 #[cfg(test)]
 mod tests {
+    use nom::{Err, error::{Error, ErrorKind}};
     use super::string;
 
     macro_rules! test_string_formatted {
@@ -88,4 +89,12 @@ mod tests {
         tilde, "~",
         exclamation, "!",
     );
+
+    #[test]
+    fn not_string() {
+        assert_eq!(
+            string("abc"),
+            Err(Err::Error(Error::new("abc", ErrorKind::Char)))
+        );
+    }
 }
