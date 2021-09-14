@@ -2,10 +2,10 @@ use nom::{
     IResult,
     bytes::complete::tag,
     branch::alt,
-    combinator::map_res,
+    combinator::{map, map_res},
 };
 use {
-    crate::types::{Atom, Atom::{Bool, Symbol}},
+    crate::types::{Atom, Atom::{Bool, Symbol, String}},
     super::{numbers::{int, float}, string::string},
 };
 
@@ -40,7 +40,13 @@ fn symbol(input: &str) -> IResult<&str, Atom> {
 }
 
 pub fn atom(input: &str) -> IResult<&str, Atom> {
-    alt((int, float, bool_parse, string, symbol))(input)
+    alt((
+        int,
+        float,
+        bool_parse,
+        map(string, String),
+        symbol
+    ))(input)
 }
 
 #[cfg(test)]
