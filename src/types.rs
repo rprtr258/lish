@@ -8,7 +8,6 @@ use crate::env::{Env};
 
 #[derive(Debug, Clone)]
 pub enum Atom {
-    // TODO: remove Nil, cuz it's the same as empty List
     Nil,
     Bool(bool),
     // TODO: i128?
