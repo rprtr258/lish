@@ -8,9 +8,9 @@ use crate::env::{Env};
 
 #[derive(Debug, Clone)]
 pub enum Atom {
-    // TODO: remove Nil, cause it's the same as empty List
     Nil,
     Bool(bool),
+    // TODO: i128?
     Int(i64),
     Float(f64),
     String(String),
@@ -150,9 +150,6 @@ mod macros {
 
     #[macro_export]
     macro_rules! form {
-        () => {
-            Atom::Nil
-        };
         ($($val:expr),* $(,)?) => {
             crate::list!(crate::args![$($val, )*])
         }

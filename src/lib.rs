@@ -6,7 +6,7 @@ pub mod env;
 pub mod reader;
 mod printer;
 
-use crate::{
+use {
     types::{Atom, LishResult, LishErr},
     env::Env,
     reader::read,

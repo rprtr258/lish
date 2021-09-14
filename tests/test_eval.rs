@@ -12,8 +12,9 @@ fn set() {
 
 #[test]
 fn parse_end_of_input() {
-    assert_eq!(read("(+ 1 2".to_string()), Err(LishErr("Unexpected end of input".to_string())));
-    assert_eq!(read("(+ 1 2 (+ 3 4".to_string()), Err(LishErr("Unexpected end of input".to_string())));
+    let repl_env = Env::new_repl();
+    assert_eq!(eval(read("(+ 1 2".to_string()).unwrap(), repl_env.clone()), Ok(Atom::Int(3)));
+    assert_eq!(eval(read("(+ 1 2 (+ 3 4".to_string()).unwrap(), repl_env.clone()), Ok(Atom::Int(10)));
 }
 
 #[test]
