@@ -2,6 +2,7 @@ use itertools::Itertools;
 
 use crate::types::{Atom, LishResult};
 
+// TODO: rewrite
 // TODO: print atom, not result
 pub fn print_nice(val: &LishResult) -> String {
     match val {

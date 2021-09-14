@@ -5,8 +5,8 @@ use nom::{
     combinator::map_res,
 };
 use {
-    crate::types::{Atom, Atom::{String, Bool, Symbol}},
-    super::numbers::{int, float},
+    crate::types::{Atom, Atom::{Bool, Symbol}},
+    super::{numbers::{int, float}, string::string},
 };
 
 fn bool_parse(input: &str) -> IResult<&str, Atom> {
@@ -16,37 +16,22 @@ fn bool_parse(input: &str) -> IResult<&str, Atom> {
     )(input)
 }
 
-// fn unescape_str(s: &str) -> String {
-//     // lazy_static! {
-//         /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
-//     // }
-//     re.replace_all(&s, |caps: &Captures| {
-//         match caps[0].chars().nth(1).unwrap() {
-//         'n' => '\n',
-//         '"' => '"',
-//         '\\' => '\\',
-//         _ => unimplemented!("Can't mirror this"),
-//         }.to_string()
-//     }).to_string()
+// fn symbol(input: &str) -> ParseResult<String> {
+//     let mut next_index = 0;
+//     let mut chars = input.chars();
+//     match chars.next() {
+//         Some(c) if c.is_alphabetic() => next_index += 1,
+//         _ => return Err(input),
+//     }
+//     while let Some(c) = chars.next() {
+//         if c.is_alphabetic()/*alphanumeric*/ || c == '-' {
+//             next_index += 1;
+//         } else {
+//             break;
+//         }
+//     }
+//     Ok((&input[next_index..], input[..next_index].to_string()))
 // }
-// fn quoted_string<'a>() -> impl Parser<'a, String> {
-//     right(
-//         match_str(r#"""#),
-//         left(
-//             zero_or_more(
-//                 any_char.pred(|c| *c != '"')
-//             ),
-//             match_str(r#"""#),
-//         )
-//     ).map(|chars| chars.into_iter().collect())
-// }
-fn string(input: &str) -> IResult<&str, Atom> {
-    map_res(
-        tag(r#""lol""#),
-        |s: &str| -> Result<Atom, &str> {Ok(String(s.to_string()))} // TODO: unescape string
-    )(input)
-}
-
 fn symbol(input: &str) -> IResult<&str, Atom> {
     map_res(
         tag("lol"),
@@ -58,27 +43,39 @@ pub fn atom(input: &str) -> IResult<&str, Atom> {
     alt((int, float, bool_parse, string, symbol))(input)
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
-    use crate::types::Atom::{Bool};
+    // use crate::{symbol, types::{Atom, Atom::{Bool, String}}};
+    // use super::{bool_parse, symbol};
 
-    #[test]
-    fn parse_true() {
-        assert_eq!(bool_parse("true"), Ok(("", Bool(true))));
-    }
+    // #[test]
+    // fn parse_true() {
+    //     assert_eq!(bool_parse("true"), Ok(("", Bool(true))));
+    // }
 
-    #[test]
-    fn parse_false() {
-        assert_eq!(bool_parse("false"), Ok(("", Bool(false))));
-    }
+    // #[test]
+    // fn parse_false() {
+    //     assert_eq!(bool_parse("false"), Ok(("", Bool(false))));
+    // }
 
-    #[test]
-    fn parse_string() {
-        assert_eq!(string(r#""abc""#), Ok(("", String("abc"))));
-    }
+    // #[test]
+    // fn parse_simple_symbol() {
+    //     assert_eq!(symbol("abc"), Ok(("", symbol!("abc"))));
+    // }
 
-    #[test]
-    fn parse_false() {
-        assert_eq!(symbol("abc"), Ok(("", Symbol("abc"))));
-    }
+    // #[test]
+    // fn test_symbol() {
+    //     assert_eq!(
+    //         symbol("i-am-an-symbol"),
+    //         Ok(("", String("i-am-an-symbol".to_string()))),
+    //     );
+    //     assert_eq!(
+    //         symbol("not entirely an symbol"),
+    //         Ok((" entirely an symbol", String("not".to_string()))),
+    //     );
+    //     // assert_eq!(
+    //     //     symbol("!not at all an symbol"),
+    //     //     Err("!not at all an symbol"),
+    //     // );
+    // }
 }
