@@ -1,1 +1,3 @@
-**/*/__pycache__/*
+target/*
+.vscode/*
+.lish_history

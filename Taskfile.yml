@@ -3,19 +3,23 @@ version: '3'
 tasks:
   test:
     cmds:
-      - pytest test
-  linter:
+      - cargo test
+  build:
     cmds:
-      - flake8 . --ignore=E501 --count --max-line-length=120
-  ci:
-    deps: [test, linter]
-    silent: true
+      - cargo build
   run:
     cmds:
-      - python -m LiSH
+      - winpty cargo run compose.lish
+  ci:
+    silent: true
+    cmds:
+      - cargo check
+      - cargo test
   commit:
     cmds:
-      - git add * .lishrc
-      - git status
-      - "read && git commit -m \"$REPLY\""
       - git push
+      - git add * .lishrc .gitignore .github
+      - git status
+      - "echo \"Write commit message:\" && read && git commit -m \"$REPLY\""
+      - git push
+
