@@ -78,7 +78,7 @@ mod printer_tests {
         symbol,
         types::Atom,
     };
-    use super::{print};
+    use super::{print, print_nice};
 
     macro_rules! test_print_primitive {
         ($test_name:ident, $ast:expr, $res:expr) => {
@@ -110,4 +110,9 @@ mod printer_tests {
     test_print!(print_string_with_slash, r"\", r#""\\""#);
     test_print!(print_string_with_2slashes, r"\\", r#""\\\\""#);
     test_print!(print_string_with_newline, "\n", "\"\\n\"");
+
+    #[test]
+    fn test_print_nice() {
+        assert_eq!(print_nice(&Ok(Atom::from("\n"))), "\n")
+    }
 }
