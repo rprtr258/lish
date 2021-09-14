@@ -38,13 +38,13 @@ pub fn string(input: &str) -> IResult<&str, String> {
 mod tests {
     use super::string;
 
-    macro_rules! test_parse_string {
-        ($($test_name:ident, $input:expr),* $(,)?) => {
+    macro_rules! test_string_formatted {
+        ($format:expr, $($test_name:ident, $input:expr),* $(,)?) => {
             $(
                 #[test]
                 fn $test_name() {
                     assert_eq!(
-                        string(&format!(r#""{}""#, $input)),
+                        string(&format!($format, $input)),
                         Ok(("", format!("{}", $input)))
                     )
                 }
@@ -52,21 +52,7 @@ mod tests {
         }
     }
 
-    macro_rules! test_mirror_parse_string {
-        ($($test_name:ident, $input:expr),* $(,)?) => {
-            $(
-                #[test]
-                fn $test_name() {
-                    assert_eq!(
-                        string(&format!("{:?}", $input)),
-                        Ok(("", format!("{}", $input)))
-                    )
-                }
-            )*
-        }
-    }
-
-    test_mirror_parse_string!(
+    test_string_formatted!("{:?}",
         mirror_doublequote, r#""1""#,
         slash_n, r#"\n"#,
         eight_backslashes, r#"\\\\"#,
@@ -74,7 +60,7 @@ mod tests {
         quote, r#"abc " def"#,
     );
 
-    test_parse_string!(
+    test_string_formatted!(r#""{}""#,
         abc, "abc",
         with_parens, "abc (+ 1)",
         empty, "",
