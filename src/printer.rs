@@ -109,7 +109,7 @@ mod printer_tests {
     test_print!(print_string, "abc", r#""abc""#);
     test_print!(print_string_with_slash, r"\", r#""\\""#);
     test_print!(print_string_with_2slashes, r"\\", r#""\\\\""#);
-    test_print!(print_string_with_newline, "\n", "\"\\n\"");
+    test_print!(print_string_with_newline, "\n", r#""\n""#);
 
     #[test]
     fn test_print_nice() {
