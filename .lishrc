@@ -63,8 +63,8 @@
 
 
 
-(set! prompt
- (let* (cnt 0)
-   (lambda () (progn
-     (set! cnt (+ 1 cnt))
-     (+ "lis.py(" (str cnt) ")> ")))))
+(set prompt
+  (let (cnt 0)
+    (fn () (progn
+      (swap! cnt inc)
+      (+ "lis.py(" (str cnt) ")> ")))))
