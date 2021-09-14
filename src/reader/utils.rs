@@ -1,7 +1,6 @@
 use nom::{character::complete::multispace0, combinator::map, IResult};
 
 pub fn spaces(input: &str) -> IResult<&str, ()> {
-    println!("{}", input);
     map(multispace0, |_| ())(input)
 }
 
