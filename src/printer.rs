@@ -2,18 +2,23 @@ use itertools::Itertools;
 
 use crate::types::{Atom, LishResult};
 
+fn print_trivial(val: &Atom) -> String {
+    match val {
+        Atom::Nil => "nil".to_owned(),
+        Atom::Bool(y) => format!("{}", y),
+        Atom::Int(y) => format!("{}", y),
+        Atom::Float(y) => format!("{}", y),
+        Atom::Symbol(y) => format!("{}", y),
+        Atom::Func(_, _) => "#fn".to_owned(),
+        _ => unreachable!()
+    }
+}
+
 // TODO: rewrite
 // TODO: print atom, not result
 pub fn print_nice(val: &LishResult) -> String {
     match val {
         Ok(x) => match x {
-            Atom::Nil => "()".to_owned(),
-            Atom::Bool(y) => format!("{}", y),
-            Atom::Int(y) => format!("{}", y),
-            Atom::Float(y) => format!("{}", y),
-            Atom::String(y) => format!("{}", y),
-            Atom::Symbol(y) => format!("{}", y),
-            Atom::Func(_, _) => "#fn".to_owned(),
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
                     Atom::List(arg_names, _) => arg_names.iter()
@@ -33,6 +38,8 @@ pub fn print_nice(val: &LishResult) -> String {
                 .map(|x| print_nice(&Ok(x.clone())))
                 .join(" ")
             ),
+            Atom::String(y) => format!("{}", y),
+            _ => print_trivial(x)
         }
         Err(e) => format!("ERROR: {:?}", e),
     }
@@ -41,13 +48,6 @@ pub fn print_nice(val: &LishResult) -> String {
 pub fn print(val: &LishResult) -> String {
     match val {
         Ok(x) => match x {
-            Atom::Nil => "()".to_owned(),
-            Atom::Bool(y) => format!("{}", y),
-            Atom::Int(y) => format!("{}", y),
-            Atom::Float(y) => format!("{}", y),
-            Atom::String(y) => format!("{:?}", y),
-            Atom::Symbol(y) => format!("{}", y),
-            Atom::Func(_, _) => "#fn".to_owned(),
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
                     Atom::List(arg_names, _) => arg_names.iter()
@@ -64,6 +64,8 @@ pub fn print(val: &LishResult) -> String {
                 format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
             },
             Atom::List(items, _) => format!("({})", items.iter().map(|x| print(&Ok(x.clone()))).join(" ")),
+            Atom::String(y) => format!("{:?}", y),
+            _ => print_trivial(x)
         }
         Err(e) => format!("ERROR: {:?}", e),
     }
@@ -102,10 +104,11 @@ mod printer_tests {
     test_print_primitive!(print_false, false, "false");
     test_print_primitive!(print_float, 3.14, "3.14");
     test_print_primitive!(print_int, 92, "92");
+    test_print_primitive!(print_empty_list, form![], "()");
     test_print_primitive!(print_list, form![1, 2], "(1 2)");
     test_print_primitive!(print_symbol, symbol!("abc"), "abc");
     test_print!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
-    test_print!(print_nil, Atom::Nil, "()");
+    test_print!(print_nil, Atom::Nil, "nil");
     test_print!(print_string, "abc", r#""abc""#);
     test_print!(print_string_with_slash, r"\", r#""\\""#);
     test_print!(print_string_with_2slashes, r"\\", r#""\\\\""#);
