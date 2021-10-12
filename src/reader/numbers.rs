@@ -53,21 +53,21 @@ mod tests {
     #[test]
     fn parse_float() {
         let (s, x) = float("0.1").unwrap();
-        assert!(s == "");
+        assert_eq!(s, "");
         assert!((x - 0.1).abs() < 1e-9);
     }
 
     #[test]
     fn negative_float() {
         let (s, x) = float("-0.1").unwrap();
-        assert!(s == "");
+        assert_eq!(s, "");
         assert!((x - -0.1).abs() < 1e-9);
     }
 
     #[test]
     fn scientific_float() {
         let (s, x) = float("3.2e-3").unwrap();
-        assert!(s == "");
+        assert_eq!(s, "");
         assert!((x - 3.2e-3).abs() < 1e-9);
     }
 

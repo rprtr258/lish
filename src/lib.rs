@@ -111,28 +111,33 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
     loop {
         match ast.clone() {
             Atom::List(items, _) => {
+                macro_rules! lish_assert_args {
+                    ($cmd:expr, $args_count:expr) => {{
+                        if items.len() != $args_count + 1 {
+                            return lisherr!("'{}' requires {} argument(s), but got {} in {}", $cmd, $args_count, items.len() - 1, print(&Ok(ast.clone())));
+                        }
+                    }}
+                }
+
                 if items.len() == 0 {
                     return Ok(Atom::Nil)
                 }
                 match &items[0] {
                     Atom::Symbol(s) if s == "quote" => {
-                        if items.len() != 2 {
-                            return lisherr!("'quote' requires 1 argument, but got {} in {}", items.len() - 1, print(&Ok(ast.clone())));
-                        }
+                        lish_assert_args!("quote", 1);
                         return Ok(items[1].clone())
                     }
                     Atom::Symbol(s) if s == "quasiquoteexpand" => {
-                        // TODO: change assert to meaningful message, add tests
-                        assert_eq!(items.len(), 2, "malformed form: {} should be of length 2", s);
+                        lish_assert_args!("quasiquoteexpand", 1);
                         return Ok(quasiquote(items[1].clone()));
                     }
                     Atom::Symbol(s) if s == "quasiquote" => {
-                        assert_eq!(items.len(), 2);
+                        lish_assert_args!("quasiquote", 1);
                         ast = quasiquote(items[1].clone());
                         continue
                     }
                     Atom::Symbol(s) if s == "macroexpand" => {
-                        assert_eq!(items.len(), 2);
+                        lish_assert_args!("macroexpand", 1);
                         match items[1].clone() {
                             Atom::List(xs, _) => {eval(xs[0].clone(), env.clone())?;},
                             _ => unreachable!(),
@@ -140,12 +145,12 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         return macroexpand(items[1].clone(), &env);
                     }
                     Atom::Symbol(s) if s == "set" => {
-                        assert_eq!(items.len(), 3);
+                        lish_assert_args!("set", 2);
                         let value: Atom = eval(items[2].clone(), env.clone())?;
                         return env.set(items[1].clone(), value)
                     }
                     Atom::Symbol(s) if s == "setmacro" => {
-                        assert_eq!(items.len(), 3);
+                        lish_assert_args!("setmacro", 2);
                         return match eval(items[2].clone(), env.clone())? {
                             Atom::Lambda {
                                 eval, ast, env, params, meta, ..
@@ -165,7 +170,9 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             Atom::List(xs, _) => xs,
                             _ => return lisherr!("Let bindings is not a list, but a {:?}", items[1]),
                         };
-                        assert_eq!(bindings.len() % 2, 0);
+                        if bindings.len() % 2 != 0 {
+                            return lisherr!("'let' requires even number of arguments, but got {} in {}", items.len() - 1, print(&Ok(ast.clone())));
+                        }
                         let mut i = 0;
                         let let_env = Env::new(Some(env.clone()));
                         while i < bindings.len() {
@@ -201,7 +208,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         }
                     }
                     Atom::Symbol(s) if s == "eval" => {
-                        assert_eq!(items.len(), 2);
+                        lish_assert_args!("eval", 1);
                         ast = eval(items[1].clone(), env.clone())?;
                         env = env.get_root().clone();
                         continue;
@@ -446,7 +453,7 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         assert_eq!(
             eval(form![symbol!("quote")], repl_env.clone()),
-            lisherr!("'quote' requires 1 argument, but got 0 in (quote)")
+            lisherr!("'quote' requires 1 argument(s), but got 0 in (quote)")
         );
     }
 
@@ -456,7 +463,7 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         assert_eq!(
             eval(form![symbol!("quote"), symbol!("a"), symbol!("b"), symbol!("c"), 1, 2, 3], repl_env.clone()),
-            lisherr!("'quote' requires 1 argument, but got 6 in (quote a b c 1 2 3)")
+            lisherr!("'quote' requires 1 argument(s), but got 6 in (quote a b c 1 2 3)")
         );
     }
 
