@@ -38,22 +38,22 @@ impl Env {
     pub fn bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
         let env = Env::new(outer);
         match mbinds {
-        Atom::List(binds, _) => {
-            for (i, b) in binds.iter().enumerate() {
-                match b {
-                Atom::Symbol(s) if s == "&" => {
-                    env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
-                    break;
+            Atom::List(binds, _) => {
+                for (i, b) in binds.iter().enumerate() {
+                    match b {
+                        Atom::Symbol(s) if s == "&" => {
+                            env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
+                            break;
+                        }
+                        _ => {
+                            env.set(b.clone(), exprs[i].clone())?;
+                        }
+                    }
                 }
-                _ => {
-                    env.set(b.clone(), exprs[i].clone())?;
-                }
-                }
+                Ok(env)
             }
-            Ok(env)
-        }
-        Atom::Nil => Ok(env),
-        _ => lisherr!("Env::bind binds not List"),
+            Atom::Nil => Ok(env),
+            _ => lisherr!("Env::bind binds not List"),
         }
     }
 
@@ -90,11 +90,11 @@ impl Env {
 
     pub fn set(self: &Self, key: Atom, val: Atom) -> LishResult {
         match key {
-        Atom::Symbol(ref s) => {
-            self.sets(&s.to_string(), val.clone());
-            Ok(val)
-        }
-        _ => lisherr!("Env.set called with non-Str"),
+            Atom::Symbol(ref s) => {
+                self.sets(&s.to_string(), val.clone());
+                Ok(val)
+            }
+            _ => lisherr!("Env.set called with non-Str"),
         }
     }
 }

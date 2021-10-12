@@ -6,66 +6,66 @@ use crate::types::{Atom, LishResult};
 // TODO: print atom, not result
 pub fn print_nice(val: &LishResult) -> String {
     match val {
-    Ok(x) => match x {
-        Atom::Nil => "()".to_string(),
-        Atom::Bool(y) => format!("{}", y),
-        Atom::Int(y) => format!("{}", y),
-        Atom::Float(y) => format!("{}", y),
-        Atom::String(y) => format!("{}", y),
-        Atom::Symbol(y) => format!("{}", y),
-        Atom::Func(_, _) => "#fn".to_string(),
-        Atom::Lambda {ast, params, is_macro, ..} => {
-            let params_str = match (**params).clone() {
-            Atom::List(arg_names, _) => arg_names.iter()
-                .map(|x|
-                    match x {
-                    Atom::Symbol(arg_name) => arg_name,
-                    _ => panic!("Lambda arg is not symbol"),
-                    }
-                )
-                .join(" "),
+        Ok(x) => match x {
             Atom::Nil => "()".to_string(),
-            _ => panic!("Lambda args is not list"),
-            };
-            format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print_nice(&Ok((**ast).clone())))
-        },
-        Atom::List(items, _) => format!("({})", items.iter()
-            .map(|x| print_nice(&Ok(x.clone())))
-            .join(" ")
-        ),
-    }
-    Err(e) => format!("ERROR: {:?}", e),
+            Atom::Bool(y) => format!("{}", y),
+            Atom::Int(y) => format!("{}", y),
+            Atom::Float(y) => format!("{}", y),
+            Atom::String(y) => format!("{}", y),
+            Atom::Symbol(y) => format!("{}", y),
+            Atom::Func(_, _) => "#fn".to_string(),
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let params_str = match (**params).clone() {
+                    Atom::List(arg_names, _) => arg_names.iter()
+                        .map(|x|
+                            match x {
+                                Atom::Symbol(arg_name) => arg_name,
+                                _ => panic!("Lambda arg is not symbol"),
+                            }
+                        )
+                        .join(" "),
+                    Atom::Nil => "()".to_string(),
+                    _ => panic!("Lambda args is not list"),
+                };
+                format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print_nice(&Ok((**ast).clone())))
+            },
+            Atom::List(items, _) => format!("({})", items.iter()
+                .map(|x| print_nice(&Ok(x.clone())))
+                .join(" ")
+            ),
+        }
+        Err(e) => format!("ERROR: {:?}", e),
     }
 }
 
 pub fn print(val: &LishResult) -> String {
     match val {
-    Ok(x) => match x {
-        Atom::Nil => "()".to_string(),
-        Atom::Bool(y) => format!("{}", y),
-        Atom::Int(y) => format!("{}", y),
-        Atom::Float(y) => format!("{}", y),
-        Atom::String(y) => format!("{:?}", y),
-        Atom::Symbol(y) => format!("{}", y),
-        Atom::Func(_, _) => "#fn".to_string(),
-        Atom::Lambda {ast, params, is_macro, ..} => {
-            let params_str = match (**params).clone() {
-            Atom::List(arg_names, _) => arg_names.iter()
-                .map(|x|
-                    match x {
-                    Atom::Symbol(arg_name) => arg_name,
-                    _ => panic!("Lambda arg is not symbol"),
-                    }
-                )
-                .join(" "),
+        Ok(x) => match x {
             Atom::Nil => "()".to_string(),
-            _ => panic!("Lambda args is not list"),
-            };
-            format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
-        },
-        Atom::List(items, _) => format!("({})", items.iter().map(|x| print(&Ok(x.clone()))).join(" ")),
-    }
-    Err(e) => format!("ERROR: {:?}", e),
+            Atom::Bool(y) => format!("{}", y),
+            Atom::Int(y) => format!("{}", y),
+            Atom::Float(y) => format!("{}", y),
+            Atom::String(y) => format!("{:?}", y),
+            Atom::Symbol(y) => format!("{}", y),
+            Atom::Func(_, _) => "#fn".to_string(),
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let params_str = match (**params).clone() {
+                    Atom::List(arg_names, _) => arg_names.iter()
+                        .map(|x|
+                            match x {
+                                Atom::Symbol(arg_name) => arg_name,
+                                _ => panic!("Lambda arg is not symbol"),
+                            }
+                        )
+                        .join(" "),
+                    Atom::Nil => "()".to_string(),
+                    _ => panic!("Lambda args is not list"),
+                };
+                format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
+            },
+            Atom::List(items, _) => format!("({})", items.iter().map(|x| print(&Ok(x.clone()))).join(" ")),
+        }
+        Err(e) => format!("ERROR: {:?}", e),
     }
 }
 

@@ -11,11 +11,11 @@ fn character(input: &str) -> IResult<&str, char> {
     if c == '\\' {
         map_res(anychar, |c| {
             Ok(match c {
-            '"' | '\\' => c,
-            'n' => '\n',
-            'r' => '\r',
-            't' => '\t',
-            _ => return Err(()),
+                '"' | '\\' => c,
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                _ => return Err(()),
             })
         })(input)
     } else {

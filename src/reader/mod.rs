@@ -63,8 +63,8 @@ pub fn read(cmd: String) -> LishResult {
     // }
     let result = lish(cmd.as_str());
     match result {
-    Ok((_, res)) => Ok(res),
-    Err(s) => lisherr!(s)
+        Ok((_, res)) => Ok(res),
+        Err(s) => lisherr!(s)
     }
 }
 

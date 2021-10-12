@@ -52,26 +52,23 @@ mod tests {
 
     #[test]
     fn parse_float() {
-        match float("0.1") {
-            Ok(("", x)) => assert!((x - 0.1).abs() < 1e-9),
-            _ => unreachable!(),
-        }
+        let (s, x) = float("0.1").unwrap();
+        assert!(s == "");
+        assert!((x - 0.1).abs() < 1e-9);
     }
 
     #[test]
     fn negative_float() {
-        match float("-0.1") {
-            Ok(("", x)) => assert!((x - -0.1).abs() < 1e-9),
-            _ => unreachable!(),
-        }
+        let (s, x) = float("-0.1").unwrap();
+        assert!(s == "");
+        assert!((x - -0.1).abs() < 1e-9);
     }
 
     #[test]
     fn scientific_float() {
-        match float("3.2e-3") {
-            Ok(("", x)) => assert!((x - 3.2e-3).abs() < 1e-9),
-            _ => unreachable!(),
-        }
+        let (s, x) = float("3.2e-3").unwrap();
+        assert!(s == "");
+        assert!((x - 3.2e-3).abs() < 1e-9);
     }
 
     #[test]

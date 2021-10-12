@@ -27,8 +27,8 @@ macro_rules! int_bin_op {
             args.iter()
                 .fold(Ok(Int($init)), |a: LishResult, b: &Atom|
                     match (a, b) {
-                    (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
-                    _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
+                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
                     }
                 )
         )
@@ -41,8 +41,8 @@ macro_rules! int_bin_op {
                 .skip(1)
                 .fold(Ok(init), |a: LishResult, b: &Atom|
                     match (a, b) {
-                    (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
-                    _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
+                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
                     }
                 )
         })
@@ -58,8 +58,8 @@ macro_rules! logical_op {
                 .skip(1)
                 .fold(Ok(Bool(true)), |a: LishResult, b: &Atom|
                     match a {
-                    Ok(Bool(ai)) => Ok(Bool(ai && (init $op b.clone()))),
-                    _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        Ok(Bool(ai)) => Ok(Bool(ai && (init $op b.clone()))),
+                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
                     }
                 )
         })
@@ -76,21 +76,21 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         ("-", func!(
             args,
             match args.len() {
-            0 => lisherr!("Can't evaluate (-)"),
-            1 => match args[0] {
-                Int(x) => Ok(Int(-x)),
-                _ => lisherr!("Can't negate {:?}", args[0]),
-            }
-            _ => {
-                let init = args[0].clone();
-                args.iter()
-                    .skip(1)
-                    .fold(Ok(init), |a: LishResult, b: &Atom|
-                        match (a, b) {
-                        (Ok(Int(ai)), Int(bi)) => Ok(Int(ai - bi)),
-                        _ => lisherr!("Can't eval ({} {:?})", "-", args),
-                })
-            }
+                0 => lisherr!("Can't evaluate (-)"),
+                1 => match args[0] {
+                    Int(x) => Ok(Int(-x)),
+                    _ => lisherr!("Can't negate {:?}", args[0]),
+                }
+                _ => {
+                    let init = args[0].clone();
+                    args.iter()
+                        .skip(1)
+                        .fold(Ok(init), |a: LishResult, b: &Atom|
+                            match (a, b) {
+                                (Ok(Int(ai)), Int(bi)) => Ok(Int(ai - bi)),
+                                _ => lisherr!("Can't eval ({} {:?})", "-", args),
+                    })
+                }
             })),
         logical_op!("=", ==),
         logical_op!("<", <),
@@ -119,11 +119,11 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let args = args[1..].to_vec();
             // TODO: apply hashmap
             match fun {
-            Atom::Func(f, _) => return f(args),
-            Atom::Lambda {
-                ast: lambda_ast, env: lambda_env, params, ..
-            } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
-            _ => return lisherr!("{} is not a function", print(&Ok(fun))),
+                Atom::Func(f, _) => return f(args),
+                Atom::Lambda {
+                    ast: lambda_ast, env: lambda_env, params, ..
+                } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
+                _ => return lisherr!("{} is not a function", print(&Ok(fun))),
             }
         })),
         ("cons", func!(args, {
@@ -131,9 +131,9 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let elems = &args[..args.len()-1];
             let lst = {
                 match args.last().unwrap() {
-                List(xs, _) => xs.clone(),
-                Nil => Rc::new(vec![]),
-                _ => return lisherr!("Trying to cons not a list"),
+                    List(xs, _) => xs.clone(),
+                    Nil => Rc::new(vec![]),
+                    _ => return lisherr!("Trying to cons not a list"),
                 }
             };
             Ok(list!(elems.iter()
@@ -141,16 +141,15 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 .map(|x| x.clone())
                 .collect()))
         })),
-        // TODO: change to +
         // TODO: support Nil
         ("concat", func_ok!(
             args,
             list!(args.into_iter()
                 .map(|x|
                     match x {
-                    List(xs, _) => (*xs).clone(),
-                    Nil => vec![],
-                    _ => panic!("Trying to concat not list"),
+                        List(xs, _) => (*xs).clone(),
+                        Nil => vec![],
+                        _ => panic!("Trying to concat not list"),
                     })
                 .flatten()
                 .collect())
@@ -159,68 +158,66 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         ("first", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-            List(xs, _) => Ok(xs[0].clone()),
-            _ => lisherr!("Trying to get first of not list"),
+                List(xs, _) => Ok(xs[0].clone()),
+                _ => lisherr!("Trying to get first of not list"),
             }
         })),
         ("rest", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-            List(xs, _) => Ok(list!(xs[1..].to_vec().clone())),
-            _ => lisherr!("Trying to get rest of not list"),
+                List(xs, _) => Ok(list!(xs[1..].to_vec().clone())),
+                _ => lisherr!("Trying to get rest of not list"),
             }
         })),
         ("len", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-            List(xs, _) => Ok(Int(xs.len() as i64)),
-            _ => lisherr!("Trying to get len of not list"),
+                List(xs, _) => Ok(Int(xs.len() as i64)),
+                _ => lisherr!("Trying to get len of not list"),
             }
         })),
         // TODO: test (list? ()) is true
         ("list?", func_ok!(
             args,
-            Bool(
-                match &args[0] {
+            Bool(match &args[0] {
                 List(_, _) => true,
                 Nil => true,
                 _ => false,
-                }
-            )
+            })
         )),
         ("empty?", func_ok!(
             args,
             Bool(match &args[0] {
-            List(xs, _) => xs.len() == 0,
-            Nil => true,
-            _ => false,
+                List(xs, _) => xs.len() == 0,
+                Nil => true,
+                _ => false,
             })
         )),
         ("read", func!(args, {
             assert_eq!(args.len(), 1);
             let arg = args[0].clone();
             match arg {
-            Atom::String(s) => Ok(read(s)?),
-            _ => lisherr!("{} is not a string", print(&Ok(arg)))
+                Atom::String(s) => Ok(read(s)?),
+                _ => lisherr!("{} is not a string", print(&Ok(arg)))
             }
         })),
         ("slurp", func!(args, {
             assert_eq!(args.len(), 1);
             let arg = args[0].clone();
             match arg {
-            Atom::String(filename) => match fs::read_to_string(filename) {
-                Ok(s) => Ok(Atom::String(s)),
-                Err(e) => return lisherr!(e),
-            }
-            _ => lisherr!("{:?} is not a string", arg)
+                Atom::String(filename) => match fs::read_to_string(filename) {
+                    Ok(s) => Ok(Atom::String(s)),
+                    Err(e) => return lisherr!(e),
+                }
+                _ => lisherr!("{:?} is not a string", arg)
             }
         })),
         // TODO: change into +
         ("str", func_ok!(args, {
             let result: String = args.into_iter()
                 .map(|x| match x {
-                Atom::String(s) => s,
-                _ => print(&Ok(x)).to_owned(),
+                    Atom::String(s) => s,
+                    _ => print(&Ok(x)).to_owned(),
                 })
                 .join("");
             Atom::String(result)
@@ -260,9 +257,9 @@ mod core_tests {
                 let ns = namespace();
                 $(
                     assert_eq!(match ns.get($fun) {
-                    Some(Atom::Func(f, _)) => f($args),
-                    Some(_) => lisherr!("{:?} is not a function", $fun),
-                    None => lisherr!("{:?} was not found", $fun),
+                        Some(Atom::Func(f, _)) => f($args),
+                        Some(_) => lisherr!("{:?} is not a function", $fun),
+                        None => lisherr!("{:?} was not found", $fun),
                     }, Ok(Atom::from($res)));
                 )*
             }

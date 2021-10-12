@@ -43,27 +43,27 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
     loop {
         let input_buffer = rl.readline("user> ");
         match input_buffer {
-        Ok(line) => {
-            if line == "" {
-                continue;
+            Ok(line) => {
+                if line == "" {
+                    continue;
+                }
+                rl.add_history_entry(line.as_str());
+                let result = rep(line, repl_env.clone());
+                if result != "()" {
+                    println!("=> {}", result);
+                }
+            },
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
+            },
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break
             }
-            rl.add_history_entry(line.as_str());
-            let result = rep(line, repl_env.clone());
-            if result != "()" {
-                println!("=> {}", result);
-            }
-        },
-        Err(ReadlineError::Interrupted) => {
-            println!("CTRL-C");
-        },
-        Err(ReadlineError::Eof) => {
-            println!("CTRL-D");
-            break
-        },
-        Err(err) => {
-            println!("Error: {:?}", err);
-            break
-        }
         }
     }
 }
