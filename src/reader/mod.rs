@@ -82,7 +82,7 @@ mod reader_tests {
             $(
                 #[test]
                 fn $test_name() {
-                    assert_eq!(read($input.to_string()), Ok(Atom::from($res)))
+                    assert_eq!(read($input.to_owned()), Ok(Atom::from($res)))
                 }
             )*
         }

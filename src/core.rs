@@ -141,7 +141,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 .map(|x| x.clone())
                 .collect()))
         })),
-        // TODO: support Nil
         ("concat", func_ok!(
             args,
             list!(args.into_iter()
@@ -176,7 +175,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 _ => lisherr!("Trying to get len of not list"),
             }
         })),
-        // TODO: test (list? ()) is true
         ("list?", func_ok!(
             args,
             Bool(match &args[0] {
@@ -213,7 +211,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             }
         })),
         // TODO: change into +
-        ("str", func_ok!(args, {
+        ("join", func_ok!(args, {
             let result: String = args.into_iter()
                 .map(|x| match x {
                     Atom::String(s) => s,
@@ -223,9 +221,8 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             Atom::String(result)
         })),
     ];
-    // TODO: change all &str.to_string to to_owned
     for (key, val) in cmds.into_iter() {
-        ns.insert(key.to_string(), val);
+        ns.insert(key.to_owned(), val);
     };
     ns
 }
@@ -563,12 +560,12 @@ mod core_tests {
 
     test_function!(
         str_ints,
-        "str", args![1, 2, 3] => "123"
+        "join", args![1, 2, 3] => "123"
     );
 
     test_function!(
         str_newline_str,
-        "str", args!["a\nc"] => "a\nc"
+        "join", args!["a\nc"] => "a\nc"
     );
 
     // TODO: test slurp

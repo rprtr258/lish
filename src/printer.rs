@@ -7,13 +7,13 @@ use crate::types::{Atom, LishResult};
 pub fn print_nice(val: &LishResult) -> String {
     match val {
         Ok(x) => match x {
-            Atom::Nil => "()".to_string(),
+            Atom::Nil => "()".to_owned(),
             Atom::Bool(y) => format!("{}", y),
             Atom::Int(y) => format!("{}", y),
             Atom::Float(y) => format!("{}", y),
             Atom::String(y) => format!("{}", y),
             Atom::Symbol(y) => format!("{}", y),
-            Atom::Func(_, _) => "#fn".to_string(),
+            Atom::Func(_, _) => "#fn".to_owned(),
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
                     Atom::List(arg_names, _) => arg_names.iter()
@@ -24,7 +24,7 @@ pub fn print_nice(val: &LishResult) -> String {
                             }
                         )
                         .join(" "),
-                    Atom::Nil => "()".to_string(),
+                    Atom::Nil => "()".to_owned(),
                     _ => panic!("Lambda args is not list"),
                 };
                 format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print_nice(&Ok((**ast).clone())))
@@ -41,13 +41,13 @@ pub fn print_nice(val: &LishResult) -> String {
 pub fn print(val: &LishResult) -> String {
     match val {
         Ok(x) => match x {
-            Atom::Nil => "()".to_string(),
+            Atom::Nil => "()".to_owned(),
             Atom::Bool(y) => format!("{}", y),
             Atom::Int(y) => format!("{}", y),
             Atom::Float(y) => format!("{}", y),
             Atom::String(y) => format!("{:?}", y),
             Atom::Symbol(y) => format!("{}", y),
-            Atom::Func(_, _) => "#fn".to_string(),
+            Atom::Func(_, _) => "#fn".to_owned(),
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
                     Atom::List(arg_names, _) => arg_names.iter()
@@ -58,7 +58,7 @@ pub fn print(val: &LishResult) -> String {
                             }
                         )
                         .join(" "),
-                    Atom::Nil => "()".to_string(),
+                    Atom::Nil => "()".to_owned(),
                     _ => panic!("Lambda args is not list"),
                 };
                 format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))

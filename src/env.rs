@@ -85,7 +85,7 @@ impl Env {
     }
 
     pub fn sets(self: &Self, key: &str, val: Atom) {
-        self.0.data.borrow_mut().insert(key.to_string(), val);
+        self.0.data.borrow_mut().insert(key.to_owned(), val);
     }
 
     pub fn set(self: &Self, key: Atom, val: Atom) -> LishResult {
