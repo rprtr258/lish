@@ -123,7 +123,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                     Atom::Symbol(s) if s == "quasiquoteexpand" => {
                         // TODO: change assert to meaningful message, add tests
-                        assert_eq!(items.len(), 2);
+                        assert_eq!(items.len(), 2, "malformed form: {} should be of length 2", s);
                         return Ok(quasiquote(items[1].clone()));
                     }
                     Atom::Symbol(s) if s == "quasiquote" => {

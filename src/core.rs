@@ -210,7 +210,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 _ => lisherr!("{:?} is not a string", arg)
             }
         })),
-        // TODO: change into +
         ("join", func_ok!(args, {
             let result: String = args.into_iter()
                 .map(|x| match x {

@@ -34,7 +34,6 @@ fn lish(input: &str) -> IResult<&str, Atom> {
                 tag(",@"),
             ))),
             delimited(
-                // TODO: add adding braces implicitly
                 delimited(spaces, char('('), spaces),
                 many0(lish),
                 opt(delimited(spaces, char(')'), spaces))
@@ -57,10 +56,6 @@ fn lish(input: &str) -> IResult<&str, Atom> {
 }
 
 pub fn read(cmd: String) -> LishResult {
-    // TODO:
-    // lazy_static! {
-        // static ref lish_parser = lish();
-    // }
     let result = lish(cmd.as_str());
     match result {
         Ok((_, res)) => Ok(res),
@@ -118,5 +113,6 @@ mod reader_tests {
         string_spaces, r#"   "abc"   "#, "abc",
         reader_macro, "'(a b c)", form![symbol!("quote"), form![symbol!("a"), symbol!("b"), symbol!("c")]],
         comment, "123 ; such number", 123,
+        string_arg, r#"(load-file "compose.lish""#, form![symbol!("load-file"), "compose.lish"],
     );
 }

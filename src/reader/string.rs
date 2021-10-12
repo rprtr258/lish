@@ -7,7 +7,7 @@ use nom::{
 };
 
 fn character(input: &str) -> IResult<&str, char> {
-    let (input, c) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 ()-_+=&'*,/:;<>?@^`{}~!\\")(input)?;
+    let (input, c) = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890 ()-_+=&'*,/:;<>?@^`{}~!\\.")(input)?;
     if c == '\\' {
         map_res(anychar, |c| {
             Ok(match c {
@@ -88,6 +88,7 @@ mod tests {
         closecurly, "}",
         tilde, "~",
         exclamation, "!",
+        point, "compose.lish",
     );
 
     #[test]
