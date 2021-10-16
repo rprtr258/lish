@@ -105,13 +105,29 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     .join(" ")
             )
         )),
-        ("echo", func_nil!(args,
+        ("print", func_nil!(args,
+            print!(
+                "{}",
+                args.into_iter()
+                    .map(|x| print(&Ok(x)))
+                    .join(" ")
+                )
+        )),
+        ("println", func_nil!(args,
             println!(
                 "{}",
                 args.into_iter()
                     .map(|x| print(&Ok(x)))
                     .join(" ")
                 )
+        )),
+        ("echo", func_ok!(args,
+            Atom::String(format!(
+                "{}",
+                args.into_iter()
+                    .map(|x| print(&Ok(x)))
+                    .join(" ")
+                ))
         )),
         ("apply", func!(args, {
             let fun = args[0].clone();
@@ -397,12 +413,17 @@ mod core_tests {
         print_multiline_str,
         "prn", "a\nc"] => "a\\nc"
     );
+    */
+
+    test_function!(
+        echo_int,
+        "echo", args![1] => "1"
+    );
 
     test_function!(
         echo_multiline_str,
-        "echo", "a\nc"] => "a\nc"
+        "echo", args!["a\nc"] => "a\nc"
     );
-    */
 
     #[test]
     fn apply_plus() {
