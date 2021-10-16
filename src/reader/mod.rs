@@ -84,6 +84,11 @@ mod reader_tests {
     }
 
     // TODO: parse_nothing, "", Nil,
+    // #[test]
+    // fn parse_nothing() {
+    //     assert_eq!(read("".to_owned()), Ok(Atom::Nil))
+    // }
+
     test_parse!(
         num, "1", 1,
         num_spaces, "   7   ", 7,

@@ -10,7 +10,7 @@ use {
     types::{Atom, LishResult, LishErr},
     env::Env,
     reader::read,
-    printer::print,
+    printer::{print, print_debug},
 };
 
 fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
@@ -171,7 +171,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             _ => return lisherr!("Let bindings is not a list, but a {:?}", items[1]),
                         };
                         if bindings.len() % 2 != 0 {
-                            return lisherr!("'let' requires even number of arguments, but got {} in {}", items.len() - 1, print(&Ok(ast.clone())));
+                            return lisherr!("'let' requires even number of arguments, but got {} in {}", items.len() - 1, print_debug(&Ok(ast.clone())));
                         }
                         let mut i = 0;
                         let let_env = Env::new(Some(env.clone()));
@@ -255,7 +255,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
 pub fn rep(input: String, env: Env) -> String {
     let result = read(input)
         .and_then(|ast| eval(ast, env));
-    print(&result)
+    print_debug(&result)
 }
 
 #[cfg(test)]

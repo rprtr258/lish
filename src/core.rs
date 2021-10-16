@@ -12,7 +12,7 @@ use crate::{
     func_ok,
     func_nil,
     lisherr,
-    printer::{print, print_nice},
+    printer::{print_debug, print},
     reader::read,
     types::{Atom, Atom::{Nil, Int, List, Bool}, LishResult},
     env::Env,
@@ -20,20 +20,20 @@ use crate::{
 };
 
 macro_rules! int_bin_op {
-    ($name:expr, $init:expr, $f:expr) => {(
+    ($name:expr, $init:expr, $op:tt) => {(
         $name,
         func!(
             args,
             args.iter()
                 .fold(Ok(Int($init)), |a: LishResult, b: &Atom|
                     match (a, b) {
-                        (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
+                        (Ok(Int(ai)), Int(bi)) => Ok(Int(ai $op bi)),
                         _ => lisherr!("Can't eval ({} {:?})", $name, args),
                     }
                 )
         )
     )};
-    ($name:expr, $f:expr) => {(
+    ($name:expr, $op:tt) => {(
         $name,
         func!(args, {
             let init = args[0].clone();
@@ -41,7 +41,7 @@ macro_rules! int_bin_op {
                 .skip(1)
                 .fold(Ok(init), |a: LishResult, b: &Atom|
                     match (a, b) {
-                        (Ok(Int(ai)), Int(bi)) => Ok(Int($f(ai, bi))),
+                        (Ok(Int(ai)), Int(bi)) => Ok(Int(ai $op bi)),
                         _ => lisherr!("Can't eval ({} {:?})", $name, args),
                     }
                 )
@@ -70,9 +70,9 @@ macro_rules! logical_op {
 pub fn namespace() -> FnvHashMap<String, Atom> {
     let mut ns = FnvHashMap::default();
     let cmds = vec![
-        int_bin_op!("+", 0, |x, y| x + y),
-        int_bin_op!("*", 1, |x, y| x * y),
-        int_bin_op!("/", |x, y| x / y),
+        int_bin_op!("+", 0, +),
+        int_bin_op!("*", 1, *),
+        int_bin_op!("/", /),
         ("-", func!(
             args,
             match args.len() {
@@ -97,12 +97,11 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         logical_op!("<=", <=),
         logical_op!(">", >),
         logical_op!(">=", >=),
-        // TODO: remove/rename?
-        ("prn", func_nil!(args,
+        ("dbg", func_nil!(args,
             println!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print(&Ok(x)))
+                    .map(|x| print_debug(&Ok(x)))
                     .join(" ")
             )
         )),
@@ -110,7 +109,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             println!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print_nice(&Ok(x)))
+                    .map(|x| print(&Ok(x)))
                     .join(" ")
                 )
         )),
@@ -123,7 +122,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 Atom::Lambda {
                     ast: lambda_ast, env: lambda_env, params, ..
                 } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
-                _ => return lisherr!("{} is not a function", print(&Ok(fun))),
+                _ => return lisherr!("{} is not a function", print_debug(&Ok(fun))),
             }
         })),
         ("cons", func!(args, {
@@ -196,7 +195,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let arg = args[0].clone();
             match arg {
                 Atom::String(s) => Ok(read(s)?),
-                _ => lisherr!("{} is not a string", print(&Ok(arg)))
+                _ => lisherr!("{} is not a string", print_debug(&Ok(arg)))
             }
         })),
         ("slurp", func!(args, {
@@ -214,7 +213,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let result: String = args.into_iter()
                 .map(|x| match x {
                     Atom::String(s) => s,
-                    _ => print(&Ok(x)).to_owned(),
+                    _ => print_debug(&Ok(x)).to_owned(),
                 })
                 .join("");
             Atom::String(result)
