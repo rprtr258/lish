@@ -70,6 +70,7 @@ macro_rules! logical_op {
 pub fn namespace() -> FnvHashMap<String, Atom> {
     let mut ns = FnvHashMap::default();
     let cmds = vec![
+        // ARITHMETIC
         int_bin_op!("+", 0, +),
         int_bin_op!("*", 1, *),
         int_bin_op!("/", /),
@@ -92,11 +93,13 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     })
                 }
             })),
+        // COMPARISON
         logical_op!("=", ==),
         logical_op!("<", <),
         logical_op!("<=", <=),
         logical_op!(">", >),
         logical_op!(">=", >=),
+        // PRINTING
         ("dbg", func_nil!(args,
             println!(
                 "{}",
@@ -129,18 +132,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     .join(" ")
                 ))
         )),
-        ("apply", func!(args, {
-            let fun = args[0].clone();
-            let args = args[1..].to_vec();
-            // TODO: apply hashmap
-            match fun {
-                Atom::Func(f, _) => return f(args),
-                Atom::Lambda {
-                    ast: lambda_ast, env: lambda_env, params, ..
-                } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
-                _ => return lisherr!("{} is not a function", print_debug(&Ok(fun))),
-            }
-        })),
+        // LIST MANIPULATION
         ("cons", func!(args, {
             assert!(args.len() >= 2);
             let elems = &args[..args.len()-1];
@@ -156,19 +148,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 .map(|x| x.clone())
                 .collect()))
         })),
-        ("concat", func_ok!(
-            args,
-            list!(args.into_iter()
-                .map(|x|
-                    match x {
-                        List(xs, _) => (*xs).clone(),
-                        Nil => vec![],
-                        _ => panic!("Trying to concat not list"),
-                    })
-                .flatten()
-                .collect())
-        )),
-        ("list", func_ok!(args, list!(args))),
         ("first", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
@@ -183,6 +162,15 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 _ => lisherr!("Trying to get rest of not list"),
             }
         })),
+        ("list", func_ok!(args, list!(args))),
+        ("empty?", func_ok!(
+            args,
+            Bool(match &args[0] {
+                List(xs, _) => xs.len() == 0,
+                Nil => true,
+                _ => false,
+            })
+        )),
         ("len", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
@@ -198,14 +186,31 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 _ => false,
             })
         )),
-        ("empty?", func_ok!(
+        ("concat", func_ok!(
             args,
-            Bool(match &args[0] {
-                List(xs, _) => xs.len() == 0,
-                Nil => true,
-                _ => false,
-            })
+            list!(args.into_iter()
+                .map(|x|
+                    match x {
+                        List(xs, _) => (*xs).clone(),
+                        Nil => vec![],
+                        _ => panic!("Trying to concat not list"),
+                    })
+                .flatten()
+                .collect())
         )),
+        // OTHER
+        ("apply", func!(args, {
+            let fun = args[0].clone();
+            let args = args[1..].to_vec();
+            // TODO: apply hashmap
+            match fun {
+                Atom::Func(f, _) => return f(args),
+                Atom::Lambda {
+                    ast: lambda_ast, env: lambda_env, params, ..
+                } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()),
+                _ => lisherr!("{} is not a function", print_debug(&Ok(fun))),
+            }
+        })),
         ("read", func!(args, {
             assert_eq!(args.len(), 1);
             let arg = args[0].clone();
@@ -396,28 +401,33 @@ mod core_tests {
     /* TODO: rewrite to using write!
     test_function!(
         print_int,
-        "prn", args![92] => "92"
+        "print", args![92] => "92"
     );
 
     test_function!(
         print_ints,
-        "prn", args![1, 2, 3] => "1 2 3"
+        "print", args![1, 2, 3] => "1 2 3"
     );
 
     test_function!(
         print_strs,
-        "prn", "a", "b", "c"] => "a b c"
+        "print", args!["a", "b", "c"] => "a b c"
     );
 
     test_function!(
         print_multiline_str,
-        "prn", "a\nc"] => "a\\nc"
+        "print", args!["a\nc"] => "a\\nc"
     );
     */
 
     test_function!(
         echo_int,
         "echo", args![1] => "1"
+    );
+
+    test_function!(
+        echo_strs,
+        "echo", args!["a", "b", "c"] => "a b c"
     );
 
     test_function!(
