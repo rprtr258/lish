@@ -15,14 +15,16 @@ fn parse_end_of_input() {
     let repl_env = Env::new_repl();
     assert_eq!(eval(read("(+ 1 2".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::Int(3)));
     assert_eq!(eval(read("(+ 1 2 (+ 3 4".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::Int(10)));
+    assert_eq!(eval(read("+ 1 2".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::Int(3)));
+    assert_eq!(eval(read("+ 1 2 (+ 3 4".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::Int(10)));
 }
 
 #[test]
 fn echo() {
     let repl_env = Env::new_repl();
-    assert_eq!(eval(read("92".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::Int(92)));
+    assert_eq!(eval(read("echo 92".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::String("92".to_owned())));
     assert_eq!(eval(read("abc".to_owned()).unwrap(), repl_env.clone()), Err(LishErr::from("Not found 'abc'")));
-    assert_eq!(eval(read(r#""abc""#.to_owned()).unwrap(), repl_env), Ok(Atom::String("abc".to_owned())));
+    assert_eq!(eval(read(r#""abc""#.to_owned()).unwrap(), repl_env), Err(LishErr::from(r#"String("abc") is not a function"#)));
 }
 
 #[test]

@@ -2,7 +2,7 @@ use nom::{IResult, character::complete::one_of, multi::fold_many1};
 
 pub fn symbol(input: &str) -> IResult<&str, String> {
     fold_many1(
-        one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_+=&*/:<>?@^{}~!"),
+        one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_+=&*/:<>?@^{}~!."),
         String::new,
         |mut string, c| {
             string.push(c);
@@ -33,6 +33,7 @@ mod tests {
     test_symbol!(
         simple, "abc", "", "abc",
         dashes, "i-am-an-symbol", "", "i-am-an-symbol",
+        dot_identifier, "compose.lish", "", "compose.lish",
         with_rest, "not entirely an symbol", " entirely an symbol", "not",
         with_exclamation, "!not at all an symbol", " at all an symbol", "!not",
     );
