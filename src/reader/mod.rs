@@ -137,13 +137,13 @@ fn left_outer_list(input: &str) -> IResult<&str, Atom> {
 
 fn right_outer_list(input: &str) -> IResult<&str, Atom> {
     reader_macro(left_bracket_delimited(
-        space_delimited(map(alt((
+        space_delimited(map(tuple((
             many0(lish),
-            map(tuple((
-                many0(lish),
-                right_outer_list
-            )), right_outer_list_combine)
-        )), |lst| list!(lst)))
+            opt(right_outer_list)
+        )), |(inner, right)| list!(match right {
+            None => inner,
+            Some(x) => right_outer_list_combine((inner, x))
+        })))
     ))(input)
 }
 
