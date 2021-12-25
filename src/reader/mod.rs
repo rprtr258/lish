@@ -1,193 +1,140 @@
-use nom::{
-    IResult,
-    error::ParseError,
-    bytes::complete::tag,
-    combinator::{opt, map, success, all_consuming},
-    character::complete::{multispace0, char},
-    multi::many0,
-    branch::alt,
-    sequence::{tuple, delimited},
-};
-
 mod string;
 mod symbol;
 mod numbers;
 mod atoms;
+
 use {
-    atoms::atom,
-    crate::{
-        lisherr,
-        list,
-        form,
-        symbol,
-        types::{Atom, LishResult}
-    }
+    regex::{Captures, Regex},
+    lazy_static::lazy_static,
+};
+use crate::{
+    symbol,
+    list_vec,
+    list,
+    types::{Atom, LishResult, LishErr},
 };
 
-fn space_delimited<'a, F, O, E>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-where
-    F: 'a + FnMut(&'a str) -> IResult<&'a str, O, E>,
-    E: ParseError<&'a str> {
-    delimited(
-        multispace0,
-        inner,
-        multispace0
-    )
+#[derive(Debug, Clone)]
+struct Reader {
+    tokens: Vec<String>,
+    pos: usize,
 }
 
-fn reader_macro<'a, F, E>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, Atom, E>
-where
-    F: 'a + FnMut(&'a str) -> IResult<&'a str, Atom, E>,
-    E: 'a + ParseError<&'a str> {
-    map(space_delimited(
-        tuple((
-            opt(alt((
-                tag("'"),
-                tag("`"),
-                tag(","),
-                tag(",@"),
-            ))),
-            space_delimited(inner)
-        ))
-    ), |(reader_macro, atom)| match reader_macro {
-        Some("'") => form![symbol!("quote"), atom],
-        Some("`") => form![symbol!("quasiquote"), atom],
-        Some(",") => form![symbol!("unquote"), atom],
-        Some(",@") => form![symbol!("splice-unquote"), atom],
-        None => atom,
-        _  => unreachable!(),
+impl Reader {
+    fn next(&mut self) -> Result<String, LishErr> {
+        let result = self.peek();
+        self.pos = self.pos + 1;
+        result
+    }
+    fn peek(&self) -> Result<String, LishErr> {
+        Ok(self
+            .tokens
+            .get(self.pos)
+            // TODO: write explicitly what is expected
+            .ok_or(LishErr("Unexpected end of input".to_string()))?
+            .to_string())
+    }
+}
+
+fn unescape_str(s: &str) -> String {
+    // lazy_static! {
+        /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
+    // }
+    re.replace_all(&s, |caps: &Captures| {
+        match caps[0].chars().nth(1).unwrap() {
+        'n' => '\n',
+        '"' => '"',
+        '\\' => '\\',
+        _ => unimplemented!("Can't mirror this"),
+        }.to_string()
+    }).to_string()
+}
+
+// TODO: regexes
+fn read_atom(token: String) -> Atom {
+    match token.parse::<bool>() {
+    Ok(b) => return Atom::Bool(b),
+    Err(_) => {}
+    };
+    match token.parse::<i64>() {
+    Ok(n) => return Atom::Int(n),
+    Err(_) => {}
+    };
+    match token.parse::<f64>() {
+    Ok(x) => return Atom::Float(x),
+    Err(_) => {}
+    };
+    if token.chars().nth(0).unwrap() == '"' {
+        return Atom::String(unescape_str(&token[1..token.len()-1]))
+    };
+    symbol!(token)
+}
+
+fn read_list(tokens: &mut Reader) -> LishResult {
+    let mut res = Vec::new();
+    loop {
+        match &tokens.peek()?[..] {
+        ")" => {
+            tokens.next().unwrap();
+            break
+        }
+        _ => res.push(read_form(tokens)?),
+        }
+    }
+    Ok(match res.len() {
+    0 => Atom::Nil,
+    _ => list_vec!(res),
     })
 }
 
-fn brackets_delimited<'a, O, F, E>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-where
-    F: 'a + FnMut(&'a str) -> IResult<&'a str, O, E>,
-    E: 'a + ParseError<&'a str> {
-    delimited(
-        char('('),
-        inner,
-        char(')')
-    )
-}
-
-fn left_bracket_delimited<'a, O, F, E>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-where
-    F: 'a + FnMut(&'a str) -> IResult<&'a str, O, E>,
-    E: 'a + ParseError<&'a str> {
-    delimited(
-        char('('),
-        inner,
-        success(())
-    )
-}
-
-fn right_bracket_delimited<'a, O, F, E>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-where
-    F: 'a + FnMut(&'a str) -> IResult<&'a str, O, E>,
-    E: 'a + ParseError<&'a str> {
-    delimited(
-        success(()),
-        inner,
-        char(')')
-    )
-}
-
-fn left_outer_list_combine((left, mut inner): (Atom, Vec<Atom>)) -> Vec<Atom> {
-    let mut res: Vec<Atom> = Vec::new();
-    res.reserve(inner.len() + 1);
-    res.push(left);
-    res.append(&mut inner);
-    res
-}
-
-fn right_outer_list_combine((mut inner, right): (Vec<Atom>, Atom)) -> Vec<Atom> {
-    let mut res: Vec<Atom> = Vec::new();
-    res.reserve(inner.len() + 1);
-    res.append(&mut inner);
-    res.push(right);
-    res
-}
-
-fn left_right_outers_combine((left, mut inner, right): (Option<Atom>, Vec<Atom>, Option<Atom>)) -> Vec<Atom> {
-    let mut res: Vec<Atom> = Vec::new();
-    res.reserve(inner.len() + 2);
-    left.map(|x| res.push(x));
-    res.append(&mut inner);
-    right.map(|x| res.push(x));
-    res
-}
-
-fn inner_list(input: &str) -> IResult<&str, Atom> {
-    reader_macro(map(brackets_delimited(
-        space_delimited(many0(lish))
-    ), |lst| list!(lst)))(input)
-}
-
-fn left_outer_list(input: &str) -> IResult<&str, Atom> {
-    reader_macro(right_bracket_delimited(
-        space_delimited(map(alt((
-            many0(lish),
-            map(tuple((
-                left_outer_list,
-                many0(lish)
-            )), left_outer_list_combine)
-        )), |lst| list!(lst)))
-    ))(input)
-}
-
-fn right_outer_list(input: &str) -> IResult<&str, Atom> {
-    reader_macro(left_bracket_delimited(
-        space_delimited(map(tuple((
-            many0(lish),
-            opt(right_outer_list)
-        )), |(inner, right)| list!(match right {
-            None => inner,
-            Some(x) => right_outer_list_combine((inner, x))
-        })))
-    ))(input)
-}
-
-fn outer_list(input: &str) -> IResult<&str, Atom> {
-    reader_macro(map(
-        alt((
-            brackets_delimited(many0(lish)),
-            left_bracket_delimited(map(space_delimited(tuple((
-                many0(lish),
-                opt(right_outer_list)
-            ))), |(inner, right)| match right {
-                Some(right_val) => right_outer_list_combine((inner, right_val)),
-                None => inner
-            })),
-            all_consuming(right_bracket_delimited(space_delimited(many0(lish)))),
-            right_bracket_delimited(
-                map(space_delimited(tuple((
-                    left_outer_list,
-                    many0(lish),
-                ))), left_outer_list_combine)
-            ),
-            map(space_delimited(tuple((
-                opt(left_outer_list),
-                many0(lish),
-                opt(right_outer_list)
-            ))), left_right_outers_combine)
-        )), |lst| list!(lst)))(input)
-}
-
-fn lish(input: &str) -> IResult<&str, Atom> {
-    reader_macro(space_delimited(
-        alt((
-            inner_list,
-            atom
-        ))
-    ))(input)
-}
-
-pub fn read(cmd: String) -> LishResult {
-    let result = outer_list(cmd.as_str());
-    match result {
-        Ok((_, res)) => Ok(res),
-        Err(s) => lisherr!(s)
+// TODO: reader macro
+fn read_form(tokens: &mut Reader) -> LishResult {
+    match &tokens.peek()?[..] {
+    "(" => {
+        tokens.next().unwrap();
+        read_list(tokens)
+    },
+    "'" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("quote"), read_form(tokens)?]))
+    },
+    "`" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
+    },
+    "," => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
+    },
+    ",@" => {
+        tokens.next().unwrap();
+        Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
+    },
+    _ => Ok(read_atom(tokens.next()?)),
     }
+}
+
+// TODO: add braces implicitly
+pub fn read(cmd: String) -> LishResult {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
+    }
+    let mut reader = Reader {
+        tokens: RE.captures_iter(cmd.as_str())
+        .map(|capture| capture[1].to_string())
+        .filter(|s| s.chars()
+            .nth(0)
+            .map(|x| x != ';')
+            .unwrap())
+        .collect(),
+        pos: 0,
+    };
+    Ok(match read_form(&mut reader)? {
+        f@Atom::Func(_, _) => list![vec![f]],
+        f@Atom::Lambda{eval: _, ast: _, env: _, params: _, is_macro: _, meta: _} => list![vec![f]],
+        symbol@Atom::Symbol(_) => list![vec![symbol]],
+        atom => atom,
+    })
 }
 
 #[cfg(test)]
@@ -217,11 +164,11 @@ mod reader_tests {
     // }
 
     test_parse!(
-        num, "1", form![1],
-        num_spaces, "   7   ", form![7],
-        negative_num, "-12", form![-12],
-        r#true, "true", form![true],
-        r#false, "false", form![false],
+        num, "1", Atom::from(1),
+        num_spaces, "   7   ", Atom::from(7),
+        negative_num, "-12", Atom::from(-12),
+        r#true, "true", Atom::from(true),
+        r#false, "false", Atom::from(false),
         plus, "+", form![symbol!("+")],
         minus, "-", form![symbol!("-")],
         dash_abc, "-abc", form![symbol!("-abc")],
@@ -244,7 +191,7 @@ mod reader_tests {
         star_negnum_expr, "(* -1 2)", form![symbol!("*"), -1, 2],
         string_spaces, r#"   "abc"   "#, form!["abc"],
         reader_macro, "'(a b c)", form![symbol!("quote"), form![symbol!("a"), symbol!("b"), symbol!("c")]],
-        comment, "123 ; such number", form![123],
+        comment, "123 ; such number", Atom::from(123),
         string_arg_l, r#"(load-file "compose.lish""#, form![symbol!("load-file"), "compose.lish"],
         string_arg_r, r#"load-file "compose.lish")"#, form![symbol!("load-file"), "compose.lish"],
         right_outer_list_simple, "(+ 1 2", form![symbol!("+"), 1, 2],
