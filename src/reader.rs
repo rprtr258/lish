@@ -43,7 +43,7 @@ fn read_atom(token: &String) -> Atom {
     symbol!(token)
 }
 
-// TODO: reader macro
+// TODO: reader macro list, (add run-time)?
 fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
     #[derive(PartialEq)]
     enum ListType {
@@ -119,7 +119,6 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
     Ok(lists_stack.pop().unwrap().0)
 }
 
-// TODO: add braces implicitly
 pub fn read(cmd: String) -> LishResult {
     // TODO: compile regex compile-time
     lazy_static! {
