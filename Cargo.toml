@@ -9,3 +9,6 @@ lazy_static = "1.4.0"
 rustyline = "8.2.0"
 fnv = "1.0.6"
 itertools = "0.10.1"
+
+[profile.release]
+strip = "symbols"
