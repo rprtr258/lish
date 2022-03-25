@@ -6,7 +6,7 @@ tasks:
   build:
     - cargo build
   run:
-    - winpty cargo run compose.lish
+    - cargo run compose.lish
   ci:
     silent: true
     cmds:

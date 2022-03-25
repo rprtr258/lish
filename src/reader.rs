@@ -1,8 +1,3 @@
-mod string;
-mod symbol;
-mod numbers;
-mod atoms;
-
 use {
     regex::{Captures, Regex},
     lazy_static::lazy_static,
@@ -11,30 +6,8 @@ use crate::{
     symbol,
     list_vec,
     list,
-    types::{Atom, LishResult, LishErr},
+    types::{Atom, LishResult/*, LishErr*/},
 };
-
-#[derive(Debug, Clone)]
-struct Reader {
-    tokens: Vec<String>,
-    pos: usize,
-}
-
-impl Reader {
-    fn next(&mut self) -> Result<String, LishErr> {
-        let result = self.peek();
-        self.pos = self.pos + 1;
-        result
-    }
-    fn peek(&self) -> Result<String, LishErr> {
-        Ok(self
-            .tokens
-            .get(self.pos)
-            // TODO: write explicitly what is expected
-            .ok_or(LishErr("Unexpected end of input".to_string()))?
-            .to_string())
-    }
-}
 
 fn unescape_str(s: &str) -> String {
     // lazy_static! {
@@ -42,27 +15,27 @@ fn unescape_str(s: &str) -> String {
     // }
     re.replace_all(&s, |caps: &Captures| {
         match caps[0].chars().nth(1).unwrap() {
-        'n' => '\n',
-        '"' => '"',
-        '\\' => '\\',
-        _ => unimplemented!("Can't mirror this"),
+            'n' => '\n',
+            '"' => '"',
+            '\\' => '\\',
+            _ => unimplemented!("Can't mirror this"),
         }.to_string()
     }).to_string()
 }
 
 // TODO: regexes
-fn read_atom(token: String) -> Atom {
+fn read_atom(token: &String) -> Atom {
     match token.parse::<bool>() {
-    Ok(b) => return Atom::Bool(b),
-    Err(_) => {}
+        Ok(b) => return Atom::Bool(b),
+        Err(_) => {}
     };
     match token.parse::<i64>() {
-    Ok(n) => return Atom::Int(n),
-    Err(_) => {}
+        Ok(n) => return Atom::Int(n),
+        Err(_) => {}
     };
     match token.parse::<f64>() {
-    Ok(x) => return Atom::Float(x),
-    Err(_) => {}
+        Ok(x) => return Atom::Float(x),
+        Err(_) => {}
     };
     if token.chars().nth(0).unwrap() == '"' {
         return Atom::String(unescape_str(&token[1..token.len()-1]))
@@ -70,66 +43,76 @@ fn read_atom(token: String) -> Atom {
     symbol!(token)
 }
 
-fn read_list(tokens: &mut Reader) -> LishResult {
-    let mut res = Vec::new();
-    loop {
-        match &tokens.peek()?[..] {
-        ")" => {
-            tokens.next().unwrap();
-            break
-        }
-        _ => res.push(read_form(tokens)?),
-        }
-    }
-    Ok(match res.len() {
-    0 => Atom::Nil,
-    _ => list_vec!(res),
-    })
-}
-
 // TODO: reader macro
-fn read_form(tokens: &mut Reader) -> LishResult {
-    match &tokens.peek()?[..] {
-    "(" => {
-        tokens.next().unwrap();
-        read_list(tokens)
-    },
-    "'" => {
-        tokens.next().unwrap();
-        Ok(list_vec!(vec![symbol!("quote"), read_form(tokens)?]))
-    },
-    "`" => {
-        tokens.next().unwrap();
-        Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
-    },
-    "," => {
-        tokens.next().unwrap();
-        Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
-    },
-    ",@" => {
-        tokens.next().unwrap();
-        Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
-    },
-    _ => Ok(read_atom(tokens.next()?)),
+fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
+    let mut lists_stack = Vec::new();
+    let mut peekable_tokens = tokens.peekable();
+    while let Some(token) = peekable_tokens.next() {
+        match &token[..] {
+            "(" => {
+                lists_stack.push(list_vec!(Vec::new()));
+            },
+            ")" => {
+                if peekable_tokens.peek().is_none() {
+                    continue
+                }
+                let last_list = lists_stack.pop().unwrap();
+                match lists_stack.last_mut() {
+                    None => lists_stack.push(list_vec![vec![last_list]]),
+                    Some(Atom::List(before_last_list, _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(last_list),
+                    _ => unimplemented!(),
+                }
+            }
+            // "'" => {
+            //     let new_list = Vec::new();
+            //     new_list.push(symbol!("quote"));
+            //     res.push(new_list);
+            //     lists_stack.push(&mut new_list);
+            // },
+            // "`" => {
+            //     Ok(list_vec!(vec![symbol!("quasiquote"), read_form(tokens)?]))
+            // },
+            // "," => {
+            //     Ok(list_vec!(vec![symbol!("unquote"), read_form(tokens)?]))
+            // },
+            // ",@" => {
+            //     Ok(list_vec!(vec![symbol!("splice-unquote"), read_form(tokens)?]))
+            // },
+            _ => {
+                let item = read_atom(&token);
+                match lists_stack.last_mut() {
+                    None => lists_stack.push(list_vec![vec![item]]),
+                    Some(Atom::List(before_last_list, _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(item),
+                    _ => unimplemented!(),
+                }
+            },
+        }
     }
+    while lists_stack.len() > 1 {
+        let last_list = lists_stack.pop().unwrap();
+        match lists_stack.last_mut() {
+            Some(Atom::List(before_last_list, _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(last_list),
+            _ => unimplemented!(),
+        }
+    }
+    Ok(lists_stack.pop().unwrap())
 }
 
 // TODO: add braces implicitly
 pub fn read(cmd: String) -> LishResult {
+    // TODO: compile regex compile-time
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
     }
-    let mut reader = Reader {
-        tokens: RE.captures_iter(cmd.as_str())
+    let reader = RE.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string())
-        .filter(|s| s.chars()
+        .filter(|s| s
+            .chars()
             .nth(0)
             .map(|x| x != ';')
-            .unwrap())
-        .collect(),
-        pos: 0,
-    };
-    Ok(match read_form(&mut reader)? {
+            .unwrap()
+        );
+    Ok(match read_form(reader)? {
         f@Atom::Func(_, _) => list![vec![f]],
         f@Atom::Lambda{eval: _, ast: _, env: _, params: _, is_macro: _, meta: _} => list![vec![f]],
         symbol@Atom::Symbol(_) => list![vec![symbol]],
