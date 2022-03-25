@@ -93,6 +93,33 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                     })
                 }
             })),
+        // LOGIC
+        ("or", func!(args, {
+            // TODO: (or) == false
+            args.iter()
+                .fold(Ok(Bool(false)), |a: LishResult, b: &Atom|
+                    match a {
+                        Ok(Bool(ai)) => match b {
+                            Bool(bi) => Ok(Bool(ai || *bi)),
+                            _ => lisherr!("{:?} is not Bool", b),
+                        },
+                        _ => lisherr!("Can't eval ({} {:?})", "or", args),
+                    }
+                )
+        })),
+        ("and", func!(args, {
+            // TODO: (and) == true
+            args.iter()
+                .fold(Ok(Bool(true)), |a: LishResult, b: &Atom|
+                    match a {
+                        Ok(Bool(ai)) => match b {
+                            Bool(bi) => Ok(Bool(ai && *bi)),
+                            _ => lisherr!("{:?} is not Bool", b),
+                        },
+                        _ => lisherr!("Can't eval ({} {:?})", "and", args),
+                    }
+                )
+        })),
         // COMPARISON
         logical_op!("=", ==),
         logical_op!("<", <),
@@ -238,6 +265,10 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 })
                 .join("");
             Atom::String(result)
+        })),
+        ("throw", func!(args, {
+            assert_eq!(args.len(), 1);
+            lisherr!("{:?}", args[0])
         })),
     ];
     for (key, val) in cmds.into_iter() {

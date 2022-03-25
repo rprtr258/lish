@@ -1,8 +1,6 @@
 ; ============ MACRO SECTION ============
 
-(setmacro defun (fn (f args body)
-    `(set ,f
-        (fn ,args ,body))))
+(setmacro defun (fn (f args body) `(set ,f (fn ,args ,body))))
 
 (setmacro defmacro (fn (m args body)
     `(setmacro ,m
@@ -38,7 +36,7 @@
   `(defun ,f ,args
     (let
       (res ,body)
-      (echo "(" ',f " " (str ,@args) ") = " res)
+      (echo "(" ',f " " (join ,@args) ") = " res)
       res)))
 
 ; anaphoric fn, argument binds to %
@@ -113,8 +111,8 @@
 (set nth (fn (xs i) (if (= i 0) (first xs) (nth (rest xs) (- i 1)))))
 (set cadr (fn (xs) (nth xs 1)))
 (set caddr (fn (xs) (nth xs 2)))
-;; (set cddr (compose rest rest))
-;; (set cdddr (compose rest cddr))
+(set cddr (compose rest rest))
+(set cdddr (compose rest cddr))
 
 (defun not (x) (if x false true))
 
@@ -142,6 +140,9 @@
             n
             (fact (dec n)))))
 
+(defmacro when (predicate value)
+    `(if ,predicate ,value ,()))
+
 (defun range (& args)
     (let
       (start (if (>= (len args) 2) (nth args 0) 0)
@@ -154,7 +155,7 @@
         (or
           (and (>= end start) (< step 0))
           (and (<= end start) (> step 0)))
-        (throw (+ "Start " (str start) " is after end " (str end))))
+        (throw (join "Start " (join start) " is after end " (join end))))
       (when (= step 0) (throw "Step is zero"))
       (letfun
         (range* (n k d)

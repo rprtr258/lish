@@ -19,7 +19,7 @@ fn make_repl_env(cmd_args: Vec<String>) -> Env {
     );
     // TODO: rename to load ?
     rep(
-        r#"(set load-file (fn (f) (eval (read (str "(progn\n" (slurp f) "\n())")))))"#.to_owned(),
+        r#"(set load-file (fn (f) (eval (read (join "(progn\n" (slurp f) "\n))")))))"#.to_owned(),
         repl_env.clone()
     );
     cmd_args
