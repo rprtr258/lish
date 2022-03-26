@@ -32,7 +32,7 @@ fn quasiquote(ast: Atom) -> Atom {
         Atom::List(List {head, tail, ..}) => {
             // TODO: unquote with tail.len() > 1 is meaningless
             if tail.len() >= 1 && *head == Atom::symbol("unquote") {
-                tail[1].clone()
+                tail[0].clone()
             } else {
                 let mut res = vec![];
                 for x in tail.iter().rev() {
@@ -105,6 +105,7 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
     Ok(ast)
 }
 
+// TODO: less .clone() ?
 pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
     loop {
         ast = macroexpand(ast, &env)?;
