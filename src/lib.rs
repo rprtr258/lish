@@ -108,7 +108,8 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
     Ok(ast)
 }
 
-// TODO: less .clone() ?
+// TODO: less .clone(), measure memory footprint
+// https://github.com/marketplace/actions/create-or-update-comment
 pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
     loop {
         ast = macroexpand(ast, &env)?;
