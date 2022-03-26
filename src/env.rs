@@ -4,7 +4,6 @@ use std::rc::Rc;
 use fnv::FnvHashMap;
 
 use crate::{
-    list_vec,
     lisherr,
     core::namespace,
     types::{LishErr, LishResult, Atom},
@@ -38,11 +37,13 @@ impl Env {
     pub fn bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
         let env = Env::new(outer);
         match mbinds {
-            Atom::List(binds, _) => {
+            Atom::List(binds) => {
+                let binds_vec = binds.iter().collect::<Vec<Atom>>();
                 for (i, b) in binds.iter().enumerate() {
                     match b {
                         Atom::Symbol(s) if s == "&" => {
-                            env.set(binds[i + 1].clone(), list_vec!(exprs[i..].to_vec()))?;
+                            // TODO: List.get(index)
+                            env.set(binds_vec[i + 1].clone(), Atom::from(exprs[i..].to_vec()))?;
                             break;
                         }
                         _ => {

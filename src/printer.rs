@@ -21,7 +21,7 @@ pub fn print(val: &LishResult) -> String {
         Ok(x) => match x {
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
-                    Atom::List(arg_names, _) => arg_names.iter()
+                    Atom::List(args) => args.iter()
                         .map(|x|
                             match x {
                                 Atom::Symbol(arg_name) => arg_name,
@@ -34,7 +34,7 @@ pub fn print(val: &LishResult) -> String {
                 };
                 format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
             },
-            Atom::List(items, _) => format!("({})", items.iter()
+            Atom::List(items) => format!("({})", items.iter()
                 .map(|x| print(&Ok(x.clone())))
                 .join(" ")
             ),
@@ -50,7 +50,7 @@ pub fn print_debug(val: &LishResult) -> String {
         Ok(x) => match x {
             Atom::Lambda {ast, params, is_macro, ..} => {
                 let params_str = match (**params).clone() {
-                    Atom::List(arg_names, _) => arg_names.iter()
+                    Atom::List(arg_names) => arg_names.iter()
                         .map(|x|
                             match x {
                                 Atom::Symbol(arg_name) => arg_name,
@@ -63,7 +63,7 @@ pub fn print_debug(val: &LishResult) -> String {
                 };
                 format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print_debug(&Ok((**ast).clone())))
             },
-            Atom::List(items, _) => format!("({})", items.iter().map(|x| print_debug(&Ok(x.clone()))).join(" ")),
+            Atom::List(items) => format!("({})", items.iter().map(|x| print_debug(&Ok(x.clone()))).join(" ")),
             Atom::String(y) => format!("{:?}", y),
             _ => print_trivial(x)
         }
@@ -77,7 +77,6 @@ mod printer_tests {
 
     use crate::{
         form,
-        symbol,
         types::Atom,
     };
     use super::{print_debug, print};
@@ -104,9 +103,9 @@ mod printer_tests {
     test_print!(print_false, false, "false");
     test_print!(print_float, 3.14, "3.14");
     test_print!(print_int, 92, "92");
-    test_print!(print_empty_list, form![], "()");
+    test_print!(print_empty_list, form![], "nil");
     test_print!(print_list, form![1, 2], "(1 2)");
-    test_print!(print_symbol, symbol!("abc"), "abc");
+    test_print!(print_symbol, Atom::symbol("abc"), "abc");
     test_print_debug!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
     test_print_debug!(print_nil, Atom::Nil, "nil");
     test_print_debug!(print_string, "abc", r#""abc""#);

@@ -8,7 +8,6 @@ use rustyline::{
 use lish::{
     env::Env,
     types::Atom,
-    list,
     rep,
 };
 
@@ -16,10 +15,10 @@ fn make_repl_env(cmd_args: Vec<String>) -> Env {
     let repl_env = Env::new_repl();
     repl_env.sets(
         "*ARGV*",
-        list!(cmd_args
+        Atom::from(cmd_args
             .iter()
             .map(Atom::from)
-            .collect()
+            .collect::<Vec<Atom>>()
         )
     );
     // TODO: rename to load ?
