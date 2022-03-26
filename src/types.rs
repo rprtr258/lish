@@ -7,8 +7,22 @@ use std::{
 use crate::env::{Env};
 
 #[derive(Debug, Clone)]
+pub struct List {
+    pub head: Rc<Atom>,
+    pub tail: Rc<Vec<Atom>>,
+    meta: Rc<Atom>,
+}
+
+type MyIter = std::iter::Chain<std::iter::Once<Atom>, std::vec::IntoIter<Atom>>;
+
+impl List {
+    pub fn iter(&self) -> MyIter {
+        std::iter::once((*self.head).clone()).chain((*self.tail).clone().into_iter())
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Atom {
-    Nil,
     Bool(bool),
     // TODO: i128?
     Int(i64),
@@ -26,10 +40,11 @@ pub enum Atom {
         is_macro: bool,
         meta: Rc<Atom>,
     },
-    List(Rc<Vec<Atom>>, Rc<Atom>),
+    Nil,
+    List(List),
 }
 
-use Atom::{Nil, Bool, Int, Float, Symbol, Lambda, List};
+use Atom::{Nil, Bool, Int, Float, Symbol, Lambda};
 
 impl Atom {
     pub fn is_macro(self: &Self) -> bool {
@@ -37,6 +52,18 @@ impl Atom {
             Lambda {is_macro, ..} => *is_macro,
             _ => false,
         }
+    }
+
+    pub fn list(head: Atom, tail: Vec<Atom>) -> Atom {
+        Atom::List(List {
+            head: Rc::new(head),
+            tail: Rc::new(tail),
+            meta: Rc::new(Atom::Nil),
+        })
+    }
+
+    pub fn symbol<S>(symbol: S) -> Atom where String: From<S> {
+        Atom::Symbol(String::from(symbol))
     }
 }
 
@@ -65,11 +92,11 @@ impl From<&String> for Atom {
         Atom::String(x.clone())
     }
 }
-impl<T: Clone> From<Vec<T>> for Atom
-where Atom: From<T> {
-    fn from(x: Vec<T>) -> Atom {
-        use crate::list_vec;
-        list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect::<Vec<Atom>>())
+impl From<Vec<Atom>> for Atom {
+    fn from(vec: Vec<Atom>) -> Atom {
+        let head = vec[0].clone();
+        let tail = vec[1..].to_vec();
+        Atom::list(Atom::from(head), tail)
     }
 }
 
@@ -81,7 +108,7 @@ impl PartialOrd for Atom {
             (Int(ref a), Int(ref b)) => a.partial_cmp(b),
             (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
             (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
-            (List(ref a, _), List(ref b, _)) => a.partial_cmp(b),
+            (Atom::List(a), Atom::List(b)) => a.iter().partial_cmp(b.iter()),
             // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
             _ => None,
         }
@@ -97,7 +124,7 @@ impl PartialEq for Atom {
             (Int(ref a), Int(ref b)) => a == b,
             (String(ref a), String(ref b)) => a == b,
             (Symbol(ref a), Symbol(ref b)) => a == b,
-            (List(ref a, _), List(ref b, _)) => a == b,
+            (Atom::List(ref a), Atom::List(ref b)) => a.iter().zip(b.iter()).all(|(x, y)| x == y),
             // (Hash(ref a, _), Hash(ref b, _)) => a == b,
             _ => false,
         }
@@ -120,28 +147,6 @@ pub type Args = Vec<Atom>;
 // TODO: remove mod?
 mod macros {
     #[macro_export]
-    macro_rules! symbol {
-        ($name:expr) => {{
-            Atom::Symbol($name.to_owned())
-        }}
-    }
-
-    #[macro_export]
-    macro_rules! list {
-        ($vec:expr) => {{
-            use std::rc::Rc;
-            Atom::List(Rc::new($vec), Rc::new(Atom::Nil))
-        }}
-    }
-
-    #[macro_export]
-    macro_rules! list_vec {
-        ($vec:expr) => {
-            crate::list!(Vec::from($vec))
-        }
-    }
-
-    #[macro_export]
     macro_rules! args {
         ($($val:expr),* $(,)?) => {
             vec![$(Atom::from($val), )*]
@@ -151,7 +156,7 @@ mod macros {
     #[macro_export]
     macro_rules! form {
         ($($val:expr),* $(,)?) => {
-            crate::list!(crate::args![$($val, )*])
+            crate::Atom::from(crate::args![$($val, )*])
         }
     }
 

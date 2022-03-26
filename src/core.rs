@@ -7,14 +7,13 @@ use {
     fnv::FnvHashMap,
 };
 use crate::{
-    list,
     func,
     func_ok,
     func_nil,
     lisherr,
     printer::{print_debug, print},
     reader::read,
-    types::{Atom, Atom::{Nil, Int, List, Bool}, LishResult},
+    types::{Atom, List, Atom::{Nil, Int, Bool}, LishResult},
     env::Env,
     eval,
 };
@@ -162,68 +161,63 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         // LIST MANIPULATION
         ("cons", func!(args, {
             assert!(args.len() >= 2);
-            let elems = &args[..args.len()-1];
-            let lst = {
-                match args.last().unwrap() {
-                    List(xs, _) => xs.clone(),
-                    Nil => Rc::new(vec![]),
-                    _ => return lisherr!("Trying to cons not a list"),
-                }
-            };
-            Ok(list!(elems.iter()
-                .chain(lst.iter())
-                .map(|x| x.clone())
-                .collect()))
+            let elems = (&args[..args.len()-1]).iter().map(|x| x.clone());
+            match &args[args.len()-1] {
+                Atom::List(lst) => Ok(Atom::from(elems.chain(lst.iter()).collect::<Vec<Atom>>())),
+                Nil => Ok(Atom::from(elems.collect::<Vec<Atom>>())),
+                _ => lisherr!("Trying to cons not a list"),
+            }
         })),
         ("first", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-                List(xs, _) => Ok(xs[0].clone()),
+                Atom::List(List {head, ..}) => Ok((*head).clone()),
                 _ => lisherr!("Trying to get first of not list"),
             }
         })),
         ("rest", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-                List(xs, _) => Ok(list!(xs[1..].to_vec().clone())),
+                Atom::List(List {tail, ..}) => Ok(Atom::from((*tail).clone())),
                 _ => lisherr!("Trying to get rest of not list"),
             }
         })),
-        ("list", func_ok!(args, list!(args))),
+        ("list", func_ok!(args, Atom::from(args))),
         ("empty?", func_ok!(
             args,
             Bool(match &args[0] {
-                List(xs, _) => xs.len() == 0,
                 Nil => true,
-                _ => false,
+                Atom::List(_) => false,
+                _ => false, // TODO: throw error
             })
         )),
         ("len", func!(args, {
             assert_eq!(args.len(), 1);
             match args[0].clone() {
-                List(xs, _) => Ok(Int(xs.len() as i64)),
+                Atom::List(List {tail, ..}) => Ok(Int(1 + tail.len() as i64)),
                 _ => lisherr!("Trying to get len of not list"),
             }
         })),
         ("list?", func_ok!(
             args,
             Bool(match &args[0] {
-                List(_, _) => true,
+                Atom::List(_) => true,
                 Nil => true,
                 _ => false,
             })
         )),
         ("concat", func_ok!(
             args,
-            list!(args.into_iter()
+            Atom::from(args.into_iter()
                 .map(|x|
                     match x {
-                        List(xs, _) => (*xs).clone(),
+                        Atom::List(xs) => xs.iter().collect(),
                         Nil => vec![],
                         _ => panic!("Trying to concat not list"),
                     })
                 .flatten()
-                .collect())
+                .collect::<Vec<Atom>>()
+            )
         )),
         // OTHER
         ("apply", func!(args, {
@@ -284,7 +278,6 @@ mod core_tests {
         lisherr,
         args,
         form,
-        symbol,
         types::{Atom, Args, LishResult},
     };
     use super::namespace;
@@ -482,10 +475,10 @@ mod core_tests {
         let lambda = Atom::Lambda {
             eval: eval,
             params: Rc::new(form![
-                symbol!("&"),
-                symbol!("x")
+                Atom::symbol("&"),
+                Atom::symbol("x")
             ]),
-            ast: Rc::new(symbol!("x")),
+            ast: Rc::new(Atom::symbol("x")),
             env: Env::new(None),
             is_macro: false,
             meta: Rc::new(Atom::Nil),
@@ -606,7 +599,7 @@ mod core_tests {
 
     test_function!(
         read_str,
-        "read", args!["(+ 1 2)"] => form![symbol!("+"), 1, 2]
+        "read", args!["(+ 1 2)"] => form![Atom::symbol("+"), 1, 2]
     );
 
 

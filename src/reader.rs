@@ -3,10 +3,7 @@ use {
     lazy_static::lazy_static,
 };
 use crate::{
-    symbol,
-    list_vec,
-    list,
-    types::{Atom, LishResult/*, LishErr*/},
+    types::{Atom, List, LishResult},
 };
 
 fn unescape_str(s: &str) -> String {
@@ -40,7 +37,7 @@ fn read_atom(token: &String) -> Atom {
     if token.chars().nth(0).unwrap() == '"' {
         return Atom::String(unescape_str(&token[1..token.len()-1]))
     };
-    symbol!(token)
+    Atom::symbol(token)
 }
 
 // TODO: reader macro list, (add run-time)?
@@ -55,7 +52,8 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
     while let Some(token) = peekable_tokens.next() {
         match &token[..] {
             "(" => {
-                lists_stack.push((list_vec!(Vec::new()), ListType::Ordinary));
+                let t: Vec<Atom> = Vec::new();
+                lists_stack.push((Atom::from(t), ListType::Ordinary));
             },
             ")" => {
                 if peekable_tokens.peek().is_none() {
@@ -63,48 +61,50 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
                 }
                 let last_list = lists_stack.pop().unwrap();
                 match lists_stack.last_mut() {
-                    None => lists_stack.push((list_vec![vec![last_list.0]], ListType::Ordinary)),
-                    Some((Atom::List(before_last_list, _), _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(last_list.0),
+                    None => lists_stack.push((Atom::from((&[last_list.0]).to_vec()), ListType::Ordinary)),
+                    Some((Atom::List(l), _)) => {
+                        std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
+                        l.head = std::rc::Rc::new(last_list.0);
+                    },
                     _ => unimplemented!(),
                 }
             }
             "'" => {
-                let mut new_list = Vec::new();
-                new_list.push(symbol!("quote"));
-                lists_stack.push((list_vec!(new_list), ListType::ReaderMacro));
+                lists_stack.push((Atom::from(vec![Atom::symbol("quote")]), ListType::ReaderMacro));
             },
             "`" => {
-                let mut new_list = Vec::new();
-                new_list.push(symbol!("quasiquote"));
-                lists_stack.push((list_vec!(new_list), ListType::ReaderMacro));
+                lists_stack.push((Atom::from(vec![Atom::symbol("quasiquote")]), ListType::ReaderMacro));
             },
             "," => {
-                let mut new_list = Vec::new();
-                new_list.push(symbol!("unquote"));
-                lists_stack.push((list_vec!(new_list), ListType::ReaderMacro));
+                lists_stack.push((Atom::from(vec![Atom::symbol("unquote")]), ListType::ReaderMacro));
             },
             ",@" => {
-                let mut new_list = Vec::new();
-                new_list.push(symbol!("splice-unquote"));
-                lists_stack.push((list_vec!(new_list), ListType::ReaderMacro));
+                lists_stack.push((Atom::from(vec![Atom::symbol("splice-unquote")]), ListType::ReaderMacro));
             },
             _ => {
                 let item = read_atom(&token);
                 match lists_stack.last_mut() {
-                    None => lists_stack.push((list_vec![vec![item]], ListType::Ordinary)),
-                    Some((Atom::List(before_last_list, _), _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(item),
+                    None => lists_stack.push((Atom::from(vec![item]), ListType::Ordinary)),
+                    Some((Atom::List(l), _)) => {
+                        std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
+                        l.head = std::rc::Rc::new(item);
+                    },
                     _ => unimplemented!(),
                 }
             },
         }
         while lists_stack.len() > 1 && lists_stack.last().unwrap().1 == ListType::ReaderMacro && (match &lists_stack.last().unwrap().0 {
-            Atom::List(l, _) => l,
+            Atom::List(List {tail, ..}) => tail,
             _ => unimplemented!(),
-        }).len() == 2 {
+        }).len() == 1 {
             let last_list = lists_stack.pop().unwrap();
             match lists_stack.last_mut() {
-                None => lists_stack.push((list_vec![vec![last_list.0]], ListType::Ordinary)),
-                Some((Atom::List(before_last_list, _), _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(last_list.0),
+                None => lists_stack.push((Atom::from(vec![last_list.0]), ListType::Ordinary)),
+                // TODO: compress
+                Some((Atom::List(l), _)) => {
+                    std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
+                    l.head = std::rc::Rc::new(last_list.0);
+                },
                 _ => unimplemented!(),
             }
         }
@@ -112,7 +112,10 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
     while lists_stack.len() > 1 {
         let last_list = lists_stack.pop().unwrap();
         match lists_stack.last_mut() {
-            Some((Atom::List(before_last_list, _), _)) => std::rc::Rc::get_mut(before_last_list).unwrap().push(last_list.0),
+            Some((Atom::List(l), _)) => {
+                std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
+                l.head = std::rc::Rc::new(last_list.0);
+            },
             _ => unimplemented!(),
         }
     }
@@ -133,9 +136,9 @@ pub fn read(cmd: String) -> LishResult {
             .unwrap()
         );
     Ok(match read_form(reader)? {
-        f@Atom::Func(_, _) => list![vec![f]],
-        f@Atom::Lambda{eval: _, ast: _, env: _, params: _, is_macro: _, meta: _} => list![vec![f]],
-        symbol@Atom::Symbol(_) => list![vec![symbol]],
+        f@Atom::Func(..) => Atom::from(f),
+        f@Atom::Lambda{..} => Atom::from(f),
+        symbol@Atom::Symbol(_) => Atom::from(symbol),
         atom => atom,
     })
 }
@@ -144,7 +147,6 @@ pub fn read(cmd: String) -> LishResult {
 mod reader_tests {
     use crate::{
         form,
-        symbol,
         types::Atom,
     };
     use super::read;
@@ -172,39 +174,39 @@ mod reader_tests {
         negative_num, "-12", form![Atom::from(-12)],
         r#true, "true", form![Atom::from(true)],
         r#false, "false", form![Atom::from(false)],
-        plus, "+", form![symbol!("+")],
-        minus, "-", form![symbol!("-")],
-        dash_abc, "-abc", form![symbol!("-abc")],
-        dash_arrow, "->>", form![symbol!("->>")],
-        abc, "abc", form![symbol!("abc")],
-        abc_spaces, "   abc   ", form![symbol!("abc")],
-        abc5, "abc5", form![symbol!("abc5")],
-        abc_dash_def, "abc-def", form![symbol!("abc-def")],
+        plus, "+", form![Atom::symbol("+")],
+        minus, "-", form![Atom::symbol("-")],
+        dash_abc, "-abc", form![Atom::symbol("-abc")],
+        dash_arrow, "->>", form![Atom::symbol("->>")],
+        abc, "abc", form![Atom::symbol("abc")],
+        abc_spaces, "   abc   ", form![Atom::symbol("abc")],
+        abc5, "abc5", form![Atom::symbol("abc5")],
+        abc_dash_def, "abc-def", form![Atom::symbol("abc-def")],
         nil, "()", form![],
         nil_spaces, "(   )", form![],
-        set, "(set a 2)", form![symbol!("set"), symbol!("a"), 2],
+        set, "(set a 2)", form![Atom::symbol("set"), Atom::symbol("a"), 2],
         list_nil, "(())", form![form![]],
         list_nil_2, "(()())", form![form![], form![]],
         list_list, "((3 4))", form![form![3, 4]],
-        list_inner, "(+ 1 (+ 3 4))", form![symbol!("+"), 1, form![symbol!("+"), 3, 4]],
-        list_inner_spaces, "  ( +   1   (+   2 3   )   )  ", form![symbol!("+"), 1, form![symbol!("+"), 2, 3]],
-        plus_expr, "(+ 1 2)", form![symbol!("+"), 1, 2],
-        star_expr, "(* 1 2)", form![symbol!("*"), 1, 2],
-        pow_expr, "(** 1 2)", form![symbol!("**"), 1, 2],
-        star_negnum_expr, "(* -1 2)", form![symbol!("*"), -1, 2],
+        list_inner, "(+ 1 (+ 3 4))", form![Atom::symbol("+"), 1, form![Atom::symbol("+"), 3, 4]],
+        list_inner_spaces, "  ( +   1   (+   2 3   )   )  ", form![Atom::symbol("+"), 1, form![Atom::symbol("+"), 2, 3]],
+        plus_expr, "(+ 1 2)", form![Atom::symbol("+"), 1, 2],
+        star_expr, "(* 1 2)", form![Atom::symbol("*"), 1, 2],
+        pow_expr, "(** 1 2)", form![Atom::symbol("**"), 1, 2],
+        star_negnum_expr, "(* -1 2)", form![Atom::symbol("*"), -1, 2],
         string_spaces, r#"   "abc"   "#, form!["abc"],
-        quote_list, "'(a b c)", form![symbol!("quote"), form![symbol!("a"), symbol!("b"), symbol!("c")]],
-        quote_symbol, "'a", form![symbol!("quote"), symbol!("a")],
-        unquote_symbol, "`(,a b)", form![symbol!("quasiquote"), form![form![symbol!("unquote"), symbol!("a")], symbol!("b")]],
+        quote_list, "'(a b c)", form![Atom::symbol("quote"), form![Atom::symbol("a"), Atom::symbol("b"), Atom::symbol("c")]],
+        quote_symbol, "'a", form![Atom::symbol("quote"), Atom::symbol("a")],
+        unquote_symbol, "`(,a b)", form![Atom::symbol("quasiquote"), form![form![Atom::symbol("unquote"), Atom::symbol("a")], Atom::symbol("b")]],
         comment, "123 ; such number", form![Atom::from(123)],
-        string_arg_l, r#"(load-file "compose.lish""#, form![symbol!("load-file"), "compose.lish"],
-        string_arg_r, r#"load-file "compose.lish")"#, form![symbol!("load-file"), "compose.lish"],
-        right_outer_list_simple, "(+ 1 2", form![symbol!("+"), 1, 2],
-        outer_list_simple, r#"echo 92"#, form![symbol!("echo"), 92],
-        outer_plus, "+ 1 2", form![symbol!["+"], 1, 2],
-        right_outer_twice, "(+ 1 2 (+ 3 4", form![symbol!["+"], 1, 2, form![symbol!["+"], 3, 4]],
-        left_outer_twice, "+-curried 1) 3)", form![form![symbol!["+-curried"], 1], 3],
-        outer_left_outer, "+-curried 1) 3", form![form![symbol!["+-curried"], 1], 3],
-        outer_right_outer, "+ 1 2 (+ 3 4", form![symbol!["+"], 1, 2, form![symbol!["+"], 3, 4]],
+        string_arg_l, r#"(load-file "compose.lish""#, form![Atom::symbol("load-file"), "compose.lish"],
+        string_arg_r, r#"load-file "compose.lish")"#, form![Atom::symbol("load-file"), "compose.lish"],
+        right_outer_list_simple, "(+ 1 2", form![Atom::symbol("+"), 1, 2],
+        outer_list_simple, r#"echo 92"#, form![Atom::symbol("echo"), 92],
+        outer_plus, "+ 1 2", form![Atom::symbol("+"), 1, 2],
+        right_outer_twice, "(+ 1 2 (+ 3 4", form![Atom::symbol("+"), 1, 2, form![Atom::symbol("+"), 3, 4]],
+        left_outer_twice, "+-curried 1) 3)", form![form![Atom::symbol("+-curried"), 1], 3],
+        outer_left_outer, "+-curried 1) 3", form![form![Atom::symbol("+-curried"), 1], 3],
+        outer_right_outer, "+ 1 2 (+ 3 4", form![Atom::symbol("+"), 1, 2, form![Atom::symbol("+"), 3, 4]],
     );
 }
