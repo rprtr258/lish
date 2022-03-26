@@ -129,7 +129,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                     Atom::Symbol(s) if s == "quasiquote" => {
                         lish_assert_args!("quasiquote", 1);
-                        ast = quasiquote(Atom::from((*tail).clone()));
+                        ast = quasiquote(Atom::from(tail[0].clone()));
                         continue
                     }
                     Atom::Symbol(s) if s == "macroexpand" => {
