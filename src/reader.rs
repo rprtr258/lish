@@ -42,32 +42,37 @@ fn read_atom(token: &String) -> Atom {
 
 // TODO: reader macro list, (add run-time)?
 fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug)]
     enum ListType {
         Ordinary,
         ReaderMacro,
     }
     let mut lists_stack = Vec::new();
     let mut peekable_tokens = tokens.peekable();
+    fn append_item_to_last_stack_list (lists_stack: &mut Vec<(Atom, ListType)>, item: Atom) {
+        match lists_stack.last_mut() {
+            None => lists_stack.push((Atom::from((&[item]).to_vec()), ListType::Ordinary)),
+            Some((Atom::Nil, _)) => {
+                lists_stack.pop();
+                lists_stack.push((Atom::from((&[item]).to_vec()), ListType::Ordinary));
+            },
+            Some((Atom::List(l), _)) => {
+                std::rc::Rc::get_mut(&mut l.tail).unwrap().push(item);
+            },
+            _ => unimplemented!(),
+        }
+    }
     while let Some(token) = peekable_tokens.next() {
         match &token[..] {
             "(" => {
-                let t: Vec<Atom> = Vec::new();
-                lists_stack.push((Atom::from(t), ListType::Ordinary));
+                lists_stack.push((Atom::Nil, ListType::Ordinary));
             },
             ")" => {
                 if peekable_tokens.peek().is_none() {
                     continue
                 }
                 let last_list = lists_stack.pop().unwrap();
-                match lists_stack.last_mut() {
-                    None => lists_stack.push((Atom::from((&[last_list.0]).to_vec()), ListType::Ordinary)),
-                    Some((Atom::List(l), _)) => {
-                        std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
-                        l.head = std::rc::Rc::new(last_list.0);
-                    },
-                    _ => unimplemented!(),
-                }
+                append_item_to_last_stack_list(&mut lists_stack, last_list.0);
             }
             "'" => {
                 lists_stack.push((Atom::from(vec![Atom::symbol("quote")]), ListType::ReaderMacro));
@@ -83,14 +88,7 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
             },
             _ => {
                 let item = read_atom(&token);
-                match lists_stack.last_mut() {
-                    None => lists_stack.push((Atom::from(vec![item]), ListType::Ordinary)),
-                    Some((Atom::List(l), _)) => {
-                        std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
-                        l.head = std::rc::Rc::new(item);
-                    },
-                    _ => unimplemented!(),
-                }
+                append_item_to_last_stack_list(&mut lists_stack, item);
             },
         }
         while lists_stack.len() > 1 && lists_stack.last().unwrap().1 == ListType::ReaderMacro && (match &lists_stack.last().unwrap().0 {
@@ -98,26 +96,12 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
             _ => unimplemented!(),
         }).len() == 1 {
             let last_list = lists_stack.pop().unwrap();
-            match lists_stack.last_mut() {
-                None => lists_stack.push((Atom::from(vec![last_list.0]), ListType::Ordinary)),
-                // TODO: compress
-                Some((Atom::List(l), _)) => {
-                    std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
-                    l.head = std::rc::Rc::new(last_list.0);
-                },
-                _ => unimplemented!(),
-            }
+            append_item_to_last_stack_list(&mut lists_stack, last_list.0);
         }
     }
     while lists_stack.len() > 1 {
         let last_list = lists_stack.pop().unwrap();
-        match lists_stack.last_mut() {
-            Some((Atom::List(l), _)) => {
-                std::rc::Rc::get_mut(&mut l.tail).unwrap().push((*l.head).clone());
-                l.head = std::rc::Rc::new(last_list.0);
-            },
-            _ => unimplemented!(),
-        }
+        append_item_to_last_stack_list(&mut lists_stack, last_list.0);
     }
     Ok(lists_stack.pop().unwrap().0)
 }
