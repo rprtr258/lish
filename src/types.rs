@@ -94,8 +94,12 @@ impl From<&String> for Atom {
 }
 impl From<Vec<Atom>> for Atom {
     fn from(mut vec: Vec<Atom>) -> Atom {
-        let head = vec.remove(0);
-        Atom::list(head, vec)
+        if vec.len() == 0 {
+            Nil
+        } else {
+            let head = vec.remove(0);
+            Atom::list(head, vec)
+        }
     }
 }
 
