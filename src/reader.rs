@@ -117,7 +117,7 @@ pub fn read(cmd: String) -> LishResult {
             .chars()
             .nth(0)
             .map(|x| x != ';')
-            .unwrap()
+            .unwrap() // TODO: fix panic on empty input
         );
     Ok(match read_form(reader)? {
         f@Atom::Func(..) => Atom::from(f),
