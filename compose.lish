@@ -3,8 +3,8 @@
 (setmacro defun (fn (f args body) `(set ,f (fn ,args ,body))))
 
 (setmacro defmacro (fn (m args body)
-    `(setmacro ,m
-        (fn ,args ,body))))
+  `(setmacro ,m
+    (fn ,args ,body))))
 
 (defmacro compose (& fs)
   (let
@@ -20,16 +20,16 @@
 
 (defmacro letfun (exps body)
   (let (bindings ((defun f (expss)
-      (if
-        (empty? expss)
-        ()
-        (let
-          (fun-name (first expss)
-          fun-args (cadr expss)
-          fun-body (caddr expss)
-          rest (cdddr expss))
-          `(,fun-name (defun ,fun-name ,fun-args ,fun-body) ,@(f rest)))))
-      exps))
+    (if
+      (empty? expss)
+      ()
+      (let
+        (fun-name (first expss)
+        fun-args (second expss)
+        fun-body (third expss)
+        rest (cdddr expss))
+        `(,fun-name (defun ,fun-name ,fun-args ,fun-body) ,@(f rest)))))
+    exps))
   `(let ,bindings ,body)))
 
 (defmacro defun-trace (f args body)
@@ -47,7 +47,7 @@
   ((defun doseq* (sxs body)
     (let
       (var-name (first sxs)
-      var-seq (cadr sxs)
+      var-seq (second sxs)
       the-body (if
         (empty? (cddr sxs))
         body
@@ -61,56 +61,57 @@
   `(cons (if ,p ,x ,y) s))
 
 (defmacro -> (& x)
-    (if
-        (= (len x) 1)
-        (first x)
-        (let
-            (fst (first x)
-            next-f (cadr x)
-            rest (cddr x)
-            new-val (if
-              (atom? next-f)
-              `(,next-f ,fst)
-              `(,(first next-f) ,fst ,@(rest next-f))))
-            `(-> ,new-val ,@rest))))
+  (if
+    (= (len x) 1)
+    (first x)
+    (let
+      (fst (first x)
+      next-f (second x)
+      rest (cddr x)
+      new-val (if
+        (atom? next-f)
+        `(,next-f ,fst)
+        `(,(first next-f) ,fst ,@(rest next-f))))
+      `(-> ,new-val ,@rest))))
 
 (defmacro >-> (x)
-    (if
-        (= (len x) 1)
-        (first x)
-        (let
-            (fst (first x)
-            next-f (cadr x)
-            rest (cddr x))
-            (>->
-                (cons-if
-                    (atom? next-f)
-                    `(,next-f ,fst)
-                    `((fn (%%) ,next-f) ,fst))
-                    rest))))
+  (if
+    (= (len x) 1)
+    (first x)
+    (let
+      (fst (first x)
+      next-f (second x)
+      rest (cddr x))
+      (>->
+        (cons-if
+          (atom? next-f)
+          `(,next-f ,fst)
+          `((fn (%%) ,next-f) ,fst))
+          rest))))
 
 (defmacro juxt (& fs)
-    `(fn (x)
-        (map
-            (fn (f) (f x))
-            (list ,@fs))))
+  `(fn (x)
+    (map
+      (fn (f) (f x))
+      (list ,@fs))))
 
 (defmacro cond (& pes)
-  (if
-    (= 1 (len pes))
-    (first pes)
+  (letfun (cond* (pes)
     (if
-      (= 0 (len pes))
-      ()
-      `(if
-        ,(first pes) ,(cadr pes)
-        ,(apply cond (cddr pes))))))
+      (= 1 (len pes)) (first pes)
+      (if
+        (= 0 (len pes)) ()
+        `(if
+          ,(first pes) ,(second pes)
+          ,(apply cond* (cddr pes))))))
+  (cond* pes)))
 
 ; ============ FUNCTIONS SECTION ============
 
 (set nth (fn (xs i) (if (= i 0) (first xs) (nth (rest xs) (- i 1)))))
-(set cadr (fn (xs) (nth xs 1)))
-(set caddr (fn (xs) (nth xs 2)))
+; rename to a-h(ead), d-t(ail)
+(defun second (xs) (nth xs 1))
+(defun third (xs) (nth xs 2))
 (set cddr (compose rest rest))
 (set cdddr (compose rest cddr))
 
@@ -120,81 +121,83 @@
 (defun inc (n) (+ n 1))
 
 (defun-trace fact-t (n)
-    (if
-        (= n 1) 1
-        (* n (fact-t (dec n)))))
+  (if
+    (= n 1) 1
+    (* n (fact-t (dec n)))))
 
 (defun-trace fib (n)
-    (if
-        (< n 2)
-        n
-        (+
-            (fib (- n 1))
-            (fib (- n 2)))))
+  (if
+    (< n 2)
+    n
+    (+
+      (fib (- n 1))
+      (fib (- n 2)))))
 
 (defun fact (n)
-    (if
-        (= n 1)
-        1
-        (*
-            n
-            (fact (dec n)))))
+  (if
+    (= n 1)
+    1
+    (*
+      n
+      (fact (dec n)))))
 
 (defmacro when (predicate value)
-    `(if ,predicate ,value ,()))
+  `(if ,predicate ,value ,()))
 
+; range 3 = (0 1 2)
+; range 1 3 = (1 2)
+; range 0 3 2 = (0 2)
 (defun range (& args)
-    (let
-      (start (if (>= (len args) 2) (nth args 0) 0)
-      end (cond
-        (>= (len args) 2) (nth args 1)
-        (>= (len args) 1) (nth args 0)
-        1)
-      step (if (>= (len args) 3) (nth args 2) 1))
-      (when
-        (or
-          (and (>= end start) (< step 0))
-          (and (<= end start) (> step 0)))
-        (throw (join "Start " (join start) " is after end " (join end))))
-      (when (= step 0) (throw "Step is zero"))
-      (letfun
-        (range* (n k d)
-          (if
-            (or (and (>= k n) (> step 0)) (and (<= k n) (< step 0)))
-            ()
-            (cons k (range* n (+ k d) d))))
-        (range* end start step))))
+  (let
+    (arg-len (len args)
+    start (if (>= arg-len 2) (nth args 0) 0)
+    end   (if (>= arg-len 2) (nth args 1) (nth args 0))
+    step  (if (>= arg-len 3) (nth args 2) 1))
+    (when
+      (or
+        (and (>= end start) (< step 0))
+        (and (<= end start) (> step 0)))
+      (throw (join "Start " (join start) " is after end " (join end))))
+    (when (= step 0) (throw "Step is zero"))
+    (letfun
+      (range* (n k d)
+        (if
+          (or (and (>= k n) (> step 0)) (and (<= k n) (< step 0)))
+          ()
+          (cons k (range* n (+ k d) d))))
+      (range* end start step))))
 
 (defun map (f xs)
-    (if
-      (empty? xs)
-      ()
-      (cons (f (first xs)) (map f (rest xs)))))
+  (if
+    (empty? xs)
+    ()
+    (cons (f (first xs)) (map f (rest xs)))))
 
 (defun map* (f xss)
-    (if
-        (apply or (map empty? xss)) '()
-        (cons
-            (apply f (map first xss))
-            (map* f (map rest xss)))))
+  (if
+    (apply or (map empty? xss)) '()
+    (cons
+      (apply f (map first xss))
+      (map* f (map rest xss)))))
 
 (defun *map (f xs)
-    (if
-        (empty? xs) '()
-        (+
-            (f (first xs))
-            (*map f (rest xs)))))
+  (if
+    (empty? xs) '()
+    (+
+      (f (first xs))
+      (*map f (rest xs)))))
 
 (defun take (n x)
-    (if
-        (or (empty? x) (= n 0))
-        '()
-        (cons (first x) (take (dec n) (rest x)))))
+  (if
+    (or (empty? x) (= n 0))
+    '()
+    (cons (first x) (take (dec n) (rest x)))))
 
 (defun drop (n x)
-    (if
-        (or (empty? x) (= n 0))
-        x
-        (drop (dec n) (rest x))))
+  (if
+    (or (empty? x) (= n 0))
+    x
+    (drop (dec n) (rest x))))
 
 (defun id (x) x)
+
