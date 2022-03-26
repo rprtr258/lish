@@ -177,9 +177,9 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             let_env.set(var_name, var_value)?;
                             i += 2;
                         }
-                        let mut body = Vec::with_capacity(tail.len());
+                        let mut body = Vec::with_capacity(tail.len() - 1);
                         body.push(Atom::symbol("progn"));
-                        body.extend_from_slice(&tail[2..]);
+                        body.extend_from_slice(&tail[1..]);
                         ast = Atom::from(body);
                         env = let_env;
                     }
