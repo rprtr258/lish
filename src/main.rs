@@ -5,7 +5,12 @@ use rustyline::{
     Editor,
 };
 
-use lish::{env::Env, list, rep, types::Atom};
+use lish::{
+    env::Env,
+    types::Atom,
+    list,
+    rep,
+};
 
 fn make_repl_env(cmd_args: Vec<String>) -> Env {
     let repl_env = Env::new_repl();
@@ -18,36 +23,35 @@ fn make_repl_env(cmd_args: Vec<String>) -> Env {
         )
     );
     // TODO: rename to load ?
-    rep(
-        r#"(set load-file (fn (f) (eval (read (join "(progn\n" (slurp f) "\n))")))))"#.to_owned(),
+    println!("{}", rep(
+        r#"(set load-file (fn (f) (eval (read (join "(progn\n" (slurp f) "\n)")))))"#.to_owned(),
         repl_env.clone()
-    );
+    ));
     cmd_args
         .get(1)
-        .map(|filename| rep(
+        .map(|filename| println!("{}", rep(
             format!(r#"(load-file "{}")"#, filename),
             repl_env.clone()
-        ));
+        )));
     repl_env
 }
 
-fn make_editor(history_file: &str) -> Editor<()> {
-    let mut rl = Editor::<()>::new();
-    if rl.load_history(history_file).is_err() {
+// TODO: load file from cmd args
+fn main() {
+    const HISTORY_FILE: &str = ".lish_history";
+    let mut editor = Editor::<()>::new();
+    if editor.load_history(HISTORY_FILE).is_err() {
         println!("No previous history.");
     }
-    rl
-}
-
-fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
+    let repl_env: Env = make_repl_env(args().collect());
     loop {
-        let input_buffer = rl.readline("user> ");
+        let input_buffer = editor.readline("user> ");
         match input_buffer {
             Ok(line) => {
                 if line == "" {
                     continue;
                 }
-                rl.add_history_entry(line.as_str());
+                editor.add_history_entry(line.as_str());
                 let result = rep(line, repl_env.clone());
                 if result != "()" {
                     println!("=> {}", result);
@@ -57,7 +61,6 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
                 println!("CTRL-C");
             },
             Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
                 break
             },
             Err(err) => {
@@ -66,13 +69,5 @@ fn main_loop(rl: &mut Editor<()>, repl_env: Env) {
             }
         }
     }
-}
-
-// TODO: load file from cmd args
-fn main() {
-    const HISTORY_FILE: &str = ".lish_history";
-    let mut editor = make_editor(HISTORY_FILE);
-    let repl_env: Env = make_repl_env(args().collect());
-    main_loop(&mut editor, repl_env);
     editor.save_history(HISTORY_FILE).unwrap();
 }

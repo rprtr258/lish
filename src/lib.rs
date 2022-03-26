@@ -107,8 +107,8 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
 }
 
 pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
-    ast = macroexpand(ast, &env)?;
     loop {
+        ast = macroexpand(ast, &env)?;
         match ast.clone() {
             Atom::List(items, _) => {
                 macro_rules! lish_assert_args {
@@ -253,9 +253,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    let result = read(input)
-        .and_then(|ast| eval(ast, env));
-    print_debug(&result)
+    print_debug(&read(input).and_then(|ast| eval(ast, env)))
 }
 
 #[cfg(test)]
