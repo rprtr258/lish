@@ -142,7 +142,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             Atom::List(List {head, ..}) => {eval((*head).clone(), env.clone())?;},
                             _ => unreachable!(),
                         }
-                        return macroexpand(tail[1].clone(), &env);
+                        return macroexpand(tail[0].clone(), &env);
                     }
                     Atom::Symbol(s) if s == "set" => {
                         lish_assert_args!("set", 2);
