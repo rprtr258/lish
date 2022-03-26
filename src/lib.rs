@@ -121,11 +121,11 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                 match &*head {
                     Atom::Symbol(s) if s == "quote" => {
                         lish_assert_args!("quote", 1);
-                        return Ok(Atom::from((*tail).clone()))
+                        return Ok(Atom::from(tail[0].clone()))
                     }
                     Atom::Symbol(s) if s == "quasiquoteexpand" => {
                         lish_assert_args!("quasiquoteexpand", 1);
-                        return Ok(quasiquote(Atom::from((*tail).clone())));
+                        return Ok(quasiquote(Atom::from(tail[0].clone())));
                     }
                     Atom::Symbol(s) if s == "quasiquote" => {
                         lish_assert_args!("quasiquote", 1);
