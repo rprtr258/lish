@@ -29,16 +29,18 @@ fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
 
 fn quasiquote(ast: Atom) -> Atom {
     match ast {
-        Atom::List(List {head, tail, ..}) => {
+        Atom::List(l) => {
+            let List {head, tail, ..} = l;
             // TODO: unquote with tail.len() > 1 is meaningless
             if tail.len() >= 1 && *head == Atom::symbol("unquote") {
                 tail[0].clone()
             } else {
                 let mut res = vec![];
-                for x in tail.iter().rev() {
+                for x in tail.iter().rev().chain(std::iter::once(&*head)) {
                     match x {
                         Atom::List(List {head, tail, ..}) if **head == Atom::symbol("splice-unquote") => {
                             res = match tail.len() {
+                                // `(... ,@() res) -> `(... (splice-unquote) res)
                                 0 => vec![
                                     Atom::symbol("cons"),
                                     form![
@@ -46,6 +48,7 @@ fn quasiquote(ast: Atom) -> Atom {
                                     ],
                                     Atom::from(res),
                                 ],
+                                // `(... ,@(s m t h) res) -> `(... s m t h res)
                                 _ => vec![
                                     Atom::symbol("concat"),
                                     Atom::from((**tail).clone()),
