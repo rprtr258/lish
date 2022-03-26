@@ -93,10 +93,9 @@ impl From<&String> for Atom {
     }
 }
 impl From<Vec<Atom>> for Atom {
-    fn from(vec: Vec<Atom>) -> Atom {
-        let head = vec[0].clone();
-        let tail = vec[1..].to_vec();
-        Atom::list(Atom::from(head), tail)
+    fn from(mut vec: Vec<Atom>) -> Atom {
+        let head = vec.remove(0);
+        Atom::list(head, vec)
     }
 }
 
