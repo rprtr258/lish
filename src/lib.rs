@@ -190,7 +190,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         ast = tail.last().unwrap().clone()
                     }
                     Atom::Symbol(s) if s == "if" => {
-                        let predicate = eval(Atom::from((*tail).clone()), env.clone())?;
+                        let predicate = eval(Atom::from(tail[0].clone()), env.clone())?;
                         match predicate {
                             Atom::Bool(false) | Atom::Nil => if tail.len() == 3 {
                                 ast = tail[2].clone()
