@@ -51,7 +51,7 @@ fn quasiquote(ast: Atom) -> Atom {
                                 // `(... ,@(s m t h) res) -> `(... s m t h res)
                                 _ => vec![
                                     Atom::symbol("concat"),
-                                    Atom::from((**tail).clone()),
+                                    Atom::from(tail[0].clone()),
                                     Atom::from(res),
                                 ],
                             }
