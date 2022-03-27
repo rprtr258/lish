@@ -113,7 +113,8 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
 pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
     loop {
         ast = macroexpand(ast, &env)?;
-        match ast.clone() {
+        match &ast {
+            // evaluate form
             Atom::List(List {head, tail, ..}) => {
                 macro_rules! lish_assert_args {
                     ($cmd:expr, $args_count:expr) => {{
@@ -123,7 +124,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }}
                 }
 
-                match &*head {
+                match &**head {
                     Atom::Symbol(s) if s == "quote" => {
                         lish_assert_args!("quote", 1);
                         return Ok(Atom::from(tail[0].clone()))
