@@ -233,31 +233,18 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         }
                     }
                     _ => {
-                        let evaluated_list = match ast {
-                            Atom::List(List {head, tail, ..}) => {
-                                let head = eval((*head).clone(), env.clone())?;
-                                let tail = tail.iter()
-                                    .map(|x| eval(x.clone(), env.clone()))
-                                    .collect::<Result<Vec<Atom>, LishErr>>()?;
-                                Atom::list(head, tail)
+                        let fun = eval((**head).clone(), env.clone())?;
+                        let args = tail.iter()
+                            .map(|x| eval(x.clone(), env.clone()))
+                            .collect::<Result<Vec<Atom>, LishErr>>()?;
+                        // TODO: apply hashmap
+                        match fun {
+                            Atom::Func(f, _) => return f(args),
+                            Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                ast = (*lambda_ast).clone();
+                                env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
                             },
-                            _ => unreachable!(),
-                        };
-                        match evaluated_list {
-                            Atom::List(List {head, tail, ..}) => {
-                                let fun = (*head).clone();
-                                let args = tail.to_vec();
-                                // TODO: apply hashmap
-                                match fun {
-                                    Atom::Func(f, _) => return f(args),
-                                    Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
-                                        ast = (*lambda_ast).clone();
-                                        env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
-                                    },
-                                    _ => return lisherr!("{:?} is not a function", fun),
-                                }
-                            }
-                            _ => unreachable!(),
+                            _ => return lisherr!("{:?} is not a function", fun),
                         }
                     }
                 }
