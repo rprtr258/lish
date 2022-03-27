@@ -216,27 +216,18 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             _ => {
                                 //todo!("call shell")
-                                let evaluated_list = Atom::list(
-                                    eval((**head).clone(), env.clone())?,
-                                    tail.iter()
-                                        .map(|x| eval(x.clone(), env.clone()))
-                                        .collect::<Result<Vec<Atom>, LishErr>>()?,
-                                );
-                                match evaluated_list {
-                                    Atom::List(List {head, tail, ..}) => {
-                                        let fun = (*head).clone();
-                                        let args = tail.to_vec();
-                                        // TODO: apply hashmap
-                                        match fun {
-                                            Atom::Func(f, _) => return f(args),
-                                            Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
-                                                ast = (*lambda_ast).clone();
-                                                env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
-                                            },
-                                            _ => return lisherr!("{:?} is not a function", fun),
-                                        }
-                                    }
-                                    _ => unreachable!(),
+                                let fun = eval((**head).clone(), env.clone())?;
+                                // TODO: apply hashmap
+                                let args = tail.iter()
+                                    .map(|x| eval(x.clone(), env.clone()))
+                                    .collect::<Result<Vec<Atom>, LishErr>>()?;
+                                match fun {
+                                    Atom::Func(f, _) => return f(args),
+                                    Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                        ast = (*lambda_ast).clone();
+                                        env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
+                                    },
+                                    _ => return lisherr!("{:?} is not a function", fun),
                                 }
                             }
                         }

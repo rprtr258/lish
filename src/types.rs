@@ -16,6 +16,14 @@ pub struct List {
 }
 
 impl List {
+    pub fn new(head: Atom, tail: Vec<Atom>) -> List {
+        List {
+            head: Rc::new(head),
+            tail: Rc::new(tail),
+            meta: Rc::new(Atom::Nil),
+        }
+    }
+
     pub fn iter(&self) -> Chain<Once<Atom>, IntoIter<Atom>> {
         once((*self.head).clone()).chain((*self.tail).clone().into_iter())
     }
@@ -55,11 +63,7 @@ impl Atom {
     }
 
     pub fn list(head: Atom, tail: Vec<Atom>) -> Atom {
-        Atom::List(List {
-            head: Rc::new(head),
-            tail: Rc::new(tail),
-            meta: Rc::new(Atom::Nil),
-        })
+        Atom::List(List::new(head, tail))
     }
 
     pub fn symbol<S>(symbol: S) -> Atom where String: From<S> {
