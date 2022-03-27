@@ -222,11 +222,11 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                                         .map(|x| eval(x.clone(), env.clone()))
                                         .collect::<Result<Vec<Atom>, LishErr>>()?;
                                     match fun {
-                                        Atom::Func(f, _) => return f(args),
                                         Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => (
                                             (*lambda_ast).clone(),
                                             Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()
                                         ),
+                                        Atom::Func(f, _) => return f(args),
                                         _ => return lisherr!("{:?} is not a function", fun),
                                     }
                                 };
@@ -236,19 +236,19 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                     _ => {
                         let fun = eval((**head).clone(), env.clone())?;
-                        {
+                        (ast, env) = {
                             let args = tail.iter()
                                 .map(|x| eval(x.clone(), env.clone()))
                                 .collect::<Result<Vec<Atom>, LishErr>>()?;
                             match fun {
+                                Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => (
+                                    (*lambda_ast).clone(),
+                                    Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()
+                                ),
                                 Atom::Func(f, _) => return f(args),
-                                Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
-                                    ast = (*lambda_ast).clone();
-                                    env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
-                                },
                                 _ => return lisherr!("{:?} is not a function", fun),
                             }
-                        }
+                        };
                     }
                 }
             }
