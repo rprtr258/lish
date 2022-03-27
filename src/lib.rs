@@ -216,11 +216,12 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             _ => {
                                 //todo!("call shell")
-                                let evaluated_head = eval((**head).clone(), env.clone())?;
-                                let evaluated_tail = tail.iter()
-                                    .map(|x| eval(x.clone(), env.clone()))
-                                    .collect::<Result<Vec<Atom>, LishErr>>()?;
-                                let evaluated_list = Atom::list(evaluated_head, evaluated_tail);
+                                let evaluated_list = Atom::list(
+                                    eval((**head).clone(), env.clone())?,
+                                    tail.iter()
+                                        .map(|x| eval(x.clone(), env.clone()))
+                                        .collect::<Result<Vec<Atom>, LishErr>>()?,
+                                );
                                 match evaluated_list {
                                     Atom::List(List {head, tail, ..}) => {
                                         let fun = (*head).clone();
