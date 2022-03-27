@@ -2,6 +2,8 @@ use std::{
     fmt::Display,
     rc::Rc,
     cmp::Ordering,
+    iter::{Chain, Once, once},
+    vec::IntoIter,
 };
 
 use crate::env::{Env};
@@ -13,11 +15,9 @@ pub struct List {
     meta: Rc<Atom>,
 }
 
-type MyIter = std::iter::Chain<std::iter::Once<Atom>, std::vec::IntoIter<Atom>>;
-
 impl List {
-    pub fn iter(&self) -> MyIter {
-        std::iter::once((*self.head).clone()).chain((*self.tail).clone().into_iter())
+    pub fn iter(&self) -> Chain<Once<Atom>, IntoIter<Atom>> {
+        once((*self.head).clone()).chain((*self.tail).clone().into_iter())
     }
 }
 
