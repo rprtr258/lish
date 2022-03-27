@@ -101,6 +101,11 @@ enum FormResult {
 }
 
 fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
+    match fun {
+        Atom::Lambda{..} => {},
+        Atom::Func(_, _) => {},
+        _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&Ok(fun.clone())))),
+    }
     let args = match tail.iter()
         .map(|x| eval(x.clone(), env.clone()))
         .collect::<Result<Vec<Atom>, LishErr>>() {
@@ -119,7 +124,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             )
         },
         Atom::Func(f, _) => FormResult::Return(f(args)),
-        _ => FormResult::Return(lisherr!("{:?} is not a function", fun)),
+        _ => unreachable!(),
     }
 }
 
@@ -245,7 +250,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             _ => {
                                 //todo!("call shell")
-                                let fun = env.get(s)?;
+                                let fun = env.get(s).unwrap_or(Atom::String(s.clone()));
                                 match eval_form(&fun, tail, env) {
                                     FormResult::TailCallOptimisation(new_ast, new_env) => {
                                         ast = new_ast;
@@ -258,6 +263,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         }
                     }
                     _ => {
+                        //todo!("call shell")
                         let fun = eval((**head).clone(), env.clone())?;
                         match eval_form(&fun, tail, env) {
                             FormResult::TailCallOptimisation(new_ast, new_env) => {
@@ -420,7 +426,7 @@ mod eval_tests {
         let env = Env::new(None);
         assert_eq!(
             eval(form![Atom::symbol("a")], env),
-            lisherr!("Not found 'a'")
+            lisherr!(r#""a" is not a function"#)
         );
     }
 

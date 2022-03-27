@@ -41,7 +41,7 @@ pub fn print(val: &LishResult) -> String {
             Atom::String(y) => format!("{}", y),
             _ => print_trivial(x)
         }
-        Err(e) => format!("ERROR: {:?}", e),
+        Err(e) => format!("ERROR: {}", e.0),
     }
 }
 
@@ -67,7 +67,7 @@ pub fn print_debug(val: &LishResult) -> String {
             Atom::String(y) => format!("{:?}", y),
             _ => print_trivial(x)
         }
-        Err(e) => format!("ERROR: {:?}", e),
+        Err(e) => format!("ERROR: {}", e.0),
     }
 }
 

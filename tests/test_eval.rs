@@ -23,8 +23,8 @@ fn parse_end_of_input() {
 fn echo() {
     let repl_env = Env::new_repl();
     assert_eq!(eval(read("echo 92".to_owned()).unwrap(), repl_env.clone()), Ok(Atom::String("92".to_owned())));
-    assert_eq!(eval(read("abc".to_owned()).unwrap(), repl_env.clone()), Err(LishErr::from("Not found 'abc'")));
-    assert_eq!(eval(read(r#""abc""#.to_owned()).unwrap(), repl_env), Err(LishErr::from(r#"String("abc") is not a function"#)));
+    assert_eq!(eval(read("abc".to_owned()).unwrap(), repl_env.clone()), Err(LishErr::from(r#""abc" is not a function"#)));
+    assert_eq!(eval(read(r#""abc""#.to_owned()).unwrap(), repl_env), Err(LishErr::from(r#""abc" is not a function"#)));
 }
 
 #[test]
