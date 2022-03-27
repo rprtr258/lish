@@ -217,38 +217,81 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             _ => {
                                 //todo!("call shell")
                                 let fun = env.get(s)?;
-                                (ast, env) = {
-                                    let args = tail.iter()
+                                enum FormResult {
+                                    ReturnImmediately(LishResult),
+                                    TailCallOptimisation(Atom, Env),
+                                }
+                                fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
+                                    let args = match tail.iter()
                                         .map(|x| eval(x.clone(), env.clone()))
-                                        .collect::<Result<Vec<Atom>, LishErr>>()?;
+                                        .collect::<Result<Vec<Atom>, LishErr>>() {
+                                        Ok(x) => x,
+                                        Err(err) => return FormResult::ReturnImmediately(Err(err)),
+                                    };
                                     match fun {
-                                        Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => (
-                                            (*lambda_ast).clone(),
-                                            Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()
-                                        ),
-                                        Atom::Func(f, _) => return f(args),
-                                        _ => return lisherr!("{:?} is not a function", fun),
+                                        Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                            let new_env = match Env::bind(Some(lambda_env.clone()), (**params).clone(), args) {
+                                                Ok(x) => x,
+                                                Err(err) => return FormResult::ReturnImmediately(Err(err)),
+                                            };
+                                            FormResult::TailCallOptimisation(
+                                                (**lambda_ast).clone(),
+                                                new_env
+                                                
+                                            )
+                                        },
+                                        Atom::Func(f, _) => FormResult::ReturnImmediately(f(args)),
+                                        _ => FormResult::ReturnImmediately(lisherr!("{:?} is not a function", fun)),
                                     }
-                                };
-                                continue;
+                                }
+                                match eval_form(&fun, tail, env) {
+                                    FormResult::TailCallOptimisation(new_ast, new_env) => {
+                                        ast = new_ast;
+                                        env = new_env;
+                                        continue;
+                                    },
+                                    FormResult::ReturnImmediately(result) => return result,
+                                }
                             }
                         }
                     }
                     _ => {
                         let fun = eval((**head).clone(), env.clone())?;
-                        (ast, env) = {
-                            let args = tail.iter()
+                        enum FormResult {
+                            ReturnImmediately(LishResult),
+                            TailCallOptimisation(Atom, Env),
+                        }
+                        fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
+                            let args = match tail.iter()
                                 .map(|x| eval(x.clone(), env.clone()))
-                                .collect::<Result<Vec<Atom>, LishErr>>()?;
+                                .collect::<Result<Vec<Atom>, LishErr>>() {
+                                Ok(x) => x,
+                                Err(err) => return FormResult::ReturnImmediately(Err(err)),
+                            };
                             match fun {
-                                Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => (
-                                    (*lambda_ast).clone(),
-                                    Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap()
-                                ),
-                                Atom::Func(f, _) => return f(args),
-                                _ => return lisherr!("{:?} is not a function", fun),
+                                Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                    let new_env = match Env::bind(Some(lambda_env.clone()), (**params).clone(), args) {
+                                        Ok(x) => x,
+                                        Err(err) => return FormResult::ReturnImmediately(Err(err)),
+                                    };
+                                    FormResult::TailCallOptimisation(
+                                        (**lambda_ast).clone(),
+                                        new_env
+                                        
+                                    )
+                                },
+                                Atom::Func(f, _) => FormResult::ReturnImmediately(f(args)),
+                                _ => FormResult::ReturnImmediately(lisherr!("{:?} is not a function", fun)),
                             }
-                        };
+                        }
+                        match eval_form(&fun, tail, env) {
+                            FormResult::TailCallOptimisation(new_ast, new_env) => {
+                                ast = new_ast;
+                                env = new_env;
+                                continue;
+                            },
+                            FormResult::ReturnImmediately(result) => return result,
+                        }
                     }
                 }
             }
