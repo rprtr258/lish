@@ -234,16 +234,15 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                     _ => {
                         let evaluated_list = match ast {
-                            Atom::Symbol(var) => env.get(var.as_str()),
                             Atom::List(List {head, tail, ..}) => {
                                 let head = eval((*head).clone(), env.clone())?;
                                 let tail = tail.iter()
                                     .map(|x| eval(x.clone(), env.clone()))
                                     .collect::<Result<Vec<Atom>, LishErr>>()?;
-                                Ok(Atom::list(head, tail))
+                                Atom::list(head, tail)
                             },
-                            x => Ok(x.clone()),
-                        }?;
+                            _ => unreachable!(),
+                        };
                         match evaluated_list {
                             Atom::List(List {head, tail, ..}) => {
                                 let fun = (*head).clone();
