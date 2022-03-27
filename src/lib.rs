@@ -216,7 +216,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             _ => {
                                 //todo!("call shell")
-                                let fun = eval((**head).clone(), env.clone())?;
+                                let fun = env.get(s)?;
                                 // TODO: apply hashmap
                                 let args = tail.iter()
                                     .map(|x| eval(x.clone(), env.clone()))
