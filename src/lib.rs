@@ -111,106 +111,139 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                 }
 
                 match &**head {
-                    Atom::Symbol(s) if s == "quote" => {
-                        lish_assert_args!("quote", 1);
-                        return Ok(Atom::from(tail[0].clone()))
-                    }
-                    Atom::Symbol(s) if s == "quasiquoteexpand" => {
-                        lish_assert_args!("quasiquoteexpand", 1);
-                        return Ok(quasiquote(Atom::from(tail[0].clone())));
-                    }
-                    Atom::Symbol(s) if s == "quasiquote" => {
-                        lish_assert_args!("quasiquote", 1);
-                        ast = quasiquote(Atom::from(tail[0].clone()));
-                        continue
-                    }
-                    Atom::Symbol(s) if s == "macroexpand" => {
-                        lish_assert_args!("macroexpand", 1);
-                        match tail[0].clone() {
-                            Atom::List(List {head, ..}) => {eval((*head).clone(), env.clone())?;},
-                            _ => unreachable!(),
-                        }
-                        return macroexpand(tail[0].clone(), &env);
-                    }
-                    Atom::Symbol(s) if s == "set" => {
-                        lish_assert_args!("set", 2);
-                        let value: Atom = eval(tail[1].clone(), env.clone())?;
-                        return env.set(tail[0].clone(), value)
-                    }
-                    Atom::Symbol(s) if s == "setmacro" => {
-                        lish_assert_args!("setmacro", 2);
-                        return match eval(tail[1].clone(), env.clone())? {
-                            Atom::Lambda {
-                                eval, ast, env, params, meta, ..
-                            } => env.set(tail[0].clone(), Atom::Lambda {
-                                eval,
-                                ast,
-                                params,
-                                meta,
-                                env: env.clone(),
-                                is_macro: true,
-                            }),
-                            _ => lisherr!("Macro is not lambda"),
-                        }
-                    }
-                    Atom::Symbol(s) if s == "let" => {
-                        let bindings = match &tail[0] {
-                            Atom::List(binds) => binds.iter().collect::<Vec<Atom>>(),
-                            _ => return lisherr!("Let bindings is not a list, but a {:?}", tail[0]),
-                        };
-                        if bindings.len() % 2 != 0 {
-                            return lisherr!("'let' requires even number of arguments, but got {} in {}", tail.len(), print_debug(&Ok(ast.clone())));
-                        }
-                        let mut i = 0;
-                        let let_env = Env::new(Some(env.clone()));
-                        while i < bindings.len() {
-                            let var_name = bindings[i].clone();
-                            let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
-                            let_env.set(var_name, var_value)?;
-                            i += 2;
-                        }
-                        let mut body = Vec::with_capacity(tail.len() - 1);
-                        body.push(Atom::symbol("progn"));
-                        body.extend_from_slice(&tail[1..]);
-                        ast = Atom::from(body);
-                        env = let_env;
-                    }
-                    Atom::Symbol(s) if s == "progn" => {
-                        for item in tail.iter() {
-                            eval(item.clone(), env.clone())?;
-                        }
-                        ast = tail.last().unwrap().clone()
-                    }
-                    Atom::Symbol(s) if s == "if" => {
-                        let predicate = eval(Atom::from(tail[0].clone()), env.clone())?;
-                        match predicate {
-                            Atom::Bool(false) | Atom::Nil => if tail.len() == 3 {
-                                ast = tail[2].clone()
-                            } else {
-                                return Ok(Atom::Nil)
-                            },
+                    Atom::Symbol(s) => {
+                        match s.as_str() {
+                            "quote" => {
+                                lish_assert_args!("quote", 1);
+                                return Ok(Atom::from(tail[0].clone()))
+                            }
+                            "quasiquoteexpand" => {
+                                lish_assert_args!("quasiquoteexpand", 1);
+                                return Ok(quasiquote(Atom::from(tail[0].clone())));
+                            }
+                            "quasiquote" => {
+                                lish_assert_args!("quasiquote", 1);
+                                ast = quasiquote(Atom::from(tail[0].clone()));
+                                continue
+                            }
+                            "macroexpand" => {
+                                lish_assert_args!("macroexpand", 1);
+                                match tail[0].clone() {
+                                    Atom::List(List {head, ..}) => {eval((*head).clone(), env.clone())?;},
+                                    _ => unreachable!(),
+                                }
+                                return macroexpand(tail[0].clone(), &env);
+                            }
+                            "set" => {
+                                lish_assert_args!("set", 2);
+                                let value: Atom = eval(tail[1].clone(), env.clone())?;
+                                return env.set(tail[0].clone(), value)
+                            }
+                            "setmacro" => {
+                                lish_assert_args!("setmacro", 2);
+                                return match eval(tail[1].clone(), env.clone())? {
+                                    Atom::Lambda {
+                                        eval, ast, env, params, meta, ..
+                                    } => env.set(tail[0].clone(), Atom::Lambda {
+                                        eval,
+                                        ast,
+                                        params,
+                                        meta,
+                                        env: env.clone(),
+                                        is_macro: true,
+                                    }),
+                                    _ => lisherr!("Macro is not lambda"),
+                                }
+                            }
+                            "let" => {
+                                let bindings = match &tail[0] {
+                                    Atom::List(binds) => binds.iter().collect::<Vec<Atom>>(),
+                                    _ => return lisherr!("Let bindings is not a list, but a {:?}", tail[0]),
+                                };
+                                if bindings.len() % 2 != 0 {
+                                    return lisherr!("'let' requires even number of arguments, but got {} in {}", tail.len(), print_debug(&Ok(ast.clone())));
+                                }
+                                let mut i = 0;
+                                let let_env = Env::new(Some(env.clone()));
+                                while i < bindings.len() {
+                                    let var_name = bindings[i].clone();
+                                    let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
+                                    let_env.set(var_name, var_value)?;
+                                    i += 2;
+                                }
+                                let mut body = Vec::with_capacity(tail.len() - 1);
+                                body.push(Atom::symbol("progn"));
+                                body.extend_from_slice(&tail[1..]);
+                                ast = Atom::from(body);
+                                env = let_env;
+                            }
+                            "progn" => {
+                                for item in tail.iter() {
+                                    eval(item.clone(), env.clone())?;
+                                }
+                                ast = tail.last().unwrap().clone()
+                            }
+                            "if" => {
+                                let predicate = eval(Atom::from(tail[0].clone()), env.clone())?;
+                                match predicate {
+                                    Atom::Bool(false) | Atom::Nil => if tail.len() == 3 {
+                                        ast = tail[2].clone()
+                                    } else {
+                                        return Ok(Atom::Nil)
+                                    },
+                                    _ => {
+                                        ast = tail[1].clone()
+                                    }
+                                }
+                            }
+                            "eval" => {
+                                lish_assert_args!("eval", 1);
+                                ast = eval(tail[0].clone(), env.clone())?;
+                                env = env.get_root().clone();
+                                continue;
+                            }
+                            "fn" => {
+                                let args = tail[0].clone();
+                                let body = tail[1].clone();
+                                return Ok(Atom::Lambda {
+                                    eval: eval,
+                                    ast: Rc::new(body),
+                                    env: env.clone(),
+                                    params: Rc::new(args),
+                                    is_macro: false,
+                                    meta: Rc::new(Atom::Nil),
+                                })
+                            }
                             _ => {
-                                ast = tail[1].clone()
+                                //todo!("call shell")
+                                let evaluated_list = match &ast {
+                                    Atom::List(List {tail, ..}) => {
+                                        let head = eval((**head).clone(), env.clone())?;
+                                        let tail = tail.iter()
+                                            .map(|x| eval(x.clone(), env.clone()))
+                                            .collect::<Result<Vec<Atom>, LishErr>>()?;
+                                        Atom::list(head, tail)
+                                    },
+                                    _ => unimplemented!(),
+                                };
+                                match evaluated_list {
+                                    Atom::List(List {head, tail, ..}) => {
+                                        let fun = (*head).clone();
+                                        let args = tail.to_vec();
+                                        // TODO: apply hashmap
+                                        match fun {
+                                            Atom::Func(f, _) => return f(args),
+                                            Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
+                                                ast = (*lambda_ast).clone();
+                                                env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
+                                            },
+                                            _ => return lisherr!("{:?} is not a function", fun),
+                                        }
+                                    }
+                                    _ => unreachable!(),
+                                }
                             }
                         }
-                    }
-                    Atom::Symbol(s) if s == "eval" => {
-                        lish_assert_args!("eval", 1);
-                        ast = eval(tail[0].clone(), env.clone())?;
-                        env = env.get_root().clone();
-                        continue;
-                    }
-                    Atom::Symbol(s) if s == "fn" => {
-                        let args = tail[0].clone();
-                        let body = tail[1].clone();
-                        return Ok(Atom::Lambda {
-                            eval: eval,
-                            ast: Rc::new(body),
-                            env: env.clone(),
-                            params: Rc::new(args),
-                            is_macro: false,
-                            meta: Rc::new(Atom::Nil),
-                        })
                     }
                     _ => {
                         let evaluated_list = match ast {
