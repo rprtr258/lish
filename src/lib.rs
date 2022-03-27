@@ -94,9 +94,10 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
     Ok(ast)
 }
 
+// TODO: implement std::ops::Try and use ? when it will be stabilized
 enum FormResult {
-    Return(LishResult),
     TailCallOptimisation(Atom, Env),
+    Return(LishResult),
 }
 
 fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
