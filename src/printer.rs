@@ -4,7 +4,7 @@ use crate::types::{Atom, LishResult};
 
 fn print_trivial(val: &Atom) -> String {
     match val {
-        Atom::Nil => "nil".to_owned(),
+        Atom::Nil => "()".to_owned(),
         Atom::Bool(y) => format!("{}", y),
         Atom::Int(y) => format!("{}", y),
         Atom::Float(y) => format!("{}", y),
@@ -103,11 +103,11 @@ mod printer_tests {
     test_print!(print_false, false, "false");
     test_print!(print_float, 3.14, "3.14");
     test_print!(print_int, 92, "92");
-    test_print!(print_empty_list, form![], "nil");
+    test_print!(print_empty_list, form![], "()");
     test_print!(print_list, form![1, 2], "(1 2)");
     test_print!(print_symbol, Atom::symbol("abc"), "abc");
     test_print_debug!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
-    test_print_debug!(print_nil, Atom::Nil, "nil");
+    test_print_debug!(print_nil, Atom::Nil, "()");
     test_print_debug!(print_string, "abc", r#""abc""#);
     test_print_debug!(print_string_with_slash, r"\", r#""\\""#);
     test_print_debug!(print_string_with_2slashes, r"\\", r#""\\\\""#);

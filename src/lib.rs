@@ -104,6 +104,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
     match fun {
         Atom::Lambda{..} => {},
         Atom::Func(_, _) => {},
+        Atom::String(_) => {},
         _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&Ok(fun.clone())))),
     }
     let args = match tail.iter()
@@ -124,6 +125,25 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             )
         },
         Atom::Func(f, _) => FormResult::Return(f(args)),
+        Atom::String(s) => {
+            let mut cmd_args = Vec::new();
+            for arg in args {
+                cmd_args.push(match arg {
+                    Atom::String(a) => a.clone(),
+                    _ => return FormResult::Return(lisherr!("{:?} is not string argument", arg)),
+                });
+            }
+            let stdout = std::process::Command::new(s)
+                .args(cmd_args)
+                .output()
+                .expect("failed to execute process")
+                .stdout;
+            let stdout_str = match std::str::from_utf8(&stdout[..]) {
+                Ok(out) => out.to_string(),
+                Err(e) => return FormResult::Return(lisherr!("{}", e)),
+            };
+            FormResult::Return(Ok(Atom::String(stdout_str)))
+        },
         _ => unreachable!(),
     }
 }
@@ -279,14 +299,14 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
             // nil is evaluated to nil
             Atom::Nil => return Ok(Atom::Nil),
             // others are evaluated to themselves
-            Atom::Symbol(var) => return env.get(var),
+            Atom::Symbol(var) => return Ok(env.get(var).unwrap_or(Atom::String(var.clone()))),
             x => return Ok(x.clone()),
         }
     }
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    print_debug(&read(input).and_then(|ast| eval(ast, env)))
+    print(&read(input).and_then(|ast| eval(ast, env)))
 }
 
 #[cfg(test)]
