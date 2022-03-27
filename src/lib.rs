@@ -115,7 +115,6 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             FormResult::TailCallOptimisation(
                 (**lambda_ast).clone(),
                 new_env
-                
             )
         },
         Atom::Func(f, _) => FormResult::Return(f(args)),
