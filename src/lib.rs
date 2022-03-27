@@ -13,20 +13,6 @@ use {
     printer::{print, print_debug},
 };
 
-fn eval_ast(ast: &Atom, env: &Env) -> LishResult {
-    match ast {
-        Atom::Symbol(var) => env.get(var),
-        Atom::List(List {head, tail, ..}) => {
-            let head = eval((**head).clone(), env.clone())?;
-            let tail = tail.iter()
-                .map(|x| eval(x.clone(), env.clone()))
-                .collect::<Result<Vec<Atom>, LishErr>>()?;
-            Ok(Atom::list(head, tail))
-        },
-        x => Ok(x.clone()),
-    }
-}
-
 fn quasiquote(ast: Atom) -> Atom {
     match ast {
         Atom::List(l) => {
@@ -227,7 +213,17 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         })
                     }
                     _ => {
-                        let evaluated_list = eval_ast(&ast, &env)?;
+                        let evaluated_list = match ast {
+                            Atom::Symbol(var) => env.get(var.as_str()),
+                            Atom::List(List {head, tail, ..}) => {
+                                let head = eval((*head).clone(), env.clone())?;
+                                let tail = tail.iter()
+                                    .map(|x| eval(x.clone(), env.clone()))
+                                    .collect::<Result<Vec<Atom>, LishErr>>()?;
+                                Ok(Atom::list(head, tail))
+                            },
+                            x => Ok(x.clone()),
+                        }?;
                         match evaluated_list {
                             Atom::List(List {head, tail, ..}) => {
                                 let fun = (*head).clone();
@@ -247,8 +243,11 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                 }
             }
+            // nil is evaluated to nil
             Atom::Nil => return Ok(Atom::Nil),
-            _ => return eval_ast(&ast, &env),
+            // others are evaluated to themselves
+            Atom::Symbol(var) => return env.get(var),
+            x => return Ok(x.clone()),
         }
     }
 }
@@ -260,55 +259,6 @@ pub fn rep(input: String, env: Env) -> String {
 #[cfg(test)]
 #[allow(unused_parens)]
 mod eval_tests {
-    mod eval_ast_tests {
-        use crate::{
-            lisherr,
-            form,
-            types::{Atom, List},
-            env::Env,
-            eval_ast,
-        };
-
-        #[test]
-        fn symbol_found() {
-            let env = Env::new(None);
-            env.sets("a", Atom::Int(1));
-            assert_eq!(eval_ast(&Atom::symbol("a"), &env), Ok(Atom::Int(1)));
-        }
-
-        #[test]
-        fn symbol_not_found() {
-            let env = Env::new(None);
-            assert_eq!(
-                eval_ast(&form![Atom::symbol("a")], &env),
-                lisherr!("Not found 'a'")
-            );
-        }
-
-        #[test]
-        fn list() {
-            let repl_env = Env::new_repl();
-            let res = eval_ast(&form![Atom::symbol("+"), 2, 2], &repl_env);
-            match res {
-                Ok(Atom::List(List {head, tail, ..})) => {
-                    assert_eq!(tail[0], Atom::Int(2));
-                    assert_eq!(tail[1], Atom::Int(2));
-                    match *head {
-                        Atom::Func(_, _) => (),
-                        _ => unreachable!(),
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-
-        #[test]
-        fn id() {
-            let env = Env::new(None);
-            assert_eq!(eval_ast(&Atom::Int(1), &env), Ok(Atom::Int(1)));
-        }
-    }
-
     mod quasiquote_tests {
         use crate::{
             form,
@@ -430,6 +380,34 @@ mod eval_tests {
             }
         }
     }
+
+    #[test]
+    fn symbol_found() {
+        let env = Env::new(None);
+        env.sets("a", Atom::Int(1));
+        assert_eq!(eval(Atom::symbol("a"), env), Ok(Atom::Int(1)));
+    }
+
+    #[test]
+    fn symbol_not_found() {
+        let env = Env::new(None);
+        assert_eq!(
+            eval(form![Atom::symbol("a")], env),
+            lisherr!("Not found 'a'")
+        );
+    }
+
+    #[test]
+    fn id() {
+        let env = Env::new(None);
+        assert_eq!(eval(Atom::Int(1), env), Ok(Atom::Int(1)));
+    }
+
+    // (+ 2 2)
+    test_eval!(
+        list,
+        form![Atom::symbol("+"), 2, 2] => 4,
+    );
 
     // (quote a)
     test_eval!(
