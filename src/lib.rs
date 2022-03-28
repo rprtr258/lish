@@ -129,7 +129,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             let mut cmd_args = Vec::new();
             for arg in args {
                 cmd_args.push(match arg {
-                    Atom::String(a) => a.clone(),
+                    Atom::String(a) => a.clone(), // TODO: is needed?
                     _ => return FormResult::Return(lisherr!("{:?} is not string argument", arg)),
                 });
             }
@@ -441,14 +441,15 @@ mod eval_tests {
         assert_eq!(eval(Atom::symbol("a"), env), Ok(Atom::Int(1)));
     }
 
-    #[test]
-    fn symbol_not_found() {
-        let env = Env::new(None);
-        assert_eq!(
-            eval(form![Atom::symbol("a")], env),
-            lisherr!(r#""a" is not a function"#)
-        );
-    }
+    // TODO: how to check that 'a' shell command is called?
+    // #[test]
+    // fn symbol_not_found() {
+    //     let env = Env::new(None);
+    //     assert_eq!(
+    //         eval(form![Atom::symbol("a")], env),
+    //         lisherr!(r#""a" is not a function"#)
+    //     );
+    // }
 
     #[test]
     fn id() {
@@ -620,15 +621,10 @@ mod eval_tests {
     );
 
     // abc
-    #[test]
-    fn eval_symbol() {
-        let repl_env = Env::new_repl();
-        assert_eq!(
-            // TODO: Error for not found symbol
-            eval(Atom::symbol("abc"), repl_env.clone()),
-            lisherr!("Not found 'abc'")
-        );
-    }
+    test_eval!(
+        eval_symbol,
+        Atom::symbol("abc") => "abc"
+    );
 
     // "abc"
     #[test]
