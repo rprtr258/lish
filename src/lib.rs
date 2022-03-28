@@ -141,6 +141,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 .output();
             match out {
                 Ok(output) => {
+                    // TODO: stdout is iter (another kind of list) of lines
                     let stdout = match std::str::from_utf8(&output.stdout[..]) {
                         Ok(out) => out.to_string(),
                         Err(e) => return FormResult::Return(lisherr!("{}", e)),
