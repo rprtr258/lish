@@ -133,16 +133,30 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                     _ => return FormResult::Return(lisherr!("{:?} is not string argument", arg)),
                 });
             }
-            let stdout = std::process::Command::new(s)
+            // TODO: either pipe stdout or inherit
+            let out = std::process::Command::new(s)
+                .stdin(std::process::Stdio::inherit())
+                .stdout(std::process::Stdio::inherit())
                 .args(cmd_args)
-                .output()
-                .expect("failed to execute process")
-                .stdout;
-            let stdout_str = match std::str::from_utf8(&stdout[..]) {
-                Ok(out) => out.to_string(),
-                Err(e) => return FormResult::Return(lisherr!("{}", e)),
-            };
-            FormResult::Return(Ok(Atom::String(stdout_str)))
+                .output();
+            match out {
+                Ok(output) => {
+                    let stdout = match std::str::from_utf8(&output.stdout[..]) {
+                        Ok(out) => out.to_string(),
+                        Err(e) => return FormResult::Return(lisherr!("{}", e)),
+                    };
+                    let stderr = match std::str::from_utf8(&output.stderr[..]) {
+                        Ok(out) => out.to_string(),
+                        Err(e) => return FormResult::Return(lisherr!("{}", e)),
+                    };
+                    if output.status.success() {
+                        FormResult::Return(Ok(Atom::String(stdout)))
+                    } else {
+                        FormResult::Return(lisherr!("exit_code={:?}\nstdout:\n{}\nstderr:\n{}", output.status.code(), stdout, stderr))
+                    }
+                },
+                Err(err) => FormResult::Return(lisherr!(err)),
+            }
         },
         _ => unreachable!(),
     }

@@ -1,7 +1,7 @@
 use lish::{eval};
 use lish::env::{Env};
 use lish::reader::{read};
-use lish::types::{Atom, LishErr};
+use lish::types::Atom;
 
 #[test]
 fn set() {
