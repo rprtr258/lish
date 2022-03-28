@@ -133,7 +133,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                     _ => return FormResult::Return(lisherr!("{:?} is not string argument", arg)),
                 });
             }
-            // TODO: either pipe stdout or inherit
+            // TODO: inherit stdin, stdout by default, but pipe if piped
             let out = std::process::Command::new(s)
                 .stdin(std::process::Stdio::inherit())
                 .stdout(std::process::Stdio::inherit())
