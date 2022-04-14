@@ -14,14 +14,6 @@ fn print_trivial(val: &Atom) -> String {
             .join(" ")
         ),
         Atom::Error(e) => format!("ERROR: {}", e),
-        _ => unreachable!(),
-    }
-}
-
-// TODO: rewrite
-// TODO: print atom, not result
-pub fn print(val: &Atom) -> String {
-    match val {
         Atom::Lambda {ast, params, is_macro, ..} => {
             let params_str = params.iter().join(" ");
             let type_str = if *is_macro {"defmacro"} else {"fn"};
@@ -31,22 +23,21 @@ pub fn print(val: &Atom) -> String {
             .map(|x| print(&x))
             .join(" ")
         ),
-        Atom::String(y) => format!("{}", y),
+        Atom::String(_) => unreachable!(),
+    }
+}
+
+// TODO: rewrite
+// TODO: print atom, not result
+pub fn print(val: &Atom) -> String {
+    match val {
+        Atom::String(y) => y.clone(),
         _ => print_trivial(val)
     }
 }
 
 pub fn print_debug(val: &Atom) -> String {
     match val {
-        Atom::Lambda {ast, params, is_macro, ..} => {
-            let params_str = params.iter().join(" ");
-            let type_str = if *is_macro {"defmacro"} else {"fn"};
-            format!("({} ({}) {})", type_str, params_str, print_debug(&ast))
-        },
-        Atom::List(items) => format!("({})", items.iter()
-            .map(|x| print_debug(&x))
-            .join(" ")
-        ),
         Atom::String(y) => format!("{:?}", y),
         _ => print_trivial(val)
     }
