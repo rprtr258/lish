@@ -9,20 +9,20 @@ fn print_trivial(val: &Atom) -> String {
         Atom::Float(y) => format!("{}", y),
         Atom::Symbol(y) => format!("{}", y),
         Atom::Func(_, _) => "#fn".to_owned(),
-        Atom::Hash(hashmap) => format!("{{{}}}", hashmap.iter()
-            .map(|(k, v)| format!(r#""{}" {}"#, k, print_debug(&v.clone())))
+        Atom::List(items) => format!("({})", items.iter()
+            .map(|x| print_debug(&x))
             .join(" ")
         ),
-        Atom::Error(e) => format!("ERROR: {}", e),
+        Atom::Hash(hashmap) => format!("{{{}}}", hashmap.iter()
+            .map(|(k, v)| format!(r#""{}" {}"#, k, print_debug(&v)))
+            .join(" ")
+        ),
         Atom::Lambda {ast, params, is_macro, ..} => {
             let params_str = params.iter().join(" ");
             let type_str = if *is_macro {"defmacro"} else {"fn"};
             format!("({} ({}) {})", type_str, params_str, print_debug(&ast))
         },
-        Atom::List(items) => format!("({})", items.iter()
-            .map(|x| print_debug(&x))
-            .join(" ")
-        ),
+        Atom::Error(e) => format!("ERROR: {}", e),
         Atom::String(_) => unreachable!(),
     }
 }
