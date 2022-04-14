@@ -2,9 +2,7 @@ use {
     regex::{Captures, Regex},
     lazy_static::lazy_static,
 };
-use crate::{
-    types::{Atom, List, LishResult},
-};
+use crate::types::{Atom, List, LishResult};
 
 fn unescape_str(s: &str) -> String {
     // lazy_static! {
@@ -192,5 +190,11 @@ mod reader_tests {
         left_outer_twice, "+-curried 1) 3)", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_left_outer, "+-curried 1) 3", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_right_outer, "+ 1 2 (+ 3 4", form![Atom::symbol("+"), 1, 2, form![Atom::symbol("+"), 3, 4]],
+        dict, "{a 1 b 2}", Atom::Hash(std::rc::Rc::new({
+            let mut hashmap = fnv::FnvHashMap::default();
+            hashmap.insert("a".to_owned(), Atom::Int(1));
+            hashmap.insert("b".to_owned(), Atom::Int(2));
+            hashmap
+        })),
     );
 }

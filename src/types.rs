@@ -52,87 +52,83 @@ pub enum Atom {
     List(List),
 }
 
-use Atom::{Nil, Bool, Int, Float, Symbol, Lambda};
-
 impl Atom {
     pub fn is_macro(self: &Self) -> bool {
         match self {
-            Lambda {is_macro, ..} => *is_macro,
+            Self::Lambda {is_macro, ..} => *is_macro,
             _ => false,
         }
     }
 
-    pub fn list(head: Atom, tail: Vec<Atom>) -> Atom {
-        Atom::List(List::new(head, tail))
+    pub fn list(head: Self, tail: Vec<Self>) -> Self {
+        Self::List(List::new(head, tail))
     }
 
-    pub fn symbol<S>(symbol: S) -> Atom where String: From<S> {
-        Atom::Symbol(String::from(symbol))
+    pub fn symbol<S>(symbol: S) -> Self where String: From<S> {
+        Self::Symbol(String::from(symbol))
     }
 }
 
 impl From<i64> for Atom {
-    fn from(x: i64) -> Atom {
-        Int(x)
+    fn from(x: i64) -> Self {
+        Self::Int(x)
     }
 }
 impl From<f64> for Atom {
-    fn from(x: f64) -> Atom {
-        Float(x)
+    fn from(x: f64) -> Self {
+        Self::Float(x)
     }
 }
 impl From<bool> for Atom {
-    fn from(x: bool) -> Atom {
-        Bool(x)
+    fn from(x: bool) -> Self {
+        Self::Bool(x)
     }
 }
 impl From<&str> for Atom {
-    fn from(x: &str) -> Atom {
-        Atom::String(x.to_owned())
+    fn from(x: &str) -> Self {
+        Self::String(x.to_owned())
     }
 }
 impl From<&String> for Atom {
-    fn from(x: &String) -> Atom {
-        Atom::String(x.clone())
+    fn from(x: &String) -> Self {
+        Self::String(x.clone())
     }
 }
 impl From<Vec<Atom>> for Atom {
-    fn from(mut vec: Vec<Atom>) -> Atom {
+    fn from(mut vec: Vec<Atom>) -> Self {
         if vec.len() == 0 {
-            Nil
+            Self::Nil
         } else {
             let head = vec.remove(0);
-            Atom::list(head, vec)
+            Self::list(head, vec)
         }
     }
 }
 
 impl PartialOrd for Atom {
-    fn partial_cmp(self: &Self, other: &Atom) -> Option<Ordering> {
+    fn partial_cmp(self: &Self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (Nil, Nil) => Some(Ordering::Equal),
-            (Bool(ref a), Bool(ref b)) => a.partial_cmp(b),
-            (Int(ref a), Int(ref b)) => a.partial_cmp(b),
-            (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
-            (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
-            (Atom::List(a), Atom::List(b)) => a.iter().partial_cmp(b.iter()),
-            // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
+            (Self::Nil, Self::Nil) => Some(Ordering::Equal),
+            (Self::Bool(ref a), Self::Bool(ref b)) => a.partial_cmp(b),
+            (Self::Int(ref a), Self::Int(ref b)) => a.partial_cmp(b),
+            (Self::String(ref a), Self::String(ref b)) => a.partial_cmp(b),
+            (Self::Symbol(ref a), Self::Symbol(ref b)) => a.partial_cmp(b),
+            (Self::List(a), Self::List(b)) => a.iter().partial_cmp(b.iter()),
             _ => None,
         }
     }
 }
 
 impl PartialEq for Atom {
-    fn eq(&self, other: &Atom) -> bool {
-        use Atom::String;
+    fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Nil, Nil) => true,
-            (Bool(ref a), Bool(ref b)) => a == b,
-            (Int(ref a), Int(ref b)) => a == b,
-            (String(ref a), String(ref b)) => a == b,
-            (Symbol(ref a), Symbol(ref b)) => a == b,
-            (Atom::List(ref a), Atom::List(ref b)) => a.iter().zip(b.iter()).all(|(x, y)| x == y),
-            // (Hash(ref a, _), Hash(ref b, _)) => a == b,
+            (Self::Nil, Self::Nil) => true,
+            (Self::Bool(ref a), Self::Bool(ref b)) => a == b,
+            (Self::Int(ref a), Self::Int(ref b)) => a == b,
+            (Self::String(ref a), Self::String(ref b)) => a == b,
+            (Self::Symbol(ref a), Self::Symbol(ref b)) => a == b,
+            (Self::List(ref a), Self::List(ref b)) => a.iter().zip(b.iter()).all(|(x, y)| x == y),
+            (Self::Hash(ref a), Self::Hash(ref b)) => a == b,
             _ => false,
         }
     }
