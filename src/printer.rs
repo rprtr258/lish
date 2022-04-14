@@ -17,10 +17,10 @@ fn print_trivial(val: &Atom) -> String {
         Atom::Lambda {ast, params, is_macro, ..} => {
             let params_str = params.iter().join(" ");
             let type_str = if *is_macro {"defmacro"} else {"fn"};
-            format!("({} ({}) {})", type_str, params_str, print(&ast))
+            format!("({} ({}) {})", type_str, params_str, print_debug(&ast))
         },
         Atom::List(items) => format!("({})", items.iter()
-            .map(|x| print(&x))
+            .map(|x| print_debug(&x))
             .join(" ")
         ),
         Atom::String(_) => unreachable!(),
