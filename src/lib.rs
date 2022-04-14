@@ -10,7 +10,6 @@ use {
     types::{Atom, List},
     env::Env,
     reader::read,
-    printer::{print, print_debug},
 };
 
 fn quasiquote(ast: Atom) -> Atom {
@@ -103,10 +102,10 @@ enum FormResult {
 fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> FormResult {
     match fun {
         Atom::Lambda{..} => {},
-        Atom::Func(_, _) => {},
+        Atom::Func(_) => {},
         Atom::String(_) => {},
         Atom::Hash(_) => {},
-        _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&fun.clone()))),
+        _ => return FormResult::Return(lisherr!("{fun} is not a function")),
     }
     let args = unevaluated_args.iter()
         .map(|x| eval(x.clone(), env.clone()))
@@ -119,7 +118,7 @@ fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> For
                 new_env
             )
         },
-        Atom::Func(f, _) => FormResult::Return(f(args)),
+        Atom::Func(f) => FormResult::Return(f(args)),
         Atom::String(s) => {
             let mut cmd_args = Vec::new();
             for arg in args {
@@ -201,7 +200,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                 macro_rules! lish_assert_args {
                     ($cmd:expr, $args_count:expr) => {{
                         if tail.len() != $args_count {
-                            return lisherr!("'{}' requires {} argument(s), but got {} in {}", $cmd, $args_count, tail.len(), print(&ast.clone()));
+                            return lisherr!("'{}' requires {} argument(s), but got {} in {ast:?}", $cmd, $args_count, tail.len());
                         }
                     }}
                 }
@@ -257,7 +256,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                     _ => return lisherr!("Let bindings is not a list, but a {:?}", tail[0]),
                                 };
                                 if bindings.len() % 2 != 0 {
-                                    return lisherr!("'let' requires even number of arguments, but got {} in {}", tail.len(), print_debug(&ast));
+                                    return lisherr!("'let' requires even number of arguments, but got {} in {ast:?}", tail.len());
                                 }
                                 let mut i = 0;
                                 let let_env = Env::new(Some(env.clone()));
@@ -305,7 +304,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                             Atom::Symbol(_) => true,
                                             _ => false,
                                         }) {
-                                            return lisherr!("fn args list must consist only of symbols, but not symbol was found in args list: {}", print_debug(&tail[0]));
+                                            return lisherr!("fn args list must consist only of symbols, but not symbol was found in args list: {:?}", tail[0]);
                                         }
                                         let mut res = Vec::with_capacity(lst.len());
                                         for x in lst.iter() {
@@ -316,7 +315,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                         }
                                         res
                                     },
-                                    _ => return lisherr!("fn args must be list of symbols, but it is {}", print_debug(&tail[0])),
+                                    _ => return lisherr!("fn args must be list of symbols, but it is {:?}", tail[0]),
                                 };
                                 let body = tail[1].clone();
                                 return Atom::Lambda {
@@ -367,7 +366,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    print_debug(&eval(read(input), env))
+    format!("{:?}", eval(read(input), env))
 }
 
 #[cfg(test)]

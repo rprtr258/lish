@@ -32,7 +32,7 @@ impl List {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Atom {
     Bool(bool),
     // TODO: i128?
@@ -42,9 +42,9 @@ pub enum Atom {
     Symbol(String),
     Error(String),
     Hash(Rc<FnvHashMap<String, Atom>>),//, Rc<Atom>),
-    Func(fn(Vec<Atom>) -> Atom, Rc<Atom>),
+    Func(fn(Vec<Atom>) -> Atom),//, Rc<Atom>),
     Lambda {
-        eval: fn(ast: Atom, env: Env) -> Atom,
+        eval: fn(ast: Atom, env: Env) -> Atom, // TODO: remove
         ast: Rc<Atom>,
         env: Env,
         params: Vec<String>,
@@ -53,6 +53,91 @@ pub enum Atom {
     },
     Nil,
     List(List),
+}
+
+// TODO: print nicely, with indents
+impl std::fmt::Display for Atom {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Atom::Nil => fmt.write_str("()")?,
+            Atom::Bool(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Int(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Float(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Symbol(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Func(_) => fmt.write_str("#fn")?,
+            Atom::List(items) => {
+                fmt.write_str("(")?;
+                items.head.fmt(fmt)?;
+                for item in items.tail.iter() {
+                    fmt.write_str(" ")?;
+                    item.fmt(fmt)?;
+                }
+                fmt.write_str(")")?;
+            },
+            Atom::Hash(hashmap) => {
+                fmt.write_str("{")?;
+                let mut is_first = true;
+                for (k, v) in hashmap.iter() {
+                    if !is_first {
+                        fmt.write_str(" ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    fmt.write_fmt(format_args!("{k:?} {v:?}"))?;
+                }
+                fmt.write_str("}")?;
+            },
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let type_str = if *is_macro {"defmacro"} else {"fn"};
+                fmt.write_fmt(format_args!("({type_str} {params:?} {ast:?})"))?
+            },
+            Atom::Error(e) => fmt.write_fmt(format_args!("ERROR: {}", e))?,
+            Atom::String(s) => fmt.write_str(s.as_str())?,
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for Atom {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Atom::Nil => fmt.write_str("()")?,
+            Atom::Bool(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Int(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Float(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Symbol(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Func(fun) => fmt.write_fmt(format_args!("fn@{fun:?}"))?,
+            Atom::List(items) => {
+                fmt.write_str("(")?;
+                items.head.fmt(fmt)?;
+                for item in items.tail.iter() {
+                    fmt.write_str(" ")?;
+                    item.fmt(fmt)?;
+                }
+                fmt.write_str(")")?;
+            },
+            Atom::Hash(hashmap) => {
+                fmt.write_str("{")?;
+                let mut is_first = true;
+                for (k, v) in hashmap.iter() {
+                    if !is_first {
+                        fmt.write_str(" ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    fmt.write_fmt(format_args!("{k:?} {v:?}"))?;
+                }
+                fmt.write_str("}")?;
+            },
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let type_str = if *is_macro {"defmacro"} else {"fn"};
+                fmt.write_fmt(format_args!("({type_str} {params:?} {ast:?})"))?
+            },
+            Atom::Error(e) => fmt.write_fmt(format_args!("ERROR: {}", e))?,
+            Atom::String(s) => fmt.write_fmt(format_args!("{s:?}"))?,
+        }
+        Ok(())
+    }
 }
 
 impl Atom {
@@ -180,7 +265,7 @@ mod macros {
         ($e:expr) => {
             match &$e {
                 Atom::Symbol(identifier) => identifier,
-                x => return crate::lisherr!("{} is not a symbol", print_debug(&x)),
+                x => return crate::lisherr!("{:?} is not a symbol", x),
             }
         }
     }

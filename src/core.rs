@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    rc::Rc,
-};
+use std::fs;
 use {
     itertools::Itertools,
     fnv::FnvHashMap,
@@ -9,7 +6,6 @@ use {
 use crate::{
     lish_try,
     lisherr,
-    printer::{print_debug, print},
     reader::read,
     types::{Atom, List, Atom::{Nil, Int, Bool}},
     env::Env,
@@ -19,7 +15,7 @@ use crate::{
 #[macro_export]
 macro_rules! func {
     ($args:ident, $body:expr) => {
-        Atom::Func(|$args| {$body}, Rc::new(Atom::Nil))
+        Atom::Func(|$args| {$body})
     }
 }
 
@@ -149,7 +145,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             println!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print_debug(&x))
+                    .map(|x| format!("{x:?}"))
                     .join(" ")
             )
         )),
@@ -157,7 +153,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             print!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print(&x))
+                    .map(|x| x.to_string())
                     .join(" ")
                 )
         )),
@@ -165,7 +161,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             println!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print(&x))
+                    .map(|x| x.to_string())
                     .join(" ")
                 )
         )),
@@ -173,7 +169,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             Atom::String(format!(
                 "{}",
                 args.into_iter()
-                    .map(|x| print(&x))
+                    .map(|x| x.to_string())
                     .join(" ")
                 ))
         )),
@@ -243,11 +239,11 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let fun = args[0].clone();
             let args = args[1..].to_vec();
             match fun {
-                Atom::Func(f, _) => return f(args),
+                Atom::Func(f) => return f(args),
                 Atom::Lambda {
                     ast: lambda_ast, env: lambda_env, params, ..
                 } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), params.clone(), args)),
-                _ => lisherr!("{} is not a function", print_debug(&fun)),
+                _ => lisherr!("{:?} is not a function", fun),
             }
         })),
         ("read", func!(args, {
@@ -255,7 +251,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let arg = args[0].clone();
             match arg {
                 Atom::String(s) => lish_try!(read(s)),
-                _ => lisherr!("{} is not a string", print_debug(&arg))
+                _ => lisherr!("{:?} is not a string", arg)
             }
         })),
         ("slurp", func!(args, {
@@ -273,7 +269,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let result: String = args.into_iter()
                 .map(|x| match x {
                     Atom::String(s) => s,
-                    _ => print_debug(&x).to_owned(),
+                    _ => format!("{x:?}"),
                 })
                 .join("");
             Atom::String(result)
@@ -303,7 +299,7 @@ mod core_tests {
     fn get_fn(name: &str) -> fn(Vec<Atom>) -> Atom {
         let ns = namespace();
         match ns.get(name) {
-            Some(Atom::Func(f, _)) => f.clone(),
+            Some(Atom::Func(f)) => f.clone(),
             _ => unreachable!(),
         }
     }
@@ -315,7 +311,7 @@ mod core_tests {
                 let ns = namespace();
                 $(
                     assert_eq!(match ns.get($fun) {
-                        Some(Atom::Func(f, _)) => f($args),
+                        Some(Atom::Func(f)) => f($args),
                         Some(_) => lisherr!("{:?} is not a function", $fun),
                         None => lisherr!("{:?} was not found", $fun),
                     }, Atom::from($res));
