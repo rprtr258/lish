@@ -5,10 +5,10 @@ use {
 use crate::types::{Atom, List};
 
 fn unescape_str(s: &str) -> String {
-    // lazy_static! {
-        /*static */let re: Regex = Regex::new(r#"\\."#).unwrap();
-    // }
-    re.replace_all(&s, |caps: &Captures| {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r#"\\."#).unwrap();
+    }
+    RE.replace_all(&s, |caps: &Captures| {
         match caps[0].chars().nth(1).unwrap() {
             'n' => '\n',
             '"' => '"',
@@ -18,24 +18,28 @@ fn unescape_str(s: &str) -> String {
     }).to_string()
 }
 
-// TODO: regexes
 fn read_atom(token: &String) -> Atom {
-    match token.parse::<bool>() {
-        Ok(b) => return Atom::Bool(b),
-        Err(_) => {}
-    };
-    match token.parse::<i64>() {
-        Ok(n) => return Atom::Int(n),
-        Err(_) => {}
-    };
-    match token.parse::<f64>() {
-        Ok(x) => return Atom::Float(x),
-        Err(_) => {}
-    };
-    if token.chars().nth(0).unwrap() == '"' {
-        return Atom::String(unescape_str(&token[1..token.len()-1]))
-    };
-    Atom::symbol(token)
+    lazy_static! {
+        static ref SET: regex::RegexSet = regex::RegexSet::new(&[
+            r#"^true|false$"#,
+            r#"^-?\d+$"#,
+            r#"^-?\d*\.\d*$"#,
+            r#"^"(?:\\.|[^\\"])*"$"#,
+        ]).unwrap();
+    }
+    
+    let matches = SET.matches(token.as_str());
+    if matches.matched(0) {
+        Atom::Bool(token.parse::<bool>().unwrap())
+    } else if matches.matched(1) {
+        Atom::Int(token.parse::<i64>().unwrap())
+    } else if matches.matched(2) {
+        Atom::Float(token.parse::<f64>().unwrap())
+    } else if matches.matched(3) {
+        Atom::String(unescape_str(&token[1..token.len()-1]))
+    } else {
+        Atom::symbol(token)
+    }
 }
 
 // TODO: reader macro list, (add run-time)?
