@@ -223,7 +223,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
         ("apply", func!(args, {
             let fun = args[0].clone();
             let args = args[1..].to_vec();
-            // TODO: apply hashmap
             match fun {
                 Atom::Func(f, _) => return f(args),
                 Atom::Lambda {

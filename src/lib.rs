@@ -135,29 +135,40 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 });
             }
             // TODO: inherit stdin, stdout by default, but pipe if piped
-            let out = std::process::Command::new(s)
-                .stdin(std::process::Stdio::inherit())
-                .stdout(std::process::Stdio::inherit())
+            let mut child = std::process::Command::new(s)
+                // .stdin(std::process::Stdio::inherit())
+                // .stdout(std::process::Stdio::inherit())
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
                 .args(cmd_args)
-                .output();
-            match out {
-                Ok(output) => {
-                    // TODO: stdout is iter (another kind of list) of lines
-                    let stdout = match std::str::from_utf8(&output.stdout[..]) {
-                        Ok(out) => out.to_string(),
-                        Err(e) => return FormResult::Return(lisherr!("{}", e)),
-                    };
-                    let stderr = match std::str::from_utf8(&output.stderr[..]) {
-                        Ok(out) => out.to_string(),
-                        Err(e) => return FormResult::Return(lisherr!("{}", e)),
-                    };
-                    if output.status.success() {
-                        FormResult::Return(Ok(Atom::String(stdout)))
-                    } else {
-                        FormResult::Return(lisherr!("exit_code={:?}\nstdout:\n{}\nstderr:\n{}", output.status.code(), stdout, stderr))
-                    }
+                .spawn()
+                .unwrap();
+            let status = child.wait().unwrap();
+            // Err(err) => FormResult::Return(lisherr!(err)),
+            use std::io::Read;
+            let mut stdout = String::new();
+            match child.stdout {
+                Some(mut s) => {
+                    s.read_to_string(&mut stdout).unwrap();
                 },
-                Err(err) => FormResult::Return(lisherr!(err)),
+                None => {},
+            }
+            let mut stderr = String::new();
+            match child.stderr {
+                Some(mut s) => {
+                    s.read_to_string(&mut stderr).unwrap();
+                },
+                None => {},
+            }
+            // TODO: stdout is iter (another kind of list) of lines
+            if status.success() {
+                FormResult::Return(Ok(Atom::from(stdout
+                    .split("\n")
+                    .map(|line| Atom::String(line.to_owned()))
+                    .collect::<Vec<Atom>>()
+                )))
+            } else {
+                FormResult::Return(lisherr!("exit_code={:?}\nstdout:\n{}\nstderr:\n{}", status.code(), stdout, stderr))
             }
         },
         Atom::Hash(hash) => {
@@ -335,7 +346,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    print(&read(input).and_then(|ast| eval(ast, env)))
+    print_debug(&read(input).and_then(|ast| eval(ast, env)))
 }
 
 #[cfg(test)]
