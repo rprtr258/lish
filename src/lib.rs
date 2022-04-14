@@ -105,6 +105,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
         Atom::Lambda{..} => {},
         Atom::Func(_, _) => {},
         Atom::String(_) => {},
+        Atom::Hash(_) => {},
         _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&Ok(fun.clone())))),
     }
     let args = match tail.iter()
@@ -158,6 +159,19 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 },
                 Err(err) => FormResult::Return(lisherr!(err)),
             }
+        },
+        Atom::Hash(hash) => {
+            FormResult::Return(if args.len() != 1 {
+                lisherr!("Hash is not a function")
+            } else {
+                match &args[0] {
+                    Atom::String(key) => match hash.get(key) {
+                        Some(value) => Ok(value.clone()),
+                        None => lisherr!("Value was not found by key {}", key),
+                    },
+                    _ => lisherr!("Hash key must be string"),
+                }
+            })
         },
         _ => unreachable!(),
     }
@@ -275,7 +289,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                                 let args = tail[0].clone();
                                 let body = tail[1].clone();
                                 return Ok(Atom::Lambda {
-                                    eval: eval,
+                                    eval,
                                     ast: Rc::new(body),
                                     env: env.clone(),
                                     params: Rc::new(args),
@@ -755,6 +769,17 @@ mod eval_tests {
             hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
             hashmap
         }))] => Atom::String(r#"{"a" 1 "b" "2"}"#.to_owned()),
+    );
+
+    // ({"a" 1 "b" "2"} "a")
+    test_eval!(
+        hash_as_function,
+        form![Atom::Hash(std::rc::Rc::new({
+            let mut hashmap = fnv::FnvHashMap::default();
+            hashmap.insert("a".to_owned(), Atom::Int(1));
+            hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
+            hashmap
+        })), Atom::String("a".to_owned())] => Atom::Int(1),
     );
 
     // ((fn (x y) (+ x y)) 1 2)
