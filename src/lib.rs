@@ -129,15 +129,17 @@ fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> For
                 });
             }
             // TODO: inherit stdin, stdout by default, but pipe if piped
-            let mut child = std::process::Command::new(s)
+            let mut child = match std::process::Command::new(s)
                 // .stdin(std::process::Stdio::inherit())
                 // .stdout(std::process::Stdio::inherit())
                 .stdin(std::process::Stdio::piped())
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::piped())
                 .args(cmd_args)
-                .spawn()
-                .unwrap();
+                .spawn() {
+                Ok(child) => child,
+                Err(err) => return FormResult::Return(Atom::Error(err.to_string())),
+            };
             let status = child.wait().unwrap();
             // Err(err) => FormResult::Return(lisherr!(err)),
             use std::io::Read;
