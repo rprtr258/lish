@@ -110,7 +110,7 @@ pub fn read(cmd: String) -> LishResult {
         static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
     }
     let reader = RE.captures_iter(cmd.as_str())
-        .map(|capture| capture[1].to_string())
+        .map(|capture| capture[1].to_string()) // TODO: switch from String to &str
         .filter(|s| s
             .chars()
             .nth(0)
