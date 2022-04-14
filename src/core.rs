@@ -481,7 +481,7 @@ mod core_tests {
             ast: Rc::new(Atom::symbol("x")),
             env: Env::new(None),
             is_macro: false,
-            meta: Rc::new(Atom::Nil),
+            // meta: Rc::new(Atom::Nil),
         };
         assert_eq!(
             get_fn("apply")(args![lambda, 1, 2, 3]),

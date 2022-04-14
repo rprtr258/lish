@@ -212,12 +212,12 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                                 lish_assert_args!("setmacro", 2);
                                 return match eval(tail[1].clone(), env.clone())? {
                                     Atom::Lambda {
-                                        eval, ast, env, params, meta, ..
+                                        eval, ast, env, params, /*meta, */..
                                     } => env.set(tail[0].clone(), Atom::Lambda {
                                         eval,
                                         ast,
                                         params,
-                                        meta,
+                                        // meta,
                                         env: env.clone(),
                                         is_macro: true,
                                     }),
@@ -280,7 +280,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                                     env: env.clone(),
                                     params: Rc::new(args),
                                     is_macro: false,
-                                    meta: Rc::new(Atom::Nil),
+                                    // meta: Rc::new(Atom::Nil),
                                 })
                             }
                             _ => {

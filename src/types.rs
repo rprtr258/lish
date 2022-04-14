@@ -5,14 +5,14 @@ use std::{
     iter::{Chain, Once, once},
     vec::IntoIter,
 };
-
-use crate::env::{Env};
+use fnv::FnvHashMap;
+use crate::env::Env;
 
 #[derive(Debug, Clone)]
 pub struct List {
     pub head: Rc<Atom>,
     pub tail: Rc<Vec<Atom>>,
-    meta: Rc<Atom>,
+    // meta: Rc<Atom>,
 }
 
 impl List {
@@ -20,7 +20,7 @@ impl List {
         List {
             head: Rc::new(head),
             tail: Rc::new(tail),
-            meta: Rc::new(Atom::Nil),
+            // meta: Rc::new(Atom::Nil),
         }
     }
 
@@ -37,7 +37,7 @@ pub enum Atom {
     Float(f64),
     String(String),
     Symbol(String),
-    // Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
+    Hash(Rc<FnvHashMap<String, Atom>>),//, Rc<Atom>),
     Func(fn(Args) -> LishResult, Rc<Atom>),
     Lambda {
         eval: fn(ast: Atom, env: Env) -> LishResult,
@@ -46,7 +46,7 @@ pub enum Atom {
         // TODO: Vec<str>
         params: Rc<Atom>,
         is_macro: bool,
-        meta: Rc<Atom>,
+        // meta: Rc<Atom>,
     },
     Nil,
     List(List),
