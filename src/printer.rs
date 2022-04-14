@@ -121,12 +121,14 @@ mod printer_tests {
 
     #[test]
     fn test_print_dict() {
-        assert_eq!(print(&Ok(Atom::Hash(std::rc::Rc::new({
+        let hashmap = Ok(Atom::Hash(std::rc::Rc::new({
             let mut hashmap = fnv::FnvHashMap::default();
             hashmap.insert("a".to_owned(), Atom::Int(1));
             hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
             hashmap
-        })))), r#"{"a" 1 "b" "2"}"#)
+        })));
+        assert_eq!(print(&hashmap), r#"{"a" 1 "b" "2"}"#);
+        assert_eq!(print_debug(&hashmap), r#"{"a" 1 "b" "2"}"#);
     }
 
     #[test]

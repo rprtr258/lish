@@ -746,6 +746,17 @@ mod eval_tests {
         form![Atom::symbol("eval"), form![Atom::symbol("+"), 2, 2]] => 4,
     );
 
+    // (echo {"a" 1 "b" "2"})
+    test_eval!(
+        echo_hash,
+        form![Atom::symbol("echo"), Atom::Hash(std::rc::Rc::new({
+            let mut hashmap = fnv::FnvHashMap::default();
+            hashmap.insert("a".to_owned(), Atom::Int(1));
+            hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
+            hashmap
+        }))] => Atom::String(r#"{"a" 1 "b" "2"}"#.to_owned()),
+    );
+
     // ((fn (x y) (+ x y)) 1 2)
     test_eval!(
         fn_statement,

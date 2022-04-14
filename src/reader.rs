@@ -79,7 +79,10 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
                     None => false,
                     _ => true,
                 } {
-                    let key = peekable_tokens.next().unwrap();
+                    let key = match read_atom(&peekable_tokens.next().unwrap()) {
+                        Atom::String(k) => k,
+                        _ => todo!("Not a valid key"),
+                    };
                     let value = read_atom(&peekable_tokens.next().unwrap()); // TODO: eval
                     hashmap.insert(key, value);
                 }
@@ -206,10 +209,10 @@ mod reader_tests {
         left_outer_twice, "+-curried 1) 3)", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_left_outer, "+-curried 1) 3", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_right_outer, "+ 1 2 (+ 3 4", form![Atom::symbol("+"), 1, 2, form![Atom::symbol("+"), 3, 4]],
-        dict, "{a 1 b 2", form![Atom::Hash(std::rc::Rc::new({
+        dict, r#"{"a" 1 "b" "2""#, form![Atom::Hash(std::rc::Rc::new({
             let mut hashmap = fnv::FnvHashMap::default();
             hashmap.insert("a".to_owned(), Atom::Int(1));
-            hashmap.insert("b".to_owned(), Atom::Int(2));
+            hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
             hashmap
         }))],
     );
