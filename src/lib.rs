@@ -140,6 +140,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 // .stdout(std::process::Stdio::inherit())
                 .stdin(std::process::Stdio::piped())
                 .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
                 .args(cmd_args)
                 .spawn()
                 .unwrap();
@@ -147,6 +148,11 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             // Err(err) => FormResult::Return(lisherr!(err)),
             use std::io::Read;
             let mut stdout = String::new();
+            // TODO: stdout is iter (another kind of list) of lines
+            // stdout
+            //     .split("\n")
+            //     .map(|line| Atom::String(line.to_owned()))
+            //     .collect::<Atom::Iter>()
             match child.stdout {
                 Some(mut s) => {
                     s.read_to_string(&mut stdout).unwrap();
@@ -160,16 +166,11 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 },
                 None => {},
             }
-            // TODO: stdout is iter (another kind of list) of lines
-            if status.success() {
-                FormResult::Return(Ok(Atom::from(stdout
-                    .split("\n")
-                    .map(|line| Atom::String(line.to_owned()))
-                    .collect::<Vec<Atom>>()
-                )))
-            } else {
-                FormResult::Return(lisherr!("exit_code={:?}\nstdout:\n{}\nstderr:\n{}", status.code(), stdout, stderr))
-            }
+            let mut res = fnv::FnvHashMap::default();
+            res.insert("exit_code".to_owned(), Atom::Int(status.code().unwrap().into()));
+            res.insert("stdout".to_owned(), Atom::String(stdout));
+            res.insert("stderr".to_owned(), Atom::String(stderr));
+            FormResult::Return(Ok(Atom::Hash(std::rc::Rc::new(res))))
         },
         Atom::Hash(hash) => {
             FormResult::Return(if args.len() != 1 {
