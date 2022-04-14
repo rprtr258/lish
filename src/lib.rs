@@ -123,7 +123,7 @@ fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> For
             let mut cmd_args = Vec::new();
             for arg in args {
                 cmd_args.push(match arg {
-                    Atom::String(a) => a.clone(), // TODO: is needed?
+                    Atom::String(a) => a,
                     _ => return FormResult::Return(lisherr!("{arg:?} is not string argument")),
                 });
             }
