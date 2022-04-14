@@ -1,5 +1,4 @@
 use itertools::Itertools;
-
 use crate::types::{Atom, LishResult};
 
 fn print_trivial(val: &Atom) -> String {
@@ -10,7 +9,11 @@ fn print_trivial(val: &Atom) -> String {
         Atom::Float(y) => format!("{}", y),
         Atom::Symbol(y) => format!("{}", y),
         Atom::Func(_, _) => "#fn".to_owned(),
-        _ => unreachable!()
+        Atom::Hash(hashmap) => format!("{{{}}}", hashmap.iter()
+            .map(|(k, v)| format!(r#""{}" {}"#, k, print_debug(&Ok(v.clone()))))
+            .join(" ")
+        ),
+        _ => unreachable!(),
     }
 }
 
@@ -63,7 +66,10 @@ pub fn print_debug(val: &LishResult) -> String {
                 };
                 format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print_debug(&Ok((**ast).clone())))
             },
-            Atom::List(items) => format!("({})", items.iter().map(|x| print_debug(&Ok(x.clone()))).join(" ")),
+            Atom::List(items) => format!("({})", items.iter()
+                .map(|x| print_debug(&Ok(x.clone())))
+                .join(" ")
+            ),
             Atom::String(y) => format!("{:?}", y),
             _ => print_trivial(x)
         }
@@ -112,6 +118,16 @@ mod printer_tests {
     test_print_debug!(print_string_with_slash, r"\", r#""\\""#);
     test_print_debug!(print_string_with_2slashes, r"\\", r#""\\\\""#);
     test_print_debug!(print_string_with_newline, "\n", r#""\n""#);
+
+    #[test]
+    fn test_print_dict() {
+        assert_eq!(print(&Ok(Atom::Hash(std::rc::Rc::new({
+            let mut hashmap = fnv::FnvHashMap::default();
+            hashmap.insert("a".to_owned(), Atom::Int(1));
+            hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
+            hashmap
+        })))), r#"{"a" 1 "b" "2"}"#)
+    }
 
     #[test]
     fn test_print_nice() {

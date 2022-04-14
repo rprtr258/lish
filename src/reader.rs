@@ -80,7 +80,7 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
                     _ => true,
                 } {
                     let key = peekable_tokens.next().unwrap();
-                    let value = read_atom(&peekable_tokens.next().unwrap());
+                    let value = read_atom(&peekable_tokens.next().unwrap()); // TODO: eval
                     hashmap.insert(key, value);
                 }
                 if peekable_tokens.peek() == Some(&"}".to_owned()) {
