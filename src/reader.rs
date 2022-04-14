@@ -120,21 +120,22 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> Atom {
         let last_list = lists_stack.pop().unwrap();
         append_item_to_last_stack_list(&mut lists_stack, last_list.0);
     }
-    lists_stack.pop().unwrap().0
+    lists_stack.pop()
+        .map(|x| x.0)
+        .unwrap_or(Atom::Nil)
 }
 
 pub fn read(cmd: String) -> Atom {
     // TODO: compile regex compile-time
     lazy_static! {
-        static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
+        static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}()'"`,;]*)\s*"#).unwrap();
     }
     let reader = RE.captures_iter(cmd.as_str())
         .map(|capture| capture[1].to_string()) // TODO: switch from String to &str
-        .filter(|s| s
-            .chars()
+        .filter(|s| s.chars()
             .nth(0)
             .map(|x| x != ';')
-            .unwrap() // TODO: fix panic on empty input
+            .unwrap_or(false)
         );
     match read_form(reader) {
         f@Atom::Func(..) => Atom::from(f),
@@ -163,13 +164,9 @@ mod reader_tests {
         }
     }
 
-    // TODO: parse_nothing, "", Nil,
-    // #[test]
-    // fn parse_nothing() {
-    //     assert_eq!(read("".to_owned()), Atom::Nil)
-    // }
-
     test_parse!(
+        parse_nothing, "", Atom::Nil,
+        parse_nothing_space, " ", Atom::Nil,
         num, "1", form![Atom::from(1)],
         num_spaces, "   7   ", form![Atom::from(7)],
         negative_num, "-12", form![Atom::from(-12)],
