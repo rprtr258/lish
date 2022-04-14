@@ -71,7 +71,23 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
                 }
                 let last_list = lists_stack.pop().unwrap();
                 append_item_to_last_stack_list(&mut lists_stack, last_list.0);
-            }
+            },
+            "{" => {
+                let mut hashmap = fnv::FnvHashMap::default();
+                while match peekable_tokens.peek() {
+                    Some(ref s) if &s[..] == "}" => false,
+                    None => false,
+                    _ => true,
+                } {
+                    let key = peekable_tokens.next().unwrap();
+                    let value = read_atom(&peekable_tokens.next().unwrap());
+                    hashmap.insert(key, value);
+                }
+                if peekable_tokens.peek() == Some(&"}".to_owned()) {
+                    peekable_tokens.next(); // "}"
+                }
+                append_item_to_last_stack_list(&mut lists_stack, Atom::Hash(std::rc::Rc::new(hashmap)));
+            },
             "'" => {
                 lists_stack.push((Atom::from(vec![Atom::symbol("quote")]), ListType::ReaderMacro));
             },
@@ -190,11 +206,11 @@ mod reader_tests {
         left_outer_twice, "+-curried 1) 3)", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_left_outer, "+-curried 1) 3", form![form![Atom::symbol("+-curried"), 1], 3],
         outer_right_outer, "+ 1 2 (+ 3 4", form![Atom::symbol("+"), 1, 2, form![Atom::symbol("+"), 3, 4]],
-        dict, "{a 1 b 2}", Atom::Hash(std::rc::Rc::new({
+        dict, "{a 1 b 2", form![Atom::Hash(std::rc::Rc::new({
             let mut hashmap = fnv::FnvHashMap::default();
             hashmap.insert("a".to_owned(), Atom::Int(1));
             hashmap.insert("b".to_owned(), Atom::Int(2));
             hashmap
-        })),
+        }))],
     );
 }
