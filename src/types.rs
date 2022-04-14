@@ -252,11 +252,8 @@ mod macros {
 
     #[macro_export]
     macro_rules! lisherr {
-        ($message:expr) => {{
-            Atom::Error($message.to_string())
-        }};
-        ($message:expr $(, $params:expr)+) => {{
-            crate::lisherr!(format!($message $(, $params)+))
+        ($message:expr $(, $params:expr)*) => {{
+            Atom::Error(format!($message $(, $params)*))
         }}
     }
 
@@ -265,7 +262,7 @@ mod macros {
         ($e:expr) => {
             match &$e {
                 Atom::Symbol(identifier) => identifier,
-                x => return crate::lisherr!("{:?} is not a symbol", x),
+                x => return crate::lisherr!("{x:?} is not a symbol"),
             }
         }
     }

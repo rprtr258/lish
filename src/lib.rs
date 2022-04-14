@@ -124,7 +124,7 @@ fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> For
             for arg in args {
                 cmd_args.push(match arg {
                     Atom::String(a) => a.clone(), // TODO: is needed?
-                    _ => return FormResult::Return(lisherr!("{:?} is not string argument", arg)),
+                    _ => return FormResult::Return(lisherr!("{arg:?} is not string argument")),
                 });
             }
             // TODO: inherit stdin, stdout by default, but pipe if piped

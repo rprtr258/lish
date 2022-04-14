@@ -45,7 +45,7 @@ macro_rules! int_bin_op {
                 .fold(Int($init), |a: Atom, b: &Atom|
                     match (a, b) {
                         (Int(ai), Int(bi)) => Int(ai $op bi),
-                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        _ => lisherr!("Can't eval ({} {args:?})", $name),
                     }
                 )
         )
@@ -59,7 +59,7 @@ macro_rules! int_bin_op {
                 .fold(init, |a: Atom, b: &Atom|
                     match (a, b) {
                         (Int(ai), Int(bi)) => Int(ai $op bi),
-                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        _ => lisherr!("Can't eval ({} {args:?})", $name),
                     }
                 )
         })
@@ -76,7 +76,7 @@ macro_rules! logical_op {
                 .fold(Bool(true), |a: Atom, b: &Atom|
                     match a {
                         Bool(ai) => Bool(ai && (init $op b.clone())),
-                        _ => lisherr!("Can't eval ({} {:?})", $name, args),
+                        _ => lisherr!("Can't eval ({} {args:?})", $name),
                     }
                 )
         })
@@ -106,7 +106,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                         .fold(init, |a: Atom, b: &Atom|
                             match (a, b) {
                                 (Int(ai), Int(bi)) => Int(ai - bi),
-                                _ => lisherr!("Can't eval ({} {:?})", "-", args),
+                                _ => lisherr!("Can't eval (- {args:?})"),
                     })
                 }
             })),
@@ -117,7 +117,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 .fold(Bool(false), |a: Atom, b: &Atom|
                     match (a, b) {
                         (Bool(ai), Bool(bi)) => Bool(ai || *bi),
-                        _ => lisherr!("Can't eval ({} {:?})", "or", args),
+                        _ => lisherr!("Can't eval (or {args:?})"),
                     }
                 )
         })),
@@ -130,7 +130,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                             Bool(bi) => Bool(ai && *bi),
                             _ => lisherr!("{:?} is not Bool", b),
                         },
-                        _ => lisherr!("Can't eval ({} {:?})", "and", args),
+                        _ => lisherr!("Can't eval (and {args:?})"),
                     }
                 )
         })),
@@ -243,7 +243,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 Atom::Lambda {
                     ast: lambda_ast, env: lambda_env, params, ..
                 } => eval((*lambda_ast).clone(), Env::bind(Some(lambda_env.clone()), params.clone(), args)),
-                _ => lisherr!("{:?} is not a function", fun),
+                _ => lisherr!("{fun:?} is not a function"),
             }
         })),
         ("read", func!(args, {
@@ -251,7 +251,7 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             let arg = args[0].clone();
             match arg {
                 Atom::String(s) => lish_try!(read(s)),
-                _ => lisherr!("{:?} is not a string", arg)
+                _ => lisherr!("{arg:?} is not a string")
             }
         })),
         ("slurp", func!(args, {
@@ -260,9 +260,9 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             match arg {
                 Atom::String(filename) => match fs::read_to_string(filename) {
                     Ok(s) => Atom::String(s),
-                    Err(e) => lisherr!(e),
+                    Err(e) => lisherr!("{e}"),
                 }
-                _ => lisherr!("{:?} is not a string", arg)
+                _ => lisherr!("{arg:?} is not a string")
             }
         })),
         ("join", func_ok!(args, {
