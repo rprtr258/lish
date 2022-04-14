@@ -1,5 +1,4 @@
 use std::{
-    fmt::Display,
     rc::Rc,
     cmp::Ordering,
     iter::{Chain, Once, once},
@@ -27,6 +26,10 @@ impl List {
     pub fn iter(&self) -> Chain<Once<Atom>, IntoIter<Atom>> {
         once((*self.head).clone()).chain((*self.tail).clone().into_iter())
     }
+
+    pub fn len(&self) -> usize {
+        1 + self.tail.len()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -37,14 +40,14 @@ pub enum Atom {
     Float(f64),
     String(String),
     Symbol(String),
+    Error(String),
     Hash(Rc<FnvHashMap<String, Atom>>),//, Rc<Atom>),
-    Func(fn(Args) -> LishResult, Rc<Atom>),
+    Func(fn(Vec<Atom>) -> Atom, Rc<Atom>),
     Lambda {
-        eval: fn(ast: Atom, env: Env) -> LishResult,
+        eval: fn(ast: Atom, env: Env) -> Atom,
         ast: Rc<Atom>,
         env: Env,
-        // TODO: Vec<str>
-        params: Rc<Atom>,
+        params: Vec<String>,
         is_macro: bool,
         // meta: Rc<Atom>,
     },
@@ -95,6 +98,7 @@ impl From<&String> for Atom {
     }
 }
 impl From<Vec<Atom>> for Atom {
+    // TODO: remove mut
     fn from(mut vec: Vec<Atom>) -> Self {
         if vec.len() == 0 {
             Self::Nil
@@ -126,6 +130,7 @@ impl PartialEq for Atom {
             (Self::Bool(ref a), Self::Bool(ref b)) => a == b,
             (Self::Int(ref a), Self::Int(ref b)) => a == b,
             (Self::String(ref a), Self::String(ref b)) => a == b,
+            (Self::Error(ref a), Self::Error(ref b)) => a == b,
             (Self::Symbol(ref a), Self::Symbol(ref b)) => a == b,
             (Self::List(ref a), Self::List(ref b)) => a.iter().zip(b.iter()).all(|(x, y)| x == y),
             (Self::Hash(ref a), Self::Hash(ref b)) => a == b,
@@ -134,21 +139,18 @@ impl PartialEq for Atom {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct LishErr(pub String);
-
-impl<T: Display> From<T> for LishErr {
-    fn from(message: T) -> Self {
-        LishErr(format!("{}", message))
-    }
-}
-
-pub type LishResult = Result<Atom, LishErr>;
-
-pub type Args = Vec<Atom>;
-
 // TODO: remove mod?
 mod macros {
+    #[macro_export]
+    macro_rules! lish_try {
+        ($val:expr) => {
+            match $val {
+                err@Atom::Error(_) => return err,
+                x => x,
+            }
+        }
+    }
+
     #[macro_export]
     macro_rules! args {
         ($($val:expr),* $(,)?) => {
@@ -164,37 +166,22 @@ mod macros {
     }
 
     #[macro_export]
-    macro_rules! func {
-        ($args:ident, $body:expr) => {
-            Atom::Func(|$args| {$body}, Rc::new(Atom::Nil))
-        }
-    }
-
-    #[macro_export]
-    macro_rules! func_ok {
-        ($args:ident, $body:expr) => {
-            crate::func!($args, Ok($body))
-        }
-    }
-
-    #[macro_export]
-    macro_rules! func_nil {
-        ($args:ident, $body:expr) => {
-            crate::func_ok!($args, {
-                $body;
-                Atom::Nil
-            })
-        }
-    }
-
-    #[macro_export]
     macro_rules! lisherr {
         ($message:expr) => {{
-            use crate::LishErr;
-            Err(LishErr::from($message))
+            Atom::Error($message.to_string())
         }};
         ($message:expr $(, $params:expr)+) => {{
-            lisherr!(format!($message $(, $params)+))
+            crate::lisherr!(format!($message $(, $params)+))
         }}
+    }
+
+    #[macro_export]
+    macro_rules! assert_symbol {
+        ($e:expr) => {
+            match &$e {
+                Atom::Symbol(identifier) => identifier,
+                x => return crate::lisherr!("{} is not a symbol", print_debug(&x)),
+            }
+        }
     }
 }

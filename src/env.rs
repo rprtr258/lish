@@ -1,12 +1,11 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
+use std::{
+    cell::RefCell,
+    rc::Rc,
+};
 use fnv::FnvHashMap;
-
 use crate::{
-    lisherr,
     core::namespace,
-    types::{LishErr, LishResult, Atom},
+    types::Atom,
 };
 
 #[derive(Debug)]
@@ -34,28 +33,18 @@ impl Env {
         env
     }
 
-    pub fn bind(outer: Option<Env>, mbinds: Atom, exprs: Vec<Atom>) -> Result<Env, LishErr> {
+    pub fn bind(outer: Option<Env>, binds_vec: Vec<String>, exprs: Vec<Atom>) -> Env {
         let env = Env::new(outer);
-        match mbinds {
-            Atom::List(binds) => {
-                let binds_vec = binds.iter().collect::<Vec<Atom>>();
-                for (i, b) in binds.iter().enumerate() {
-                    match b {
-                        Atom::Symbol(s) if s == "&" => {
-                            // TODO: List.get(index)
-                            env.set(binds_vec[i + 1].clone(), Atom::from(exprs[i..].to_vec()))?;
-                            break;
-                        }
-                        _ => {
-                            env.set(b.clone(), exprs[i].clone())?;
-                        }
-                    }
-                }
-                Ok(env)
+        for (i, b) in binds_vec.iter().enumerate() {
+            if b == "&" {
+                // TODO: List.get(index)
+                env.set(&binds_vec[i + 1], Atom::from(exprs[i..].to_vec()));
+                break;
+            } else {
+                env.set(b, exprs[i].clone());
             }
-            Atom::Nil => Ok(env),
-            _ => lisherr!("Env::bind binds not List"),
         }
+        env
     }
 
     pub fn find(self: &Self, key: &str) -> Option<Env> {
@@ -74,28 +63,21 @@ impl Env {
         node
     }
 
-    pub fn get(self: &Self, key: &str) -> LishResult {
-        match self.find(key) {
-            Some(e) => Ok(e.0.data
-                .borrow()
+    pub fn get(self: &Self, key: &str) -> Option<Atom> {
+        self.find(key)
+            .map(|e| e.0.data.borrow()
                 .get(key)
                 .unwrap()
-                .clone()),
-            _ => lisherr!(&format!("Not found '{}'", key)),
-        }
+                .clone()
+            )
     }
 
     pub fn sets(self: &Self, key: &str, val: Atom) {
         self.0.data.borrow_mut().insert(key.to_owned(), val);
     }
 
-    pub fn set(self: &Self, key: Atom, val: Atom) -> LishResult {
-        match key {
-            Atom::Symbol(ref s) => {
-                self.sets(&s.to_string(), val.clone());
-                Ok(val)
-            }
-            _ => lisherr!("Env.set called with non-Str"),
-        }
+    pub fn set(self: &Self, key: &String, val: Atom) -> Atom {
+        self.sets(key.as_str(), val.clone());
+        val
     }
 }

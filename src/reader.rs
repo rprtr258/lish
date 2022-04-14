@@ -2,7 +2,7 @@ use {
     regex::{Captures, Regex},
     lazy_static::lazy_static,
 };
-use crate::types::{Atom, List, LishResult};
+use crate::types::{Atom, List};
 
 fn unescape_str(s: &str) -> String {
     // lazy_static! {
@@ -39,7 +39,7 @@ fn read_atom(token: &String) -> Atom {
 }
 
 // TODO: reader macro list, (add run-time)?
-fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
+fn read_form<T: Iterator<Item=String>>(tokens: T) -> Atom {
     #[derive(PartialEq, Debug)]
     enum ListType {
         Ordinary,
@@ -120,10 +120,10 @@ fn read_form<T: Iterator<Item=String>>(tokens: T) -> LishResult {
         let last_list = lists_stack.pop().unwrap();
         append_item_to_last_stack_list(&mut lists_stack, last_list.0);
     }
-    Ok(lists_stack.pop().unwrap().0)
+    lists_stack.pop().unwrap().0
 }
 
-pub fn read(cmd: String) -> LishResult {
+pub fn read(cmd: String) -> Atom {
     // TODO: compile regex compile-time
     lazy_static! {
         static ref RE: Regex = Regex::new(r#"\s*(,@|[{}()'`,^@]|"(?:\\.|[^\\"])*"|;.*|[^\s{}('"`,;)]*)\s*"#).unwrap();
@@ -136,12 +136,12 @@ pub fn read(cmd: String) -> LishResult {
             .map(|x| x != ';')
             .unwrap() // TODO: fix panic on empty input
         );
-    Ok(match read_form(reader)? {
+    match read_form(reader) {
         f@Atom::Func(..) => Atom::from(f),
         f@Atom::Lambda{..} => Atom::from(f),
         symbol@Atom::Symbol(_) => Atom::from(symbol),
         atom => atom,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -157,7 +157,7 @@ mod reader_tests {
             $(
                 #[test]
                 fn $test_name() {
-                    assert_eq!(read($input.to_owned()), Ok(Atom::from($res)))
+                    assert_eq!(read($input.to_owned()), Atom::from($res))
                 }
             )*
         }
@@ -166,7 +166,7 @@ mod reader_tests {
     // TODO: parse_nothing, "", Nil,
     // #[test]
     // fn parse_nothing() {
-    //     assert_eq!(read("".to_owned()), Ok(Atom::Nil))
+    //     assert_eq!(read("".to_owned()), Atom::Nil)
     // }
 
     test_parse!(

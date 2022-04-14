@@ -7,7 +7,7 @@ pub mod reader;
 mod printer;
 
 use {
-    types::{Atom, List, LishResult, LishErr},
+    types::{Atom, List},
     env::Env,
     reader::read,
     printer::{print, print_debug},
@@ -72,18 +72,18 @@ fn is_macro_call(ast: &Atom, env: &Env) -> bool {
     }
 }
 
-fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
+fn macroexpand(mut ast: Atom, env: &Env) -> Atom {
     while is_macro_call(&ast, env) {
         let macro_call = ast;
         match macro_call {
             Atom::List(List {head, tail, ..}) => {
-                let the_macro = eval((*head).clone(), env.clone()).unwrap();
+                let the_macro = lish_try!(eval((*head).clone(), env.clone()));
                 let args = tail.to_vec();
                 match the_macro {
                     Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
                         let lambda_ast = (*lambda_ast).clone();
-                        let lambda_env = Env::bind(Some(lambda_env.clone()), (*params).clone(), args).unwrap();
-                        ast = eval(lambda_ast, lambda_env)?;
+                        let lambda_env = Env::bind(Some(lambda_env.clone()), params.clone(), args);
+                        ast = lish_try!(eval(lambda_ast, lambda_env));
                     },
                     _ => unreachable!(),
                 }
@@ -91,35 +91,29 @@ fn macroexpand(mut ast: Atom, env: &Env) -> Result<Atom, LishErr> {
             _ => unreachable!(),
         }
     }
-    Ok(ast)
+    ast
 }
 
 // TODO: implement std::ops::Try and use ? when it will be stabilized
 enum FormResult {
     TailCallOptimisation(Atom, Env),
-    Return(LishResult),
+    Return(Atom),
 }
 
-fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
+fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> FormResult {
     match fun {
         Atom::Lambda{..} => {},
         Atom::Func(_, _) => {},
         Atom::String(_) => {},
         Atom::Hash(_) => {},
-        _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&Ok(fun.clone())))),
+        _ => return FormResult::Return(lisherr!("{} is not a function", print_debug(&fun.clone()))),
     }
-    let args = match tail.iter()
+    let args = unevaluated_args.iter()
         .map(|x| eval(x.clone(), env.clone()))
-        .collect::<Result<Vec<Atom>, LishErr>>() {
-        Ok(x) => x,
-        Err(err) => return FormResult::Return(Err(err)),
-    };
+        .collect::<Vec<Atom>>();
     match fun {
         Atom::Lambda {ast: lambda_ast, env: lambda_env, params, ..} => {
-            let new_env = match Env::bind(Some(lambda_env.clone()), (**params).clone(), args) {
-                Ok(x) => x,
-                Err(err) => return FormResult::Return(Err(err)),
-            };
+            let new_env = Env::bind(Some(lambda_env.clone()), params.clone(), args);
             FormResult::TailCallOptimisation(
                 (**lambda_ast).clone(),
                 new_env
@@ -147,18 +141,26 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             let status = child.wait().unwrap();
             // Err(err) => FormResult::Return(lisherr!(err)),
             use std::io::Read;
-            let mut stdout = String::new();
             // TODO: stdout is iter (another kind of list) of lines
             // stdout
             //     .split("\n")
             //     .map(|line| Atom::String(line.to_owned()))
             //     .collect::<Atom::Iter>()
-            match child.stdout {
-                Some(mut s) => {
-                    s.read_to_string(&mut stdout).unwrap();
-                },
-                None => {},
-            }
+            let mut res = fnv::FnvHashMap::default();
+            res.insert("exit_code".to_owned(), match status.code() {
+                Some(exit_code) => Atom::Int(exit_code.into()),
+                None => Atom::Nil,
+            });
+            res.insert("stdout".to_owned(), {
+                let mut stdout = String::new();
+                match child.stdout {
+                    Some(mut s) => {
+                        s.read_to_string(&mut stdout).unwrap();
+                        Atom::String(stdout)
+                    },
+                    None => Atom::Nil,
+                }
+            });
             let mut stderr = String::new();
             match child.stderr {
                 Some(mut s) => {
@@ -166,11 +168,8 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
                 },
                 None => {},
             }
-            let mut res = fnv::FnvHashMap::default();
-            res.insert("exit_code".to_owned(), Atom::Int(status.code().unwrap().into()));
-            res.insert("stdout".to_owned(), Atom::String(stdout));
             res.insert("stderr".to_owned(), Atom::String(stderr));
-            FormResult::Return(Ok(Atom::Hash(std::rc::Rc::new(res))))
+            FormResult::Return(Atom::Hash(std::rc::Rc::new(res)))
         },
         Atom::Hash(hash) => {
             FormResult::Return(if args.len() != 1 {
@@ -178,7 +177,7 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
             } else {
                 match &args[0] {
                     Atom::String(key) => match hash.get(key) {
-                        Some(value) => Ok(value.clone()),
+                        Some(value) => value.clone(),
                         None => lisherr!("Value was not found by key {}", key),
                     },
                     _ => lisherr!("Hash key must be string"),
@@ -191,16 +190,16 @@ fn eval_form(fun: &Atom, tail: &Rc<Vec<Atom>>, env: Env) -> FormResult {
 
 // TODO: less .clone(), measure memory footprint
 // https://github.com/marketplace/actions/create-or-update-comment
-pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
+pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
     loop {
-        ast = macroexpand(ast, &env)?;
+        ast = lish_try!(macroexpand(ast, &env));
         match &ast {
             // evaluate form
             Atom::List(List {head, tail, ..}) => {
                 macro_rules! lish_assert_args {
                     ($cmd:expr, $args_count:expr) => {{
                         if tail.len() != $args_count {
-                            return lisherr!("'{}' requires {} argument(s), but got {} in {}", $cmd, $args_count, tail.len(), print(&Ok(ast.clone())));
+                            return lisherr!("'{}' requires {} argument(s), but got {} in {}", $cmd, $args_count, tail.len(), print(&ast.clone()));
                         }
                     }}
                 }
@@ -210,11 +209,11 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                         match s.as_str() {
                             "quote" => {
                                 lish_assert_args!("quote", 1);
-                                return Ok(Atom::from(tail[0].clone()))
+                                return Atom::from(tail[0].clone())
                             }
                             "quasiquoteexpand" => {
                                 lish_assert_args!("quasiquoteexpand", 1);
-                                return Ok(quasiquote(Atom::from(tail[0].clone())));
+                                return quasiquote(Atom::from(tail[0].clone()));
                             }
                             "quasiquote" => {
                                 lish_assert_args!("quasiquote", 1);
@@ -224,22 +223,22 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             "macroexpand" => {
                                 lish_assert_args!("macroexpand", 1);
                                 match tail[0].clone() {
-                                    Atom::List(List {head, ..}) => {eval((*head).clone(), env.clone())?;},
+                                    Atom::List(List {head, ..}) => {lish_try!(eval((*head).clone(), env.clone()));},
                                     _ => unreachable!(),
                                 }
                                 return macroexpand(tail[0].clone(), &env);
                             }
                             "set" => {
                                 lish_assert_args!("set", 2);
-                                let value: Atom = eval(tail[1].clone(), env.clone())?;
-                                return env.set(tail[0].clone(), value)
+                                let value: Atom = lish_try!(eval(tail[1].clone(), env.clone()));
+                                return env.set(assert_symbol!(tail[0]), value)
                             }
                             "setmacro" => {
                                 lish_assert_args!("setmacro", 2);
-                                return match eval(tail[1].clone(), env.clone())? {
+                                return match lish_try!(eval(tail[1].clone(), env.clone())) {
                                     Atom::Lambda {
                                         eval, ast, env, params, /*meta, */..
-                                    } => env.set(tail[0].clone(), Atom::Lambda {
+                                    } => env.set(assert_symbol!(tail[0]), Atom::Lambda {
                                         eval,
                                         ast,
                                         params,
@@ -256,14 +255,14 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                                     _ => return lisherr!("Let bindings is not a list, but a {:?}", tail[0]),
                                 };
                                 if bindings.len() % 2 != 0 {
-                                    return lisherr!("'let' requires even number of arguments, but got {} in {}", tail.len(), print_debug(&Ok(ast.clone())));
+                                    return lisherr!("'let' requires even number of arguments, but got {} in {}", tail.len(), print_debug(&ast));
                                 }
                                 let mut i = 0;
                                 let let_env = Env::new(Some(env.clone()));
                                 while i < bindings.len() {
                                     let var_name = bindings[i].clone();
-                                    let var_value = eval(bindings[i + 1].clone(), let_env.clone())?;
-                                    let_env.set(var_name, var_value)?;
+                                    let var_value = lish_try!(eval(bindings[i + 1].clone(), let_env.clone()));
+                                    lish_try!(let_env.set(assert_symbol!(var_name), var_value));
                                     i += 2;
                                 }
                                 let mut body = Vec::with_capacity(tail.len() - 1);
@@ -274,17 +273,17 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             "progn" => {
                                 for item in tail.iter() {
-                                    eval(item.clone(), env.clone())?;
+                                    lish_try!(eval(item.clone(), env.clone()));
                                 }
                                 ast = tail.last().unwrap().clone()
                             }
                             "if" => {
-                                let predicate = eval(Atom::from(tail[0].clone()), env.clone())?;
+                                let predicate = lish_try!(eval(Atom::from(tail[0].clone()), env.clone()));
                                 match predicate {
                                     Atom::Bool(false) | Atom::Nil => if tail.len() == 3 {
                                         ast = tail[2].clone()
                                     } else {
-                                        return Ok(Atom::Nil)
+                                        return Atom::Nil
                                     },
                                     _ => {
                                         ast = tail[1].clone()
@@ -293,26 +292,45 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                             }
                             "eval" => {
                                 lish_assert_args!("eval", 1);
-                                ast = eval(tail[0].clone(), env.clone())?;
+                                ast = lish_try!(eval(tail[0].clone(), env.clone()));
                                 env = env.get_root().clone();
                                 continue;
                             }
                             "fn" => {
-                                let args = tail[0].clone();
+                                let args = match &tail[0] {
+                                    Atom::List(lst) => {
+                                        if !lst.iter().all(|x| match x {
+                                            Atom::Symbol(_) => true,
+                                            _ => false,
+                                        }) {
+                                            return lisherr!("fn args list must consist only of symbols, but not symbol was found in args list: {}", print_debug(&tail[0]));
+                                        }
+                                        let mut res = Vec::with_capacity(lst.len());
+                                        for x in lst.iter() {
+                                            match x {
+                                                Atom::Symbol(symbol) => res.push(symbol.clone()),
+                                                _ => unreachable!(),
+                                            }
+                                        }
+                                        res
+                                    },
+                                    _ => return lisherr!("fn args must be list of symbols, but it is {}", print_debug(&tail[0])),
+                                };
                                 let body = tail[1].clone();
-                                return Ok(Atom::Lambda {
+                                return Atom::Lambda {
                                     eval,
                                     ast: Rc::new(body),
                                     env: env.clone(),
-                                    params: Rc::new(args),
+                                    params: args,
                                     is_macro: false,
                                     // meta: Rc::new(Atom::Nil),
-                                })
+                                }
                             }
                             _ => {
                                 //todo!("call shell")
                                 let fun = env.get(s).unwrap_or(Atom::String(s.clone()));
-                                match eval_form(&fun, tail, env) {
+                                // lisherr!(format!("Not found '{}'", key)),
+                                match eval_function_call(&fun, tail, env) {
                                     FormResult::TailCallOptimisation(new_ast, new_env) => {
                                         ast = new_ast;
                                         env = new_env;
@@ -325,8 +343,8 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                     }
                     _ => {
                         //todo!("call shell")
-                        let fun = eval((**head).clone(), env.clone())?;
-                        match eval_form(&fun, tail, env) {
+                        let fun = lish_try!(eval((**head).clone(), env.clone()));
+                        match eval_function_call(&fun, tail, env) {
                             FormResult::TailCallOptimisation(new_ast, new_env) => {
                                 ast = new_ast;
                                 env = new_env;
@@ -338,16 +356,16 @@ pub fn eval(mut ast: Atom, mut env: Env) -> LishResult {
                 }
             }
             // nil is evaluated to nil
-            Atom::Nil => return Ok(Atom::Nil),
+            Atom::Nil => return Atom::Nil,
             // others are evaluated to themselves
-            Atom::Symbol(var) => return Ok(env.get(var).unwrap_or(Atom::String(var.clone()))),
-            x => return Ok(x.clone()),
+            Atom::Symbol(var) => return env.get(var).unwrap_or(Atom::String(var.clone())),
+            x => return x.clone(),
         }
     }
 }
 
 pub fn rep(input: String, env: Env) -> String {
-    print_debug(&read(input).and_then(|ast| eval(ast, env)))
+    print_debug(&eval(read(input), env))
 }
 
 #[cfg(test)]
@@ -469,7 +487,7 @@ mod eval_tests {
             fn $test_name() {
                 let repl_env = Env::new_repl();
                 $(
-                    assert_eq!(eval($ast, repl_env.clone()), Ok(Atom::from($res)));
+                    assert_eq!(eval($ast, repl_env.clone()), Atom::from($res));
                 )*
             }
         }
@@ -479,7 +497,7 @@ mod eval_tests {
     fn symbol_found() {
         let env = Env::new(None);
         env.sets("a", Atom::Int(1));
-        assert_eq!(eval(Atom::symbol("a"), env), Ok(Atom::Int(1)));
+        assert_eq!(eval(Atom::symbol("a"), env), Atom::Int(1));
     }
 
     // TODO: how to check that 'a' shell command is called?
@@ -495,7 +513,7 @@ mod eval_tests {
     #[test]
     fn id() {
         let env = Env::new(None);
-        assert_eq!(eval(Atom::Int(1), env), Ok(Atom::Int(1)));
+        assert_eq!(eval(Atom::Int(1), env), Atom::Int(1));
     }
 
     // (+ 2 2)
@@ -542,7 +560,7 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         assert_eq!(
             eval(form![Atom::symbol("quasiquoteexpand"), form![Atom::symbol("c"), form![Atom::symbol("unquote"), Atom::symbol("c")], form![Atom::symbol("splice-unquote"), Atom::symbol("c")]]], repl_env.clone()),
-            Ok(form![
+            form![
                 Atom::symbol("cons"),
                 form![
                     Atom::symbol("quote"), Atom::symbol("c")
@@ -556,7 +574,7 @@ mod eval_tests {
                         Vec::<Atom>::new()
                     ]
                 ]
-            ]),
+            ],
         );
     }
 
@@ -572,7 +590,7 @@ mod eval_tests {
                 Atom::symbol("quote"),
                 form![1, 2, 3],
             ],
-        ], repl_env.clone()).unwrap();
+        ], repl_env.clone());
         assert_eq!(
             eval(form![
                 Atom::symbol("quasiquote"),
@@ -588,11 +606,11 @@ mod eval_tests {
                     ],
                 ],
             ], repl_env.clone()),
-            Ok(form![
+            form![
                 Atom::symbol("c"),
                 form![1, 2, 3],
                 1, 2, 3,
-            ])
+            ]
         );
     }
     
@@ -601,7 +619,6 @@ mod eval_tests {
     #[test]
     fn set_macro_then_macroexpand() {
         let repl_env = Env::new_repl();
-        // TODO: remove all unwraps
         eval(form![
             Atom::symbol("setmacro"),
             Atom::symbol("m"),
@@ -616,7 +633,7 @@ mod eval_tests {
                     ]
                 ]
             ]
-        ], repl_env.clone()).unwrap();
+        ], repl_env.clone());
         assert_eq!(
             eval(form![
                 Atom::symbol("macroexpand"),
@@ -628,10 +645,10 @@ mod eval_tests {
                     ]
                 ],
             ], repl_env.clone()),
-            Ok(form![
+            form![
                 form![Atom::symbol("Y"), Atom::symbol("f")],
                 form![Atom::symbol("Y"), Atom::symbol("f")]
-            ])
+            ]
         );
     }
 
@@ -673,7 +690,7 @@ mod eval_tests {
         let repl_env = Env::new_repl();
         assert_eq!(
             eval(Atom::from("abc"), repl_env.clone()),
-            Ok(Atom::from("abc"))
+            Atom::from("abc")
         );
     }
 
@@ -847,8 +864,8 @@ mod eval_tests {
                     ]
                 ]
             ],
-        ], repl_env.clone()).unwrap();
-        assert_eq!(eval(form![Atom::symbol("sum"), 10000, 0], repl_env.clone()), Ok(Atom::from(50005000)));
+        ], repl_env.clone());
+        assert_eq!(eval(form![Atom::symbol("sum"), 10000, 0], repl_env.clone()), Atom::from(50005000));
     }
 
     // (set foo (fn (n) (if (= n 0) 0 (bar (- n 1)))))
@@ -873,7 +890,7 @@ mod eval_tests {
                     ]
                 ]
             ],
-        ], repl_env.clone()).unwrap();
+        ], repl_env.clone());
         eval(form![
             Atom::symbol("set"),
             Atom::symbol("bar"),
@@ -890,7 +907,7 @@ mod eval_tests {
                     ]
                 ]
             ],
-        ], repl_env.clone()).unwrap();
-        assert_eq!(eval(form![Atom::symbol("foo"), 10000], repl_env.clone()), Ok(Atom::from(0)));
+        ], repl_env.clone());
+        assert_eq!(eval(form![Atom::symbol("foo"), 10000], repl_env.clone()), Atom::from(0));
     }
 }

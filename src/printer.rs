@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use crate::types::{Atom, LishResult};
+use crate::types::Atom;
 
 fn print_trivial(val: &Atom) -> String {
     match val {
@@ -10,70 +10,45 @@ fn print_trivial(val: &Atom) -> String {
         Atom::Symbol(y) => format!("{}", y),
         Atom::Func(_, _) => "#fn".to_owned(),
         Atom::Hash(hashmap) => format!("{{{}}}", hashmap.iter()
-            .map(|(k, v)| format!(r#""{}" {}"#, k, print_debug(&Ok(v.clone()))))
+            .map(|(k, v)| format!(r#""{}" {}"#, k, print_debug(&v.clone())))
             .join(" ")
         ),
+        Atom::Error(e) => format!("ERROR: {}", e),
         _ => unreachable!(),
     }
 }
 
 // TODO: rewrite
 // TODO: print atom, not result
-pub fn print(val: &LishResult) -> String {
+pub fn print(val: &Atom) -> String {
     match val {
-        Ok(x) => match x {
-            Atom::Lambda {ast, params, is_macro, ..} => {
-                let params_str = match (**params).clone() {
-                    Atom::List(args) => args.iter()
-                        .map(|x|
-                            match x {
-                                Atom::Symbol(arg_name) => arg_name,
-                                _ => panic!("Lambda arg is not symbol"),
-                            }
-                        )
-                        .join(" "),
-                    Atom::Nil => "()".to_owned(),
-                    _ => panic!("Lambda args is not list"),
-                };
-                format!("({} ({}) {})", if *is_macro {"defmacro"} else {"fn"}, params_str, print(&Ok((**ast).clone())))
-            },
-            Atom::List(items) => format!("({})", items.iter()
-                .map(|x| print(&Ok(x.clone())))
-                .join(" ")
-            ),
-            Atom::String(y) => format!("{}", y),
-            _ => print_trivial(x)
-        }
-        Err(e) => format!("ERROR: {}", e.0),
+        Atom::Lambda {ast, params, is_macro, ..} => {
+            let params_str = params.iter().join(" ");
+            let type_str = if *is_macro {"defmacro"} else {"fn"};
+            format!("({} ({}) {})", type_str, params_str, print(&ast))
+        },
+        Atom::List(items) => format!("({})", items.iter()
+            .map(|x| print(&x))
+            .join(" ")
+        ),
+        Atom::String(y) => format!("{}", y),
+        _ => print_trivial(val)
     }
 }
 
-pub fn print_debug(val: &LishResult) -> String {
+pub fn print_debug(val: &Atom) -> String {
     match val {
-        Ok(x) => match x {
-            Atom::Lambda {ast, params, is_macro, ..} => {
-                let params_str = match (**params).clone() {
-                    Atom::List(arg_names) => arg_names.iter()
-                        .map(|x|
-                            match x {
-                                Atom::Symbol(arg_name) => arg_name,
-                                _ => panic!("Lambda arg is not symbol"),
-                            }
-                        )
-                        .join(" "),
-                    Atom::Nil => "()".to_owned(),
-                    _ => panic!("Lambda args is not list"),
-                };
-                format!("({} ({}) {})", if *is_macro {"macro"} else {"fn"}, params_str, print_debug(&Ok((**ast).clone())))
-            },
-            Atom::List(items) => format!("({})", items.iter()
-                .map(|x| print_debug(&Ok(x.clone())))
-                .join(" ")
-            ),
-            Atom::String(y) => format!("{:?}", y),
-            _ => print_trivial(x)
-        }
-        Err(e) => format!("ERROR: {}", e.0),
+        Atom::Lambda {ast, params, is_macro, ..} => {
+            let params_str = params.iter().join(" ");
+            let type_str = if *is_macro {"defmacro"} else {"fn"};
+            format!("({} ({}) {})", type_str, params_str, print_debug(&ast))
+        },
+        Atom::List(items) => format!("({})", items.iter()
+            .map(|x| print_debug(&x))
+            .join(" ")
+        ),
+        Atom::String(y) => format!("{:?}", y),
+        _ => print_trivial(val)
     }
 }
 
@@ -91,7 +66,7 @@ mod printer_tests {
         ($test_name:ident, $ast:expr, $res:expr) => {
             #[test]
             fn $test_name() {
-                assert_eq!(print(&Ok(Atom::from($ast))), $res)
+                assert_eq!(print(&Atom::from($ast)), $res)
             }
         }
     }
@@ -100,7 +75,7 @@ mod printer_tests {
         ($test_name:ident, $atom:expr, $res:expr) => {
             #[test]
             fn $test_name() {
-                assert_eq!(print_debug(&Ok(Atom::from($atom))), $res)
+                assert_eq!(print_debug(&Atom::from($atom)), $res)
             }
         }
     }
@@ -112,7 +87,7 @@ mod printer_tests {
     test_print!(print_empty_list, form![], "()");
     test_print!(print_list, form![1, 2], "(1 2)");
     test_print!(print_symbol, Atom::symbol("abc"), "abc");
-    test_print_debug!(print_func, Atom::Func(|x| Ok(x[0].clone()), Rc::new(Atom::Nil)), "#fn");
+    test_print_debug!(print_func, Atom::Func(|x| x[0].clone(), Rc::new(Atom::Nil)), "#fn");
     test_print_debug!(print_nil, Atom::Nil, "()");
     test_print_debug!(print_string, "abc", r#""abc""#);
     test_print_debug!(print_string_with_slash, r"\", r#""\\""#);
@@ -121,18 +96,18 @@ mod printer_tests {
 
     #[test]
     fn test_print_dict() {
-        let hashmap = Ok(Atom::Hash(std::rc::Rc::new({
+        let hashmap = Atom::Hash(std::rc::Rc::new({
             let mut hashmap = fnv::FnvHashMap::default();
             hashmap.insert("a".to_owned(), Atom::Int(1));
             hashmap.insert("b".to_owned(), Atom::String("2".to_owned()));
             hashmap
-        })));
+        }));
         assert_eq!(print(&hashmap), r#"{"a" 1 "b" "2"}"#);
         assert_eq!(print_debug(&hashmap), r#"{"a" 1 "b" "2"}"#);
     }
 
     #[test]
     fn test_print_nice() {
-        assert_eq!(print(&Ok(Atom::from("\n"))), "\n")
+        assert_eq!(print(&Atom::from("\n")), "\n")
     }
 }
