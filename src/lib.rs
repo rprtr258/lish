@@ -1,4 +1,7 @@
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    io::Read,
+};
 
 pub mod types;
 mod core;
@@ -141,7 +144,6 @@ fn eval_function_call(fun: &Atom, unevaluated_args: &Vec<Atom>, env: Env) -> For
             };
             let status = child.wait().unwrap();
             // Err(err) => FormResult::Return(lisherr!(err)),
-            use std::io::Read;
             // TODO: stdout is iter (another kind of list) of lines
             // stdout
             //     .split("\n")
@@ -326,6 +328,162 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                     is_macro: false,
                                     // meta: Rc::new(Atom::Nil),
                                 }
+                            }
+                            "pipe" => {
+                                lish_assert_args!("pipe", 2);
+                                let cmds = match &tail[0] {
+                                    Atom::List(v) => v,
+                                    x => return lisherr!("pipe cmds must be list, not {}", x),
+                                };
+                                if cmds.len() % 2 != 0 {
+                                    return lisherr!("pipe cmds count must be even, not {}", cmds.len());
+                                }
+                                let pipes = match &tail[1] {
+                                    Atom::List(v) => v,
+                                    x => return lisherr!("pipe pipes must be list, not {}", x),
+                                };
+                                if pipes.len() % 2 != 0 {
+                                    return lisherr!("pipe pipes count must be even, not {}", pipes.len());
+                                }
+
+                                // READ AND TOPSORT PIPES
+                                #[derive(Debug)]
+                                enum EdgeBegin {
+                                    ProcessStdout(String),
+                                    ProcessStderr(String),
+                                    File(String),
+                                    Null,
+                                    InheritStdin,
+                                    String(String),
+                                }
+                                #[derive(Debug)]
+                                enum EdgeEnd {
+                                    ProcessStdin(String),
+                                    File(String),
+                                    Null,
+                                    InheritStdout,
+                                    InheritStderr,
+                                    // String(String),
+                                }
+                                for i in 0..pipes.len()/2 {
+                                    let from = match &pipes[i * 2] {
+                                        Atom::List(v) => match (&v[0], &v[1]) {
+                                            (Atom::String(pp), Atom::String(s)) => {
+                                                match pp.as_str() {
+                                                    "stdout" => EdgeBegin::ProcessStdout(s.clone()),
+                                                    "stderr" => EdgeBegin::ProcessStderr(s.clone()),
+                                                    "file" => EdgeBegin::File(s.clone()),
+                                                    "string" => EdgeBegin::String(s.clone()),
+                                                    "inherit" => match s.as_str() {
+                                                        "stdin" => EdgeBegin::InheritStdin,
+                                                        x => return lisherr!("can't inherit {}", x),
+                                                    }
+                                                    x => return lisherr!("({} {}) can't be pipe beginning", x, s),
+                                                }
+                                            },
+                                            (x, y) => return lisherr!("unknown pipe beginning: ({} {})", x, y),
+                                        }
+                                        Atom::String(v) => match v.as_str() {
+                                            "null" => EdgeBegin::Null,
+                                            x => return lisherr!("unknown pipe beginning: {}", x),
+                                        }
+                                        x => return lisherr!("unknown pipe beginning: {}", x),
+                                    };
+                                    let into = match &pipes[i * 2 + 1] {
+                                        Atom::List(v) => match (&v[0], &v[1]) {
+                                            (Atom::String(pp), Atom::String(s)) => {
+                                                match pp.as_str() {
+                                                    "stdin" => EdgeEnd::ProcessStdin(s.clone()),
+                                                    "file" => EdgeEnd::File(s.clone()),
+                                                    "inherit" => match s.as_str() {
+                                                        "stdout" => EdgeEnd::InheritStdout,
+                                                        "stderr" => EdgeEnd::InheritStderr,
+                                                        x => return lisherr!("can't inherit {}", x),
+                                                    }
+                                                    x => return lisherr!("({} {}) can't be pipe ending", x, s),
+                                                }
+                                            },
+                                            (x, y) => return lisherr!("unknown pipe ending: ({} {})", x, y),
+                                        }
+                                        Atom::String(v) => match v.as_str() {
+                                            "null" => EdgeEnd::Null,
+                                            x => return lisherr!("unknown pipe ending: {}", x),
+                                        }
+                                        x => return lisherr!("unknown pipe ending: {}", x),
+                                    };
+                                    println!("{:?} {:?}", from, into);
+                                }
+
+                                // SPAWN PROCESSES AND PIPE THEM
+                                // let mut childs = fnv::FnvHashMap::default();
+                                // for i in 0..cmds.len()/2 {
+                                //     let cmd_name = match cmds[i * 2] {
+                                //         Atom::String(s) => s,
+                                //         x => return lisherr!("cmd name must be string, not {}", x),
+                                //     };
+                                //     if childs.contains_key(&cmd_name) {
+                                //         return lisherr!("cmd with name {} is declared at least twice, only one must survive", cmd_name);
+                                //     }
+                                //     let args = match cmds[i * 2 + 1] {
+                                //         Atom::List(v) => v,
+                                //         x => return lisherr!("cmd args must be list, not {}", x),
+                                //     };
+                                //     let program = match *args.head {
+                                //         Atom::String(s) => s,
+                                //         x => return lisherr!("cmd must be string, not {}", x),
+                                //     };
+                                //     let mut program_args = Vec::with_capacity(args.tail.len());
+                                //     for arg in args.tail.iter() {
+                                //         match arg {
+                                //             Atom::String(s) => program_args.push(s),
+                                //             x => return lisherr!("cmd arg must be string, not {}", x),
+                                //         }
+                                //     }
+                                //     match std::process::Command::new(program)
+                                //         .args(program_args)
+                                //         .stdin(std::process::Stdio::piped())
+                                //         .stdout(std::process::Stdio::piped())
+                                //         .stderr(std::process::Stdio::piped())
+                                //         .spawn() {
+                                //         Ok(child) => {
+                                //             childs.insert(cmd_name, child);
+                                //         },
+                                //         Err(err) => {
+                                //             for (_, ch) in childs.iter() {
+                                //                 ch.kill();
+                                //             }
+                                //             return Atom::Error(err.to_string());
+                                //         }
+                                //     }
+                                // }
+
+                                // RETURN RESULTS
+                                // let status = child.wait().unwrap();
+                                // let mut res = fnv::FnvHashMap::default();
+                                // res.insert("exit_code".to_owned(), match status.code() {
+                                //     Some(exit_code) => Atom::Int(exit_code.into()),
+                                //     None => Atom::Nil,
+                                // });
+                                // res.insert("stdout".to_owned(), {
+                                //     let mut stdout = String::new();
+                                //     match child.stdout {
+                                //         Some(mut s) => {
+                                //             s.read_to_string(&mut stdout).unwrap();
+                                //             Atom::String(stdout)
+                                //         },
+                                //         None => Atom::Nil,
+                                //     }
+                                // });
+                                // let mut stderr = String::new();
+                                // match child.stderr {
+                                //     Some(mut s) => {
+                                //         s.read_to_string(&mut stderr).unwrap();
+                                //     },
+                                //     None => {},
+                                // }
+                                // res.insert("stderr".to_owned(), Atom::String(stderr));
+                                // FormResult::Return(Atom::Hash(std::rc::Rc::new(res)))
+                                return Atom::Nil;
                             }
                             _ => {
                                 //todo!("call shell")

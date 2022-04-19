@@ -112,7 +112,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
             })),
         // LOGIC
         ("or", func!(args, {
-            // TODO: (or) == false
             args.iter()
                 .fold(Bool(false), |a: Atom, b: &Atom|
                     match (a, b) {
@@ -122,7 +121,6 @@ pub fn namespace() -> FnvHashMap<String, Atom> {
                 )
         })),
         ("and", func!(args, {
-            // TODO: (and) == true
             args.iter()
                 .fold(Bool(true), |a: Atom, b: &Atom|
                     match a {

@@ -32,6 +32,18 @@ impl List {
     }
 }
 
+impl std::ops::Index<usize> for List {
+    type Output = Atom;
+
+    fn index(&self, i: usize) -> &Atom {
+        if i == 0 {
+            &self.head
+        } else {
+            &self.tail[i - 1]
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum Atom {
     Bool(bool),
