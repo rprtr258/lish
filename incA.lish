@@ -1,3 +1,5 @@
+#!./target/release/lish
+
 (set inc4 (fn (a) (+ 4 a)))
 
 (echo (inc4 5))

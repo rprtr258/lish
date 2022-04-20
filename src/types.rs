@@ -1,143 +1,250 @@
 use std::{
-    fmt::Display,
     rc::Rc,
     cmp::Ordering,
+    iter::{Chain, Once, once},
+    vec::IntoIter,
 };
-
-use crate::env::{Env};
+use fnv::FnvHashMap;
+use crate::env::Env;
 
 #[derive(Debug, Clone)]
-pub enum Atom {
-    // TODO: remove Nil, cause it's the same as empty List
-    Nil,
-    Bool(bool),
-    Int(i64),
-    Float(f64),
-    String(String),
-    Symbol(String),
-    // Hash(Rc<FnvHashMap<String, Atom>>, Rc<Atom>),
-    Func(fn(Args) -> LishResult, Rc<Atom>),
-    Lambda {
-        eval: fn(ast: Atom, env: Env) -> LishResult,
-        ast: Rc<Atom>,
-        env: Env,
-        // TODO: Vec<str>
-        params: Rc<Atom>,
-        is_macro: bool,
-        meta: Rc<Atom>,
-    },
-    List(Rc<Vec<Atom>>, Rc<Atom>),
+pub struct List {
+    pub head: Rc<Atom>,
+    pub tail: Rc<Vec<Atom>>,
+    // meta: Rc<Atom>,
 }
 
-use Atom::{Nil, Bool, Int, Float, Symbol, Lambda, List};
+impl List {
+    pub fn new(head: Atom, tail: Vec<Atom>) -> List {
+        List {
+            head: Rc::new(head),
+            tail: Rc::new(tail),
+            // meta: Rc::new(Atom::Nil),
+        }
+    }
 
-impl Atom {
-    pub fn is_macro(self: &Self) -> bool {
-        match self {
-        Lambda {is_macro, ..} => *is_macro,
-        _ => false,
+    pub fn iter(&self) -> Chain<Once<Atom>, IntoIter<Atom>> {
+        once((*self.head).clone()).chain((*self.tail).clone().into_iter())
+    }
+
+    pub fn len(&self) -> usize {
+        1 + self.tail.len()
+    }
+}
+
+impl std::ops::Index<usize> for List {
+    type Output = Atom;
+
+    fn index(&self, i: usize) -> &Atom {
+        if i == 0 {
+            &self.head
+        } else {
+            &self.tail[i - 1]
         }
     }
 }
 
+#[derive(Clone)]
+pub enum Atom {
+    Bool(bool),
+    // TODO: i128?
+    Int(i64),
+    Float(f64),
+    String(String),
+    Symbol(String),
+    Error(String),
+    Hash(Rc<FnvHashMap<String, Atom>>),//, Rc<Atom>),
+    Func(fn(Vec<Atom>) -> Atom),//, Rc<Atom>),
+    Lambda {
+        eval: fn(ast: Atom, env: Env) -> Atom, // TODO: remove
+        ast: Rc<Atom>,
+        env: Env,
+        params: Vec<String>,
+        is_macro: bool,
+        // meta: Rc<Atom>,
+    },
+    Nil,
+    List(List),
+}
+
+// TODO: print nicely, with indents
+impl std::fmt::Display for Atom {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Atom::Nil => fmt.write_str("()")?,
+            Atom::Bool(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Int(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Float(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Symbol(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Func(_) => fmt.write_str("#fn")?,
+            Atom::List(items) => {
+                fmt.write_str("(")?;
+                items.head.fmt(fmt)?;
+                for item in items.tail.iter() {
+                    fmt.write_str(" ")?;
+                    item.fmt(fmt)?;
+                }
+                fmt.write_str(")")?;
+            },
+            Atom::Hash(hashmap) => {
+                fmt.write_str("{")?;
+                let mut is_first = true;
+                for (k, v) in hashmap.iter() {
+                    if !is_first {
+                        fmt.write_str(" ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    fmt.write_fmt(format_args!("{k:?} {v:?}"))?;
+                }
+                fmt.write_str("}")?;
+            },
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let type_str = if *is_macro {"defmacro"} else {"fn"};
+                fmt.write_fmt(format_args!("({type_str} {params:?} {ast:?})"))?
+            },
+            Atom::Error(e) => fmt.write_fmt(format_args!("ERROR: {}", e))?,
+            Atom::String(s) => fmt.write_str(s.as_str())?,
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for Atom {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Atom::Nil => fmt.write_str("()")?,
+            Atom::Bool(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Int(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Float(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Symbol(y) => fmt.write_fmt(format_args!("{}", y))?,
+            Atom::Func(fun) => fmt.write_fmt(format_args!("fn@{fun:?}"))?,
+            Atom::List(items) => {
+                fmt.write_str("(")?;
+                items.head.fmt(fmt)?;
+                for item in items.tail.iter() {
+                    fmt.write_str(" ")?;
+                    item.fmt(fmt)?;
+                }
+                fmt.write_str(")")?;
+            },
+            Atom::Hash(hashmap) => {
+                fmt.write_str("{")?;
+                let mut is_first = true;
+                for (k, v) in hashmap.iter() {
+                    if !is_first {
+                        fmt.write_str(" ")?;
+                    } else {
+                        is_first = false;
+                    }
+                    fmt.write_fmt(format_args!("{k:?} {v:?}"))?;
+                }
+                fmt.write_str("}")?;
+            },
+            Atom::Lambda {ast, params, is_macro, ..} => {
+                let type_str = if *is_macro {"defmacro"} else {"fn"};
+                fmt.write_fmt(format_args!("({type_str} {params:?} {ast:?})"))?
+            },
+            Atom::Error(e) => fmt.write_fmt(format_args!("ERROR: {}", e))?,
+            Atom::String(s) => fmt.write_fmt(format_args!("{s:?}"))?,
+        }
+        Ok(())
+    }
+}
+
+impl Atom {
+    pub fn is_macro(self: &Self) -> bool {
+        match self {
+            Self::Lambda {is_macro, ..} => *is_macro,
+            _ => false,
+        }
+    }
+
+    pub fn list(head: Self, tail: Vec<Self>) -> Self {
+        Self::List(List::new(head, tail))
+    }
+
+    pub fn symbol<S>(symbol: S) -> Self where String: From<S> {
+        Self::Symbol(String::from(symbol))
+    }
+}
+
 impl From<i64> for Atom {
-    fn from(x: i64) -> Atom {
-        Int(x)
+    fn from(x: i64) -> Self {
+        Self::Int(x)
     }
 }
 impl From<f64> for Atom {
-    fn from(x: f64) -> Atom {
-        Float(x)
+    fn from(x: f64) -> Self {
+        Self::Float(x)
     }
 }
 impl From<bool> for Atom {
-    fn from(x: bool) -> Atom {
-        Bool(x)
+    fn from(x: bool) -> Self {
+        Self::Bool(x)
     }
 }
 impl From<&str> for Atom {
-    fn from(x: &str) -> Atom {
-        Atom::String(x.to_owned())
+    fn from(x: &str) -> Self {
+        Self::String(x.to_owned())
     }
 }
 impl From<&String> for Atom {
-    fn from(x: &String) -> Atom {
-        Atom::String(x.clone())
+    fn from(x: &String) -> Self {
+        Self::String(x.clone())
     }
 }
-impl<T: Clone> From<Vec<T>> for Atom
-where Atom: From<T> {
-    fn from(x: Vec<T>) -> Atom {
-        use crate::list_vec;
-        list_vec!(x.iter().map(|x| Atom::from(x.clone())).collect::<Vec<Atom>>())
+impl From<Vec<Atom>> for Atom {
+    // TODO: remove mut
+    fn from(mut vec: Vec<Atom>) -> Self {
+        if vec.len() == 0 {
+            Self::Nil
+        } else {
+            let head = vec.remove(0);
+            Self::list(head, vec)
+        }
     }
 }
 
 impl PartialOrd for Atom {
-    fn partial_cmp(self: &Self, other: &Atom) -> Option<Ordering> {
+    fn partial_cmp(self: &Self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-        (Nil, Nil) => Some(Ordering::Equal),
-        (Bool(ref a), Bool(ref b)) => a.partial_cmp(b),
-        (Int(ref a), Int(ref b)) => a.partial_cmp(b),
-        (Atom::String(ref a), Atom::String(ref b)) => a.partial_cmp(b),
-        (Symbol(ref a), Symbol(ref b)) => a.partial_cmp(b),
-        (List(ref a, _), List(ref b, _)) => a.partial_cmp(b),
-        // (Hash(ref a, _), Hash(ref b, _)) => a.partial_cmp(b),
-        _ => None,
+            (Self::Nil, Self::Nil) => Some(Ordering::Equal),
+            (Self::Bool(ref a), Self::Bool(ref b)) => a.partial_cmp(b),
+            (Self::Int(ref a), Self::Int(ref b)) => a.partial_cmp(b),
+            (Self::String(ref a), Self::String(ref b)) => a.partial_cmp(b),
+            (Self::Symbol(ref a), Self::Symbol(ref b)) => a.partial_cmp(b),
+            (Self::List(a), Self::List(b)) => a.iter().partial_cmp(b.iter()),
+            _ => None,
         }
     }
 }
 
 impl PartialEq for Atom {
-    fn eq(&self, other: &Atom) -> bool {
-        use Atom::String;
+    fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-        (Nil, Nil) => true,
-        (Bool(ref a), Bool(ref b)) => a == b,
-        (Int(ref a), Int(ref b)) => a == b,
-        (String(ref a), String(ref b)) => a == b,
-        (Symbol(ref a), Symbol(ref b)) => a == b,
-        (List(ref a, _), List(ref b, _)) => a == b,
-        // (Hash(ref a, _), Hash(ref b, _)) => a == b,
-        _ => false,
+            (Self::Nil, Self::Nil) => true,
+            (Self::Bool(ref a), Self::Bool(ref b)) => a == b,
+            (Self::Int(ref a), Self::Int(ref b)) => a == b,
+            (Self::String(ref a), Self::String(ref b)) => a == b,
+            (Self::Error(ref a), Self::Error(ref b)) => a == b,
+            (Self::Symbol(ref a), Self::Symbol(ref b)) => a == b,
+            (Self::List(ref a), Self::List(ref b)) => a.iter().zip(b.iter()).all(|(x, y)| x == y),
+            (Self::Hash(ref a), Self::Hash(ref b)) => a == b,
+            _ => false,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct LishErr(pub String);
-
-impl<T: Display> From<T> for LishErr {
-    fn from(message: T) -> Self {
-        LishErr(format!("{}", message))
-    }
-}
-
-pub type LishResult = Result<Atom, LishErr>;
-
-pub type Args = Vec<Atom>;
-
 // TODO: remove mod?
 mod macros {
     #[macro_export]
-    macro_rules! symbol {
-        ($name:expr) => {{
-            Atom::Symbol($name.to_owned())
-        }}
-    }
-
-    #[macro_export]
-    macro_rules! list {
-        ($vec:expr) => {{
-            use std::rc::Rc;
-            Atom::List(Rc::new($vec), Rc::new(Atom::Nil))
-        }}
-    }
-
-    #[macro_export]
-    macro_rules! list_vec {
-        ($vec:expr) => {
-            crate::list!(Vec::from($vec))
+    macro_rules! lish_try {
+        ($val:expr) => {
+            match $val {
+                err@Atom::Error(_) => return err,
+                x => x,
+            }
         }
     }
 
@@ -150,46 +257,25 @@ mod macros {
 
     #[macro_export]
     macro_rules! form {
-        () => {
-            Atom::Nil
-        };
         ($($val:expr),* $(,)?) => {
-            crate::list!(crate::args![$($val, )*])
-        }
-    }
-
-    #[macro_export]
-    macro_rules! func {
-        ($args:ident, $body:expr) => {
-            Atom::Func(|$args| {$body}, Rc::new(Atom::Nil))
-        }
-    }
-
-    #[macro_export]
-    macro_rules! func_ok {
-        ($args:ident, $body:expr) => {
-            crate::func!($args, Ok($body))
-        }
-    }
-
-    #[macro_export]
-    macro_rules! func_nil {
-        ($args:ident, $body:expr) => {
-            crate::func_ok!($args, {
-                $body;
-                Atom::Nil
-            })
+            crate::Atom::from(crate::args![$($val, )*])
         }
     }
 
     #[macro_export]
     macro_rules! lisherr {
-        ($message:expr) => {{
-            use crate::LishErr;
-            Err(LishErr::from($message))
-        }};
-        ($message:expr $(, $params:expr)+) => {{
-            lisherr!(format!($message $(, $params)+))
+        ($message:expr $(, $params:expr)*) => {{
+            Atom::Error(format!($message $(, $params)*))
         }}
+    }
+
+    #[macro_export]
+    macro_rules! assert_symbol {
+        ($e:expr) => {
+            match &$e {
+                Atom::Symbol(identifier) => identifier,
+                x => return crate::lisherr!("{x:?} is not a symbol"),
+            }
+        }
     }
 }
