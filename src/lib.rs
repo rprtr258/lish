@@ -317,6 +317,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                         }
                                         res
                                     },
+                                    Atom::Nil => Vec::new(),
                                     _ => return lisherr!("fn args must be list of symbols, but it is {:?}", tail[0]),
                                 };
                                 let body = tail[1].clone();
@@ -353,7 +354,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                     ProcessStderr(String),
                                     File(String),
                                     Null,
-                                    InheritStdin,
+                                    Inherit,
                                     String(String),
                                 }
                                 #[derive(Debug)]
@@ -361,9 +362,15 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                     ProcessStdin(String),
                                     File(String),
                                     Null,
-                                    InheritStdout,
-                                    InheritStderr,
+                                    Inherit,
                                     // String(String),
+                                }
+                                #[derive(Debug)]
+                                struct Vertex {
+                                    cmd_name: String,
+                                    stdin: EdgeBegin,
+                                    stdout: EdgeEnd,
+                                    stderr: EdgeEnd,
                                 }
                                 for i in 0..pipes.len()/2 {
                                     let from = match &pipes[i * 2] {
@@ -374,10 +381,6 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                                     "stderr" => EdgeBegin::ProcessStderr(s.clone()),
                                                     "file" => EdgeBegin::File(s.clone()),
                                                     "string" => EdgeBegin::String(s.clone()),
-                                                    "inherit" => match s.as_str() {
-                                                        "stdin" => EdgeBegin::InheritStdin,
-                                                        x => return lisherr!("can't inherit {}", x),
-                                                    }
                                                     x => return lisherr!("({} {}) can't be pipe beginning", x, s),
                                                 }
                                             },
@@ -385,6 +388,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                         }
                                         Atom::String(v) => match v.as_str() {
                                             "null" => EdgeBegin::Null,
+                                            "inherit" => EdgeBegin::Inherit,
                                             x => return lisherr!("unknown pipe beginning: {}", x),
                                         }
                                         x => return lisherr!("unknown pipe beginning: {}", x),
@@ -395,11 +399,6 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                                 match pp.as_str() {
                                                     "stdin" => EdgeEnd::ProcessStdin(s.clone()),
                                                     "file" => EdgeEnd::File(s.clone()),
-                                                    "inherit" => match s.as_str() {
-                                                        "stdout" => EdgeEnd::InheritStdout,
-                                                        "stderr" => EdgeEnd::InheritStderr,
-                                                        x => return lisherr!("can't inherit {}", x),
-                                                    }
                                                     x => return lisherr!("({} {}) can't be pipe ending", x, s),
                                                 }
                                             },
@@ -407,6 +406,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                         }
                                         Atom::String(v) => match v.as_str() {
                                             "null" => EdgeEnd::Null,
+                                            "inherit" => EdgeEnd::Inherit,
                                             x => return lisherr!("unknown pipe ending: {}", x),
                                         }
                                         x => return lisherr!("unknown pipe ending: {}", x),
