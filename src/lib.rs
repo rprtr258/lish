@@ -347,7 +347,7 @@ pub fn eval(mut ast: Atom, mut env: Env) -> Atom {
                                     return lisherr!("pipe pipes count must be even, not {}", pipes.len());
                                 }
 
-                                // READ AND TOPSORT PIPES
+                                // READ PIPES
                                 #[derive(Debug)]
                                 enum EdgeBegin {
                                     ProcessStdout(String),
