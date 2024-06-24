@@ -11,7 +11,7 @@ import (
 
 func quasiquote(ast Atom) Atom {
 	if ast.Kind == AtomKindList {
-		v := ast.Value.([]Atom)
+		v := ast.Value.(List)
 		if len(v) > 0 {
 			// TODO: unquote with len(v) > 2 is meaningless
 			if v[0] == atomSymbol("unquote") && len(v) >= 2 {
@@ -21,8 +21,8 @@ func quasiquote(ast Atom) Atom {
 			res := []Atom{}
 			for i := len(v) - 2; i >= 0; i-- {
 				x := v[i]
-				if x.Kind == AtomKindList && len(x.Value.([]Atom)) > 0 {
-					vv := x.Value.([]Atom)
+				if x.Kind == AtomKindList && len(x.Value.(List)) > 0 {
+					vv := x.Value.(List)
 					if vv[0] == atomSymbol("splice-unquote") {
 						if len(vv[1:]) == 0 {
 							// `(... ,@() res) -> `(... (splice-unquote) res)
@@ -52,7 +52,7 @@ func quasiquote(ast Atom) Atom {
 			return atomList(res...)
 		}
 	}
-	return Atom{AtomKindList, []Atom{atomSymbol("quote"), ast}}
+	return Atom{AtomKindList, List{atomSymbol("quote"), ast}}
 }
 
 func isMacroCall(ast Atom, env Env) bool {
@@ -60,14 +60,14 @@ func isMacroCall(ast Atom, env Env) bool {
 		return false
 	}
 
-	v := ast.Value.([]Atom)
+	v := ast.Value.(List)
 	if v[0].Kind != AtomKindSymbol {
 		return false
 	}
 
-	macroname := v[0].Value.(string)
+	macroname := v[0].Value.(Symbol)
 	a, _ := env.get(macroname)
-	return a.IsMacro()
+	return a.Kind == AtomKindLambda && a.Value.(Lambda).isMacro
 }
 
 func macroexpand(ast Atom, env Env) Atom {
@@ -76,7 +76,7 @@ func macroexpand(ast Atom, env Env) Atom {
 			panic("unreachable")
 		}
 
-		v := ast.Value.([]Atom)
+		v := ast.Value.(List)
 		the_macro := eval(v[0], env)
 		if the_macro.Kind == AtomKindError {
 			return the_macro
@@ -99,7 +99,7 @@ func macroexpand(ast Atom, env Env) Atom {
 
 type FormResult struct {
 	a   Atom
-	env fun.Option[Env] // true if tail call optimisation
+	env fun.Option[Env] // valid if tail call optimisation
 }
 
 func eval_function_call(fn Atom, unevaluated_args []Atom, env Env) FormResult {
@@ -113,20 +113,20 @@ func eval_function_call(fn Atom, unevaluated_args []Atom, env Env) FormResult {
 		newEnv := newEnvBind(fun.Valid(&v.env), v.params, args)
 		return FormResult{v.ast, fun.Valid(newEnv)}
 	case AtomKindFunc:
-		return FormResult{a: fn.Value.(func([]Atom) Atom)(args)}
+		return FormResult{a: fn.Value.(Func)(args)}
 	case AtomKindString:
 		cmd_args := make([]string, 0, len(args))
 		for _, arg := range args {
 			if arg.Kind != AtomKindString {
 				return FormResult{a: lisherr("%s is not string argument", arg)}
 			}
-			cmd_args = append(cmd_args, arg.Value.(string))
+			cmd_args = append(cmd_args, string(arg.Value.(String)))
 		}
 
 		var stdout, stderr bytes.Buffer
 
 		// TODO: inherit stdin, stdout by default, but pipe if piped
-		child := exec.Command(fn.Value.(string), cmd_args...)
+		child := exec.Command(string(fn.Value.(String)), cmd_args...)
 		child.Stdin = os.Stdin
 		child.Stdout = &stdout
 		child.Stderr = &stderr
@@ -150,7 +150,7 @@ func eval_function_call(fn Atom, unevaluated_args []Atom, env Env) FormResult {
 			return FormResult{a: lisherr("Hash key %v must be string", args[0])}
 		}
 
-		value, ok := fn.Value.(map[string]Atom)[args[0].Value.(string)]
+		value, ok := fn.Value.(Hash)[string(args[0].Value.(String))]
 		if !ok {
 			return FormResult{a: lisherr("Value was not found by key %v", args[0])}
 		}
@@ -170,7 +170,7 @@ func eval(ast Atom, env Env) Atom {
 		// evaluate form
 		switch ast.Kind {
 		case AtomKindList:
-			l := ast.Value.([]Atom)
+			l := ast.Value.(List)
 			// nil is evaluated to nil
 			if len(l) == 0 {
 				return atomNil
@@ -180,7 +180,7 @@ func eval(ast Atom, env Env) Atom {
 			}
 
 			if l[0].Kind == AtomKindSymbol {
-				switch s := l[0].Value.(string); s {
+				switch s := l[0].Value.(Symbol); s {
 				case "quote":
 					if len(l[1:]) != 1 {
 						return lish_assert_args("quote", 1)
@@ -207,7 +207,7 @@ func eval(ast Atom, env Env) Atom {
 						panic("unreachable")
 					}
 
-					head := l[1].Value.([]Atom)[0]
+					head := l[1].Value.(List)[0]
 					if err := eval(head, env); err.Kind == AtomKindError {
 						return err
 					}
@@ -224,7 +224,8 @@ func eval(ast Atom, env Env) Atom {
 					if l[1].Kind != AtomKindSymbol {
 						return lisherr("%s is not a symbol", l[1])
 					}
-					return env.set(l[1].Value.(string), value)
+					env.set(l[1].Value.(Symbol), value)
+					return value
 				case "setmacro":
 					if len(l[1:]) != 2 {
 						return lish_assert_args("setmacro", 2)
@@ -242,7 +243,7 @@ func eval(ast Atom, env Env) Atom {
 					}
 
 					la := v.Value.(Lambda)
-					env.set(l[1].Value.(string), atomLambda(Lambda{
+					env.set(l[1].Value.(Symbol), atomLambda(Lambda{
 						la.eval,
 						la.ast,
 						la.env,
@@ -255,7 +256,7 @@ func eval(ast Atom, env Env) Atom {
 						return lisherr("Let bindings is not a list, but a %s", l[1])
 					}
 
-					bindings := l[1].Value.([]Atom)
+					bindings := l[1].Value.(List)
 					if len(bindings)%2 != 0 {
 						return lisherr("'let' requires even number of arguments, but got %d in %s", len(l[1:]), ast)
 					}
@@ -270,9 +271,7 @@ func eval(ast Atom, env Env) Atom {
 						if var_name.Kind != AtomKindSymbol {
 							return lisherr("%s is not a symbol", var_name)
 						}
-						if err := let_env.set(var_name.Value.(string), var_value); err.Kind == AtomKindError {
-							return err
-						}
+						let_env.set(var_name.Value.(Symbol), var_value)
 					}
 
 					ast = atomList(append([]Atom{atomSymbol("progn")}, l[2:]...)...)
@@ -289,7 +288,7 @@ func eval(ast Atom, env Env) Atom {
 					if predicate.Kind == AtomKindError {
 						return predicate
 					}
-					if predicate.Kind == AtomKindBool && !predicate.Value.(bool) {
+					if predicate.Kind == AtomKindBool && !predicate.Value.(Bool) {
 						if len(l[1:]) == 3 {
 							ast = l[3]
 						} else {
@@ -306,24 +305,24 @@ func eval(ast Atom, env Env) Atom {
 					if ast.Kind == AtomKindError {
 						return ast
 					}
-					env = env.getRoot()
+					env = env.root()
 					continue
 				case "fn":
 					if l[1].Kind != AtomKindList {
 						return lisherr("fn args must be list of symbols, but it is %s", l[1])
 					}
 
-					args := []string{}
+					args := []Symbol{}
 					if l[1].Kind == AtomKindList {
-						lst := l[1].Value.([]Atom)
+						lst := l[1].Value.(List)
 						if !fun.All(func(x Atom) bool { return x.Kind == AtomKindSymbol }, lst...) {
 							return lisherr("fn args list must consist only of symbols, but not symbol was found in args list: %s", l[1])
 						}
-						args = fun.Map[string](func(x Atom) string {
+						args = fun.Map[Symbol](func(x Atom) Symbol {
 							if x.Kind != AtomKindSymbol {
 								panic("unreachable")
 							}
-							return x.Value.(string)
+							return x.Value.(Symbol)
 						}, lst...)
 					}
 					body := l[2]
@@ -344,7 +343,7 @@ func eval(ast Atom, env Env) Atom {
 						return lisherr("pipe cmds must be list, not %s", l[1])
 					}
 
-					cmds := l[1].Value.([]Atom)
+					cmds := l[1].Value.(List)
 					if len(cmds)%2 != 0 {
 						return lisherr("pipe cmds count must be even, not %d", len(cmds))
 					}
@@ -352,7 +351,7 @@ func eval(ast Atom, env Env) Atom {
 					if l[2].Kind != AtomKindList {
 						return lisherr("pipe pipes must be list, not %s", l[2])
 					}
-					pipes := l[2].Value.([]Atom)
+					pipes := l[2].Value.(List)
 					if len(pipes)%2 != 0 {
 						return lisherr("pipe pipes count must be even, not %d", len(pipes))
 					}
@@ -369,7 +368,7 @@ func eval(ast Atom, env Env) Atom {
 					)
 					type EdgeBegin struct {
 						kind EdgeBeginKind
-						s    string
+						s    String
 					}
 
 					type EdgeEndKind int
@@ -382,7 +381,7 @@ func eval(ast Atom, env Env) Atom {
 					)
 					type EdgeEnd struct {
 						kind EdgeEndKind
-						s    string
+						s    String
 					}
 					// type Vertex struct {
 					// 	cmd_name string
@@ -394,15 +393,15 @@ func eval(ast Atom, env Env) Atom {
 						var from EdgeBegin
 						switch v := pipes[i*2]; v.Kind {
 						case AtomKindList:
-							v := v.Value.([]Atom)
+							v := v.Value.(List)
 							v0 := v[0]
 							v1 := v[1]
 							if v0.Kind != AtomKindString || v1.Kind != AtomKindString {
 								return lisherr("unknown pipe beginning: (%s %s)", v0, v1)
 							}
 
-							pp := v0.Value.(string)
-							s := v1.Value.(string)
+							pp := v0.Value.(String)
+							s := v1.Value.(String)
 							switch pp {
 							case "stdout":
 								from = EdgeBegin{BProcessStdout, s}
@@ -416,7 +415,7 @@ func eval(ast Atom, env Env) Atom {
 								return lisherr("(%s %s) can't be pipe beginning", pp, s)
 							}
 						case AtomKindString:
-							switch x := v.Value.(string); x {
+							switch x := v.Value.(String); x {
 							case "null":
 								from = EdgeBegin{BNull, ""}
 							case "inherit":
@@ -431,15 +430,15 @@ func eval(ast Atom, env Env) Atom {
 						var into EdgeEnd
 						switch v := pipes[i*2+1]; v.Kind {
 						case AtomKindList:
-							v := v.Value.([]Atom)
+							v := v.Value.(List)
 							v0 := v[0]
 							v1 := v[1]
 							if v0.Kind != AtomKindString || v1.Kind != AtomKindString {
 								return lisherr("unknown pipe ending: (%s %s)", v0, v1)
 							}
 
-							pp := v0.Value.(string)
-							s := v1.Value.(string)
+							pp := v0.Value.(String)
+							s := v1.Value.(String)
 							switch pp {
 							case "stdin":
 								into = EdgeEnd{EProcessStdin, s}
@@ -449,7 +448,7 @@ func eval(ast Atom, env Env) Atom {
 								return lisherr("(%s %s) can't be pipe ending", pp, s)
 							}
 						case AtomKindString:
-							switch v := v.Value.(string); v {
+							switch v := v.Value.(String); v {
 							case "null":
 								into = EdgeEnd{ENull, ""}
 							case "inherit":
@@ -469,24 +468,24 @@ func eval(ast Atom, env Env) Atom {
 						if x := cmds[i*2]; x.Kind != AtomKindString {
 							return lisherr("cmd name must be string, not %s", x)
 						}
-						cmd_name := cmds[i*2].Value.(string)
+						cmd_name := string(cmds[i*2].Value.(String))
 						if _, ok := childs[cmd_name]; ok {
 							return lisherr("cmd with name %s is declared at least twice, only one must survive", cmd_name)
 						}
 						if x := cmds[i*2+1]; x.Kind != AtomKindList {
 							return lisherr("cmd args must be list, not %s", x)
 						}
-						args := cmds[i*2+1].Value.([]Atom)
+						args := cmds[i*2+1].Value.(List)
 						if x := args[0]; x.Kind != AtomKindString {
 							return lisherr("cmd must be string, not %s", x)
 						}
-						program := args[0].Value.(string)
+						program := string(args[0].Value.(String))
 						program_args := make([]string, 0, len(args[1:]))
 						for _, arg := range args[1:] {
 							if arg.Kind != AtomKindString {
 								return lisherr("cmd arg must be string, not %s", arg)
 							}
-							program_args = append(program_args, arg.Value.(string))
+							program_args = append(program_args, string(arg.Value.(String)))
 						}
 						var stdin, stdout, stderr bytes.Buffer
 						child := exec.Command(program, program_args...)
@@ -557,9 +556,9 @@ func eval(ast Atom, env Env) Atom {
 			}
 		// others are evaluated to themselves
 		case AtomKindSymbol:
-			res, ok := env.get(ast.Value.(string))
+			res, ok := env.get(ast.Value.(Symbol))
 			if !ok {
-				return atomString(ast.Value.(string))
+				return atomString(string(ast.Value.(String)))
 			}
 			return res
 		default:

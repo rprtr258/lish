@@ -4,48 +4,44 @@ import "github.com/rprtr258/fun"
 
 type Env struct {
 	Outer fun.Option[*Env]
-	Data  map[string]Atom
+	Data  map[Symbol]Atom
 }
 
 func newEnv(outer fun.Option[*Env]) Env {
-	return Env{outer, map[string]Atom{}}
+	return Env{outer, map[Symbol]Atom{}}
 }
 
 func newEnvRepl() Env {
-	env := newEnv(fun.Invalid[*Env]())
-	for name, fun := range namespace() {
-		env.sets(name, fun)
-	}
-	return env
+	return Env{fun.Invalid[*Env](), namespace}
 }
 
-func newEnvBind(outer fun.Option[*Env], binds []string, exprs []Atom) Env {
+func newEnvBind(outer fun.Option[*Env], binds []Symbol, exprs []Atom) Env {
 	env := newEnv(outer)
 	for i, b := range binds {
 		if b == "&" {
 			// TODO: List.get(index)
-			env.sets(binds[i+1], atomList(exprs[i:]...))
+			env.set(binds[i+1], atomList(exprs[i:]...))
 			break
 		} else {
-			env.sets(b, exprs[i])
+			env.set(b, exprs[i])
 		}
 	}
 	return env
 }
 
-func (e Env) Find(key string) (Env, bool) {
+func (e Env) find(key Symbol) (Env, bool) {
 	if _, ok := e.Data[key]; ok {
 		return e, ok
 	}
 
 	if e.Outer.Valid {
-		return e.Outer.Value.Find(key)
+		return e.Outer.Value.find(key)
 	}
 
 	return e, false
 }
 
-func (e Env) getRoot() Env {
+func (e Env) root() Env {
 	node := e
 	for node.Outer.Valid {
 		node = *node.Outer.Value
@@ -53,20 +49,11 @@ func (e Env) getRoot() Env {
 	return node
 }
 
-func (e Env) get(key string) (Atom, bool) {
-	env, ok := e.Find(key)
-	if !ok {
-		return Atom{}, false
-	}
-
-	return env.Data[key], true
+func (e Env) get(key Symbol) (Atom, bool) {
+	env, ok := e.find(key)
+	return env.Data[key], ok
 }
 
-func (e Env) sets(key string, val Atom) {
+func (e Env) set(key Symbol, val Atom) {
 	e.Data[key] = val
-}
-
-func (e Env) set(key string, val Atom) Atom {
-	e.sets(key, val)
-	return val
 }

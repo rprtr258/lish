@@ -8,21 +8,21 @@ import (
 	"github.com/rprtr258/fun"
 )
 
-func int_bin_op(init int64, op func(int64, int64) int64) Atom {
+func int_bin_op(init Int, op func(Int, Int) Int) Atom {
 	return atomFunc(func(args ...Atom) Atom {
 		res := init
 		for _, arg := range args {
-			res = op(res, arg.Value.(int64))
+			res = op(res, arg.Value.(Int))
 		}
 		return Atom{AtomKindInt, res}
 	}, validateArgsOfKind(AtomKindInt))
 }
 
-func int_bin_op1(op func(int64, int64) int64) Atom {
+func int_bin_op1(op func(Int, Int) Int) Atom {
 	return atomFunc(func(args ...Atom) Atom {
-		res := args[0].Value.(int64)
+		res := args[0].Value.(Int)
 		for _, arg := range args[1:] {
-			res = op(res, arg.Value.(int64))
+			res = op(res, arg.Value.(Int))
 		}
 		return Atom{AtomKindInt, res}
 	}, validateArgsOfKind(AtomKindInt), validateMinArgs(1))
@@ -44,150 +44,148 @@ func logical_op(op func(a, b Atom) (bool, bool)) Atom {
 	}, validateMinArgs(1))
 }
 
-func namespace() map[string]Atom {
-	return map[string]Atom{
-		// ARITHMETIC
-		"+": int_bin_op(0, func(a, b int64) int64 { return a + b }),
-		"*": int_bin_op(1, func(a, b int64) int64 { return a * b }),
-		"/": int_bin_op1(func(a, b int64) int64 { return a / b }),
-		"-": atomFunc(func(args ...Atom) Atom {
-			if len(args) == 1 {
-				return Atom{AtomKindInt, -args[0].Value.(int64)}
-			}
+var namespace = map[Symbol]Atom{
+	// ARITHMETIC
+	"+": int_bin_op(0, func(a, b Int) Int { return a + b }),
+	"*": int_bin_op(1, func(a, b Int) Int { return a * b }),
+	"/": int_bin_op1(func(a, b Int) Int { return a / b }),
+	"-": atomFunc(func(args ...Atom) Atom {
+		if len(args) == 1 {
+			return Atom{AtomKindInt, -args[0].Value.(Int)}
+		}
 
-			res := args[0].Value.(int64)
-			for _, b := range args[1:] {
-				res -= b.Value.(int64)
+		res := args[0].Value.(Int)
+		for _, b := range args[1:] {
+			res -= b.Value.(Int)
+		}
+		return Atom{AtomKindInt, res}
+	}, validateMinArgs(1), validateArgsOfKind(AtomKindInt)),
+	// LOGIC
+	"or": atomFunc(func(args ...Atom) Atom {
+		res := Bool(false)
+		for _, arg := range args {
+			res = res || arg.Value.(Bool)
+		}
+		return atomBool(res)
+	}, validateArgsOfKind(AtomKindBool)),
+	"and": atomFunc(func(args ...Atom) Atom {
+		res := Bool(false)
+		for _, b := range args {
+			res = res && b.Value.(Bool)
+		}
+		return atomBool(res)
+	}, validateArgsOfKind(AtomKindBool)),
+	// COMPARISON
+	"=": logical_op(func(a, b Atom) (bool, bool) { return atomEq(a, b), true }),
+	"<": logical_op(func(a, b Atom) (bool, bool) {
+		res, ok := atomCmp(a, b)
+		return res < 0, ok
+	}),
+	"<=": logical_op(func(a, b Atom) (bool, bool) {
+		res, ok := atomCmp(a, b)
+		return res <= 0, ok
+	}),
+	">": logical_op(func(a, b Atom) (bool, bool) {
+		res, ok := atomCmp(a, b)
+		return res > 0, ok
+	}),
+	">=": logical_op(func(a, b Atom) (bool, bool) {
+		res, ok := atomCmp(a, b)
+		return res >= 0, ok
+	}),
+	// PRINTING
+	"dbg": atomFuncNil(func(args ...Atom) {
+		fmt.Println(strings.Join(fun.Map[string](func(a Atom) string {
+			return fmt.Sprintf("%#v", a)
+		}, args...), " "))
+	}),
+	"print": atomFuncNil(func(args ...Atom) {
+		fmt.Print(strings.Join(fun.Map[string](Atom.String, args...), " "))
+	}),
+	"println": atomFuncNil(func(args ...Atom) {
+		fmt.Println(strings.Join(fun.Map[string](Atom.String, args...), " "))
+	}),
+	"echo": atomFunc(func(args ...Atom) Atom {
+		return atomString(strings.Join(fun.Map[string](Atom.String, args...), " "))
+	}),
+	// LIST MANIPULATION
+	"cons": atomFunc(func(args ...Atom) Atom {
+		elems := args[:len(args)-1]
+		switch v := args[len(args)-1]; v.Kind {
+		case AtomKindList:
+			v := v.Value.(List)
+			if len(v) == 0 {
+				return atomList(elems...)
 			}
-			return Atom{AtomKindInt, res}
-		}, validateMinArgs(1), validateArgsOfKind(AtomKindInt)),
-		// LOGIC
-		"or": atomFunc(func(args ...Atom) Atom {
-			res := false
-			for _, arg := range args {
-				res = res || arg.Value.(bool)
+			return atomList(append(elems, v...)...)
+		default:
+			return lisherr("Trying to cons not a list")
+		}
+	}, validateMinArgs(2)),
+	"first": atomFunc(func(args ...Atom) Atom {
+		return args[0].Value.(List)[0]
+	}, validateExactArgs(1), validateArgsOfKind(AtomKindList)),
+	"rest": atomFunc(func(args ...Atom) Atom {
+		return atomList(args[0].Value.(List)[1:]...)
+	}, validateExactArgs(1), validateArgsOfKind(AtomKindList)),
+	"list": atomFunc(atomList),
+	"empty?": atomFunc(func(args ...Atom) Atom {
+		if args[0].Kind == AtomKindList {
+			return atomBool(len(args[0].Value.(List)) == 0)
+		}
+		return lisherr("Trying to get empty? of %s", strings.Join(fun.Map[string](Atom.String, args...), " "))
+	}, validateExactArgs(1)),
+	"len": atomFunc(func(args ...Atom) Atom {
+		if args[0].Kind == AtomKindList {
+			return atomInt(len(args[0].Value.(List)))
+		}
+		return lisherr("Trying to get len of %s", strings.Join(fun.Map[string](Atom.String, args...), " "))
+	}, validateExactArgs(1)),
+	"list?": atomFunc(func(args ...Atom) Atom {
+		return atomBool(args[0].Kind == AtomKindList)
+	}, validateExactArgs(1)),
+	"concat": atomFunc(func(args ...Atom) Atom {
+		return atomList(fun.ConcatMap(func(arg Atom) []Atom {
+			// TODO: support nil
+			return arg.Value.(List)
+		}, args...)...)
+	}, validateArgsOfKind(AtomKindList)),
+	// OTHER
+	"apply": atomFunc(func(args ...Atom) Atom {
+		fn := args[0]
+		fnArgs := args[1:]
+		switch fn.Kind {
+		case AtomKindFunc:
+			return fn.Value.(Func)(fnArgs)
+		case AtomKindLambda:
+			v := fn.Value.(Lambda)
+			return eval(v.ast, newEnvBind(fun.Valid(&v.env), v.params, fnArgs))
+		default:
+			return lisherr("%s is not a function", fn)
+		}
+	}, validateMinArgs(1)),
+	"read": atomFunc(func(args ...Atom) Atom {
+		return read(string(args[0].Value.(String)))
+	}, validateExactArgs(1), validateArgsOfKind(AtomKindString)),
+	"slurp": atomFunc(func(args ...Atom) Atom {
+		filename := string(args[0].Value.(String))
+		b, err := os.ReadFile(filename)
+		if err != nil {
+			return lisherr(err.Error())
+		}
+		return atomString(string(b))
+	}, validateExactArgs(1), validateArgsOfKind(AtomKindString)),
+	"join": atomFunc(func(args ...Atom) Atom {
+		return atomString(strings.Join(fun.Map[string](func(a Atom) string {
+			if a.Kind == AtomKindString {
+				return string(a.Value.(String))
 			}
-			return atomBool(res)
-		}, validateArgsOfKind(AtomKindBool)),
-		"and": atomFunc(func(args ...Atom) Atom {
-			res := false
-			for _, b := range args {
-				res = res && b.Value.(bool)
-			}
-			return atomBool(res)
-		}, validateArgsOfKind(AtomKindBool)),
-		// COMPARISON
-		"=": logical_op(func(a, b Atom) (bool, bool) { return atomEq(a, b), true }),
-		"<": logical_op(func(a, b Atom) (bool, bool) {
-			res, ok := atomCmp(a, b)
-			return res < 0, ok
-		}),
-		"<=": logical_op(func(a, b Atom) (bool, bool) {
-			res, ok := atomCmp(a, b)
-			return res <= 0, ok
-		}),
-		">": logical_op(func(a, b Atom) (bool, bool) {
-			res, ok := atomCmp(a, b)
-			return res > 0, ok
-		}),
-		">=": logical_op(func(a, b Atom) (bool, bool) {
-			res, ok := atomCmp(a, b)
-			return res >= 0, ok
-		}),
-		// PRINTING
-		"dbg": atomFuncNil(func(args ...Atom) {
-			fmt.Println(strings.Join(fun.Map[string](func(a Atom) string {
-				return fmt.Sprintf("%#v", a)
-			}, args...), " "))
-		}),
-		"print": atomFuncNil(func(args ...Atom) {
-			fmt.Print(strings.Join(fun.Map[string](Atom.String, args...), " "))
-		}),
-		"println": atomFuncNil(func(args ...Atom) {
-			fmt.Println(strings.Join(fun.Map[string](Atom.String, args...), " "))
-		}),
-		"echo": atomFunc(func(args ...Atom) Atom {
-			return Atom{AtomKindString, strings.Join(fun.Map[string](Atom.String, args...), " ")}
-		}),
-		// LIST MANIPULATION
-		"cons": atomFunc(func(args ...Atom) Atom {
-			elems := args[:len(args)-1]
-			switch v := args[len(args)-1]; v.Kind {
-			case AtomKindList:
-				v := v.Value.([]Atom)
-				if len(v) == 0 {
-					return atomList(elems...)
-				}
-				return atomList(append(elems, v...)...)
-			default:
-				return lisherr("Trying to cons not a list")
-			}
-		}, validateMinArgs(2)),
-		"first": atomFunc(func(args ...Atom) Atom {
-			return args[0].Value.([]Atom)[0]
-		}, validateExactArgs(1), validateArgsOfKind(AtomKindList)),
-		"rest": atomFunc(func(args ...Atom) Atom {
-			return atomList(args[0].Value.([]Atom)[1:]...)
-		}, validateExactArgs(1), validateArgsOfKind(AtomKindList)),
-		"list": atomFunc(atomList),
-		"empty?": atomFunc(func(args ...Atom) Atom {
-			if args[0].Kind == AtomKindList {
-				return atomBool(len(args[0].Value.([]Atom)) == 0)
-			}
-			return lisherr("Trying to get empty? of %s", strings.Join(fun.Map[string](Atom.String, args...), " "))
-		}, validateExactArgs(1)),
-		"len": atomFunc(func(args ...Atom) Atom {
-			if args[0].Kind == AtomKindList {
-				return atomInt(len(args[0].Value.([]Atom)))
-			}
-			return lisherr("Trying to get len of %s", strings.Join(fun.Map[string](Atom.String, args...), " "))
-		}, validateExactArgs(1)),
-		"list?": atomFunc(func(args ...Atom) Atom {
-			return atomBool(args[0].Kind == AtomKindList)
-		}, validateExactArgs(1)),
-		"concat": atomFunc(func(args ...Atom) Atom {
-			return atomList(fun.ConcatMap(func(arg Atom) []Atom {
-				// TODO: support nil
-				return arg.Value.([]Atom)
-			}, args...)...)
-		}, validateArgsOfKind(AtomKindList)),
-		// OTHER
-		"apply": atomFunc(func(args ...Atom) Atom {
-			fn := args[0]
-			fnArgs := args[1:]
-			switch fn.Kind {
-			case AtomKindFunc:
-				return fn.Value.(func(...Atom) Atom)(fnArgs...)
-			case AtomKindLambda:
-				v := fn.Value.(Lambda)
-				return eval(v.ast, newEnvBind(fun.Valid(&v.env), v.params, fnArgs))
-			default:
-				return lisherr("%s is not a function", fn)
-			}
-		}, validateMinArgs(1)),
-		"read": atomFunc(func(args ...Atom) Atom {
-			return read(args[0].Value.(string))
-		}, validateExactArgs(1), validateArgsOfKind(AtomKindString)),
-		"slurp": atomFunc(func(args ...Atom) Atom {
-			filename := args[0].Value.(string)
-			b, err := os.ReadFile(filename)
-			if err != nil {
-				return lisherr(err.Error())
-			}
-			return atomString(string(b))
-		}, validateExactArgs(1), validateArgsOfKind(AtomKindString)),
-		"join": atomFunc(func(args ...Atom) Atom {
-			return atomString(strings.Join(fun.Map[string](func(a Atom) string {
-				if a.Kind == AtomKindString {
-					return a.Value.(string)
-				}
-				return a.String()
-			}, args...), ""))
-		}),
-		"throw": atomFunc(func(args ...Atom) Atom {
-			return lisherr(args[0].String())
-		}, validateExactArgs(1)),
-	}
+			return a.String()
+		}, args...), ""))
+	}),
+	"throw": atomFunc(func(args ...Atom) Atom {
+		return lisherr(args[0].String())
+	}, validateExactArgs(1)),
 }
 
 // mod core_tests {

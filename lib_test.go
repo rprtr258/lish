@@ -93,7 +93,7 @@ func TestQuasiquote(t *testing.T) {
 
 func TestSymbolFound(t *testing.T) {
 	env := newEnv(fun.Invalid[*Env]())
-	env.sets("a", atomInt(1))
+	env.set("a", atomInt(1))
 	assert.Equal(t, atomInt(1), eval(atomSymbol("a"), env))
 }
 

@@ -73,7 +73,7 @@ func read_form(tokens []string) Atom {
 		last := lists_stack.data[n-1]
 		switch last.a.Kind {
 		case AtomKindList:
-			lists_stack.data[n-1].a = Atom{AtomKindList, append(last.a.Value.([]Atom), item)}
+			lists_stack.data[n-1].a = Atom{AtomKindList, append(last.a.Value.(List), item)}
 		default:
 			panic("unimplemented")
 		}
@@ -96,7 +96,7 @@ func read_form(tokens []string) Atom {
 				if a.Kind != AtomKindString {
 					panic("TODO: Not a valid key")
 				}
-				key := a.Value.(string)
+				key := string(a.Value.(String))
 				i++
 				value := readAtom(tokens[i]) // TODO: eval
 				hashmap[key] = value
@@ -117,7 +117,7 @@ func read_form(tokens []string) Atom {
 			item := readAtom(token)
 			append_item_to_last_stack_list(&lists_stack, item)
 		}
-		for len(lists_stack.data) > 1 && lists_stack.data[len(lists_stack.data)-1].isReaderMacro && len(lists_stack.data[len(lists_stack.data)-1].a.Value.([]Atom)[1:]) == 1 {
+		for len(lists_stack.data) > 1 && lists_stack.data[len(lists_stack.data)-1].isReaderMacro && len(lists_stack.data[len(lists_stack.data)-1].a.Value.(List)[1:]) == 1 {
 			last_list, _ := lists_stack.pop()
 			append_item_to_last_stack_list(&lists_stack, last_list.a)
 		}

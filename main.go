@@ -43,7 +43,7 @@ func run() error {
 
 	replEnv := newEnvRepl()
 	cmdArgs := os.Args
-	replEnv.sets("*ARGV*", atomList(fun.Map[Atom](atomString, os.Args...)...))
+	replEnv.set("*ARGV*", atomList(fun.Map[Atom](func(s string) Atom { return atomString(s) }, os.Args...)...))
 	// TODO: rename to load ?
 	// TODO: detect error
 	rep(`(set load-file (fn (f) (eval (read (join "(progn\n" (slurp f) "\n)")))))`, replEnv)
