@@ -1,0 +1,78 @@
+<!doctype html>
+
+<head>
+    <title>Sistine Markdown | Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine Markdown | Sistine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine Markdown | Sistine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/docs/">Documentation</a>
+        </span>
+        
+    
+</div>
+
+
+        <h1>Sistine Markdown</h1>
+        <p>Sistine's Markdown engine comes from the <a href="https://github.com/thesephist/merlot">Merlot</a> Markdown editor. As a result, every Markdown feature supported by Merlot is supported in Sistine, and the ones not yet supported in Merlot are not yet here in Sistine, either. Most features of standard Markdown are supported, however, including</p><ul><li>Inline markup: <em>italic</em>, <strong>bold</strong>, <strike>strikethrough</strike>, <code>monospace</code></li><li>Bulleted and numbered lists nested to arbitrary depths</li><li>Code blocks with <code>```</code></li><li>Block quotes with <code>></code></li><li>Headings beginning with a number of <code>#</code>s</li><li>Inline HTML with the <code>!html</code> command</li></ul><p>Notable features that are not yet supported include</p><ul><li>Table of contents generation</li><li>Anchor links to headings (being able to link to <code>some-page/#some-heading</code>)</li><li>Code block syntax highlighting</li><li>Multi-paragraph list items</li></ul><p>I will probably add them to Merlot (and thus Sistine) as I come to need those features out of these apps.</p><h2>Front matter in content pages</h2><p>Every content page in the <code>./content</code> folder of a Sistine site should be a Markdown file, optionally beginning with <em>front matter</em>. Front matter is a list of key-value pairs that come between two triple-dashed lines. For example, the front matter for this page is something like</p><pre><code>---
+title: Sistine Markdown
+order: 3
+description: The extra features ...
+---
+
+( rest of page Markdown ... )</code></pre><p>Front matter should always begin and end with three dashes. if a particular page does not need any page variables, it may omit the front matter entirely, and the entire page will be parsed as simple Markdown.</p><p>Note that unlike in most popular static site generators, front matter in Sistine do not support the full YAML syntax -- they're simply <code>key: value</code> pairs between triple dashes.</p><p>Every key in the front matter of a content page defines a <a href="/docs/tpl/">page variable</a> for Sistine templates to use when rendering that page. All variables are parsed and treated as raw strings. In other words the <code>order</code> variable of this page is the string "3".</p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

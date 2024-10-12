@@ -1,0 +1,1 @@
+https://jvns.ca/blog/2016/08/29/how-i-made-a-zine/

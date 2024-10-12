@@ -1,0 +1,59 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+
+        
+        <h2>Введение</h2><h3>Название</h3><p>TBD</p><h3>Общее описание</h3><p>Игровой процесс заключается в разведении и выводе новых видов пчел и менеджменте ресурсов, получаемых от них: сами пчелы, производные от них продукты (соты, мед, воск, и т.д.) и обмене с другими игроками этих ресурсов при помощи магазина или аукциона.</p><h3>Платформы</h3><p>Основная платформа - Web. Возможна адаптация для мобильной платформы в будущем</p><h3>Возраст целевой аудитории</h3><p>Игра подходит для широкого диапазона возрастов, 9+</p><h3>Конкуренты и вдохновители</h3><p>Основное вдохновение, благодаря которому появилась задумка - Minecraft, мод Forestry. В силу того, что у автора был слабый комп, он не мог долго играть в Minecraft и поэтому задумал сделать отдельную игру в виде веб-сайта, в которой помимо доступности, не нужно делать лишние действия, как в Minecraft (выживать, копать ресурсы и т.д.) и больше концентрация на выведении и менеджменте пчел.</p><p>Конкурентов проекта найдено не было. Один проект на GitHub</p><p><a href="https://github.com/loohhoo/magicalbees">loohhoo/magicalbees</a></p><p>Находится в зачаточном состоянии и не обновляется уже как 2 года.</p><p><a href="https://jayseesee.github.io/Crittermound-Fork/">Critter Mound</a></p><p>Упрощенная система скрещивания и больше инкрементальная игра (игра-кликер), чем то, что описывается далее.</p><h3>Титульная картинка, концепт арт</h3><p>TBD</p><p><img alt="" src="data/static/old/someday_maybe/programming_projects/Bee%20breeder/_static_gamedesign/Untitled.png"/></p><h2>Игровой дизайн</h2><p>Игра строится вокруг размножения, селекционирования и выведения новых видов пчел, получения с них ресурсов и развития своей пасеки. Таким образом основными игровыми процессами, в которые будет вовлечен игрок следующие:</p><ul><li>содержание пчел, выбор пчел для размножения / селекционирования</li><li>сбор и хранение продуктов, получаемых от пчел</li><li>построении, развитие и автоматизации пасеки</li><li>другие игровые активности:<ul><li>торговля полученными ресурсами и пчелами на рынке, доступном для всех игроков</li><li>купля / продажа ресурсов в игровом магазине с фиксированными ценами и неограниченными ресурсами</li><li>коллекционирование новых видов пчел</li></ul></li></ul><p>Вовлечение игрока достигается за счет постоянного развития в виде пополнения коллекции видов пчел, улучшении их генетической структуры и создания автоматизации процессов на пасеке.</p><h3>Игровая механика</h3><p>Игрок начинает с минимального, необходимого для развития набора:</p><ul><li>одна чистая природная королева</li><li>один базовый улей</li><li>одна базовая центрифуга</li></ul><p>После смерти королевы, в улье появляются: одна принцесса, один или несколько дронов. Так же, пока живет королева, улей производит продукцию, соответствующую ее виду, например, медовые соты. Затем, когда игроку будут доступны несколько дронов и принцесс, игрок должен определить, какие из пчел будут скрещиваться в королеву. Полученные соты можно поместить в центрифугу, получая из нее производные продукты: мед и воск. Затем эти продукты можно продать на общем рынке или в магазине за внутриигровую валюту. Затем на эту валюту можно купить новые ульи, пчел и центрифуги с целью увеличения производства.</p><p>Продукты пчел кроме продажи могут быть использованы, как еда или входные материалы для других пчел. Например, если дать $Smelting$ дерево, то она произведет уголь (если брать аналогию из игры Minecraft). За счет этого, параллельно с генетическими ветками, можно вводить последовательность продуктов, которые передаются по этой цепочке. Например:</p><p>$$ Undergraduateto Studentto Bachelorto    Masterto Doctornewline                                         Mathto Algebrato Analysis to Topologyto Topological algebra $$</p><p>Так как пчелы могут принимать несколько входных материалов, эта система напоминает игры жанра алхимия, где надо смешивать вещества, чтобы получить новые. Но можно ввести более сложную систему, добавив свойства продуктам. Например в качестве предметов могут быть поколения смайликов:</p><p><img alt="" src="data/static/old/someday_maybe/programming_projects/Bee%20breeder/_static_gamedesign/Untitled%201.png"/></p><p>В дальнейшем эти продукты можно продать на рынке или в магазине, чтобы получить внутриигровую валюту. Цены на рынке определяются самими игроками. Цены в магазине могут либо определяться разработчиком вручную, но тогда придется их корректировать, либо в соответствии с рынком, например покупка за 95% квантиль цены этого товара на рынке, а продажа за 5% квантиль.</p><h3>Скрещивание пчел</h3><p>Пчелы скрещиваются согласно <a href="https://ru.wikipedia.org/wiki/Законы_Менделя">схеме Менделя</a>. У каждой пчелы есть набор генов и при наследовании учитываются гены родителей и их доминация: доминирующий ген преобладает над рецессивным, два доминирующих гена либо смешиваются (codominance), либо из них выбирается один случайный.</p><p>Примерный генотип пчелы:</p><ul><li>Production:<ul><li>Production speed: Null, Slowest, Slow, Slower, Normal, Faster, Fast, Fastest, Robotic</li></ul></li></ul><p>      <br/>        Выражается числом, название берется по промежуткам (Null = [0, 1), Slowest = [1, 2) и т.д.)       <br/></p><ul><li>Lifetime: Null, Shortest, Short, Shorter, Normal, Longer, Long, Longest, Eternal</li><li>Product: Product_type</li></ul><p>      <br/>        Продукт, который производит пчела       <br/></p><ul><li>Appearance:<ul><li>Color: Red, Green, Blue, 0xC0FFEE</li></ul></li></ul><p>      <br/>        Цвет спрайта пчелы       <br/></p><ul><li>Effect: Null, Animated, Enchanted</li></ul><p>      <br/>        Визуальный эффект спрайта пчелы       <br/></p><ul><li>Etc:<ul><li>Species: Forest, Common</li></ul></li></ul><p>      <br/>        Какому виду принадлежит пчела       <br/></p><ul><li>Fertility: 1, 2, 3, 4, 5</li></ul><p>      <br/>        Сколько потомков пчела оставляет после смерти       <br/></p><p>При скрещивании некоторых видов может получиться пчела нового вида, имеющая дефолтное значение некоторых параметров, например $Roboticto Production: Robotic$</p><h2>Детали технической реализации</h2><h3>Используемые технологии</h3><p>Backend - Clojure/Ring,Compojure, GraphQL для API</p><p>TDD подход - сначала интерфейсы, потом тесты, потом код, CI тестирование на основе GitHub Actions</p><p>Микросервисы. Сервисы для:</p><p>авторизации и регистрации</p><p>торговли</p><p>игровая логика</p><p>хранения данных</p><p>Frontend - React (рендер) + Redux (state management) + (мб) React-Routes (для SPA)</p><p><a href="https://github.com/reduxjs/redux-thunk">reduxjs/redux-thunk</a></p><p>Версионирование осуществляется согласно модели git-flow</p><p><a href="https://danielkummer.github.io/git-flow-cheatsheet/index.ru_RU.html">Шпаргалка по git-flow</a></p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

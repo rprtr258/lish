@@ -1,0 +1,124 @@
+package main
+
+import (
+	"bufio"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/rs/zerolog/log"
+	ink "github.com/thesephist/ink/internal"
+)
+
+const cliVersion = "0.1.9"
+
+func usage() {
+	fmt.Printf(`Ink is a minimal, powerful, functional programming language.
+	ink v%s
+
+By default, ink interprets from stdin.
+	ink < main.ink
+Run Ink programs from source files by passing it to the interpreter.
+	ink main.ink
+Start an interactive repl.
+	ink
+Run from the command line with -eval.
+	ink -eval "f := () => out('hi'), f()"
+
+`, cliVersion)
+	flag.PrintDefaults()
+}
+
+func repl(ctx *ink.Context) {
+	// add repl-specific builtins
+	ctx.LoadFunc("clear", func(*ink.Context, []ink.Value) (ink.Value, *ink.Err) {
+		fmt.Printf("\x1b[2J\x1b[H")
+		return ink.Null, nil
+	})
+	ctx.LoadFunc("dump", func(ctx *ink.Context, _ []ink.Value) (ink.Value, *ink.Err) {
+		fmt.Println(ctx.Frame.String())
+		return ink.Null, nil
+	})
+
+	// run interactively in a repl
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		const greenArrow = "\x1b[32;1m>\x1b[0m "
+		fmt.Printf(greenArrow)
+
+		text, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal().Err(err).Stringer("kind", ink.ErrSystem).Msg("unexpected end of input")
+		}
+
+		// we don't really care if expressions fail to eval
+		// at the top level, user will see regardless, so drop err
+		if val, _ := ctx.Exec("stdin", strings.NewReader(text)); val != nil {
+			fmt.Println(val.String())
+		}
+	}
+}
+
+func main() {
+	flag.Usage = usage
+
+	// cli arguments
+	verbose := flag.Bool("verbose", false, "Log all interpreter debug information")
+	debugLexer := flag.Bool("debug-lex", false, "Log lexer output")
+	debugParser := flag.Bool("debug-parse", false, "Log parser output")
+	dump := flag.Bool("dump", false, "Dump global frame after eval")
+
+	version := flag.Bool("version", false, "Print version string and exit")
+	help := flag.Bool("help", false, "Print help message and exit")
+
+	eval := flag.String("eval", "", "Evaluate argument as an Ink program")
+
+	flag.Parse()
+
+	// collect all other non-parsed arguments from the CLI as files to be run
+	args := flag.Args()
+
+	// if asked for version, disregard everything else
+	if *version {
+		fmt.Println(cliVersion)
+		return
+	} else if *help {
+		flag.Usage()
+		return
+	}
+
+	eng := &ink.Engine{}
+	ink.L = ink.Logger{
+		DumpFrame:  *dump,
+		Lex:        *verbose || *debugLexer,
+		Parse:      *verbose || *debugParser,
+		Dump:       *verbose || *dump,
+		FatalError: true,
+	}
+
+	stdin, _ := os.Stdin.Stat()
+	ctx := eng.CreateContext()
+	switch {
+	case *eval != "":
+		ctx.Exec("eval", strings.NewReader(*eval))
+	case len(args) > 0:
+		filePath := args[0]
+		if err := ctx.ExecPath(filePath); err != nil {
+			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Send()
+		}
+	case stdin.Mode()&os.ModeCharDevice == 0:
+		if _, err := ctx.Exec("stdin", os.Stdin); err != nil {
+			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Send()
+		}
+	default:
+		// if no files given and no stdin, default to repl
+		ink.L.FatalError = false
+		repl(ctx)
+	}
+
+	eng.Listeners.Wait()
+}

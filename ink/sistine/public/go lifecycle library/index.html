@@ -1,0 +1,128 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+
+        
+        <p>#someday_maybe #project</p><p>the problem is that components lifecycle can be managed only in <code>main</code> function using <code>defer</code> which is not composable:</p><pre><code data-lang="go">func main() {
+    // create component 1
+    // defer destroy component 1
+    // create component 2
+    // defer destroy component 2
+    // create component 3
+    // defer destroy component 3
+    ...
+}</code></pre><p>I want to divide it somehow into</p><pre><code data-lang="go">func newComponent1()
+func newComponent2()
+func newComponent3()
+func main() {
+    c1 := newComponent1()
+    c2 := newComponent2()
+    c3 := newComponent3()
+    ...
+}</code></pre><p>variants:</p><ul><li><code>runtime.Closer</code> - not reliable</li><li><code>fx.Lifecycle</code> - brings whole DI shit with it, don't understand how it works</li><li><a href="https://github.com/oklog/run">oklog/run</a> https://blog.gopheracademy.com/advent-2017/run-group/</li></ul><p>raw draft</p><pre><code data-lang="go">package fx
+
+import (
+	"context"
+
+	"github.com/rprtr258/xerr"
+)
+
+// TODO: make working
+type Lifecycle struct {
+	Name       string
+	Start      func(context.Context) error
+	StartAsync func(context.Context)
+	Close      func()
+}
+
+func Combine(name string, lcs ...Lifecycle) Lifecycle {
+	return Lifecycle{
+		Name: name,
+		Start: func(ctx context.Context) error {
+			for _, lc := range lcs {
+				if err := lc.Run(ctx); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		StartAsync: nil,
+		Close:      nil,
+	}
+}
+
+func (lc Lifecycle) close() {
+	if lc.Close != nil {
+		lc.Close()
+	}
+}
+
+func (lc Lifecycle) Run(ctx context.Context) error {
+	if lc.Start != nil {
+		if err := lc.Start(ctx); err != nil {
+			return xerr.NewWM(err, "start component", xerr.Fields{
+				"component": lc.Name,
+			})
+		}
+		lc.close()
+	} else {
+		go func() {
+			lc.StartAsync(ctx)
+			lc.close()
+		}()
+	}
+	return nil
+}</code></pre>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

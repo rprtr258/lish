@@ -1,0 +1,96 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+
+        
+        <p>#project #sre</p><ul><li><input type="checkbox"  /> перенести coredns в nomad</li><li><input type="checkbox" checked /> сделать ansible playbook для поднятия nomad</li><li><input type="checkbox"  /> сделать ansible playbook для поднятия consul (если разберусь как его юзать блять)</li><li><input type="checkbox"  /> настроить секьюрити для consul</li></ul><ul><li>links on deploy management<ul><li>actual dashboards<ul><li><a href="http://45.87.153.219:4646/ui/">nomad</a></li><li><a href="http://45.87.153.219:8500/ui/">consul</a></li></ul></li><li>experimenting on yandex vms<ul><li><a href="https://158.160.44.108:4646/ui/">nomad</a></li><li><a href="https://console.cloud.yandex.ru/folders/b1gcjejr56jpj3kms7d9/compute/instances">vms</a></li></ul></li></ul></li></ul><p><a href="/note/host%20music%20server">music server</a>https://blog.tjll.net/distributed-homelab-cluster/#exposing-applications https://blog.tjll.net/too-simple-to-fail-nomad-caddy-wireguard/ https://www.aapanel.com/new/index.html https://hub.docker.com/_/adminer<a href="https://habr.com/ru/post/693198/">Как перестать велосипедить или 4 self-hosted сервиса для начинающего СТО</a>https://github.com/awesome-selfhosted/awesome-selfhosted https://awesome-selfhosted.net/index.html<a href="https://poste.io/">email</a> https://maddy.email/ https://habr.com/ru/companies/ruvds/articles/729742/ https://medium.com/@alexfoleydevops/terraform-fastapi-encryption-975f1348f69b https://medium.com/@alexfoleydevops/localhost-love-with-packer-ansible-vagrant-75767dc78a87 https://awstip.com/one-dollar-devops-terraform-docker-nginx-c72443ac0918<a href="https://habr.com/ru/post/703408/">Gitea + Drone + Nginx + Portainer. Пошаговое руководство по деплою аналога github на своём железе</a>https://woodpecker-ci.org/ https://github.com/catppuccin/gitea https://gitness.com/ https://dopos.github.io/dcape/baseapps/ https://github.com/concourse/concourse<a href="https://habr.com/ru/post/692008/">Домашнее облако</a>https://github.com/mikeroyal/Self-Hosting-Guide https://github.com/apitable/apitable mail https://github.com/mjl-/mox file listing https://github.com/alist-org/alist https://fmnx.su/core/infr https://github.com/filebrowser/filebrowser</p><pre><code data-lang="embed">title: 'Админка для Private Docker Registry (Registry Admin)'
+image: 'https://habrastorage.org/getpro/habr/upload_files/82b/df5/ad9/82bdf5ad906dc2602322d08d6b9644f2.png'
+description: 'Концепция контейнеризации на базе Docker, и ему подобных технологий, для многих разработчиков стала незаменимым инструментом доставки своих продуктов конечным пользователям в виде полностью...'
+url: 'https://habr.com/ru/post/709988/'</code></pre><pre><code data-lang="embed">title: 'Docker - Coder v2 Docs'
+image: 'https://coder.com/og-image.png'
+description: 'Setup Coder with Docker'
+url: 'https://coder.com/docs/v2/latest/quickstart/docker'</code></pre><p>docker-compose:</p><pre><code data-lang="yaml"># https://fleet.linuxserver.io/
+#   https://demo.hedgedoc.org/
+#   https://github.com/linuxserver/docker-airsonic-advanced
+#   ? https://github.com/rembo10/headphones
+#   ? https://github.com/healthchecks/healthchecks
+#   ? https://hub.docker.com/r/linuxserver/heimdall
+#   ? https://nextcloud.com/
+#   ? http://piwigo.org/
+# https://stackoverflow.com/questions/60064792/docker-container-connect-volume-to-remote-server-with-ssh-keys
+# https://habr.com/ru/post/699374/
+services:
+  tinyproxy:
+    image: francisbesset/tinyproxy # or 3proxy ?
+    ports:
+      - 1111:8888
+    # args: 185.102.11.146
+  mstream:
+    image: lscr.io/linuxserver/mstream:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - type: volume
+        source: /mnt/hdd/music
+        target: /music
+        read_only: true
+      - /home/rprtr258/t:/config
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+https://www.reddit.com/r/selfhosted/comments/xxb1p3/quarterly_post_sharing_your_favorite_tools_a/</code></pre><p>https://nerdyarticles.com/a-clutter-free-life-with-paperless-ngx/ https://github.com/Dullage/flatnotes</p><p>monitor pages e.g. stolyarov posts/<a href="http://stolyarov.info/guestbook">guestbook</a> e.g. using https://github.com/e1abrador/web.Monitor<a href="https://thekevinwang.com/2022/11/20/nomad-cluster">setup nomad guide</a>https://mrkaran.dev/posts/home-server-nomad/ https://synergeticlabs.com/email-alchemy/ how to self host email</p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

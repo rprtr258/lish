@@ -1,0 +1,95 @@
+`handbook` = [[data/static/old/projects/self improvement/CFAR_Handbook_2019.pdf|CFAR_Handbook_2019]]
+
+### practicing now
+- [ ] Yoda Timers - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/vpvKEj7shuk8h5Eet) - берем задачу, ставим таймер на 5 минут, решаем задачу
+    - [ ] Yoda Timers 2 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/nHMu69unKxMaS2D5b) - ставить близкие дедлайны для выполнения задачи
+    - [ ] Yoda Timers 3: Speed - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/ovmykzXAyG4RXKkKc) - делать быстрее некоторые виды активности
+
+### techniques
+- [ ] Comfort Zone Expansion - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/c5wFM7KJLtuMnLFsH) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/2qmMcGmoT2hW2Gfpa) - расширять зону комфорта, пробовать новые вещи
+    - [ ] CoZE 2 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/G4mzC7zFW6WMMkmSS) - использовать Aversion Factoring при экспериментировании с новыми вещами
+    - [ ] CoZE 3: Empiricism - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/X49iDt7tBd9mQopBZ) - проверять с помощью простых экспериментов верность карты
+- [ ] TAPs - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/ESnzpoCJrAfwAzpMB) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/ywWH2zRL39v3KEvHM) - trigger-action-plan, составить, повторить 10 раз, чекать в течении недели, чтобы усвоить
+    - [ ] TAPs 2 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/mvHiY9hsSXacmZuoG) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/TSYoR5wTA89AoapX8) - meta-TAPs на мыслительные процессы
+    - [ ] TAPs 3: Reductionism - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/tHPfmgrimAkR7TTz9) - разбивать действие на этапы, среди которых, первые самые простые и дают начало, т.е. бОльшую часть выхлопа
+
+- [ ] Abstraction laddering - [untools](https://untools.co/abstraction-laddering) - абстрагировать проблему с помощью вопроса Зачем/Почему? и затем решить более абстрактные вопросы с помощью вопроса Как?
+- [ ] Againstness - `handbook` - есть две нервные подсистемы: SNS (активность, энергия) и PSNS (спокойствие), нужно ощущать, к какому состоянию я ближе и при желании менять его
+- [ ] Aversion Factoring - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/sZCqpRHQLHSmFNWxK) - перечислить Aversions (то, почему я не делаю/не хочу делать задачу) и уменьшить их действие или избавиться от них
+- [ ] Balancing feedback loop - [untools](https://untools.co/balancing-feedback-loop) - сравнивая текущее и желаемое состояние системы, корректировать текущее состояние системы
+- [ ] Bucket Errors - `handbook` - bucket=вера в утверждение, события из жизни попадают в ведра, если подтверждают/опровергают это утверждение, на надо быть осторожным и не кидать в ведро то, что к нему не относится, т.к. состояние ведра (верность утверждения) влияет на наши действия/восприятие
+- [ ] Bug Hunt - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/rFjhz5Ks685xHbMXW) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/babweATFMT9jF6aX7) - выписать список раздражающих вещей относительно себя, мира, окружения и тд и тп
+    - [ ] Bug Hunt 2 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/7LmmZaqhL4TWsQdPN)
+    - [ ] Bug Hunt 3 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/b6p684c9A5QfsaQEC)
+- [ ] Concept map - [untools](https://untools.co/concept-map) - визуализация сущностей и их взаимодействий в системе или концепте
+- [ ] Conflict resolution diagram - [untools](https://untools.co/conflict-resolution-diagram) - разрешение конфликта с помощью нахождения common goal и способов ее достичь, взято из constraint theory
+- [ ] Confidence determines speed vs quality - [untools](https://untools.co/confidence-determines-speed-vs-quality) - в зависимости от важности задачи/правильности решения, нужно вкладывать больше/меньше времени/качества в решение
+- [ ] Connection circles - [untools](https://untools.co/connection-circles) - отношение сущностей в системе и их положительное/отрицательное влияние друг на друга
+- [ ] Copernicus and Chaos - `handbook` - не совсем понял, полагать, что ты в середине оценки чего-либо - самая оптимальная оценка
+- [ ] Cynefin framework - [untools](https://untools.co/cynefin-framework) - в разных типах ситуаций требуются разные виды реакций
+- [ ] Decision matrix - [untools](https://untools.co/decision-matrix) - выбор среди нескольких вариантов с помощью оценки факторов и суммарного скора
+- [ ] Deflinching and Lines of Retreat - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/rbXE9D5BsJ4wRop99) - Deflinching = TAP(notice that you're triggered/offended/bristling -> make space), Lines of Retreat = TAP(make space -> ask yourself "what if the criticism is true?")
+- [ ] Deliberate Performance - `handbook` - использовать техники рациональности для обучения/реинфорсмента скилов
+- [ ] Design - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/HHjn3r8n7bJp6Q5HE) - сделать окружение таким, чтобы проще было делать желаемые задачи и сложнее нежелательные
+    - [ ] Design 2 - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/hpKnepGWPraedLiDc)
+    - [ ] Design 3: Intentionality - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/tMdWzeKRABohwGk2y)
+- [ ] Double-Crux - `handbook` [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/oWv9ZkCcsCATJBrdu) - процесс разрешения спора, заключающийся в поиске причин убеждений, проверке их с помощью экспериментов и высказываний вида "если A, B и C, то я поверю, что X ложно"
+    - [ ] Internal Double Crux - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/mQmx4kQQtHeBip9ZC) - использовать Double Crux для внутренних конфликтов
+- [ ] Eat Dirt - `handbook` - pica-удовлетворение внутренней потребности с помощью того, что, как кажется мозгу, может ее удовлетворить. Вместо этого, нужно факторизовать внутреннюю потребность, но если не получается - пробовать удовлетворять ее и смотреть на реакцию, помогает или нет
+- [ ] Eisenhower matrix - [untools](https://untools.co/eisenhower-matrix) - что делать с задачами в зависимости от того насколько они важны и срочны
+- [ ] Executing Intentions - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/ZviDcaHieq3hAaKSA) - любопытство стремится уничтожить любопытство, аналогично намерения стремятся быть выполненными, поэтому надо брать намерения и выполнять
+- [ ] First principles - [untools](https://untools.co/first-principles) - разбить задачу в базовые принципы и собрать решение из них с помощью древовидных структур
+- [ ] Five-Second Versions - `handbook` - использовать техники в течении 5 секунд достаточно в большинстве случаев
+- [ ] Focusing - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/noXTkjP45BAZqKJxM), [[data/self improvement|self improvement#focus/deep work]] [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/vHXe2f59bJHihvcBt) - фокусироваться на ощущениях при высказывании фразы "В моей жизни все хорошо" или подобной, если есть "плохие" ощущения, назвать их, осознать
+- [ ] Frame-by-Frame Debugging - `handbook` - дебажить Bugs, предпосылки перед ними, подготовиться к предыдущим событиям, чтобы избежать Bug-а
+- [ ] Friendship - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/WrAioC5NEp59GsDSF) - техники общения, построения отношений
+- [ ] Gears-Level Understanding - `handbook` - понимание концепции/вещи с помощью "шестереночной" модели, что к чему приводить внутри и как получается результат
+- [ ] Goal Factoring - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/Cu5C5KhkoXhrPMLFN) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/FanNherkx3iMHc8AB) - разделение цели на план и aversions, заменить действия в плане на те, которые позволяют лучше/быстрее достичь цели с меньшими aversions
+- [ ] Hammertime Final Exam - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/Q7MsMshzbzhEs729s)
+- [ ] Hamming Questions - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/apmQ2Qsj8mDC2CWwJ) - решить, какие проблемы являются самыми важными в моей жизни, задать вопрос, почему я не решаю их, решить их
+    - [ ] Hamming Questions for Potted Plants - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/n6Go8wFADNWycmWiJ) - аналогия этой концепции в применении к растениям в горшках
+- [ ] Hard choice model - [untools](https://untools.co/hard-choice-model) - тип решения, который зависиот от того, как варианты легко/сложно сравнить и насколько большой/малый импакт от решения
+- [ ] Iceberg model - [untools](https://untools.co/iceberg-model) - Events -> Patterns -> Structures -> Mental models, поиск ключевых причин с помощью нахождения нижележащих абстракций
+- [ ] Inner Simulator - `handbook` - использовать первую (быструю) систему для ощущения/проживания ситуации и ее оценки, заместо анализа и логических выводов в второй (медленной) системе
+- [ ] Inversion - [untools](https://untools.co/inversion) - придумать самое плохое решение задачи, затем с помощью вопросов "Почему это решение плохое?" придти к хорошему решению
+- [ ] Ishikawa diagram - [untools](https://untools.co/ishikawa-diagram) - поиск ключевых причин
+- [ ] Issue trees - [untools](https://untools.co/issue-trees) https://www.craftingcases.com/issue-tree-guide/ - разбить проблемы/решения в древовидную структуру, похоже на деревья из constraint theory
+- [ ] Ladder of inference - [untools](https://untools.co/ladder-of-inference) - поиск причин выводов, вместо того, чтобы сразу использовать вывод
+- [ ] Mantras - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/uhqax7dL8edMpqJWp) - запомнить некоторые высказывания (мантры), которые каким-то образом помогают/мотивируют/etc
+- [ ] Marginal Attention - `handbook` - внимание крайне важная вещь и небольшие увеличения количества внимания дают еще больше пользы, в отличие от денег, которых если много, то добавление еще, не меняет почти ничего
+- [ ] Minto pyramid - [untools](https://untools.co/minto-pyramid) - сначала дать выводы, потом ключевые аргументы, затем детали
+- [ ] Mundanification - `handbook` - то же, что Negative Visualization, хз
+- [ ] Murphyjitsu - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/N47M3JiHveHfwdbFg) [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/zZkMm6ySRJKhHJHfq) - сделать план, представить, что план провалился, написать почему, уточнить план, учитывая трудности, повторять, пока не будешь удивлен мыслью, что план провалится
+    - [ ] Murphyjitsu 2 - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/JmunrNznbETNCuvjh) - "No plan survives contact with reality.", делать такие планы, чтобы они выдерживали контакт с реальностью
+- [ ] Negative Visualization - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/6nKm7fwfARF3nZWgx) - TAP (thinking about uncertain events -> imagine events going badly), TAP (imagine events going badly -> consider what's next), позволяет готовиться к плохим исходам, радоваться хорошим и помнить, что все плохое (как и хорошее) конечно
+- [ ] Noticing - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/2n83uRi36KWDC9LyK) - выбрать ощущение для Noticing, найти триггеры этого ощущения, сформировать намерение замечать и отмечать триггер и ощущение, настроить триггеры, если нужно
+- [ ] OODA Loops - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/bh9gAZTmGyJ4j7h2L) - OODA=observe -> orient -> decide -> act
+- [ ] Overlearning - `handbook` - применять технику слишком часто, чтобы стать fluent в ней
+- [ ] Pedagogical Content Knowledge - `handbook` - уточнение знания через опрос обучающихся этому знанию
+- [ ] Polaris - `handbook` - всегда иметь ввиду конечную точку, чтобы знать, иду ли я в правильном направлении
+- [ ] Policy-Level Decisionmaking - `handbook` - сделать policy, которому можно следовать вне зависимости от настроения, ситуации, дня и тд
+- [ ] Productive thinking model - [untools](https://untools.co/productive-thinking-model) - 6 шагов/вопросов для поиска креативных решений
+- [ ] Recursive Self-Improvement - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/yxGBzrGMg4t8QNThA) - повторять техники для решения Bugs, чтобы использовать их на уровне инстинктов
+- [ ] Reductionism Revisited - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/GuEXcEcsaK9NYHq4F) - применять техники в меньшем размере, чтобы не прокрастинировать/было проще реализовать хотя бы часть техники
+- [ ] Reinforcing feedback loop - [untools](https://untools.co/reinforcing-feedback-loop) - циклы изменения состояния системы, которые приводят сами к себе и усиливают свое воздействие
+- [ ] Resolve Cycles - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/R9uj2T9NZd4ta3hrG) - ставить Yoda timers, чтобы решить Bugs, если не получается, поставить Yoda timer на то, чтобы решить Bug за один Yoda timer, затем решить Bug за один Yoda timer
+    - [ ] Resolve Cycles 2 - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/X67xvJyFLfprYZ4CB) - иногда ожидания относительно себя помогают решать задачи быстрее, поэтому можно делать эти ожидания намеренно
+- [ ] Saving State - `handbook` - сохранять состояние по окончанию деятельности так, чтобы было легко вернуться и восстановить контекст
+- [ ] Second order thinking - [untools](https://untools.co/second-order-thinking) - думать о долговременных последствиях решения
+- [ ] Seeking Sense - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/273Fg7Wig5ufTHpN6) - угадывать ценности/знания другого человека, если он делает непонятную реакцию, просимулировать на себе, если бы я имел эти же ценности, сделал бы я то же самое, если нет, начать заново, если да, я понял его
+- [ ] Silence - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/uQTXikjByTtvAR3r9)
+- [ ] Situation-behavior-impact - [untools](https://untools.co/situation-behavior-impact) - структурировать фидбек в форме: ситуация (что произошло) - поведение (как на это отреагировали) - последствия (к чему это привело)
+- [ ] Six thinking hats - [untools](https://untools.co/six-thinking-hats) - принимать решение с 6 разных позиций: позитив (положительные стороны), креативность, эмоции, данные (рациональных подход), минусы (плохие стороны), процесс
+- [ ] Socratic Ducking - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/bMw8DSFGBgKD5f4Nw) - использовать метод Сократа
+- [ ] Sunk Cost Faith - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/o8EWXypYGwJ6JYpBT) - Sunk cost faith не позволяет завершать проекты, как и полное отрицание Sunk cost faith, поэтому в какой-то мере его нужно принять
+- [ ] Systemization - `handbook`, [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/zRdh8z9k4b4bqk6Bj) - использовать инструменты/технологии/деньги, чтобы экономить внимание: автоматизировать, заранее продумать процедуры/чеклисты, оптимизировать "низкоуровневые" вещи
+- [ ] Taste & Shaping - `handbook` - использовать reinforcement patterns, feedback loops
+- [ ] TDT for Humans - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/4Kye4kkKwn6DCahKy)
+- [ ] The Area Under The Curve - `handbook` - важнее максимизировать суммарную пользу от действия, чем максимизировать моментальное значение пользы, т.к. после определенного момента происходит выгорание/истощение
+- [ ] The Strategic Level - `handbook`, [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/SYT8E7YThLHWr6JEm) - получив ошибку, подумать, какой образ мышления помог бы избежать этой ошибки заранее, избегать over-correction-а
+- [ ] Three Miniatures - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/vEDLwBQWhQwxXzprR)
+- [ ] Time Calibration - [hammertime](https://www.lesswrong.com/s/qRxTKm7DAftSuTGvj/p/TQq7AgR7JCpXDBJoM) - победить Planning fallacy с помощью выяснения, сколько задача займет по ощущениям, и выделения этого количества времени на задачу, после того, как поймешь, что ошибся с оценкой, уточнить метод оценивания
+- [ ] Traffic Jams - [regime](https://www.lesswrong.com/s/d922gAtBM8JNzkKKJ/p/5Qwsmo6yacyyw6KEr) - выписать все, что "летает" в мозгу в список, уточнить пункты, собрать план, который поможет реализовать эти пункты
+- [ ] Turbocharging - `handbook` - обучение скилу с помощью изменения метода обучения так, чтобы оно было более общим, включало (похожие на) итоговые применения
+- [ ] Understanding Shoulds - `handbook` - намерения должны исходить из внутреннего, эмоционального, согласия с этим намерением, намерение не должно идти вразрез с ощущениями
+- [ ] Units of Exchange - `handbook` - смотреть на вещи со стороны ресурсов, затрат, обмена одних ресурсов на другие

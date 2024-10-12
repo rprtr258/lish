@@ -1,0 +1,1 @@
+https://trendymanga.com/manhva/the-landlords-sister

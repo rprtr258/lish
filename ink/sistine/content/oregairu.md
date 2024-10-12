@@ -1,0 +1,16 @@
+- [x] ANOTHER ✅ 2023-01-29
+    - [x] [A](https://ruranobe.ru/r/oregairu/a1) ✅ 2023-01-14
+    - [x] [N](https://ruranobe.ru/r/oregairu/a2) ✅ 2023-01-14
+    - [x] [O](https://ruranobe.ru/r/oregairu/a3) ✅ 2023-01-14
+    - [x] [T](https://ruranobe.ru/r/oregairu/a4) ✅ 2023-01-14
+    - [x] [H](https://ruranobe.ru/r/oregairu/a5/ch15) ✅ 2023-01-17
+    - [x] [E](https://ruranobe.ru/r/oregairu/a6) ✅ 2023-01-29
+    - [x] [R](https://ruranobe.ru/r/oregairu/a7) ✅ 2023-01-29
+- [x] скачать картинки из ранобе ✅ 2023-01-30
+- [x] https://ruranobe.ru/r/oregairu/v14.5/ch4
+- [ ] [Богиня для одинокого дьявола](https://ficbook.net/readfic/4633374)
+- [ ] anime
+    - [x] 1 season
+    - [x] 2 season
+    - [x] [3 season](https://findanime.net/kak_i_ojidalos__moia_shkolnaia_romanticheskaia_jizn_ne_udalas_3)
+    - [ ] 3 OVA https://animego.org/anime/kak-i-ozhidalos-moya-shkolnaya-romanticheskaya-zhizn-ne-udalas-3-ova-s2313

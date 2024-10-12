@@ -1,0 +1,167 @@
+Buffers are `T[a;b;...z]` multidimensional arrays of `T`, where `T` is one of primitive types:
+- `float` (actually double)
+- `u8` - unsigned 8 bit number
+- `bool` - either `true` or `false`
+- `idx` - index type
+
+`a`,`b`...`z` are integers defining array shape.
+For example,`u8[1000;1000;3]` is `1000x1000` RGB image (or can be interpreted as such).
+Buffers are identified by name. For twitch(TODO: remove twitch dependant info) name has format `<username>.<name>`, where `username` is valid twitch username (like `[a-zA-Z0-9_]+`), `name` is identifier assigned to a buffer, must be have format `[a-zA-Z0-9.]+`.
+
+## grammar
+there are three types of ?(operands/operations/tokens?)??:
+- buffer literal/buffer, they evaluate to themselves
+- function, which in turn can be depending on a context:
+    - unary - takes one buffer and gives another
+    - binary - takes two buffers and gives another
+    - combined (or mixed?) - behaves either as unary or binary depending on a number of buffers provided
+- operator, which in turn can be (none as of now):
+    - unary - takes one function and gives another
+    - binary - takes two functions and gives another
+grammar (in work):
+```
+E ::= P (BAF P)*
+P ::= L | "(" E ")" | UAF P
+BAF ::= BF | AF
+UAF ::= UF | AF
+UF ::= F UO | F BO F | "id" | "abs" | ...
+BF ::= F UO | F BO F | "+" | "*" | ..
+AF ::= F UO | F BO F | "-" | "shape" | ..
+UO ::= "/" | ..
+BO ::= "." | ..
+```
+where `E(xpression)`, `U(nary) F(unction)`, `B(inary) F(unction)`, `A(mbivalent) F(unction)`, `U(nary) O(perator)`, `B(inary) O(perator)`, `L(iteral or buffer)`
+current grammar (in work):
+```
+E ::= P (BAF P)*
+P ::= L | "(" E ")" | UAF P
+BAF ::= BF | AF
+UAF ::= UF | AF
+UF ::= "id" | "abs" | ...
+BF ::= "+" | "*" | ..
+AF ::= "-" | "shape" | ..
+UO ::= "/" | ..
+BO ::= "." | ..
+```
+
+## functions and operators
+Essentially every function is operator (or not??????????). Functions have types and arity. For example:
+```sin :: float -> float```
+is unary function of one `float` argument.
+
+For the ease of notation operators are vectorized in two ways.
+First is full vectorization, for any possible `shape`:
+- every unary function of type `S->T` is automatically promoted to `S[shape]->T[shape]`
+- every binary function of type `S->T->U` is automatically promoted to `S[shape]->T[shape]->U[shape]`
+Second is constant (dimension e.g. `T[3;4]+T[3] === T[3;4]+[T[3],T[3],T[3],T[3]]`?) promotion: every binary function of type `S->T->U` is promoted to `S[shape]->T->U[shape]` by promoting `T` to `T[shape]` and applying full vectorized function.
+
+Syntax for writing expressions, where `X`, `Y`, `Z` are some buffers, `f`, `g`, `h`, `k` are some operators:
+- `XfY = f(X, Y)` - binary operator applications
+- `fX = f(X)` - unary operator application
+- `XfYgZ = Xf(YgZ) = f(X, g(Y, Z))` - function application is right associative
+- `fXgY = f(XgY) = f(g(X, Y))`
+- `fXhgY = f(h(X, g(Y)))`
+- `(XfY)gZ = g(f(X, Y), Z)` - brackets force order of evaluation
+- `(fg)X = fgX = f(g(X))` - composition aka 2-train
+- `(fhg)X = h(f(X), g(X))` - S combinator aka 3-train
+- `(fghk)X = (f(ghk))X = f(h(g(X), k(X)))` - 4-train, trains are also right associative and built of primitive 3- and 2- trains
+
+## stdlib
+### constants
+- `W`, `H` - width, height of screen
+- `X`, `Y` - pixel coordinates, originated in bottom left corner
+- `x=X/W`, `y=Y/H` - pixel coordinates, renormalized to [0, 1]x[0, 1] square
+    maybe instead `x, y :: T[H, W] -> float[H, W]` with `x(t)[_, j] = j/W`, `y(t)[i, _] = i/H`
+    then, `xy :: T[H, W] -> float[H, W, 2]` might be `xy(t)[i, j] = [j/W, i/H]` same as `xy(t) = x(t) stack#2 y(t)`
+- `mouse` - mouse position `(TODO)`
+- `t` - time `(TODO)`, maybe instead `T[10][100][100][3]` is RGB gif 100x100 of 10 frames?
+- literals:
+    - `float`: must have dot, e.g. `1.`, `3.14`, `.05`
+    - `u8`: `0x00` through `0xFF`
+    - `bool`: `true` and `false`
+    - `idx`: `0`, `1`, `2`, etc.
+
+### functions & operators
+
+#### unary
+- `id :: T -> T`
+    $$id(x)=x$$
+- `abs :: float -> float`
+    $$abs(x)=|x|$$
+- `norm :: ???`, ???
+- `sin :: float -> float`
+    $$sin(x)=\sin(x)$$
+- `cos :: float -> float`
+    $$cos(x)=\cos(x)$$
+- `floor :: float -> float`
+    $$floor(x)=\lfloor x\rfloor$$
+- `fract :: float -> float`, particularly, `fract = (id-floor)`
+    $$fract(x)=\{x\}=x-\lfloor x\rfloor$$
+- `~ :: bool -> bool`
+    $$\thicksim(x)=\begin{cases}
+        false,\ if\ x\\
+        true,\ otherwise
+    \end{cases}$$
+- `~ :: u8 -> u8`
+- `normalize`
+    - unary, particularly, `normalize=((id-min)/max-min)` 3-train (should it be standart then?)
+        $$normalize(x) = \frac{x - min(x)}{max(x) - min(x)}$$
+
+#### binary
+- `+ :: (float, float) -> float`, `+ :: (u8, u8) -> u8`, `+ :: (idx, idx) -> idx`
+- `* :: (float, float) -> float`, `* :: (u8, u8) -> u8`, `* :: (idx, idx) -> idx`
+- `/ :: (float, float) -> float`, `/ :: (u8, u8) -> u8`, `/ :: (idx, idx) -> idx`
+- `<,>,<=,=,!= :: (float, float) -> bool, (u8, u8) -> bool, (idx, idx) -> bool`
+- `^ :: (bool, bool) -> bool`, particularly `^=((id&~)|~&id)`
+- `^ :: (u8, u8) -> u8`
+- `atan2 :: (float, float) -> float`
+- `perlin :: (float, float) -> float`, `perlin(x, y)` gives perlin noise value at `(x, y)`
+- `conv2d :: (T[?], T[?]) -> T[?]` - convolution (2d?)
+- `[] :: (T[?], idx[n]) -> T[?]` - getting element/slice
+- `clamp(bound?) :: (float[2], float) -> float`
+    $$clamp([a, b], x)=\begin{cases}
+        a,\ if\ x<a \\
+        x,\ if\ a\le x\le b \\
+        b,\ otherwise
+    \end{cases}$$
+- `not_so_smoothstep :: (float[2], float) -> float`
+    $$not\_so\_smoothstep([a, b], x) = \begin{cases}
+        0,\ if\ x<a \\
+        1,\ if\ b<x \\
+        linear\ interpolation,\ otherwise
+    \end{cases}$$
+- `smoothstep :: (float[2], float) -> float`
+    $$smoothstep([a, b], x) = \begin{cases}
+        0,\ if\ x<a \\
+        1,\ if\ b<x \\
+        polynomial\ interpolation,\ otherwise
+    \end{cases}$$
+
+#### combined
+- `shape`
+    - unary - `shape :: T[a1, a2, ..., an] -> idx[n]` - shape of tensor
+        $$shape(x)=[a1,a2,...,an],\ if\ x\ is\ T[a1, a2, ..., an]$$
+    - binary - `shape :: (B, T[A]) -> T[B]` - `shape(sh, x) = x` shaped in such way that `shape(x) = sh`, elements are repeated if there are not enough of them
+        e.g. `shape((H, W, 3), 0) = H W 3 shape 0 = np.zeros((H, W, 3))`
+- `-`
+    - unary - `- :: float -> float` - negation, $$-(x)=-x$$
+    - binary - `- :: (float, float) -> float, (u8, u8) -> u8, (idx, idx) -> idx` - subtraction, $$-(x,y)=x-y$$
+- `stack`
+    - unary - `stack#n :: T[k, *sh] -> T[]` - stack along (new axis if `n` is float, or `n` axis if integer) `k` buffers: `T[0, ..]`, `T[1, ..]`, .., `T[k-1, ..]`
+    - binary - `stack#n :: (T[*sh], T[*sh]) -> T[]` - stack along (new axis if `n` is float, or `n` axis if integer) both buffers
+- `min`
+    - unary - `min#n :: float[] -> float[]` - min along `n` axis
+    - binary - `min :: (float[*sh], float[*sh]) -> float[*sh]` - elementwise min
+- `max`
+
+
+`axis` is same as `dimension`, choose one
+`shape_len` is nothing but `rank`
+usefule links:
+    https://aplwiki.com/wiki/Comparison_with_traditional_mathematics
+    https://code.jsoftware.com/wiki/NuVoc
+    https://help.dyalog.com/latest/#Language/Introduction/Language%20Elements.htm?TocPath=Language%2520Reference%2520Guide%257CSymbols%257C_____1
+    https://www.dyalog.com/uploads/aplx/APLXLangRef.pdf
+    https://github.com/kevinlawler/kona/wiki#verbs
+- constants, spreading, element-wise binary operators
+- scalar/vector(outer?)/tensor/adamar/??? product

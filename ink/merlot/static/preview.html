@@ -1,0 +1,26 @@
+<!doctype html>
+
+<meta charset="utf-8">
+<title>{{ fileName }} | Merlot</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="/static/css/main.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+<a href="/{{ fileName }}" class="button editPreview tooltip-left" title="Log in to edit this file">Edit</a>
+<div class="preview-content standalone-preview">
+    {{ previewHTML }}
+    <footer class="standalone-footer">
+        <p>
+            Written in
+            <a target="_blank" href="https://github.com/thesephist/merlot">Merlot</a>,
+            a project by
+            <a target="_blank" href="https://thesephist.com/">Linus</a>
+            ·
+            rendered in {{ renderTime }}ms
+            ·
+            about {{ wordCount }} words
+        </p>
+    </footer>
+</div>
+
