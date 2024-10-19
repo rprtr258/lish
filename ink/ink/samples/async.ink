@@ -1,9 +1,9 @@
 `
 (type) => type
 Future := (T) => {
- ready?: () => boolean
- try_await: () => T | () `` non-blocking
- await: () => T `` blocking
+  ready?: () => boolean
+  try_await: () => T | () `` non-blocking
+  await: () => T `` blocking
 }
 `
 

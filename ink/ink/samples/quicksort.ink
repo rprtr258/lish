@@ -1,5 +1,5 @@
-` minimal quicksort implementation
-  using hoare partition `
+`` minimal quicksort implementation
+`` using hoare partition
 
 map := load('functional').map
 clone := load('std').clone

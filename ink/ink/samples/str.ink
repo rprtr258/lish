@@ -141,9 +141,9 @@ trimSuffixNonEmpty := (s, suffix) => (
   slice(s, 0, idx)
 )
 
-` trim string from end until it does not end with suffix.
-  trimSuffix is more efficient than repeated application of
-  hasSuffix? because it minimizes copying. `
+`` trim string from end until it does not end with suffix.
+`` trimSuffix is more efficient than repeated application of
+`` hasSuffix? because it minimizes copying.
 trimSuffix := (s, suffix) => suffix :: {
   '' -> s
   _ -> trimSuffixNonEmpty(s, suffix)
@@ -222,8 +222,8 @@ format := (raw, values) => (
       }
       1 -> c :: {
         '{' -> state.which := 2
-        ` if it turns out that earlier brace was not
-          a part of a format expansion, just backtrack `
+        `` if it turns out that earlier brace was not
+        `` a part of a format expansion, just backtrack
         _ -> (
           append('{' + c)
           state.which := 0

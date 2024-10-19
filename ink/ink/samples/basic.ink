@@ -1,5 +1,5 @@
-` first program written in Ink, kept for
-  historical reasons `
+`` first program written in Ink, kept for
+`` historical reasons
 
 log := load('std').log
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env ink
 
-` an http static file server
-  with support for directory indexes `
+`` an http static file server
+`` with support for directory indexes
 
 log := load('logging').log
 slice := load('std').slice

@@ -1,5 +1,5 @@
-` demonstration of Ink calling into other
-  programs with exec(), assumes POSIX system `
+`` demonstration of Ink calling into other
+`` programs with exec(), assumes POSIX system
 
 log := load('logging').log
 

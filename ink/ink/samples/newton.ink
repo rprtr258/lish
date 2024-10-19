@@ -16,8 +16,8 @@ makeNewtonRoot := threshold => n => (
   ))(n / 2) `` initial guess is n / 2
 )
 
-` eight degrees of precision chosen arbitrarily, because
-  ink prints numbers to 8 decimal digits`
+`` eight degrees of precision chosen arbitrarily, because
+`` ink prints numbers to 8 decimal digits
 root := makeNewtonRoot(0.00000001)
 
 log('root of 2 (~1.4142): ' + string(root(2)))
