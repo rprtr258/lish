@@ -9,8 +9,7 @@ fn2 := () => (
   log('Hello, World 2!')
 )
 
-out('Hello test
-')
+out('Hello test\n')
 
 log('Hello with \' apostrophe test')
 

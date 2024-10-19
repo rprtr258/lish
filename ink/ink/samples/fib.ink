@@ -1,6 +1,6 @@
 `` fibonacci sequence generator
 
-log := s => out(s + char(10))
+log := s => out(s + '\n')
 
 `` naive implementation
 fib := n => n :: {

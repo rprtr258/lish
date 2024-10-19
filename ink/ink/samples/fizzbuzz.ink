@@ -1,6 +1,6 @@
 `` ink fizzbuzz implementation
 
-log := s => out(string(s) + char(10))
+log := s => out(string(s) + '\n')
 std := load('functional')
 range := std.range
 each := std.each

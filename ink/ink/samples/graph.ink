@@ -1,6 +1,6 @@
 `` let's graph the sine / cosine functions in Ink!
 
-log := s => out(s + char(10))
+log := s => out(s + '\n')
 
 `` repeat a string n times
 repeat := (s, n) => n :: {

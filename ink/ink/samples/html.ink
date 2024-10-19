@@ -1,6 +1,6 @@
 `` html rendering library
 
-log := s => out(s + char(10))
+log := s => out(s + '\n')
 std := load('str')
 f := std.format
 join := std.join

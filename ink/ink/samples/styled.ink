@@ -73,4 +73,4 @@ styled := (s, mods) =>
   s +
   '[' + mod.reset + 'm'
 
-out(styled('ERROR', [mod.fg.red, mod.bold])+char(10))
+out(styled('ERROR', [mod.fg.red, mod.bold])+'\n')

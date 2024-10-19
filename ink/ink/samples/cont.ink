@@ -1,4 +1,4 @@
-print := (t, v) => out(t+': '+string(v)+char(10))
+print := (t, v) => out(t+': '+string(v)+'\n')
 print('print 1', 1)
 
 sqrt := load('math').sqrt

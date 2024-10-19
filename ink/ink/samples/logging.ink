@@ -56,7 +56,7 @@ Logger := (name) => (
   this := {
     name: name
     logLevel: Level.INFO
-    format: '[{{level}}] {{message}}' + char(10) `` TODO: format func
+    format: '[{{level}}] {{message}}\n' `` TODO: format func
     fields: {}
   }
   lg := (level, message) => (level < this.logLevel) :: {

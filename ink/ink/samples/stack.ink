@@ -12,7 +12,7 @@ stack := () => (
   this
 )
 
-print := x => out(string(x)+char(10))
+print := x => out(string(x)+'\n')
 
 s := stack()
 (s.push)(0)

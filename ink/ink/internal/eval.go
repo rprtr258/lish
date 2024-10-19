@@ -114,8 +114,11 @@ func (v ValueNumber) Equals(other Value) bool {
 type ValueString []byte
 
 var stringValueReplacer = strings.NewReplacer(
-	"\\", "\\\\",
-	"'", "\\'",
+	`\`, `\\`,
+	`'`, `\'`,
+	"\n", `\n`,
+	"\r", `\r`,
+	"\t", `\t`,
 )
 
 func (v ValueString) String() string {

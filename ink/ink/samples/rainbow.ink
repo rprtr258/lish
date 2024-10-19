@@ -19,5 +19,5 @@ each(range(100), colshift => (
     out(f('[{{0}}m', [clrs.((j.value + colshift) % len(clrs))])+s.(i))
     j.value := j.value + (s.(i) :: {' ' -> 1, _ -> 0})
   ))
-  out(char(10))
+  out('\n')
 ))

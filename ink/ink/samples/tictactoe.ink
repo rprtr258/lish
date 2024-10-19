@@ -1,6 +1,6 @@
 `` interactive terminal tic tac toe in Ink
 
-log := s => out(s + char(10))
+log := s => out(s + '\n')
 std := load('std')
 scan := std.scan
 slice := std.slice

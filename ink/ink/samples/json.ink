@@ -94,9 +94,9 @@ deString := r => (
       `` eat backslash
       n()
       sub(acc + (c := n() :: {
-        't' -> char(9)
-        'n' -> char(10)
-        'r' -> char(13)
+        't' -> '\t'
+        'n' -> '\n'
+        'r' -> '\r'
         '"' -> '"'
         _ -> c
       }))
