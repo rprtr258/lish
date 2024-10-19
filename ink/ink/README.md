@@ -32,8 +32,8 @@ The rest of this README is a light introduction to the Ink language and document
 
 Here's an implementation of FizzBuzz in Ink.
 
-```js
-`` ink fizzbuzz implementation
+```python
+# ink fizzbuzz implementation
 
 std := load('std')
 
@@ -111,7 +111,7 @@ Additionally, you can also invoke an Ink script with a [shebang](https://en.wiki
 ```python
 #!/usr/bin/env ink
 
-`` ... the rest of your program
+# ... the rest of your program
 ```
 
 You can find an example of this in `samples/fileserver.ink`, which you can start by simply running `./samples/fileserver.ink` (without having to specifically call `ink samples/fileserver.ink`).

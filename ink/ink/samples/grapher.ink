@@ -1,4 +1,4 @@
-`` generate bitmap graph images
+# generate bitmap graph images
 
 log := load('logging').log
 f := load('str').format
@@ -9,13 +9,13 @@ map := std.map
 wf := load('io').writeFile
 bmp := load('bmp').bmp
 
-`` some basic configuration
+# some basic configuration
 WIDTH := 600
 HEIGHT := 600
-SCALE := 80 `` pixels per unit
+SCALE := 80 # pixels per unit
 STROKE := 3
 
-`` cached variables
+# cached variables
 halfWidth := WIDTH / 2
 halfHeight := HEIGHT / 2
 RW := range(0, WIDTH, 1)
@@ -23,7 +23,7 @@ RH := range(0, HEIGHT, 1)
 white := [250, 250, 250]
 grey := [200, 200, 200]
 
-`` functions we're going to graph
+# functions we're going to graph
 FUNCTIONS := [
   {
     f: x => x * x / 2 - 1.5
@@ -43,17 +43,17 @@ FUNCTIONS := [
   }
 ]
 
-`` scaling to and from canvas <-> graph dimensions
+# scaling to and from canvas <-> graph dimensions
 scaleXToCanvas := x => floor(x * SCALE + halfWidth)
 scaleYToCanvas := y => floor(y * SCALE + halfHeight)
 scaleXToGraph := x => (x - halfWidth) / SCALE
 scaleYToGraph := y => (y - halfHeight) / SCALE
 
-`` make a big white rectangle
+# make a big white rectangle
 pixels := map(range(0, WIDTH * HEIGHT, 1), () => white)
 log('finished drawing canvas...')
 
-`` axis lines
+# axis lines
 midX := scaleXToGraph(halfWidth)
 midY := scaleYToGraph(halfHeight)
 maxX := floor(scaleXToGraph(WIDTH))
@@ -72,10 +72,10 @@ drawVertAxis(0, [0, 0, 0])
 drawHorizAxis(0, [0, 0, 0])
 log('finished rendering axes...')
 
-`` memoize list that we'll use over and over
+# memoize list that we'll use over and over
 strokeRange := range(0, STROKE, 1)
 
-`` make a graph for each function at each x
+# make a graph for each function at each x
 each(RW, scaledX => (
   x := scaleXToGraph(scaledX)
 
@@ -93,7 +93,7 @@ each(RW, scaledX => (
 ))
 log('finished rendering functions...')
 
-`` save image
+# save image
 file := bmp(WIDTH, HEIGHT, pixels)
 wf('graph.bmp', file, done => done :: {
   true -> log('Done!')

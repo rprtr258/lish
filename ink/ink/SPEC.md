@@ -99,24 +99,24 @@ The String type is capable of and designed for holding arbitrary sequential bina
 The Null type and value `()` is globally unique and often also used to represent an empty or error value. For example, accessing a nonexistent index of a string or key of a composite value will return not an error, but the null value. Likewise, attempting to read from a nonexistent file will return a null value in the standard library. This borrows and furthers the idea of zero values from Go, and is an experiment I'm taking in Ink towards an exception-free interpreted language.
 
 ```
-`` for simple values
+# for simple values
 a := 3, b := a
 a := 42
 
-b = 42 `` false, since assignment of values are all copies
+b = 42 # false, since assignment of values are all copies
 
 
-`` for composite values
+# for composite values
 list := [1, 2, 3]
 twin := list
-clone := clone(list) `` makes a shallow clone
+clone := clone(list) # makes a shallow clone
 
-list.(len(list)) := 4 `` append 4 to list
-list.(len(list)) := 5 `` append 5 to list
+list.(len(list)) := 4 # append 4 to list
+list.(len(list)) := 5 # append 5 to list
 
-len(list) = 5 `` true
-len(twin) = 5 `` true, since it keeps the same reference
-len(clone) = 5 `` false, since it keeps a copy of the value instead
+len(list) = 5 # true
+len(twin) = 5 # true, since it keeps the same reference
+len(clone) = 5 # false, since it keeps a copy of the value instead
 ```
 
 These are tested in [samples/test.ink](samples/test.ink).

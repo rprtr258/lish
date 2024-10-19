@@ -35,28 +35,28 @@ Level := {
 `
 (string) => Logger
 Logger := (name) => (
-  name: string `` name of the logger
-  logLevel: number `` current log level of the logger
-  format: string `` log message format
-  fields: {[string]: any} `` object to store custom log message formats
-  setName: (name: string) => ()                 `` Sets the name of the logger
-  setBaseLogLevel: (baseLogLevel: number) => () `` Sets the base log level of the logger
-  setFilePath: (filePath: string) => ()         `` Sets the file path for logging
-  setFormat: (format: string) => ()             `` Sets the log message format
-  with: (key: string, value: any) => () `` Adds a format key-value pair to the logger
+  name: string # name of the logger
+  logLevel: number # current log level of the logger
+  format: string # log message format
+  fields: {[string]: any} # object to store custom log message formats
+  setName: (name: string) => ()                 # Sets the name of the logger
+  setBaseLogLevel: (baseLogLevel: number) => () # Sets the base log level of the logger
+  setFilePath: (filePath: string) => ()         # Sets the file path for logging
+  setFormat: (format: string) => ()             # Sets the log message format
+  with: (key: string, value: any) => () # Adds a format key-value pair to the logger
   withFields: ({[string]: any}) => ()
-  debug: (message: string) => ()    `` Logs a message at debug level
-  info: (message: string) => ()     `` Logs a message at info level
-  warn: (message: string) => ()     `` Logs a message at warning level
-  error: (message: string) => ()    `` Logs a message at error level
-  critical: (message: string) => () `` Logs a message at critical level
+  debug: (message: string) => ()    # Logs a message at debug level
+  info: (message: string) => ()     # Logs a message at info level
+  warn: (message: string) => ()     # Logs a message at warning level
+  error: (message: string) => ()    # Logs a message at error level
+  critical: (message: string) => () # Logs a message at critical level
 )
 `
 Logger := (name) => (
   this := {
     name: name
     logLevel: Level.INFO
-    format: '[{{level}}] {{message}}\n' `` TODO: format func
+    format: '[{{level}}] {{message}}\n' # TODO: format func
     fields: {}
   }
   lg := (level, message) => (level < this.logLevel) :: {

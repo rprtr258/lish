@@ -1,5 +1,5 @@
-`` minimal quicksort implementation
-`` using hoare partition
+# minimal quicksort implementation
+# using hoare partition
 
 map := load('functional').map
 clone := load('std').clone
@@ -21,7 +21,7 @@ sortBy := (v, pred) => (
       i < j :: {
         false -> j
         true -> (
-          `` inlined swap!
+          # inlined swap!
           tmp := v.(i)
           v.(i) := v.(j)
           v.(j) := tmp
@@ -46,7 +46,7 @@ sort! := v => sortBy(v, x => x)
 
 sort := v => sort!(clone(v))
 
-`` TEST
+# TEST
 range := load('functional').range
 log := load('logging').log
 

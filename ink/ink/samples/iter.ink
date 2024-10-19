@@ -1,9 +1,9 @@
-`` Iter(T) = () => T | ()
+# Iter(T) = () => T | ()
 
-`` Iter(T)
+# Iter(T)
 empty := () => ()
 
-`` (number, number, number) => Iter(number)
+# (number, number, number) => Iter(number)
 range := (start, end, step) => (
   true :: {
     step = 0 -> empty

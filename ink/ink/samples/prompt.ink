@@ -1,4 +1,4 @@
-`` scan() / in() based prompt demo
+# scan() / in() based prompt demo
 
 log := load('logging').log
 scan := load('std').scan

@@ -1,5 +1,5 @@
-`` this file exists to test whether
-`` imported Ink contexts are deduplicated correctly
+# this file exists to test whether
+# imported Ink contexts are deduplicated correctly
 
 std := load('../std')
 

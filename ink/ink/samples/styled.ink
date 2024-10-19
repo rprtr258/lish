@@ -2,17 +2,17 @@ join := load('str').join
 
 FgANSI := c => true :: {
   c < 0 -> ''
-  c < 8 -> string(c + 30) `` 0-7  -> 30-37
-  c < 15 -> string(c + 82) `` 8-15 -> 90-97
-  c < 256 -> '38;5;' + string(c) `` 16-255
+  c < 8 -> string(c + 30) # 0-7  -> 30-37
+  c < 15 -> string(c + 82) # 8-15 -> 90-97
+  c < 256 -> '38;5;' + string(c) # 16-255
   _ -> ''
 }
 
 BgANSI := c => true :: {
   c < 0 -> ''
-  c < 8 -> string(c + 40) `` 0-7 -> 40-47
-  c < 16 -> string(c + 92) `` 8-15 -> 100-107
-  c < 256 -> '48;5;' + string(c) `` 16-255
+  c < 8 -> string(c + 40) # 0-7 -> 40-47
+  c < 16 -> string(c + 92) # 8-15 -> 100-107
+  c < 256 -> '48;5;' + string(c) # 16-255
   _ -> ''
 }
 
@@ -43,7 +43,7 @@ mod := {
     hiMagenta : FgANSI(13)
     hiCyan    : FgANSI(14)
     hiWhite   : FgANSI(15)
-    `` r,g,b are 0-255
+    # r,g,b are 0-255
     rgb: (r, g, b) => '38;2;'+string(r)+';'+string(g)+';'+string(b)
   }
   bg: {
@@ -63,7 +63,7 @@ mod := {
     hiMagenta : BgANSI(13)
     hiCyan    : BgANSI(14)
     hiWhite   : BgANSI(15)
-    `` r,g,b are 0-255
+    # r,g,b are 0-255
     rgb: (r, g, b) => '48;2;'+string(r)+';'+string(g)+';'+string(b)
   }
 }

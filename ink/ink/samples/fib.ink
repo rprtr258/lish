@@ -1,15 +1,15 @@
-`` fibonacci sequence generator
+# fibonacci sequence generator
 
 log := s => out(s + '\n')
 
-`` naive implementation
+# naive implementation
 fib := n => n :: {
   0 -> 0
   1 -> 1
   _ -> fib(n - 1) + fib(n - 2)
 }
 
-`` memoized / dynamic programming implementation
+# memoized / dynamic programming implementation
 memo := [0, 1]
 fibMemo := n => (
   memo.(n) :: {

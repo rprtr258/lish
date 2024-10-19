@@ -1,4 +1,4 @@
-`` bitmap image test: generate an RGB rainbow gradient
+# bitmap image test: generate an RGB rainbow gradient
 
 log := load('logging').log
 std := load('functional')
@@ -8,7 +8,7 @@ reduce := std.reduce
 f := load('str').format
 bmp := load('bmp').bmp
 
-`` modified version of std.append that's faster when we know the length of the base and child arrays
+# modified version of std.append that's faster when we know the length of the base and child arrays
 fastappend := (base, child, baseLength, childLength) => (
   (sub := i => i :: {
     childLength -> base
@@ -19,14 +19,14 @@ fastappend := (base, child, baseLength, childLength) => (
   })(0)
 )
 
-`` utility to time things
+# utility to time things
 startTime := time()
 mk := msg => log(f('{{ time }}ms -> {{ msg }}', {
   msg: msg
   time: floor((time() - startTime) * 1000)
 }))
 
-`` configurations: 720p canvas
+# configurations: 720p canvas
 W := 720
 H := 405
 R := (W + H) / 2 * 0.4

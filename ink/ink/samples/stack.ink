@@ -18,7 +18,7 @@ s := stack()
 (s.push)(0)
 (s.push)(1)
 (s.push)(2)
-print(s.data) `` [0, 1, 2]
+print(s.data) # [0, 1, 2]
 (s.pop)()
 (s.pop)()
-print(s.data) `` [0]
+print(s.data) # [0]

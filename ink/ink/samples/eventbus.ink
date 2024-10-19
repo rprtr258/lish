@@ -3,16 +3,16 @@ print := load('logging').log
 functional := load('functional')
 
 EventBus := () => (
-  `` event name to list of subscribers
-  `` {[string]: [any => ()]}
+  # event name to list of subscribers
+  # {[string]: [any => ()]}
   subscribers := {}
   {
-    `` (string) => ()
+    # (string) => ()
     addEvent: (name) => subscribers.(name) :: {
       () -> subscribers.(name) := []
       _  -> print(format('Event {{.0}} is already defined', [name]))
     }
-    removeEvent: (name) => subscribers.(name) := () `` TODO: does it really delete by key?
+    removeEvent: (name) => subscribers.(name) := () # TODO: does it really delete by key?
     subscribe: (name, callback) => subscribers.(name) :: {
       () -> println(format('No such event "{{.0}}"', [name]))
       _ -> (
@@ -25,13 +25,13 @@ EventBus := () => (
       _ -> subscribers.(name) = (functional.filter)(subscribers.(name), (sub, _) => sub = callback)
     }
     emit: (name, payload) => subscribers.(name) :: {
-      () -> () `` no such event, skip
+      () -> () # no such event, skip
       _ -> (functional.each)(subscribers.(name), (sub, _) => sub(payload))
     }
   }
 )
 
-`` usage example:
+# usage example:
 Event := {
   Funds: {
     Added: 'funds_added'

@@ -1,23 +1,23 @@
-`` ink standard test suite tools
+# ink standard test suite tools
 
-`` borrow from std
+# borrow from std
 log := load('logging').log
 each := load('functional').each
 f := load('str').format
 
-`` suite constructor
+# suite constructor
 suite := label => (
-  `` suite data store
+  # suite data store
   s := {
     all: 0
     passed: 0
     msgs: []
   }
 
-  `` mark sections of a test suite with human labels
+  # mark sections of a test suite with human labels
   mark := label => s.msgs.len(s.msgs) := '- ' + label
 
-  `` signal end of test suite, print out results
+  # signal end of test suite, print out results
   end := () => (
     log(f('suite: {{}}', label))
     each(s.msgs, m => log('  ' + m))
@@ -30,7 +30,7 @@ suite := label => (
     }
   )
 
-  `` perform a new test case
+  # perform a new test case
   indent := '        '
   test := (label, result, expected) => (
     s.all := s.all + 1
@@ -47,7 +47,7 @@ suite := label => (
     }
   )
 
-  `` expose API functions
+  # expose API functions
   {
     mark: mark
     test: test

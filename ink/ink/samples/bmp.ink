@@ -1,13 +1,13 @@
-`` a basic image encoder for bitmap files
+# a basic image encoder for bitmap files
 
 decode := load('str').decode
 
-`` utility function for splitting a large number > 16^2 into 4-byte list
+# utility function for splitting a large number > 16^2 into 4-byte list
 hexsplit := n => (
-  `` accumulate list, growing to right
+  # accumulate list, growing to right
   acc := [0, 0, 0, 0]
 
-  `` max 4 bytes
+  # max 4 bytes
   decode((sub := (p, i) => p < 256 | i > 3 :: {
     true -> (
       acc.(i) := p
@@ -20,20 +20,20 @@ hexsplit := n => (
   })(n, 0))
 )
 
-`` core bitmap image encoder function
+# core bitmap image encoder function
 bmp := (width, height, pixels) => (
-  `` file buffer in which we build the image data
+  # file buffer in which we build the image data
   buf := ''
 
-  `` last written byte offset
+  # last written byte offset
   last := {off: 0}
-  `` append byte values to buf
+  # append byte values to buf
   appd := part => (
     buf.(last.off) := part
     last.off := len(buf)
   )
 
-  `` bmp requires that we pad out each pixel row to 4-byte chunks
+  # bmp requires that we pad out each pixel row to 4-byte chunks
   padding := decode((3 * width) % 4 :: {
     0 -> []
     1 -> [0, 0, 0]
@@ -41,7 +41,7 @@ bmp := (width, height, pixels) => (
     3 -> [0]
   })
 
-  `` write the nth row of pixels to buf
+  # write the nth row of pixels to buf
   wrow := y => (
     offset := width * y
     (sub := x => x :: {
@@ -54,7 +54,7 @@ bmp := (width, height, pixels) => (
     appd(padding)
   )
 
-  `` write the pixel array to buf
+  # write the pixel array to buf
   wpixels := () => (
     (sub := y => y :: {
       height -> ()
@@ -65,45 +65,45 @@ bmp := (width, height, pixels) => (
     })(0)
   )
 
-  `` - - bmp header: BITMAPINFOHEADER format
+  # - - bmp header: BITMAPINFOHEADER format
 
-  `` bmp format identifier
+  # bmp format identifier
   appd('BM')
-  `` file size: 54 is the header bytes, plus 3 bytes per px + row-padding bytes
+  # file size: 54 is the header bytes, plus 3 bytes per px + row-padding bytes
   appd(hexsplit(54 + (width * 3 + len(padding)) * height))
-  `` unused 4 bytes in this format
+  # unused 4 bytes in this format
   appd(decode([0, 0, 0, 0]))
-  `` pixel array data offset: always 54 if following our simple format
+  # pixel array data offset: always 54 if following our simple format
   appd(decode([54, 0, 0, 0]))
 
-  `` - - DIB header
+  # - - DIB header
 
-  `` num bytes in the DIB header from here
+  # num bytes in the DIB header from here
   appd(decode([40, 0, 0, 0]))
-  `` bitmap width in pixels
+  # bitmap width in pixels
   appd(hexsplit(width))
-  `` bitmap height in pixels, bottom to top
+  # bitmap height in pixels, bottom to top
   appd(hexsplit(height))
-  `` number of color planes used: 1
+  # number of color planes used: 1
   appd(decode([1, 0]))
-  `` number of bits per pixel: 24 (8-bit rgb)
+  # number of bits per pixel: 24 (8-bit rgb)
   appd(decode([24, 00]))
-  `` pixel array compression format: none used
+  # pixel array compression format: none used
   appd(decode([0, 0, 0, 0]))
-  `` size of raw bitmap data: 16 bits
+  # size of raw bitmap data: 16 bits
   appd(decode([16, 0, 0, 0]))
-  `` horizontal print resolution of the image: 72 dpi = 2835 pixels / meter
+  # horizontal print resolution of the image: 72 dpi = 2835 pixels / meter
   appd(hexsplit(2835))
-  `` vertical print resolution of the image: 72 dpi = 2835 pixels / meter
+  # vertical print resolution of the image: 72 dpi = 2835 pixels / meter
   appd(hexsplit(2835))
-  `` number of colors in palette: 0
+  # number of colors in palette: 0
   appd(decode([0, 0, 0, 0]))
-  `` number of "important" colors: 0
+  # number of "important" colors: 0
   appd(decode([0, 0, 0, 0]))
 
-  `` - - write pixel array
+  # - - write pixel array
   wpixels()
 
-  `` return image file buffer
+  # return image file buffer
   buf
 )

@@ -182,23 +182,6 @@ func tokenize(file string, r io.Reader) <-chan Token {
 
 		inStringLiteral := false
 		br := bufio.NewReader(r)
-
-		peeked, _ := br.Peek(2)
-		// TODO: remove, skip as ordinary comment line
-		if string(peeked) == "#!" {
-			// shebang-style ignored line, keep taking until EOL
-			var nextChar rune
-			for nextChar != '\n' {
-				var err error
-				nextChar, _, err = br.ReadRune()
-				if err != nil {
-					break
-				}
-			}
-
-			lineNo++
-		}
-
 		for {
 			char, _, err := br.ReadRune()
 			if err != nil {
@@ -230,10 +213,8 @@ func tokenize(file string, r io.Reader) <-chan Token {
 						break OUTER
 					}
 					switch c {
-					case '\\':
-						strbuf = append(strbuf, '\\')
-					case '\'':
-						strbuf = append(strbuf, '\'')
+					case '\\', '\'':
+						strbuf = append(strbuf, c)
 					case 'n':
 						strbuf = append(strbuf, '\n')
 					case 'r':
@@ -247,26 +228,22 @@ func tokenize(file string, r io.Reader) <-chan Token {
 				default:
 					strbuf = append(strbuf, char)
 				}
-			case char == '`':
+			case char == '#': // single-line comment, keep taking until EOL
+				for {
+					if c, _, err := br.ReadRune(); err != nil || c == '\n' {
+						if c == '\n' {
+							br.UnreadRune()
+						}
+						break
+					}
+				}
+				continue
+			case char == '`': // multi-line block comment, keep taking until end of block
 				nextChar, _, err := br.ReadRune()
 				if err != nil {
 					break
 				}
 
-				if nextChar == '`' {
-					// single-line comment, keep taking until EOL
-					for {
-						if c, _, err := br.ReadRune(); err != nil || c == '\n' {
-							if c == '\n' {
-								br.UnreadRune()
-							}
-							break
-						}
-					}
-					continue
-				}
-
-				// multi-line block comment, keep taking until end of block
 				for nextChar != '`' {
 					nextChar, _, err = br.ReadRune()
 					if err != nil {

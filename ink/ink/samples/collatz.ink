@@ -1,4 +1,4 @@
-`` finding long collatz sequences
+# finding long collatz sequences
 
 log := load('logging').log
 f := load('str').format
@@ -27,7 +27,7 @@ longestSequenceUnder := max => pipe(max, [
   it => fold(it, (acc, x) => ternary(len(x) < len(acc), acc, x), [])
 ])
 
-`` run a search for longest collatz sequence under Max
+# run a search for longest collatz sequence under Max
 Max := 1000
 longest := longestSequenceUnder(Max)
 log(f('Longest collatz seq under {{ max }} is {{ len }} items', {

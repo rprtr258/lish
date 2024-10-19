@@ -1,12 +1,12 @@
-`` simple ping-pong request-response test over HTTP
+# simple ping-pong request-response test over HTTP
 
 log := load('logging').log
 f := load('str').format
 
-`` helper for logging errors
+# helper for logging errors
 logErr := msg => log('error: ' + msg)
 
-`` start a server
+# start a server
 closeServer := listen('0.0.0.0:9600', evt => evt.type :: {
   'error' -> logErr(evt.message)
   'req' -> (
@@ -16,7 +16,7 @@ closeServer := listen('0.0.0.0:9600', evt => evt.type :: {
     end := evt.end
     [dt.method, dt.url, dt.body] :: {
       ['POST', '/test', 'ping'] -> end({
-        status: 302 `` test that it doesn't auto-follow redirects
+        status: 302 # test that it doesn't auto-follow redirects
         headers: {
           'Content-Type': 'text/plain'
           'Location': 'https://dotink.co'
@@ -34,7 +34,7 @@ closeServer := listen('0.0.0.0:9600', evt => evt.type :: {
   )
 })
 
-`` send a request
+# send a request
 send := () => (
   closeRequest := req({
     method: 'POST'
@@ -59,9 +59,9 @@ send := () => (
     )
   })
 
-  `` half-second timeout on the request
+  # half-second timeout on the request
   wait(0.5, closeRequest)
 )
 
-`` give server time to start up before sending first request
+# give server time to start up before sending first request
 wait(0.5, send)

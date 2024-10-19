@@ -1,4 +1,4 @@
-`` ink fizzbuzz implementation
+# ink fizzbuzz implementation
 
 log := s => out(string(s) + '\n')
 std := load('functional')

@@ -4,7 +4,7 @@ ceil := x => fract(x) :: {
   0 -> x
   _ -> fract(x + 1)
 }
-`` floor := floor
+# floor := floor
 round := x => floor(x + 0.5)
 trunc := x => x > 0 :: {
   true -> floor(x)
@@ -17,19 +17,19 @@ abs := x => x :: {
 }
 
 sqrt := x => pow(x, 0.5)
-`` pow := pow
+# pow := pow
 E := 2.718281828459045
 exp := x => pow(E, x)
 
-`` ln := ln
+# ln := ln
 log := (x, base) => ln(x) / ln(base)
 
-`` sin := sin
-`` cos := cos
+# sin := sin
+# cos := cos
 tan := x => sin(x) / cos(x)
 
-`` asin := asin
-`` acos := acos
+# asin := asin
+# acos := acos
 
 ternary := (p, x, y) => p :: {
   true -> x
