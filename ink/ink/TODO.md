@@ -1,5 +1,3 @@
-# Todo items
-
 - [ ] update docs
 
 ## Interpreter
@@ -19,7 +17,6 @@
 - [ ] value semantics
 - [ ] export last expression from file, instead of all declarations
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
-- [x] make it possible to use just value in `format` function, not some field
 - [ ] make it possible to use oneline match expression, block expression
 - [ ] escape sequences in strings (e.g. `\n`, `\x1b`)
 - [ ] operator overloading through methods, e.g. `a + b` is equivalent to `a.+(b)`, then we can define `+` as a method on `NumberValue` and `StringValue` that calls `+` on the underlying value and define `+` on custom values and composite values
