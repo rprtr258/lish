@@ -81,19 +81,17 @@ checkBoard := bd => (
     didWin
   )
 
-  checkIfPlayerWon(Player.x) :: {
-    true -> Result.X
-    _ -> checkIfPlayerWon(Player.o) :: {
-      true -> Result.O
-      _ -> (
-        `` check if game ended in a tie
-        takenCells := filter(slice(bd, 1, 10), val => ~(val = 0))
-        len(takenCells) :: {
-          9 -> Result.Tie
-          _ -> Result.None
-        }
-      )
-    }
+  true :: {
+    checkIfPlayerWon(Player.x) -> Result.X
+    checkIfPlayerWon(Player.o) -> Result.O
+    _ -> (
+      `` check if game ended in a tie
+      takenCells := filter(slice(bd, 1, 10), val => ~(val = 0))
+      len(takenCells) :: {
+        9 -> Result.Tie
+        _ -> Result.None
+      }
+    )
   }
 )
 
