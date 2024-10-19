@@ -83,15 +83,13 @@ replace := (s, old, new) => old :: {
   _ -> (
     lold := len(old)
     lnew := len(new)
-    (sub := (acc, i) => matchesAt?(acc, old, i) :: {
-      true -> sub(
+    (sub := (acc, i) => true :: {
+      matchesAt?(acc, old, i) -> sub(
         slice(acc, 0, i) + new + slice(acc, i + lold, len(acc))
         i + lnew
       )
-      false -> i < len(acc) :: {
-        true -> sub(acc, i + 1)
-        false -> acc
-      }
+      i < len(acc) -> sub(acc, i + 1)
+      _ -> acc
     })(s, 0)
   )
 }
