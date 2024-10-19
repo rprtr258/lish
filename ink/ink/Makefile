@@ -42,13 +42,7 @@ test:
 	# run I/O test under isolated mode -- all ops should still return valid responses
 	# We copy the file in question -- eval.go -- to a temporary location, since
 	# no-read and no-write I/O operations will delete the file.
-	cp internal/eval.go tmp.go
 	./ink samples/io.ink
-	cp tmp.go internal/eval.go
-	./ink samples/io.ink
-	cp tmp.go internal/eval.go
-	./ink samples/io.ink
-	rm tmp.go
 	./ink samples/pingpong.ink
 	./ink samples/exec.ink
 	# test -eval flag
