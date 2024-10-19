@@ -361,7 +361,7 @@ m('empty identifier "_" in arguments and functions')
 
 m('comment syntaxes')
 (
-	`` t(wrong, wrong)
+	# t(wrong, wrong)
 	ping := 'pong'
 	` t(wrong, more wrong) `
 	t('single line (line-lead) comments are recognized', ping, 'pong')
@@ -963,7 +963,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
 	t('letter? rejects non-letters'
 		some(map('913043?-~\'!/.,;()$@)%', upper?)), false)
 	t('ws? verifies whitespace characters'
-		every(map('	  
+		every(map('
 ', ws?)), true)
 	t('ws? rejects all non-whitespace'
 		some(map('jafsioSINDFOEJ#@%@()_#9u40529' + char(250), ws?)), false)

@@ -490,7 +490,7 @@ parseAtom := (tokens, idx) => tokens.(idx) :: {
 parseGroup := (tokens, idx, subparser, acc, guardTok) => (
 	(sub := (idx) => tokens.(idx) :: {
 		{type: guardTok, val: _, line: _, col: _, i: _} -> {
-			idx: idx + 1 `` guardTok
+			idx: idx + 1 # guardTok
 		}
 		_ -> (
 			result := subparser(tokens, idx)
@@ -507,7 +507,7 @@ parseGroup := (tokens, idx, subparser, acc, guardTok) => (
 						_ -> tokens.(result.idx).type :: {
 							guardTok -> {
 								node: result.node
-								idx: result.idx + 1 `` guardTok
+								idx: result.idx + 1 # guardTok
 							}
 							_ -> sub(result.idx)
 						}
@@ -516,7 +516,7 @@ parseGroup := (tokens, idx, subparser, acc, guardTok) => (
 				_ -> result
 			}
 		)
-	})(idx + 1) `` opening token
+	})(idx + 1) # opening token
 )
 
 parseListLiteral := (tokens, idx) => (

@@ -25,14 +25,14 @@ Newline := char(10)
 
 main := prog => (
 	tokens := tokenize(prog)
-	`` each(tokens, tok => log(tkString(tok)))
+	# each(tokens, tok => log(tkString(tok)))
 
 	nodes := parse(tokens)
 
 	type(nodes) :: {
 		` tree of nodes `
 		'composite' -> (
-			`` each(nodes, node => log(ndString(node)))
+			# each(nodes, node => log(ndString(node)))
 			analyzed := map(nodes, analyze)
 			cat(map(analyzed, gen), ';' + Newline) + Newline
 		)

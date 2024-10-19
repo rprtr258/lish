@@ -1,4 +1,4 @@
-`` Markdown library tests
+# Markdown library tests
 
 std := load('../vendor/std')
 

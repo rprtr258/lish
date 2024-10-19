@@ -1,6 +1,6 @@
-`` Main application UI
+# Main application UI
 
-`` constants
+# constants
 
 PersistenceDelay := 100
 
@@ -10,18 +10,18 @@ Touch? := navigator.maxTouchPoints > 0
 Tab := char(9)
 Newline := char(10)
 
-`` utility fns
+# utility fns
 
 navigate := url => bind(window.history, 'pushState')(document.title, (), url)
 
 inRange? := (min, max, val) => min < val & val < max
 
 matchScrollProgress := (from, to) => (
-	`` get scroll percent
+	# get scroll percent
 	fromRect := bind(from, 'getBoundingClientRect')()
 	scrollPercent := from.scrollTop / (from.scrollHeight - fromRect.height)
 
-	`` set scroll percent
+	# set scroll percent
 	toRect := bind(to, 'getBoundingClientRect')()
 	desiredScrollTop := (to.scrollHeight - toRect.height) * scrollPercent
 	inRange?(desiredScrollTop - 2, desiredScrollTop + 2, to.scrollTop) :: {
@@ -229,7 +229,7 @@ confirm := (str, withResp) => (
 	)
 )
 
-`` a debounce without leading edge, with 2 hard-coded arguments
+# a debounce without leading edge, with 2 hard-coded arguments
 delay := (fn, timeout) => (
 	S := {
 		to: ()
@@ -242,7 +242,7 @@ delay := (fn, timeout) => (
 	)
 )
 
-`` components
+# components
 
 Link := (name, href) => ha('a', [], {
 	href: href
@@ -471,7 +471,7 @@ Preview := () => hae(
 	}]
 )
 
-`` globals
+# globals
 
 DefaultMode := () => Mobile? :: {
 	true -> 'edit'
@@ -532,7 +532,7 @@ persistImmediately := (name, content) => withFetch(
 )
 persist := delay(persistImmediately, PersistenceDelay)
 
-`` main app render loop
+# main app render loop
 
 root := bind(document, 'querySelector')('#root')
 r := Renderer(root)
@@ -635,10 +635,10 @@ render := () => (
 	]))
 )
 
-`` fasten keyboard events
+# fasten keyboard events
 bind(document.documentElement, 'addEventListener')('keydown', handleKeyEvents)
 
-`` fetch initial data
+# fetch initial data
 withFetch('/doc/', {}, data => (
 	files := filter(split(data, Newline), s => len(s) > 0)
 	State.files := files

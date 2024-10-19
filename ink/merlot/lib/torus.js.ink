@@ -25,10 +25,10 @@
 	Torus to render strings correctly. `
 str := s => bind(s, 'valueOf')(s)
 
-`` To quickly convert object-like Ink maps to arrays
+# To quickly convert object-like Ink maps to arrays
 arr := bind(Object, 'values')
 
-`` Torus jdom declaration helpers
+# Torus jdom declaration helpers
 
 hae := (tag, classList, attrs, events, children) => {
 	tag: str(tag)
@@ -42,7 +42,7 @@ hae := (tag, classList, attrs, events, children) => {
 ha := (tag, classList, attrs, children) => hae(tag, classList, attrs, {}, children)
 h := (tag, classList, children) => hae(tag, classList, {}, {}, children)
 
-`` generic abstraction for a view that can be updated asynchronously
+# generic abstraction for a view that can be updated asynchronously
 
 Renderer := root => (
 	render := window.Torus.render

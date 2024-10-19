@@ -52,7 +52,7 @@ copyDir := (src, dest) => make(dest, evt => evt.type :: {
 	_ -> dir(src, evt => evt.type :: {
 		'error' -> err(evt.message)
 		_ -> (
-			`` files
+			# files
 			pipe(evt.data, [
 				xs => filter(xs, ent => ~(ent.dir))
 				xs => map(xs, ent => ent.name)
@@ -61,7 +61,7 @@ copyDir := (src, dest) => make(dest, evt => evt.type :: {
 					dest + '/' + fileName
 				))
 			])
-			`` dirs
+			# dirs
 			pipe(evt.data, [
 				xs => filter(xs, ent => ent.dir)
 				xs => map(xs, ent => ent.name)

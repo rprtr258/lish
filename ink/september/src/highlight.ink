@@ -66,7 +66,7 @@ colorFn := tok => tok.type :: {
 	Tok.LBrace -> Cyan
 	Tok.RBrace -> Cyan
 
-	_ -> () `` should error, unreachable
+	_ -> () # should error, unreachable
 }
 
 main := prog => (

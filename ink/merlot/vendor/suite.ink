@@ -1,13 +1,13 @@
-`` ink standard test suite tools
+# ink standard test suite tools
 
 std := load('std')
 
-`` borrow from std
+# borrow from std
 log := std.log
 each := std.each
 f := std.format
 
-`` suite constructor
+# suite constructor
 suite := label => (
 	` suite data store `
 	s := {

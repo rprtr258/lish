@@ -1,4 +1,4 @@
-`` standard string library
+# standard string library
 
 std := load('std')
 
@@ -7,7 +7,7 @@ slice := std.slice
 reduce := std.reduce
 reduceBack := std.reduceBack
 
-`` checking if a given character is of a type
+# checking if a given character is of a type
 checkRange := (lo, hi) => c => (
 	p := point(c)
 	lo < p & p < hi
@@ -17,7 +17,7 @@ lower? := checkRange(point('a') - 1, point('z') + 1)
 digit? := checkRange(point('0') - 1, point('9') + 1)
 letter? := c => upper?(c) | lower?(c)
 
-`` is the char a whitespace?
+# is the char a whitespace?
 ws? := c => point(c) :: {
 	` space `
 	32 -> true
@@ -30,10 +30,10 @@ ws? := c => point(c) :: {
 	_ -> false
 }
 
-`` hasPrefix? checks if a string begins with the given prefix substring
+# hasPrefix? checks if a string begins with the given prefix substring
 hasPrefix? := (s, prefix) => reduce(prefix, (acc, c, i) => acc & (s.(i) = c), true)
 
-`` hasSuffix? checks if a string ends with the given suffix substring
+# hasSuffix? checks if a string ends with the given suffix substring
 hasSuffix? := (s, suffix) => (
 	diff := len(s) - len(suffix)
 	reduce(suffix, (acc, c, i) => acc & (s.(i + diff) = c), true)
@@ -52,7 +52,7 @@ matchesAt? := (s, substring, idx) => (
 	})(0)
 )
 
-`` index is indexOf() for ink strings
+# index is indexOf() for ink strings
 index := (s, substring) => (
 	max := len(s) - 1
 	(sub := i => matchesAt?(s, substring, i) :: {
@@ -64,10 +64,10 @@ index := (s, substring) => (
 	})(0)
 )
 
-`` contains? checks if a string contains the given substring
+# contains? checks if a string contains the given substring
 contains? := (s, substring) => index(s, substring) > ~1
 
-`` transforms given string to lowercase
+# transforms given string to lowercase
 lower := s => reduce(s, (acc, c, i) => upper?(c) :: {
 	true -> acc.(i) := char(point(c) + 32)
 	false -> acc.(i) := c
@@ -101,7 +101,7 @@ replaceNonEmpty := (s, old, new) => (
 	})(s, 0)
 )
 
-`` replace all occurrences of old substring with new substring in a string
+# replace all occurrences of old substring with new substring in a string
 replace := (s, old, new) => old :: {
 	'' -> s
 	_ -> replaceNonEmpty(s, old, new)
@@ -122,7 +122,7 @@ splitNonEmpty := (s, delim) => (
 	})(s, 0, 0)
 )
 
-`` split given string into a list of substrings, splitting by the delimiter
+# split given string into a list of substrings, splitting by the delimiter
 split := (s, delim) => delim :: {
 	'' -> map(s, c => c)
 	_ -> splitNonEmpty(s, delim)
@@ -169,5 +169,5 @@ trimSuffix := (s, suffix) => suffix :: {
 	_ -> trimSuffixNonEmpty(s, suffix)
 }
 
-`` trim string from both start and end with substring ss
+# trim string from both start and end with substring ss
 trim := (s, ss) => trimPrefix(trimSuffix(s, ss), ss)

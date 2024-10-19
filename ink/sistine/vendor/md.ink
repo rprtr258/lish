@@ -385,7 +385,7 @@ parseBlockQuote := lineReader => (
 			Node.Quote -> trimPrefix((lineReader.next)(), '>')
 			_ -> ()
 		}
-		expect? := () => () `` NOTE: not implemented
+		expect? := () => () # NOTE: not implemented
 		readUntil := c => (
 			lines := (lineReader.readUntil)('>' + c)
 			map(lines, line => slice(line, 1, len(line)))
@@ -395,7 +395,7 @@ parseBlockQuote := lineReader => (
 			map(lines, line => slice(line, 1, len(line)))
 		)
 		readUntilEnd := lineReader.readUntilEnd
-		readUntilMatchingDelim := () => () `` NOTE: not implemented
+		readUntilMatchingDelim := () => () # NOTE: not implemented
 
 		{
 			peek: peek

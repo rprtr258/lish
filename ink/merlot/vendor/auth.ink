@@ -1,4 +1,4 @@
-`` auth service for the single-user app
+# auth service for the single-user app
 
-`` TODO: improve security
+# TODO: improve security
 allow? := req => true

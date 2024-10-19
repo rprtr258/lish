@@ -1,4 +1,4 @@
-`` Markdown parser's Reader tests
+# Markdown parser's Reader tests
 
 std := load('../vendor/std')
 each := std.each
@@ -295,17 +295,17 @@ run := (m, t) => (
 				)
 			})([])
 		), ['first', ' second', ' third', ' fourth'])
-		`` t('Multiple readUntilPrefixes in a row', (
-		`` 	r := Reader('first, second, third, fourth')
-		`` 	(sub := acc => (r.peek)() :: {
-		`` 		() -> acc
-		`` 		_ -> (
-		`` 			acc.len(acc) := (r.readUntilPrefix)(', ')
-		`` 			(r.expect?)(', ')
-		`` 			sub(acc)
-		`` 		)
-		`` 	})([])
-		`` ), ['first', 'second', 'third', 'fourth'])
+		# t('Multiple readUntilPrefixes in a row', (
+		# 	r := Reader('first, second, third, fourth')
+		# 	(sub := acc => (r.peek)() :: {
+		# 		() -> acc
+		# 		_ -> (
+		# 			acc.len(acc) := (r.readUntilPrefix)(', ')
+		# 			(r.expect?)(', ')
+		# 			sub(acc)
+		# 		)
+		# 	})([])
+		# ), ['first', 'second', 'third', 'fourth'])
 	)
 )
 

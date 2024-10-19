@@ -1,4 +1,4 @@
-`` the ink standard library
+# the ink standard library
 
 log := val => out(string(val) + '
 ')
@@ -14,17 +14,17 @@ scan := cb => (
 	})
 )
 
-`` hexadecimal conversion utility functions
+# hexadecimal conversion utility functions
 hToN := {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 'a': 10, 'b': 11, 'c': 12, 'd': 13, 'e': 14, 'f': 15}
 nToH := '0123456789abcdef'
 
-`` take number, return hex string
+# take number, return hex string
 hex := n => (sub := (p, acc) => p < 16 :: {
 	true -> nToH.(p) + acc
 	false -> sub(floor(p / 16), nToH.(p % 16) + acc)
 })(floor(n), '')
 
-`` take hex string, return number
+# take hex string, return number
 xeh := s => (
 	` i is the num of places from the left, 0-indexed `
 	max := len(s)
@@ -34,19 +34,19 @@ xeh := s => (
 	})(0, 0)
 )
 
-`` find minimum in list
+# find minimum in list
 min := numbers => reduce(numbers, (acc, n) => n < acc :: {
 	true -> n
 	false -> acc
 }, numbers.0)
 
-`` find maximum in list
+# find maximum in list
 max := numbers => reduce(numbers, (acc, n) => n > acc :: {
 	true -> n
 	false -> acc
 }, numbers.0)
 
-`` like Python's range(), but no optional arguments
+# like Python's range(), but no optional arguments
 range := (start, end, step) => (
 	span := end - start
 	sub := (i, v, acc) => (v - start) / span < 1 :: {
@@ -90,7 +90,7 @@ clamp := (start, end, min, max) => (
 	}
 )
 
-`` get a substring of a given string, or sublist of a given list
+# get a substring of a given string, or sublist of a given list
 slice := (s, start, end) => (
 	` bounds checks `
 	x := clamp(start, end, 0, len(s))
@@ -106,7 +106,7 @@ slice := (s, start, end) => (
 	})
 )
 
-`` join one list to the end of another, return the original first list
+# join one list to the end of another, return the original first list
 append := (base, child) => (
 	baseLength := len(base)
 	childLength := len(child)
@@ -119,35 +119,35 @@ append := (base, child) => (
 	})(0)
 )
 
-`` join one list to the end of another, return the third list
+# join one list to the end of another, return the third list
 join := (base, child) => append(clone(base), child)
 
-`` clone a composite value
+# clone a composite value
 clone := x => type(x) :: {
 	'string' -> '' + x
 	'composite' -> reduce(keys(x), (acc, k) => acc.(k) := x.(k), {})
 	_ -> x
 }
 
-`` tail recursive numeric list -> string converter
+# tail recursive numeric list -> string converter
 stringList := list => '[' + cat(map(list, string), ', ') + ']'
 
-`` tail recursive reversing a list
+# tail recursive reversing a list
 reverse := list => (sub := (acc, i, j) => j :: {
 	0 -> acc.(i) := list.0
 	_ -> sub(acc.(i) := list.(j), i + 1, j - 1)
 })([], 0, len(list) - 1)
 
-`` tail recursive map
+# tail recursive map
 map := (list, f) => reduce(list, (l, item, i) => l.(i) := f(item, i), {})
 
-`` tail recursive filter
+# tail recursive filter
 filter := (list, f) => reduce(list, (l, item, i) => f(item, i) :: {
 	true -> l.len(l) := item
 	_ -> l
 }, [])
 
-`` tail recursive reduce
+# tail recursive reduce
 reduce := (list, f, acc) => (
 	max := len(list)
 	(sub := (i, acc) => i :: {
@@ -156,22 +156,22 @@ reduce := (list, f, acc) => (
 	})(0, acc)
 )
 
-`` tail recursive reduce from list end
+# tail recursive reduce from list end
 reduceBack := (list, f, acc) => (sub := (i, acc) => i :: {
 	~1 -> acc
 	_ -> sub(i - 1, f(acc, list.(i), i))
 })(len(list) - 1, acc)
 
-`` flatten by depth 1
+# flatten by depth 1
 flatten := list => reduce(list, append, [])
 
-`` true iff some items in list are true
+# true iff some items in list are true
 some := list => reduce(list, (acc, x) => acc | x, false)
 
-`` true iff every item in list is true
+# true iff every item in list is true
 every := list => reduce(list, (acc, x) => acc & x, true)
 
-`` concatenate (join) a list of strings into a string
+# concatenate (join) a list of strings into a string
 cat := (list, joiner) => max := len(list) :: {
 	0 -> ''
 	_ -> (sub := (i, acc) => i :: {
@@ -180,7 +180,7 @@ cat := (list, joiner) => max := len(list) :: {
 	})(1, clone(list.0))
 }
 
-`` for-each loop over a list
+# for-each loop over a list
 each := (list, f) => (
 	max := len(list)
 	(sub := i => i :: {
@@ -192,7 +192,7 @@ each := (list, f) => (
 	})(0)
 )
 
-`` encode string buffer into a number list
+# encode string buffer into a number list
 encode := str => (
 	max := len(str)
 	(sub := (i, acc) => i :: {
@@ -201,10 +201,10 @@ encode := str => (
 	})(0, [])
 )
 
-`` decode number list into an ascii string
+# decode number list into an ascii string
 decode := data => reduce(data, (acc, cp) => acc.len(acc) := char(cp), '')
 
-`` utility for reading an entire file
+# utility for reading an entire file
 readFile := (path, cb) => (
 	BufSize := 4096 ` bytes `
 	(sub := (offset, acc) => read(path, offset, BufSize, evt => evt.type :: {
@@ -233,7 +233,7 @@ writeFile := (path, data, cb) => delete(path, evt => evt.type :: {
 	_ -> cb(())
 })
 
-`` template formatting with {{ key }} constructs
+# template formatting with {{ key }} constructs
 format := (raw, values) => (
 	` parser state `
 	state := {

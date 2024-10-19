@@ -103,7 +103,7 @@ addRoute('/view/*fileName', params => (req, end) => req.method :: {
 					body: f(tpl, {
 						fileName: pctDecode(params.fileName)
 						previewHTML: doc
-						renderTime: formatNumber(floor(elapsed * 1000)) `` in ms
+						renderTime: formatNumber(floor(elapsed * 1000)) # in ms
 						wordCount: formatNumber(len(split(file, ' ')))
 					})
 				})

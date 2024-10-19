@@ -1,4 +1,4 @@
-`` potentially shared utility functions and values
+# potentially shared utility functions and values
 
 str := load('../vendor/str')
 trimPrefix := str.trimPrefix
@@ -10,7 +10,7 @@ zeroFillTo3Digits := s => len(s) :: {
 	_ -> s
 }
 
-`` utility for server-rendering large numbers with commas
+# utility for server-rendering large numbers with commas
 formatNumber := n => (
 	sub := (acc, n) => n :: {
 		0 -> acc

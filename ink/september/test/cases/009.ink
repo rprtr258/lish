@@ -7,7 +7,7 @@ log := std.log
 range := std.range
 each := std.each
 
-`` fibonacci
+# fibonacci
 fib := n => (sub := (a, b, i) => i :: {
 	0 -> a + b
 	1 -> a + b
@@ -19,7 +19,7 @@ fib := n => (sub := (a, b, i) => i :: {
 
 each(range(0, 20, 1), n => log(fib(n)))
 
-`` iterated sum
+# iterated sum
 
 sub := (acc, i) => i :: {
 	0 -> acc

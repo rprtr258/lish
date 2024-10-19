@@ -291,7 +291,7 @@ trimOListGetLevel := reader => (
 	level
 )
 
-`` lineNodeType reports the node type of a particular markdown line for parsing.
+# lineNodeType reports the node type of a particular markdown line for parsing.
 lineNodeType := line => true :: {
 	(line = ()) -> ()
 	(line = '') -> Node.Empty
@@ -384,7 +384,7 @@ parseBlockQuote := lineReader => (
 			Node.Quote -> trimPrefix((lineReader.next)(), '>')
 			_ -> ()
 		}
-		expect? := () => () `` NOTE: not implemented
+		expect? := () => () # NOTE: not implemented
 		readUntil := c => (
 			lines := (lineReader.readUntil)('>' + c)
 			map(lines, line => slice(line, 1, len(line)))
@@ -394,7 +394,7 @@ parseBlockQuote := lineReader => (
 			map(lines, line => slice(line, 1, len(line)))
 		)
 		readUntilEnd := lineReader.readUntilEnd
-		readUntilMatchingDelim := () => () `` NOTE: not implemented
+		readUntilMatchingDelim := () => () # NOTE: not implemented
 
 		{
 			peek: peek
@@ -570,7 +570,7 @@ parseParagraph := lineReader => (
 	}
 )
 
-`` compile transforms a Markdown AST node
+# compile transforms a Markdown AST node
 compile := nodes => cat(map(nodes, compileNode), '')
 
 wrapTag := (tag, node) => f('<{{0}}>{{1}}</{{0}}>', [
@@ -578,7 +578,7 @@ wrapTag := (tag, node) => f('<{{0}}>{{1}}</{{0}}>', [
 	compile(node.children)
 ])
 
-`` compileNode transforms an individual Markdown AST node into HTML
+# compileNode transforms an individual Markdown AST node into HTML
 compileNode := node => type(node) :: {
 	'string' -> replace(replace(node, '&', '&amp;'), '<', '&lt;')
 	_ -> node.tag :: {

@@ -188,7 +188,7 @@
 		},
 		"line-comment": {
 			"name": "comment.line.ink",
-			"match": "``.*"
+			"match": "#.*"
 		},
 		"block-comment": {
 			"name": "comment.block.ink",

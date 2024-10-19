@@ -1,4 +1,4 @@
-`` mime type
+# mime type
 
 split := load('../vendor/str').split
 

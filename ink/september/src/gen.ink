@@ -71,7 +71,7 @@ genObjectLiteral := node => '{' + cat(map(node.entries, genObjectEntry), ', ') +
 
 genFnArg := (node, i) => node.type :: {
 	Node.Ident -> genIdent(node)
-	_ -> '__' + string(i) `` avoid duplicate arg names
+	_ -> '__' + string(i) # avoid duplicate arg names
 }
 
 genFnLiteral := node => f('{{0}} => {{1}}', [

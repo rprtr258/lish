@@ -1,6 +1,6 @@
-`` configuration constants
+# configuration constants
 
-`` persist files locally if this file is included
+# persist files locally if this file is included
 Authed? := false
 
 ` if this is the first-ever load on this browser, create a dummy file for

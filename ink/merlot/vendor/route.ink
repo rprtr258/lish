@@ -1,4 +1,4 @@
-`` url router
+# url router
 
 std := load('../vendor/std')
 str := load('../vendor/str')
@@ -79,7 +79,7 @@ matchPath := (pattern, path) => (
 	}
 )
 
-`` returns the proper handler curried with url params
+# returns the proper handler curried with url params
 match := (router, path) => (sub := i => i :: {
 	len(router) -> req => (req.end)({
 		status: 200

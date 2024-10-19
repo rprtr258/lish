@@ -5,6 +5,6 @@ PORT := 7283
 server := (http.new)()
 
 addRoute := server.addRoute
-`` addRoute('/static', staticHandler)
+# addRoute('/static', staticHandler)
 
 (server.start)(PORT)

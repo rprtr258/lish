@@ -1,4 +1,4 @@
-`` http server abstraction
+# http server abstraction
 
 std := load('../vendor/std')
 
@@ -59,7 +59,7 @@ new := () => (
 	}
 )
 
-`` prepare standard header
+# prepare standard header
 hdr := attrs => (
 	base := {
 		'X-Served-By': 'ink-serve'
@@ -69,7 +69,7 @@ hdr := attrs => (
 	base
 )
 
-`` trim query parameters
+# trim query parameters
 trimQP := path => (
 	max := len(path)
 	(sub := (idx, acc) => idx :: {

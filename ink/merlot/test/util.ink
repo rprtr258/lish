@@ -1,4 +1,4 @@
-`` application utility tests
+# application utility tests
 
 std := load('../vendor/std')
 f := std.format
@@ -9,7 +9,7 @@ formatNumber := load('../lib/util').formatNumber
 run := (m, t) => (
 	m('formatNumber')
 	TestVals := [
-		`` normal cases
+		# normal cases
 		[0, '0']
 		[3, '3']
 		[27, '27']
@@ -21,7 +21,7 @@ run := (m, t) => (
 		[8765432, '8,765,432']
 		[87654321, '87,654,321']
 
-		`` regression tests
+		# regression tests
 		[1007, '1,007']
 		[1023, '1,023']
 		[10234, '10,234']

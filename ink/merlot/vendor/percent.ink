@@ -1,4 +1,4 @@
-`` percent encoding, also known as URI encoding
+# percent encoding, also known as URI encoding
 
 std := load('../vendor/std')
 log := std.log
