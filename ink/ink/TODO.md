@@ -1,13 +1,11 @@
 # Todo items
 
+- [ ] update docs
+
 ## Interpreter
 - [ ] Reduce memory allocations at runtime, ideally without impacting runtime Ink performance of hot code paths. If done right, this should free up both memory and CPU.
-- [ ] Implement go-fuzz to fuzz test the whole toolchain.
-    - go-fuzz talk: http://go-talks.appspot.com/github.com/dvyukov/go-fuzz/slides/go-fuzz.slide#1
-- [ ] Run Ink on Windows, ensure core functionality + builtins work out of the box and document any non-POSIX interfaces or discrepancies.
-- [ ] Make the interpreter a Homebrew brew tap.
-- [ ] --no-color option for piping output to another application / for scripting use (e.g. inker).
-
+- [ ] Implement [go-fuzz](http://go-talks.appspot.com/github.com/dvyukov/go-fuzz/slides/go-fuzz.slide#1) to fuzz test the whole toolchain.
+- [ ] `NO_COLOR` env or piping for piping output to another application / for scripting use
 
 ## Language core
 - [ ] Type system? I like the way typescript does it, I think Ink’s type checker should be a completely separate layer in the toolchain from the lex/parse/eval layer. But let’s think about the merits of having type annotations and how we can make it simple to lex/parse out while effective at bringing out the forte’s of Ink’s functional style.
@@ -18,6 +16,7 @@
     - Potential type annotation: `myVar<type>` (`myVar` is of type `type`), `myFunc<string, boolean => {number}>` (`myFunc` is of type function mapping `string`, `boolean` to type composite of `number`)
     - types are conversion functions, e.g. `string` converts anything to `string` type
 - [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := load('functional')`
+- [ ] value semantics
 - [ ] export last expression from file, instead of all declarations
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
 - [x] make it possible to use just value in `format` function, not some field
