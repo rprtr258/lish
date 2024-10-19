@@ -1,5 +1,5 @@
 <div align="center">
-	<img width="256" src="assets/logo.png" alt="Ink programming language logo">
+<img width="256" src="docs/logo.png" alt="Ink programming language logo">
 
 # Ink programming language
 
