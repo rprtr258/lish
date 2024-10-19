@@ -16,11 +16,11 @@ digit? := checkRange('0', '9')
 letter? := c => upper?(c) | lower?(c)
 
 # is the char a whitespace?
-ws? := c => point(c) :: {
-  9  -> true # hard tab
-  10 -> true # newline
-  13 -> true # carriage return
-  32 -> true # space
+ws? := c => c :: {
+  '\t'  -> true
+  '\n' -> true
+  '\r' -> true
+  ' ' -> true
   _ -> false
 }
 
