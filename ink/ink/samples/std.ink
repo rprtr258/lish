@@ -1,4 +1,4 @@
-` the ink standard library `
+`` the ink standard library
 
 scan := cb => (
   acc := ['']
@@ -11,8 +11,8 @@ scan := cb => (
   })
 )
 
-` clamp start and end numbers to ranges, such that
-  start < end. Utility used in slice `
+`` clamp start and end numbers to ranges, such that
+`` start < end. Utility used in slice
 clamp := (start, end, min, max) => (
   m := load('math')
   start := (m.max)(start, min)
@@ -26,9 +26,9 @@ clamp := (start, end, min, max) => (
   }
 )
 
-` get a substring of a given string, or sublist of a given list `
+`` get a substring of a given string, or sublist of a given list
 slice := (s, start, end) => (
-  ` bounds checks `
+  `` bounds checks
   x := clamp(start, end, 0, len(s))
   start := x.start
   max := x.end - start
@@ -42,7 +42,7 @@ slice := (s, start, end) => (
   })
 )
 
-` clone a composite value `
+`` clone a composite value
 clone := x => type(x) :: {
   'string' -> '' + x
   'composite' -> (load('functional').reduce)(keys(x), (acc, k) => acc.(k) := x.(k), {})

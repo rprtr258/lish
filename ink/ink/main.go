@@ -108,11 +108,11 @@ func main() {
 	case len(args) > 0:
 		filePath := args[0]
 		if err := ctx.ExecPath(filePath); err != nil {
-			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Send()
+			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
 		}
 	case stdin.Mode()&os.ModeCharDevice == 0:
 		if _, err := ctx.Exec("stdin", os.Stdin); err != nil {
-			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Send()
+			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute stdin")
 		}
 	default:
 		// if no files given and no stdin, default to repl

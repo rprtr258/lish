@@ -1,11 +1,11 @@
-` implementation of Newton's method to square root `
+`` implementation of Newton's method to square root
 
 log := load('logging').log
 
-` higher order function that returns a root finder
-  with the given degree of precision threshold `
+`` higher order function that returns a root finder
+`` with the given degree of precision threshold
 makeNewtonRoot := threshold => n => (
-  ` tail call optimized root finder `
+  `` tail call optimized root finder
   (find := previous => (
     guess := (previous + n / previous) / 2
     offset := guess * guess - n
@@ -13,7 +13,7 @@ makeNewtonRoot := threshold => n => (
       true -> guess
       false -> find(guess)
     }
-  ))(n / 2) ` initial guess is n / 2 `
+  ))(n / 2) `` initial guess is n / 2
 )
 
 ` eight degrees of precision chosen arbitrarily, because

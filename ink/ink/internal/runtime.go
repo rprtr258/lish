@@ -260,11 +260,11 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 				break
 			}
 
-			rv, err := evalInkFunction(in[0], false, ValueComposite{
+			rv, errEval := evalInkFunction(in[0], false, ValueComposite{
 				"type": ValueString("data"),
 				"data": ValueString(str),
 			})
-			if err != nil {
+			if errEval != nil {
 				cbErr(err)
 				return
 			}
@@ -681,7 +681,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := h.ctx
 	cb := h.inkCallback
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to listen(): %s", err.Error())})
 		}

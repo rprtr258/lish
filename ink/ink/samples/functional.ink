@@ -1,18 +1,18 @@
-` tail recursive map `
+`` tail recursive map
 `` ([]T, (T, number) => R) => R
 map := (list, f) => reduce(list, (l, item, i) => l.(i) := f(item, i), {})
 
 `` ([]T, (T, number) => []R) => R
 flatmap := (list, f) => flatten(map(list, f))
 
-` tail recursive filter `
+`` tail recursive filter
 `` ([]T, (T, number) => boolean) => []T
 filter := (list, f) => reduce(list, (l, item, i) => f(item, i) :: {
   true -> l.len(l) := item
   _ -> l
 }, [])
 
-` for-each loop over a list `
+`` for-each loop over a list
 `` ([]T, (T, number) => ()) => ()
 each := (list, f) => (
   max := len(list)
@@ -25,7 +25,7 @@ each := (list, f) => (
   })(0)
 )
 
-` find first element in list that satisfies predicate `
+`` find first element in list that satisfies predicate
 `` ([]T, (T, number) => boolean) => T | ()
 find := (list, f) => (
   elems := filter(list, f)
@@ -35,7 +35,7 @@ find := (list, f) => (
   }
 )
 
-` find index of first element in list that satisfies predicate `
+`` find index of first element in list that satisfies predicate
 `` ([]T, (T, number) => boolean) => number | ()
 indexOf := (list, f) => (
   listIndexed := map(list, (item, i) => {item: item, i: i})
@@ -46,7 +46,7 @@ indexOf := (list, f) => (
   }
 )
 
-` pipe a value through a list of functions `
+`` pipe a value through a list of functions
 `` <T, T1, ..., Tn>(T, [T => T1, T1 => T2, ..., Tn1 => Tn]) => Tn
 pipe := (x, fs) => reduce(fs, (acc, f, _) => f(acc), x)
 
@@ -67,7 +67,7 @@ reduceBack := (list, f, acc) => (sub := (i, acc) => i :: {
   _ -> sub(i - 1, f(acc, list.(i), i))
 })(len(list) - 1, acc)
 
-` join one list to the end of another, return the original first list `
+`` join one list to the end of another, return the original first list
 append := (base, child) => (
   baseLength := len(base)
   childLength := len(child)
@@ -138,7 +138,7 @@ range := (start, end, step) => (
     false -> acc
   }
 
-  ` preempt potential infinite loops `
+  `` preempt potential infinite loops
   span / step < 1 :: {
     true -> []
     false -> sub(0, start, [])

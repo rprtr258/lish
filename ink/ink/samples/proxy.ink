@@ -1,4 +1,4 @@
-` basic HTTP proxy `
+`` basic HTTP proxy
 
 log := load('logging').log
 f := load('str').format
@@ -6,20 +6,20 @@ slice := load('std').slice
 
 PORT := 7900
 
-` map of route prefixes to proxied endpoints `
+`` map of route prefixes to proxied endpoints
 PROXIES := {
-  '/gh': 'https://api.github.com'
+  '/gh':     'https://api.github.com'
   '/github': 'https://api.github.com'
 }
 
-` headers provided for error responses `
+`` headers provided for error responses
 DefaultHeaders := {
   'Content-Type': 'text/plain; charset=utf-8'
   'X-Proxied-By': 'ink-proxy'
   'X-Served-By': 'ink-serve'
 }
 
-` responds to all requests to the proxy `
+`` responds to all requests to the proxy
 handleRequest := (data, end) => (
   prefixes := keys(PROXIES)
   max := len(prefixes) - 1
@@ -27,8 +27,8 @@ handleRequest := (data, end) => (
   (sub := i => (
     prefix := prefixes.(i)
 
-    ` check that proxy prefix matches exactly.
-      i.e. /gh/ should match but /ghub should not`
+    `` check that proxy prefix matches exactly.
+    `` i.e. /gh/ should match but /ghub should not
     slice(data.url + '/', 0, len(prefix) + 1) :: {
       prefix + '/' -> (
         dest := PROXIES.(prefix) + slice(data.url, len(prefix), len(data.url))
@@ -57,7 +57,7 @@ handleRequest := (data, end) => (
   ))(0)
 )
 
-` handles when proxied request fails `
+`` handles when proxied request fails
 handleProxyError := (dest, data, end) => (
   log(f('Error in proxied request to {{ dest }}: {{ err }}', {
     dest: dest
@@ -73,7 +73,7 @@ handleProxyError := (dest, data, end) => (
   })
 )
 
-` handles when proxied request succeeds `
+`` handles when proxied request succeeds
 handleProxyResponse := (dest, data, end) => (
   log(f('Proxied {{ dest }} success', {
     dest: dest

@@ -1,4 +1,4 @@
-` uuid `
+`` uuid
 
 hex := load('str').nToH
 `` {range map} := load('functional')
@@ -7,13 +7,13 @@ range := functional.range
 map := functional.map
 
 uuid := () => (
-  ` generate 16 random bytes `
+  `` generate 16 random bytes
   r := map(urand(16), (c, _) => point(c))
 
-  ` helper to map numbers to uniform hexadecimals `
+  `` helper to map numbers to uniform hexadecimals
   x := i => hex.(floor(r.(i)/16))+hex.(r.(i)%16)
 
-  ` set version bits per UUID V4 section 4.4 `
+  `` set version bits per UUID V4 section 4.4
   r.6 := (r.6 & 15) | 64
   r.8 := (r.8 & 63) | 128
 

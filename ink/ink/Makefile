@@ -26,15 +26,12 @@ run:
 	echo 'Linus' | ./ink samples/prompt.ink
 	rm ./ink
 
-
 repl:
 	${RUN}
-
 
 # run just the minimal test suite
 test-mini:
 	${RUN} samples/test.ink
-
 
 # run standard test suites
 test:
@@ -46,27 +43,24 @@ test:
 	# We copy the file in question -- eval.go -- to a temporary location, since
 	# no-read and no-write I/O operations will delete the file.
 	cp internal/eval.go tmp.go
-	./ink -no-read samples/io.ink
+	./ink samples/io.ink
 	cp tmp.go internal/eval.go
-	./ink -no-write samples/io.ink
+	./ink samples/io.ink
 	cp tmp.go internal/eval.go
-	./ink -isolate samples/io.ink
+	./ink samples/io.ink
 	rm tmp.go
-	./ink -isolate samples/pingpong.ink
-	./ink -no-exec samples/exec.ink
+	./ink samples/pingpong.ink
+	./ink samples/exec.ink
 	# test -eval flag
 	./ink -eval "log:=load('samples/logging').log,f:=x=>()=>log('Eval test: '+x),f('passed!')()"
 	rm ./ink
-
 
 # build for specific OS target
 build-%:
 	GOOS=$* GOARCH=amd64 go build ${LDFLAGS} -o ink-$* ${CMD}
 
-
 # build for all OS targets, useful for releases
 build: build-linux build-darwin build-windows build-openbsd
-
 
 # install on host system
 install:
@@ -74,12 +68,10 @@ install:
 	go install ${LDFLAGS} ${CMD}
 	ls -l `which ink`
 
-
 # pre-commit hook
 precommit:
 	go vet .
 	go fmt .
-
 
 # clean any generated files
 clean:

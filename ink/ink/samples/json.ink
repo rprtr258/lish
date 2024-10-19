@@ -1,4 +1,4 @@
-` JSON serde `
+`` JSON serde
 
 map := load('functional').map
 
@@ -7,7 +7,7 @@ cat := str.join
 ws? := str.ws?
 digit? := str.digit?
 
-` string escape '"' `
+`` string escape '"'
 esc := c => point(c) :: {
   9 -> '\\t'
   10 -> '\\n'
@@ -24,18 +24,18 @@ escape := s => (
   })(0, '')
 )
 
-` is this character a numeral digit or .? `
+`` is this character a numeral digit or .?
 num? := c => c :: {
   '' -> false
   '.' -> true
   _ -> digit?(c)
 }
 
-` reader implementation with internal state for deserialization `
+`` reader implementation with internal state for deserialization
 reader := s => (
   state := {
     idx: 0
-    ` has there been a parse error? `
+    `` has there been a parse error?
     err?: false
   }
 
@@ -55,7 +55,7 @@ reader := s => (
   {
     next: next
     peek: peek
-    ` fast-forward through whitespace `
+    `` fast-forward through whitespace
     ff: () => (sub := () => ws?(peek()) :: {
       true -> (
         state.idx := state.idx + 1
@@ -68,7 +68,7 @@ reader := s => (
   }
 )
 
-` deserialize null `
+`` deserialize null
 deNull := r => (
   n := r.next
   n() + n() + n() + n() :: {
@@ -77,12 +77,12 @@ deNull := r => (
   }
 )
 
-` deserialize string `
+`` deserialize string
 deString := r => (
   n := r.next
   p := r.peek
 
-  ` known to be a '"' `
+  `` known to be a '"'
   n()
 
   (sub := acc => p() :: {
@@ -91,7 +91,7 @@ deString := r => (
       ()
     )
     '\\' -> (
-      ` eat backslash `
+      `` eat backslash
       n()
       sub(acc + (c := n() :: {
         't' -> char(9)
@@ -109,12 +109,12 @@ deString := r => (
   })('')
 )
 
-` deserialize number `
+`` deserialize number
 deNumber := r => (
   n := r.next
   p := r.peek
   state := {
-    ` have we seen a '.' yet? `
+    `` have we seen a '.' yet?
     negate?: false
     decimal?: false
   }
@@ -146,7 +146,7 @@ deNumber := r => (
   }
 )
 
-` deserialize boolean `
+`` deserialize boolean
 deTrue := r => (
   n := r.next
   n() + n() + n() + n() :: {
@@ -162,7 +162,7 @@ deFalse := r => (
   }
 )
 
-` deserialize list `
+`` deserialize list
 deList := r => (
   n := r.next
   p := r.peek
@@ -171,7 +171,7 @@ deList := r => (
     idx: 0
   }
 
-  ` known to be a '[' `
+  `` known to be a '['
   n()
   ff()
 
@@ -202,13 +202,13 @@ deList := r => (
   })([])
 )
 
-` deserialize composite `
+`` deserialize composite
 deComp := r => (
   n := r.next
   p := r.peek
   ff := r.ff
 
-  ` known to be a '{' `
+  `` known to be a '{'
   n()
   ff()
 
@@ -252,9 +252,9 @@ deComp := r => (
   })({})
 )
 
-` JSON string in reader to composite `
+`` JSON string in reader to composite
 der := r => (
-  ` trim preceding whitespace `
+  `` trim preceding whitespace
   (r.ff)()
 
   result := ((r.peek)() :: {
@@ -267,18 +267,18 @@ der := r => (
     _ -> deNumber(r)
   })
 
-  ` if there was a parse error, just return null result `
+  `` if there was a parse error, just return null result
   (r.err?)() :: {
     true -> ()
     false -> result
   }
 )
 
-` JSON string to composite `
+`` JSON string to composite
 parse := s => der(reader(s))
 de := parse `` TODO: remove
 
-` composite to JSON string `
+`` composite to JSON string
 serialize := c => type(c) :: {
   '()' -> 'null'
   'string' -> '"' + escape(c) + '"'

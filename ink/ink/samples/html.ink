@@ -1,4 +1,4 @@
-` html rendering library `
+`` html rendering library
 
 log := s => out(s + char(10))
 std := load('str')
@@ -37,13 +37,13 @@ strong := bindEl('strong')
 div := bindEl('div')
 span := bindEl('span')
 
-` simple div helper `
+`` simple div helper
 d := children => div({}, children)
 
-` html wrapper helper `
+`` html wrapper helper
 html := (head, body) => '<!doctype html>' + el('head', {}, head) + el('body', {}, body)
 
-` example usage `
+`` example usage
 log(
   html(
     title('Test page')

@@ -1,9 +1,7 @@
 # Ink language specification
-
 This is the source of truth for the Ink programming language.
 
 ## Syntax
-
 Ink has an LR(1) grammar that can be parsed successfully with at most 1 lookahead.
 
 Ink's syntax is inspired by JavaScript and Go, but strives to be minimal. This is not necessarily a comprehensive grammar, but expresses the high level structure and mostly up-to-date with the interpreter implementation.
@@ -85,7 +83,6 @@ A few quirks of this syntax, and notes about the language:
 - Ink does not have constants or immutable variables guaranteed by the language. By convention, constants are denoted with identifiers starting with an uppercase letter, like `RootFS`, and mutable variables are denoted otherwise, like `checkCounter`.
 
 ## Types
-
 Ink is strongly but dynamically typed, and has seven non-extendable types.
 
 - Number

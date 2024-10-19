@@ -975,24 +975,24 @@ func (ctx *Context) ExecListener(callback func()) {
 // Exec runs an Ink program defined by an io.Reader.
 // This is the main way to invoke Ink programs from Go.
 // Exec blocks until the Ink program exits.
-func (ctx *Context) Exec(filename string, r io.Reader) (Value, error) {
+func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 	tokens := tokenize(filename, r)
 	nodes := parse(tokens)
 	return ctx.Eval(nodes)
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(filePath string) error {
+func (ctx *Context) ExecPath(filePath string) *Err {
 	// update Cwd for any potential load() calls this file will make
 	ctx.Cwd = filepath.Dir(filePath)
 	ctx.File = filePath
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n\t-> %s", filePath, err)}
+		return &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n\t-> %s", filePath, err)}
 	}
 	defer file.Close()
 
-	_, err = ctx.Exec(filePath, file)
-	return err
+	_, errExec := ctx.Exec(filePath, file)
+	return errExec
 }

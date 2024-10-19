@@ -1,9 +1,11 @@
-`` (type) => type
-`` Future := (T) => {
-``  ready?: () => boolean
-``  try_await: () => T | () `` non-blocking
-``  await: () => T `` blocking
-`` }
+`
+(type) => type
+Future := (T) => {
+ ready?: () => boolean
+ try_await: () => T | () `` non-blocking
+ await: () => T `` blocking
+}
+`
 
 `` ((T => R) => R) => Future(T)
 future := f => {

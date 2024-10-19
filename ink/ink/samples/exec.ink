@@ -8,50 +8,50 @@ handleExec := evt => evt.type :: {
   _ -> out(evt.data)
 }
 
-` runs without problems `
+`` runs without problems
 log('See: Hello, World!')
 exec('echo', ['Hello, World!'], '', handleExec)
 
-` swallows stdout correctly `
+`` swallows stdout correctly
 log('See: nothing')
 exec('echo', ['Hello, World!'], '', evt => evt.type :: {
   'error' -> log(evt.message)
 })
 
-` sets args correctly `
+`` sets args correctly
 log('See: Goodbye, World!')
 exec('echo', ['Goodbye,', 'World!'], '', handleExec)
 
-` runs commands at full paths `
+`` runs commands at full paths
 log('See: Hello, Echo!')
 exec('/bin/echo', ['Hello, Echo!'], '', handleExec)
 
-` interprets stdin correctly `
+`` interprets stdin correctly
 log('See: lovin-pasta')
 exec('cat', [], 'lovin-pasta', handleExec)
 
-` closes immediately after exec `
+`` closes immediately after exec
 (
   log('Should close immediately after exec safely (may not run):')
   close := exec('sleep', ['10'], '', () => log('Closed immediately after exec safely!'))
   close()
 
-  ` multiple closes do not fail `
+  `` multiple closes do not fail
   close()
   close()
 )
 
-` closes during execution `
+`` closes during execution
 (
   log('Should close during execution safely:')
   close := exec('sleep', ['5'], '', () => log('Closed during execution safely!'))
   wait(1, close)
 
-  ` multiple closes do not fail `
+  `` multiple closes do not fail
   wait(2, close)
 )
 
-` closes after execution `
+`` closes after execution
 (
   log('Should exit safely, then close:')
   close := exec('sleep', ['1'], '', () => log('Exited safely!'))
@@ -59,7 +59,7 @@ exec('cat', [], 'lovin-pasta', handleExec)
     close()
     log('Closed!')
 
-    ` multiple closes do not fail `
+    `` multiple closes do not fail
     close()
     close()
     close()

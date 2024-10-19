@@ -1,17 +1,17 @@
 #!/usr/bin/env ink
 clear := '__cleared'
-` ink language test suite,
-  built on the suite library for testing `
+`` ink language test suite,
+`` built on the suite library for testing
 
 s := (load('suite').suite)(
   'Ink language and standard library'
 )
 
-` short helper functions on the suite `
+`` short helper functions on the suite
 m := s.mark
 t := s.test
 
-` load std & str once for all tests `
+`` load std & str once for all tests
 std := load('std')
 math := load('math')
 str := load('str')
@@ -19,14 +19,14 @@ functional := load('functional')
 
 m('eval with #!/usr/bin/env ink')
 (
-  ` check that the line immediately following #!/... still runs okay `
+  `` check that the line immediately following #!/... still runs okay
   t('eval with #!/usr/bin/env ink does not miss lines'
     clear, '__cleared')
 )
 
 m('value equality')
 (
-  ` with primitives `
+  `` with primitives
   t('() = ()', () = (), true)
   t('() = bool', () = false, false)
   t('number = number', 1 = 1.000, true)
@@ -51,7 +51,7 @@ m('value equality')
   t('builtin fn = builtin fn', len = len, true)
   t('builtin fn = builtin fn', len = string, false)
 
-  ` to empty identifier `
+  `` to empty identifier
   t('_ = _', _ = _, true)
   t('bool = _', true = _, true)
   t('_ = bool', _ = false, true)
@@ -77,9 +77,9 @@ m('composite value access')
     ('ex' + 'pr'): 'ession'
   }
 
-  ` when calling a function that's a prop of a composite,
-    we need to remember that AccessorOp is just a binary op
-    and the function call precedes it in priority `
+  `` when calling a function that's a prop of a composite,
+  `` we need to remember that AccessorOp is just a binary op
+  `` and the function call precedes it in priority
   obj.fn := () => 'xyz'
   obj.fz := f => f() + f()
 
@@ -91,7 +91,7 @@ m('composite value access')
   t('composite property by number literal', obj.39, 'clues')
   t('composite property by identifier', obj.expr, 'ession')
 
-  ` string index access `
+  `` string index access
   t('string index access at 0', ('hello').0, 'h')
   t('string index access', ('what').3, 't')
   t('out of bounds string index access (negative)'
@@ -99,12 +99,12 @@ m('composite value access')
   t('out of bounds string index access (too large)'
     ('hello, world!').len('hello, world!'), ())
 
-  ` nested composites `
+  `` nested composites
   comp := {list: ['hi', 'hello', {what: 'thing'}]}
 
-  ` can't just do comp.list.2.what because
-    2.what is not a valid identifier.
-    these are some other recommended ways `
+  `` can't just do comp.list.2.what because
+  `` 2.what is not a valid identifier.
+  `` these are some other recommended ways
   t('nested composite value access with number value'
     comp.list.(2).what, 'thing')
   t('nested composite value access with string value'
@@ -116,7 +116,7 @@ m('composite value access')
   t('string at index in computed string', comp.('li' + 'st').0, 'hi')
   t('nested property access returns composite', comp.list.2, {what: 'thing'})
 
-  ` modifying composite in chained accesses `
+  `` modifying composite in chained accesses
   comp.list.4 := 'oom'
   comp.list.(2).what := 'arg'
 
@@ -258,7 +258,7 @@ m('accessing properties strangely, accessing nonexistent properties')
   t('property access with number value', {1: 4.2}.(1), 4.2)
   t('property access with decimal number value', {1: 'hi'}.(1.0000), 'hi')
 
-  ` also: composite parts can be empty `
+  `` also: composite parts can be empty
   t('composite parts can be empty', [_, _, 'hix'].('2'), 'hix')
   t('property access with computed string'
     string({test: 4200.00}.('te' + 'st')), '4200')
@@ -306,7 +306,7 @@ m('comment syntaxes')
 (
   `` t(wrong, wrong)
   ping := 'pong'
-  ` t(wrong, more wrong) `
+  `` t(wrong, more wrong)
   t('single line (line-lead) comments are recognized', ping, 'pong')
   t('inline comments are recognized', `hidden` '...thing', '...thing')
   t('inline comments terminate correctly', len('include `cmt` thing'), 19)
@@ -351,7 +351,7 @@ m('string lexicographical comparisons')
 (
   t('less-than, I', 'a' < 'b', true)
   t('less-than, II', 'x' < 'A', false)
-  ` shorter strings are lesser `
+  `` shorter strings are lesser
   t('less-than, III', 'x long str' < 'A', false)
 
   t('greater-than, I', 'E' > 'A', true)
@@ -369,7 +369,7 @@ m('bitwise operations on byte strings')
   ZZ := Z + Z
   ZZZ := ZZ + Z
 
-  ` of the same lengths `
+  `` of the same lengths
   a := 'ABCDEFG'
   b := 'abcdEFg'
 
@@ -380,7 +380,7 @@ m('bitwise operations on byte strings')
   t('bitwise ^ of byte strings'
     a ^ b, '    ' + ZZ + ' ')
 
-  ` of different lengths (byte strings are zero-extended at lower bytes) `
+  `` of different lengths (byte strings are zero-extended at lower bytes)
   a := 'ABCD'
   b := 'abcdXYZ'
 
@@ -398,7 +398,7 @@ m('bitwise operations on byte strings')
   t('bitwise ^ of diff length byte strings, reverse order'
     b ^ a, '    XYZ')
 
-  ` of same byte strings `
+  `` of same byte strings
   a := 'some_byte'
 
   t('bitwise & of same byte string'
@@ -426,7 +426,7 @@ m('min/max')
 
 m('logic composition correctness, std.some/std.every')
 (
-  ` and `
+  `` and
   t('number & number, I', 1 & 4, 0)
   t('number & number, II', 2 & 3, 2)
   t('t & t', true & true, true)
@@ -434,7 +434,7 @@ m('logic composition correctness, std.some/std.every')
   t('f & t', false & true, false)
   t('f & f', false & false, false)
 
-  ` or `
+  `` or
   t('number | number, I', 1 | 4, 5)
   t('number | number, II', 2 | 3, 3)
   t('t | t', true | true, true)
@@ -442,7 +442,7 @@ m('logic composition correctness, std.some/std.every')
   t('f | t', false | true, true)
   t('f | f', false | false, false)
 
-  ` xor `
+  `` xor
   t('number ^ number, I', 2 ^ 7, 5)
   t('number ^ number, II', 2 ^ 3, 1)
   t('t ^ t', true ^ true, false)
@@ -450,7 +450,7 @@ m('logic composition correctness, std.some/std.every')
   t('f ^ t', false ^ true, true)
   t('f ^ f', false ^ false, false)
 
-  ` std.some and std.every `
+  `` std.some and std.every
   some := functional.some
   every := functional.every
 
@@ -482,8 +482,8 @@ m('object keys / list, mutable strings, std.clone')
     third: false
   }
   ky := keys(obj)
-  ` keys are allowed to be out of insertion order
-    -- composites are unordered maps`
+  `` keys are allowed to be out of insertion order
+  `` -- composites are unordered maps
   ks.(ky.0) := true
   ks.(ky.1) := true
   ks.(ky.2) := true
@@ -502,8 +502,8 @@ m('object keys / list, mutable strings, std.clone')
   t('std.clone does not affect original list', len(list), 4)
   t('std.clone creates a new copy of list', len(clist), 3)
 
-  ` len() should count the number of keys on a composite,
-    not just integer indexes like ECMAScript `
+  `` len() should count the number of keys on a composite,
+  `` not just integer indexes like ECMAScript
   t('len() builtin on manually indexed composite', len({
     0: 1
     1: 'order'
@@ -525,7 +525,7 @@ m('object keys / list, mutable strings, std.clone')
 
   str := 'hello'
   twin := str
-  ccpy := str + '' ` should yield a new copy `
+  ccpy := str + '' `` should yield a new copy
   tcpy := '' + twin
   copy := clone(str)
   str.2 := 'xx'
@@ -543,8 +543,8 @@ m('string/composite pass by reference / mutation check')
   clone := std.clone
 
   obj := [1, 2, 3]
-  twin := obj ` by reference `
-  clone := clone(obj) ` cloned (by value) `
+  twin := obj `` by reference
+  clone := clone(obj) `` cloned (by value)
 
   obj.len(obj) := 4
   obj.len(obj) := 5
@@ -598,7 +598,7 @@ m('number & composite/list -> string conversions')
     string(3.14), '3.14')
   t('string(number) uses least number of digits necessary, long decimal'
     string(5 / 3), '1.6666666666666667')
-  ` speed of light in microns per second `
+  `` speed of light in microns per second
   t('string(number) uses least number of digits necessary, large number'
     string(299792458000000), '299792458000000')
   t('string(number) uses least number of digits necessary, small exponential'
@@ -629,7 +629,7 @@ m('number & composite/list -> string conversions')
 
 m('function/composite equality checks')
 (
-  ` function equality `
+  `` function equality
   fn1 := () => (3 + 4, 'hello')
   fnc := fn1
   fn2 := () => (3 + 4, 'hello')
@@ -639,7 +639,7 @@ m('function/composite equality checks')
   t('functions are different if they are defined separately, even if same effect'
     fn1 = fn2, false)
 
-  ` composite equality `
+  `` composite equality
   comp1 := {1: 2, hi: '4'}
   comp2 := {1: 2, hi: '4'}
   list1 := [1, 2, 3, 4, 5]
@@ -676,7 +676,7 @@ m('std.range/slice/append/join/cat and stringList')
   join := functional.join
   cat := str.join
 
-  ` slice returns copies `
+  `` slice returns copies
   (
     st := '12345'
     li := [1, 2, 3, 4, 5]
@@ -701,7 +701,7 @@ m('std.range/slice/append/join/cat and stringList')
   t('slice with OOB upper bound', sl(list, 7, 20), '[3, 2, 1, 0]')
   t('slice with OOB both bounds', sl(list, 20, 1), '[]')
 
-  ` redefine list using range and reverse, to t those `
+  `` redefine list using range and reverse, to t those
   list := reverse(range(0, 11, 1))
 
   t('join() homogeneous lists', stringList(join(
@@ -735,7 +735,7 @@ m('hexadecimal conversions, hex & xeh')
   hex := str.hex
   xeh := str.xeh
 
-  ` base cases `
+  `` base cases
   t('hex(0)', hex(0), '0')
   t('hex(42)', hex(66), '42')
   t('hex(256)', hex(256), '100')
@@ -744,11 +744,11 @@ m('hexadecimal conversions, hex & xeh')
   t('xeh(fff)', xeh('fff'), 4095)
   t('xeh(a2)', xeh('a2'), 162)
 
-  ` hex should floor non-integer inputs `
+  `` hex should floor non-integer inputs
   t('hex() of fractional number, I', hex(16.8), '10')
   t('hex() of fractional number, II', hex(1998.123), '7ce')
 
-  ` recoverability `
+  `` recoverability
   t('xeh(hex()), I', xeh(hex(390420)), 390420)
   t('xeh(hex()), II', xeh(hex(9230423903)), 9230423903)
   t('hex(xeh()), I', hex(xeh('fffab123')), 'fffab123')
@@ -769,7 +769,7 @@ m('ascii <-> char point conversions and string encode/decode')
   s2 := ''
   s3 := 'AaBbCcDdZzYyXx123456789!@#$%^&*()_+-='
 
-  ` note: at this point, we only care about ascii, not full Unicode `
+  `` note: at this point, we only care about ascii, not full Unicode
   t('point(a)', point('a'), 97)
   t('char(65)', char(65), 'A')
   t('encode(ab)', encode('ab'), [97, 98])
@@ -805,13 +805,13 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   t('functional.join', join(list, list), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-  ` degenerate cases on reverse `
+  `` degenerate cases on reverse
   t('std.reverse on empty', reverse([]), [])
   t('std.reverse on len 1', reverse(['a']), ['a'])
   t('std.reverse on len 2', reverse(['b', 'a']), ['a', 'b'])
   t('std.reverse on reversed', reverse(reverse(list)), list)
 
-  ` passing index in callback `
+  `` passing index in callback
   t('std.map passes index to callback', map(list, (_, i) => i)
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   t('std.filter passes index to callback', filter(list, (_, i) => i % 2 = 1)
@@ -827,7 +827,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   )
 
-  ` each doesn't return anything meaningful `
+  `` each doesn't return anything meaningful
   acc := {
     str: ''
   }
@@ -835,7 +835,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   each(list, twice(n => acc.str := acc.str + string(n)))
   t('std.each', acc.str, '1122334455667788991010')
 
-  ` append mutates `
+  `` append mutates
   append(list, list)
   t('std.append', list, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -889,7 +889,7 @@ m('uuid -- uuid v4 generator')
 
   uuids := map(range(0, 200, 1), uuid)
 
-  ` every character should be a hex character or "-" `
+  `` every character should be a hex character or "-"
   isValidChar := s => s :: {
     '-' -> true
     _ -> ~(xeh(s) = ())
@@ -900,7 +900,7 @@ m('uuid -- uuid v4 generator')
   ))
   t('uuid() validity, hexadecimal range set', everyCharIsHex, true)
 
-  ` test for uniqueness (kinda) `
+  `` test for uniqueness (kinda)
   collisions? := reduce(
     map(range(0, 200, 1), () => [uuid(), uuid()])
     (acc, us) => acc | us.0 = us.1
@@ -908,7 +908,7 @@ m('uuid -- uuid v4 generator')
   )
   t('uuid() validity, rare collisions', collisions?, false)
 
-  ` correct length, formatting `
+  `` correct length, formatting
   format? := u => map(u, x => x) = [
     _, _, _, _, _, _, _, _, '-'
     _, _, _, _, '-'
@@ -931,7 +931,7 @@ m('json ser/de')
   ser := json.ser
   de := json.de
 
-  ` primitives `
+  `` primitives
   t('ser null', ser(()), 'null')
   t('ser ""', ser(''), '""')
   t('ser string', ser('world'), '"world"')
@@ -963,7 +963,7 @@ me')
   t('de invalid number', de('1.2.3'), ())
   t('de list of numbers', de('[50, -100]'), [50, ~100])
 
-  ` strange whitespace, commas, broken input `
+  `` strange whitespace, commas, broken input
   t('de string with surrounding whitespace', de('   " string"   '), ' string')
   t('de number with surrounding whitespace and decimal point', de('   6.'), 6)
   t('de fractional number without leading zero', de(' .90'), 0.9)
@@ -974,7 +974,7 @@ me')
   t('de non-terminated literal symbols', de('[1, 2  3.24.253, fals}'), ())
   t('de non-terminated list literal', de('[1, 2, 3.24.253, false'), ())
 
-  ` serialize light object `
+  `` serialize light object
   s := ser({a: 'b', c: ~4.251})
   first := '{"a":"b","c":-4.251}'
   second := '{"c":-4.251,"a":"b"}'
@@ -985,7 +985,7 @@ me')
   second := '{"1":false,"0":2}'
   t('ser list', s = first | s = second, true)
 
-  ` complex serde `
+  `` complex serde
   obj := {
     ser: 'de'
     '\\': 3
@@ -1208,5 +1208,5 @@ m('args() list')
     hasSuffix?(as.1, 'test.ink'), true)
 )
 
-` end test suite, print result `
+`` end test suite, print result
 (s.end)()
