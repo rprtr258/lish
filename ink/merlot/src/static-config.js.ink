@@ -6,9 +6,9 @@ Authed? := false
 ` if this is the first-ever load on this browser, create a dummy file for
 initial load on static deploy to let the user know how to use the app. `
 bind(localStorage, 'getItem')('files') :: {
-	() -> (
-		bind(localStorage, 'setItem')('files', 'Welcome to Merlot!')
-		bind(localStorage, 'setItem')('/doc/Welcome to Merlot!', '# Welcome to Merlot 🍷
+  () -> (
+  	bind(localStorage, 'setItem')('files', 'Welcome to Merlot!')
+  	bind(localStorage, 'setItem')('/doc/Welcome to Merlot!', '# Welcome to Merlot 🍷
 
 **Merlot** is a web-based writing app that supports Markdown. It replaces iA Writer for me as my primary blog-writing app, while filling in some other use cases I had in mind like sharing drafts.
 
@@ -35,6 +35,6 @@ Features like:
 I\'m hoping to use Merlot as my main, full-time writing app for the thousands of words I write each week, and continue improving the app as I put it through its paces!
 
 \\- Linus, [@thesephist](https://thesephist.com/)')
-	)
+  )
 }
 

@@ -1,199 +1,199 @@
 {
-	"name": "Ink",
-	"scopeName": "source.ink",
-	"patterns": [
-		{
-			"include": "#expression"
-		},
-		{
-			"include": "#comment"
-		},
-		{
-			"include": "#sepearator"
-		}
-	],
-	"repository": {
-		"expression": {
-			"name": "expression.ink",
-			"patterns": [
-				{
-					"include": "#function-call"
-				},
-				{
-					"include": "#property-access"
-				},
-				{
-					"include": "#expression-list"
-				},
-				{
-					"include": "#list-literal"
-				},
-				{
-					"include": "#object-literal"
-				},
-				{
-					"include": "#operator"
-				},
-				{
-					"include": "#boolean-literal"
-				},
-				{
-					"include": "#identifier"
-				},
-				{
-					"include": "#number-literal"
-				},
-				{
-					"include": "#string-literal"
-				},
-				{
-					"include": "#comment"
-				}
-			]
-		},
-		"expression-list": {
-			"name": "expression.group.ink",
-			"begin": "\\(",
-			"end": "\\)",
-			"beginCaptures": {
-				"0": {
-					"name": "punctuation.paren.open.ink"
-				}
-			},
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.paren.close.ink"
-				}
-			},
-			"patterns": [
-				{
-					"include": "#expression"
-				},
-				{
-					"include": "#separator"
-				}
-			]
-		},
-		"list-literal": {
-			"name": "entity.list.ink",
-			"begin": "\\[",
-			"end": "\\]",
-			"beginCaptures": {
-				"0": {
-					"name": "punctuation.bracket.open.ink"
-				}
-			},
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.bracket.close.ink"
-				}
-			},
-			"patterns": [
-				{
-					"include": "#expression"
-				},
-				{
-					"include": "#separator"
-				}
-			]
-		},
-		"object-literal": {
-			"name": "entity.object.ink",
-			"begin": "\\{",
-			"end": "\\}",
-			"beginCaptures": {
-				"0": {
-					"name": "punctuation.brace.open.ink"
-				}
-			},
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.brace.close.ink"
-				}
-			},
-			"patterns": [
-				{
-					"include": "#expression"
-				},
-				{
-					"include": "#separator"
-				}
-			]
-		},
-		"separator": {
-			"name": "entity.separator.ink",
-			"match": ","
-		},
-		"operator": {
-			"name": "keyword.operator.ink",
-			"match": "->|:=|::|=>|:|~|\\+|-|\\*|\\/|%|<|>|=|\\."
-		},
-		"function-call": {
-			"name": "entity.functioncall.ink",
-			"match": "([A-Za-z@!?][A-Za-z0-9@!?]*)\\s*\\(",
-			"captures": {
-				"1": {
-					"name": "support.function.ink"
-				}
-			}
-		},
-		"property-access": {
-			"name": "entity.propertyaccess.ink",
-			"match": "(\\.)\\s*([A-Za-z@!?][A-Za-z0-9@!?]*)",
-			"captures": {
-				"1": {
-					"name": "keyword.operator.ink"
-				},
-				"2": {
-					"name": "entity.other.attribute-name.ink"
-				}
-			}
-		},
-		"identifier": {
-			"name": "variable.ink",
-			"match": "[A-Za-z@!?][A-Za-z0-9@!?]*|_"
-		},
-		"boolean-literal": {
-			"name": "constant.language.ink",
-			"match": "\\b(true|false)\\b"
-		},
-		"number-literal": {
-			"name": "constant.numeric.ink",
-			"match": "\\d+(\\.\\d*)?"
-		},
-		"string-literal": {
-			"name": "string.quoted.single.ink",
-			"begin": "'",
-			"end": "'",
-			"patterns": [
-				{
-					"include": "#string-escape"
-				}
-			]
-		},
-		"string-escape": {
-			"name": "constant.character.escape.ink",
-			"match": "\\\\."
-		},
-		"comment": {
-			"name": "comment.ink",
-			"patterns": [
-				{
-					"include": "#line-comment"
-				},
-				{
-					"include": "#block-comment"
-				}
-			]
-		},
-		"line-comment": {
-			"name": "comment.line.ink",
-			"match": "#.*"
-		},
-		"block-comment": {
-			"name": "comment.block.ink",
-			"begin": "`",
-			"end": "`"
-		}
-	}
+  "name": "Ink",
+  "scopeName": "source.ink",
+  "patterns": [
+    {
+      "include": "#expression"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#sepearator"
+    }
+  ],
+  "repository": {
+    "expression": {
+      "name": "expression.ink",
+      "patterns": [
+        {
+          "include": "#function-call"
+        },
+        {
+          "include": "#property-access"
+        },
+        {
+          "include": "#expression-list"
+        },
+        {
+          "include": "#list-literal"
+        },
+        {
+          "include": "#object-literal"
+        },
+        {
+          "include": "#operator"
+        },
+        {
+          "include": "#boolean-literal"
+        },
+        {
+          "include": "#identifier"
+        },
+        {
+          "include": "#number-literal"
+        },
+        {
+          "include": "#string-literal"
+        },
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "expression-list": {
+      "name": "expression.group.ink",
+      "begin": "\\(",
+      "end": "\\)",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.paren.open.ink"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.paren.close.ink"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        },
+        {
+          "include": "#separator"
+        }
+      ]
+    },
+    "list-literal": {
+      "name": "entity.list.ink",
+      "begin": "\\[",
+      "end": "\\]",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.bracket.open.ink"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.bracket.close.ink"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        },
+        {
+          "include": "#separator"
+        }
+      ]
+    },
+    "object-literal": {
+      "name": "entity.object.ink",
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.brace.open.ink"
+        }
+      },
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.brace.close.ink"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        },
+        {
+          "include": "#separator"
+        }
+      ]
+    },
+    "separator": {
+      "name": "entity.separator.ink",
+      "match": ","
+    },
+    "operator": {
+      "name": "keyword.operator.ink",
+      "match": "->|:=|::|=>|:|~|\\+|-|\\*|\\/|%|<|>|=|\\."
+    },
+    "function-call": {
+      "name": "entity.functioncall.ink",
+      "match": "([A-Za-z@!?][A-Za-z0-9@!?]*)\\s*\\(",
+      "captures": {
+        "1": {
+          "name": "support.function.ink"
+        }
+      }
+    },
+    "property-access": {
+      "name": "entity.propertyaccess.ink",
+      "match": "(\\.)\\s*([A-Za-z@!?][A-Za-z0-9@!?]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.ink"
+        },
+        "2": {
+          "name": "entity.other.attribute-name.ink"
+        }
+      }
+    },
+    "identifier": {
+      "name": "variable.ink",
+      "match": "[A-Za-z@!?][A-Za-z0-9@!?]*|_"
+    },
+    "boolean-literal": {
+      "name": "constant.language.ink",
+      "match": "\\b(true|false)\\b"
+    },
+    "number-literal": {
+      "name": "constant.numeric.ink",
+      "match": "\\d+(\\.\\d*)?"
+    },
+    "string-literal": {
+      "name": "string.quoted.single.ink",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "include": "#string-escape"
+        }
+      ]
+    },
+    "string-escape": {
+      "name": "constant.character.escape.ink",
+      "match": "\\\\."
+    },
+    "comment": {
+      "name": "comment.ink",
+      "patterns": [
+        {
+          "include": "#line-comment"
+        },
+        {
+          "include": "#block-comment"
+        }
+      ]
+    },
+    "line-comment": {
+      "name": "comment.line.ink",
+      "match": "#.*"
+    },
+    "block-comment": {
+      "name": "comment.block.ink",
+      "begin": "`",
+      "end": "`"
+    }
+  }
 }

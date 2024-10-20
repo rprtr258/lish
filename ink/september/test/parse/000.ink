@@ -20,27 +20,27 @@ do()
 
 x => 9 + x * x
 (y, _) => (
-	log(x + y, z)
-	y + 2
+  log(x + y, z)
+  y + 2
 )
 
 'x' + type('hi') :: {
-	true -> 9 & 3 + x * x
-	` block comment
-		that spans multiple lines `
-	Node.CaseArrow -> pow(10 + 12, 2)
-	double(a, b, c) - 1 -> 2 + 3 = 1 + 4
-	_ -> (
-		log(true)
-		log(~false)
-	)
+  true -> 9 & 3 + x * x
+  ` block comment
+  	that spans multiple lines `
+  Node.CaseArrow -> pow(10 + 12, 2)
+  double(a, b, c) - 1 -> 2 + 3 = 1 + 4
+  _ -> (
+  	log(true)
+  	log(~false)
+  )
 }
 
 [1, 2, '3', 4 + 'a']
 {
-	key: 'value'
-	other(this): 9.8690
-	(2 + 3): {
-		test: 'tes' + 'sler'
-	}
+  key: 'value'
+  other(this): 9.8690
+  (2 + 3): {
+  	test: 'tes' + 'sler'
+  }
 }

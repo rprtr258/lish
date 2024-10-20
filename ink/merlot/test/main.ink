@@ -3,7 +3,7 @@ runReaderTests := load('reader').run
 runUtilTests := load('util').run
 
 s := (load('../vendor/suite').suite)(
-	'Merlot test suite'
+  'Merlot test suite'
 )
 
 runMarkdownTests(s.mark, s.test)

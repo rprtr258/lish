@@ -16,33 +16,33 @@ ClearLastLine := Esc + '[0F' + ClearLine
 ` color sequences `
 
 Weight := {
-	Regular: 0
-	Bold: 1
-	Dim: 2
+  Regular: 0
+  Bold: 1
+  Dim: 2
 }
 Color := {
-	Black: 30
-	Red: 31
-	Green: 32
-	Yellow: 33
-	Blue: 34
-	Magenta: 35
-	Cyan: 36
-	White: 37
-	Gray: 90
-	Reset: 0
+  Black: 30
+  Red: 31
+  Green: 32
+  Yellow: 33
+  Blue: 34
+  Magenta: 35
+  Cyan: 36
+  White: 37
+  Gray: 90
+  Reset: 0
 }
 Background := {
-	Black: 40
-	Red: 41
-	Green: 42
-	Yellow: 43
-	Blue: 44
-	Magenta: 45
-	Cyan: 46
-	White: 47
-	Gray: 100
-	Reset: 0
+  Black: 40
+  Red: 41
+  Green: 42
+  Yellow: 43
+  Blue: 44
+  Magenta: 45
+  Cyan: 46
+  White: 47
+  Gray: 100
+  Reset: 0
 }
 
 style := (t, c) => s => Esc + '[' + string(t) + ';' + string(c) + 'm' + s + Esc + '[0;0m'

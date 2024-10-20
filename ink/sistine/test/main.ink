@@ -2,7 +2,7 @@
 # runReaderTests := load('reader').run
 
 s := (load('../vendor/suite').suite)(
-	'Sistine test suite'
+  'Sistine test suite'
 )
 
 # runMarkdownTests(s.mark, s.test)

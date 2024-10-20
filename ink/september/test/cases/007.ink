@@ -6,9 +6,9 @@ log := std.log
 clone := std.clone
 
 x := {
-	key: 'value'
-	k2: 2.31
-	ork: [1, 2, 3]
+  key: 'value'
+  k2: 2.31
+  ork: [1, 2, 3]
 }
 log(x)
 y := clone(x)

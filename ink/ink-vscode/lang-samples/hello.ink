@@ -30,6 +30,6 @@ nstr := 'escaped_\x + \'string'
 
 ` test ` 3 + 2
 # line comment
-	` in a tab `
+  ` in a tab `
 
  comment

@@ -3,38 +3,38 @@
 # test weird line breaks
 log :=
 (str => (
-	out(str)
+  out(str)
 
-	out('
+  out('
 ')
 ))
 1 :: # line break after match
 {1 -> 'hi', 2 ->
-	'thing'}
+  'thing'}
 () =>
-	() # line break after arrow
+  () # line break after arrow
 log2 :=
-	(str =>
-	(
+  (str =>
+  (
 
-	out(str)
-		out('
+  out(str)
+  	out('
 ')
-	'log2 text'
+  'log2 text'
 ))('hilog')
 log(log2)
 
 # test automatic Separator insertion
 kl := [
-	5
-	4
-	3
-	2
-	1
+  5
+  4
+  3
+  2
+  1
 ].2
 ol := {
-	('te' +
-		'-st'): 'magic'
+  ('te' +
+  	'-st'): 'magic'
 }.('te-st')
 log('should be magic: ' + ol)
 log('should be 3: ' + string(kl))

@@ -19,14 +19,14 @@ log(a)
 x := 12
 (a := x)
 (
-	a := 12
+  a := 12
 )
 log(a)
 
 scoped := () => (
-	a := 10
-	a := 20
-	log(a)
+  a := 10
+  a := 20
+  log(a)
 )
 scoped()
 log(a)
@@ -40,8 +40,8 @@ log(({}.to := 2).to)
 ` scope inside match clause condition in fn literal `
 max := 1
 fn := () => max := 3 :: {
-	3 -> 'right'
-	_ -> 'wrong'
+  3 -> 'right'
+  _ -> 'wrong'
 }
 
 log('should be 1, not 3')

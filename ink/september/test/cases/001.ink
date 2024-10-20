@@ -10,8 +10,8 @@ double := x => 2 * x
 log := x => out(string(x) + char(10))
 
 even? := n => n % 2 :: {
-	0 -> true
-	_ -> false
+  0 -> true
+  _ -> false
 }
 log(even?(2))
 log(even?(3))

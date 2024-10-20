@@ -8,8 +8,8 @@ help := load('help').main
 
 given := (cli.parsed)()
 given.verb :: {
-	'build' -> build()
-	'help' -> help()
-	_ -> build()
+  'build' -> build()
+  'help' -> help()
+  _ -> build()
 }
 
