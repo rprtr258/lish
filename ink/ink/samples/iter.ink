@@ -29,7 +29,7 @@ list := list => (
       i.value := i.value + 1
       res
     )
-    false -> ()
+    _ -> ()
   }
 )
 
