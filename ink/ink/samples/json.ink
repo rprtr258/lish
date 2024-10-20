@@ -70,8 +70,8 @@ reader := s => (
 
 # deserialize null
 deNull := r => (
-  n := r.next
-  n() + n() + n() + n() :: {
+  next := r.next
+  next() + next() + next() + next() :: {
     'null' -> ()
     _ -> (r.err)()
   }
@@ -79,11 +79,11 @@ deNull := r => (
 
 # deserialize string
 deString := r => (
-  n := r.next
+  next := r.next
   peek := r.peek
 
   # known to be a '"'
-  n()
+  next()
 
   (sub := acc => peek() :: {
     '' -> (
@@ -92,8 +92,8 @@ deString := r => (
     )
     '\\' -> (
       # eat backslash
-      n()
-      sub(acc + (c := n() :: {
+      next()
+      sub(acc + (c := next() :: {
         't' -> '\t'
         'n' -> '\n'
         'r' -> '\r'
@@ -102,16 +102,16 @@ deString := r => (
       }))
     )
     '"' -> (
-      n()
+      next()
       acc
     )
-    _ -> sub(acc + n())
+    _ -> sub(acc + next())
   })('')
 )
 
 # deserialize number
 deNumber := r => (
-  n := r.next
+  next := r.next
   peek := r.peek
   state := {
     # have we seen a '.' yet?
@@ -121,7 +121,7 @@ deNumber := r => (
 
   peek() :: {
     '-' -> (
-      n()
+      next()
       state.negate? := true
     )
   }
@@ -132,10 +132,10 @@ deNumber := r => (
         true -> (r.err)()
         _ -> (
           state.decimal? := true
-          sub(acc + n())
+          sub(acc + next())
         )
       }
-      _ -> sub(acc + n())
+      _ -> sub(acc + next())
     }
     _ -> acc
   })('')
@@ -148,15 +148,15 @@ deNumber := r => (
 
 # deserialize boolean
 deTrue := r => (
-  n := r.next
-  n() + n() + n() + n() :: {
+  next := r.next
+  next() + next() + next() + next() :: {
     'true' -> true
     _ -> (r.err)()
   }
 )
 deFalse := r => (
-  n := r.next
-  n() + n() + n() + n() + n() :: {
+  next := r.next
+  next() + next() + next() + next() + next() :: {
     'false' -> false
     _ -> (r.err)()
   }
@@ -164,7 +164,7 @@ deFalse := r => (
 
 # deserialize list
 deList := r => (
-  n := r.next
+  next := r.next
   peek := r.peek
   ff := r.ff
   state := {
@@ -172,7 +172,7 @@ deList := r => (
   }
 
   # known to be a '['
-  n()
+  next()
   ff()
 
   (sub := acc => (r.err?)() :: {
@@ -183,7 +183,7 @@ deList := r => (
         ()
       )
       ']' -> (
-        n()
+        next()
         acc
       )
       _ -> (
@@ -192,7 +192,7 @@ deList := r => (
 
         ff()
         peek() :: {
-          ',' -> n()
+          ',' -> next()
         }
 
         ff()
@@ -204,12 +204,12 @@ deList := r => (
 
 # deserialize composite
 deComp := r => (
-  n := r.next
+  next := r.next
   peek := r.peek
   ff := r.ff
 
   # known to be a '{'
-  n()
+  next()
   ff()
 
   (sub := acc => (r.err?)() :: {
@@ -217,7 +217,7 @@ deComp := r => (
     _ -> peek() :: {
       '' -> (r.err)()
       '}' -> (
-        n()
+        next()
         acc
       )
       _ -> (
@@ -227,7 +227,7 @@ deComp := r => (
           false -> (
             ff()
             peek() :: {
-              ':' -> n()
+              ':' -> next()
             }
 
             ff()
@@ -237,7 +237,7 @@ deComp := r => (
               false -> (
                 ff()
                 peek() :: {
-                  ',' -> n()
+                  ',' -> next()
                 }
 
                 ff()
