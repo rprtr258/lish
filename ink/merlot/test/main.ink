@@ -1,4 +1,4 @@
-s := import('../vendor/suite.ink')(
+s := (import('../vendor/mod.ink').suite)(
   'Merlot test suite'
 )
 
