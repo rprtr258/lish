@@ -16,11 +16,11 @@ slice := (s, start, end) => (
   # clamp start and end numbers to ranges, such that
   # start < end. Utility used in slice
   clamp := (start, end, min, max) => (
-    m := import('math.ink')
-    start := (m.max)(start, min)
-    end := (m.max)(end, min)
-    end := (m.min)(end, max)
-    start := (m.min)(start, end)
+    {max: mmax, min: mmin} := import('math.ink')
+    start := mmax(start, min)
+    end := mmax(end, min)
+    end := mmin(end, max)
+    start := mmin(start, end)
 
     {
       start: start
