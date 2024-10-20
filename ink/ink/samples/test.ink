@@ -935,10 +935,7 @@ m('uuid -- uuid v4 generator')
 m('json ser/de')
 (
   clone := std.clone
-
-  json := import('json.ink')
-  ser := json.ser
-  de := json.de
+  {ser: ser, de: de} := import('json.ink')
 
   # primitives
   t('ser null', ser(()), 'null')
