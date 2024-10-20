@@ -1,0 +1,127 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <h2>data oriented design</h2><p><a href="https://www.youtube.com/watch?v=rX0ItVEVjHc">CppCon 2014: Mike Acton "Data-Oriented Design and C++"</a><a href="https://www.dataorienteddesign.com/dodbook/">Data-Oriented Design</a><a href="http://curtclifton.net/papers/MoseleyMarks06a.pdf">http://curtclifton.net/papers/MoseleyMarks06a.pdf</a>https://odin-lang.org/docs/overview/ https://www.youtube.com/watch?v=yy8jQgmhbAU https://github.com/CppCon/CppCon2018/blob/master/Presentations/oop<em>is</em>dead<em>long</em>live<em>dataoriented</em>design/oop<em>is</em>dead<em>long</em>live<em>dataoriented</em>design<strong>stoyan_nikolov</strong>cppcon_2018.pdf - last slide https://github.com/dbartolini/data-oriented-design</p><pre><code data-lang="embed">title: 'Полиморфные структуры данных и производительность'
+image: 'https://habrastorage.org/getpro/habr/upload_files/7c5/040/fcb/7c5040fcbca6df583d949a5b29b1c049.png'
+description: 'В этой статье мы рассмотрим как обычно происходит работа с динамическим полиморфизмом, где теряется производительность и как её можно улучшить, используя интересные структуры данных. В С++ не так...'
+url: 'https://habr.com/ru/post/703666/'</code></pre><p>https://media.handmade-seattle.com/practical-data-oriented-design/</p><h2>pprof - golang profiler</h2><pre><code data-lang="embed">title: 'Профилирование и оптимизация программ на Go'
+image: 'https://habr.com/share/publication/301990/038c265a4ffa0169f8905c49fc19bb57/'
+description: 'Введение В этой статье я расскажу, как профилировать и оптимизировать приложения на языке Go с использованием встроенных и общих инструментов, доступных в ОС Linux. Что такое профайлинг и...'
+url: 'https://habr.com/en/company/badoo/blog/301990/'</code></pre><pre><code data-lang="embed">title: 'Profiling Go programs with pprof'
+image: 'https://jvns.ca/images/pprof.png'
+description: 'Profiling Go programs with pprof'
+url: 'https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/'</code></pre><p>https://habr.com/ru/companies/badoo/articles/301990/ https://www.ardanlabs.com/blog/2023/07/getting-friendly-with-cpu-caches.html https://www.benburwell.com/posts/flame-graphs-for-go-with-pprof/ https://tproger.ru/translations/memory-leaks-investigation-in-go-using-pprof/ https://github.com/rakyll/autopprof</p><h2>sql</h2><pre><code data-lang="embed">title: 'MySQL :: MySQL 8.0 Reference Manual :: 8 Optimization'
+image: 'https://labs.mysql.com/common/themes/sakila/favicon.ico'
+description: 'The world’s most popular open source database'
+url: 'https://dev.mysql.com/doc/refman/8.0/en/optimization.html'</code></pre><pre><code data-lang="embed">title: 'Techniques for Optimising SQL Queries'
+image: 'https://miro.medium.com/max/1200/1*IOupJk-yndymZusZiIjHuw.png'
+description: 'Get the most of your queries'
+url: 'https://itnext.io/techniques-for-optimising-sql-queries-c362dbe626b4'</code></pre><pre><code data-lang="embed">title: 'Магия оптимизации SQL запросов'
+image: 'https://habrastorage.org/getpro/habr/upload_files/bb6/d14/597/bb6d1459751aa11fa7b01d9016dc22a6.png'
+description: 'Привет, Хабр! Думаю, каждый хоть раз использовал команду explain или хотя бы слышал про нее. Эта команда демонстрирует план выполнения запроса, но как именно СУБД приходит к нему остается загадкой....'
+url: 'https://habr.com/ru/post/709898/'</code></pre><pre><code data-lang="embed">title: 'Использование EXPLAIN. Улучшение запросов'
+image: 'https://habr.com/share/publication/211022/ace6e7381907c9f979687914a74260b2/'
+description: 'Когда вы выполняете какой-нибудь запрос, оптимизатор запросов MySQL пытается придумать оптимальный план выполнения этого запроса. Вы можете посмотреть этот самый план используя запрос с ключевым...'
+url: 'https://habr.com/ru/post/211022/'</code></pre><h2>unsorted</h2><pre><code data-lang="embed">title: 'Высокопроизводительные вычисления: проблемы и решения'
+image: 'https://habr.com/share/publication/117021/99acb74982aec2da3c0bf43fe4555422/'
+description: 'Компьютеры, даже персональные, становятся все сложнее. Не так уж давно в гудящем на столе ящике все было просто — чем больше частота, тем больше производительность. Теперь же системы стали...'
+url: 'https://habr.com/en/post/117021/'</code></pre><p>https://nnethercote.github.io/perf-book/io.html</p><pre><code data-lang="embed">title: 'Почему не все тестовые задания одинаково полезны: С++ edition'
+image: 'https://habrastorage.org/getpro/habr/upload_files/a15/49a/f49/a1549af497e2d970f88fea9a57b0fb8e.png'
+description: 'Вначале было слово, и было два байта, и ничего больше не было. Но отделил Бог ноль от единицы, и понял, что это хорошо. Потом, опуская некоторые незначительные события мироздания, была вот эта статья...'
+url: 'https://habr.com/en/post/572726/'</code></pre><p><a href="https://habr.com/en/post/589667/">Ультра быстрый Cron с шагом в миллисекунду, или когда тестовые задания такими прикидываются</a><a href="https://www.laruence.com/sse/">Intrinsics Guide</a>[[data/static/old/someday_maybe/perfomance/x86 intrinsics cheat sheet v1.0.pdf]]<a href="https://github.com/dendibakh/perf-ninja">GitHub - dendibakh/perf-ninja: This is an online course where you can learn and master the skill of low-level performance analysis and tuning.</a><a href="https://www.amazon.com/dp/B08R6MTM7K/ref=as_li_ss_tl?ref_=pe_3052080_397514860&linkCode=sl1&tag=dendibakh-20&linkId=5ed2c1237c2b8d3c35b482aa6c47e6ce&language=en_US">Performance Analysis and Tuning on Modern CPUs: Squeeze the last bit of performance from your application.</a><a href="https://algorithmica.org/ru/sse">Векторизация</a><a href="https://habr.com/en/post/540136/">FizzBuzz по-сениорски</a></p><pre><code data-lang="embed">title: 'Optimising a small real-world C++ application - Hubert Matthews [ACCU 2019]'
+image: 'https://img.youtube.com/vi/fDlE93hs_-U/maxresdefault.jpg'
+description: '#Cpp #ACCU #ACCUConfThis is a hands-on demonstration of optimising a small real-world application written in C++.It shows how measurement tools such as strac...'
+url: 'https://www.youtube.com/watch?v=fDlE93hs_-U'</code></pre><h2>effective bttv (vptree?)</h2><p><a href="%D0%A1%D0%B0%D0%BC%D0%BE%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%208936d/compare%20la%20642cf.md">compare languages performance (BTTV VPTree search?)</a>https://blog.burntsushi.net/transducers/</p><h2>compare cache efficiency of heap and my heap</h2><p>my heap is array [L + x + R], where L, R are subtrees of x use advent of code solution</p><h2>fast rot13</h2><p>(try to use memory map) https://eax.me/linux-file-mapping/<a href="https://github.com/rprtr258/rot13">GitHub - rprtr258/rot13: Trying to make fast rot13. Because if rot13 can't be made fast easily, what could be?</a>make fast rot13, bench on 1MB/GB file, compare with cat(no ciphering) and tr(with rot13), check strace <a href="https://www.google.com/search?q=fastest+rot13+implementation">fastest rot13 implementation - Google Search</a><a href="https://hea-www.harvard.edu/~fine/Tech/rot13.html"></a> <a href="https://grandidierite.github.io/looking-at-the-source-code-for-function-isalpha-isdigit-isalnum-isspace-islower-isupper-isxdigit-iscntrl-isprint-ispunct-isgraph-tolower-and-toupper-in-C-programming/">Looking at The Source Code for Function isalpha, isdigit, isalnum, isspace, islower, isupper, isxdigit, iscntrl, isprint, ispunct, isgraph, tolower, and, toupper in C Programming</a><a href="http://www.cplusplus.com/reference/cstdio/setvbuf/">setvbuf</a> <a href="https://github.com/coreutils/coreutils/blob/master/src/tr.c">coreutils/tr.c at master · coreutils/coreutils</a>fast io <a href="https://www.codechef.com/viewsolution/32916606">https://www.codechef.com/viewsolution/32916606</a> <a href="https://www.codechef.com/viewsolution/34266958">Solution: 34266958 | CodeChef</a> <a href="https://marc.info/?l=linux-kernel&m=95496636207616&w=2"></a><a href="https://adventofcode.com/2017">Advent of Code</a></p><h2>fast advent of code</h2><p><a href="https://timvisee.com/blog/solving-aoc-2020-in-under-a-second/">Solving Advent of Code 2020 in under a second</a><a href="https://www.forrestthewoods.com/blog/solving-advent-of-code-in-under-a-second/">https://www.forrestthewoods.com/blog/solving-advent-of-code-in-under-a-second/</a> <a href="https://www.reddit.com/r/adventofcode/comments/7m9mg8/all_years_all_days_solve_them_within_the_time/">[All years, all days] Solve them within the time limit</a><a href="https://github.com/Voltara/advent2018-fast">GitHub - Voltara/advent2018-fast: Advent of Code 2018 optimized solutions in C++</a> <a href="https://github.com/Voltara/advent2017-fast">GitHub - Voltara/advent2017-fast: Advent of Code 2017 optimized solutions in C</a><a href="https://josephg.com/blog/crdts-go-brrr/">CRDTs go brrr</a> <a href="https://crdt.tech">crdt</a><a href="https://herbsutter.com/welcome-to-the-jungle/">https://herbsutter.com/welcome-to-the-jungle/</a><a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf"></a> <a href="%D0%A1%D0%B0%D0%BC%D0%BE%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%208936d/stolyarov%20%20d68b3.md">stolyarov: asm → C</a><a href="https://stackoverflow.com/questions/49947915/assembly-syscalls-in-64-bit-windows">https://stackoverflow.com/questions/49947915/assembly-syscalls-in-64-bit-windows</a> <a href="https://optimization.guide/">Продуманная оптимизация</a></p><h2>io-uring</h2><p>https://unzip.dev/0x013-io_uring/ https://developers.mattermost.com/blog/hands-on-iouring-go/ https://unixism.net/loti/index.html https://github.com/ii64/gouring/ https://github.com/godzie44/go-uring https://github.com/pawelgaczynski/gain https://habr.com/ru/articles/589389/ https://habr.com/ru/articles/597745/ https://habr.com/ru/articles/649161/</p><p>https://go101.org/optimizations/101.html https://go.dev/blog/pprof https://github.com/alphadose/ZenQ</p><p>https://habr.com/ru/company/first/blog/442738/ https://github.com/sharkdp/hyperfine https://github.com/miloyip/dtoa-benchmark https://github.com/miloyip/itoa-benchmark http://www.0x80.pl/articles/sse-itoa.html http://0x80.pl/articles/simd-parsing-int-sequences.html https://stackoverflow.com/questions/4351371/c-performance-challenge-integer-to-stdstring-conversion https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10 https://git.musl-libc.org/cgit/musl/tree/ https://www.opennet.ru/man.shtml?topic=getc_unlocked&amp;category=3&amp;russian=0 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0479r0.html https://eigen.tuxfamily.org/index.php?title=Main_Page https://eax.me/c-cpp-profiling/ https://habr.com/ru/post/664044/ https://travisdowns.github.io/ https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html https://habr.com/ru/post/673508/ https://www.google.com/search?q=golang%20lock%20free https://habr.com/ru/post/679008/ https://habr.com/ru/post/682080/ https://habr.com/ru/post/682332/ https://habr.com/ru/post/686222/ https://habr.com/ru/post/688874/ https://github.com/quasilyte/qbenchstat https://doc.rust-lang.org/std/simd/struct.Simd.html</p><p>[[data/static/old/someday_maybe/perfomance/fast_utf8_validation.pdf]] https://github.com/felixge/fgtrace</p><pre><code data-lang="embed">title: 'N By N Skyscrapers'
+image: 'https://www.codewars.com/packs/assets/og-image.7f5134fb.png'
+description: 'Codewars is where developers achieve code mastery through challenge. Train on kata in the dojo and reach your highest potential.'
+url: 'https://www.codewars.com/kata/5f7f023834659f0015581df1'</code></pre><pre><code data-lang="embed">title: 'GitHub - janestreet/magic-trace: magic-trace collects and displays high-resolution traces of what a process is doing'
+image: 'https://repository-images.githubusercontent.com/452433468/15ae30ee-7773-4fe0-a4ed-0d0d13751f70'
+description: 'magic-trace collects and displays high-resolution traces of what a process is doing - GitHub - janestreet/magic-trace: magic-trace collects and displays high-resolution traces of what a process is ...'
+url: 'https://github.com/janestreet/magic-trace'</code></pre><pre><code data-lang="embed">title: 'How to Use AVX512 in Golang via C Compiler'
+image: 'https://gorse.io/logo.png'
+description: 'How to Use AVX512 in Golang via C Compiler AVX512 is the latest generation of SIMD instructions released by Intel, which can process 512 bits of data in one instruction cycle, equivalent to 16 single-precision floating point numbers or 8 double-precision floating point numbers. The training and infe…'
+url: 'https://gorse.io/posts/avx512-in-golang.html'</code></pre><p>https://highload.fun/ https://habr.com/ru/post/716292/ https://habr.com/ru/post/717716/ https://github.com/Highload-fun/platform/wiki https://github.com/pkg/profile https://dave.cheney.net/high-performance-json.html https://www.youtube.com/watch?v=un-bZdyumog https://philpearl.github.io/post/reader/ https://www.youtube.com/watch?v=un-bZdyumog https://www.brendangregg.com/linuxperf.html https://github.com/google/slowjam https://matklad.github.io/2022/10/06/hard-mode-rust.html https://github.com/mmcloughlin/avo https://matklad.github.io/2022/10/06/hard-mode-rust.html https://github.com/RazrFalcon/cargo-bloat https://internals.rust-lang.org/t/is-custom-allocators-the-right-abstraction/13460 https://benchkram.de/blog/dev/profiling-go-programs https://vk.com/vkteam?w=wall-147415323_15536 - Разработка высоконагруженного key-value хранилища https://github.com/recoilme/sniper https://habr.com/ru/articles/733948/ https://avivcarmi.com/the-search-for-the-perfect-request-response-protocol/</p><p>https://github.com/dgryski/go-perfbook https://github.com/aitsvet/debugcharts https://golangconf.ru/2020/abstracts/7061 https://www.google.com/search?q=golang+rtdsc https://www.agner.org/optimize/ https://rigtorp.se/ringbuffer/ https://lemire.me/blog/2023/02/07/bit-hacking-with-go-code/ https://totallygamerjet.hashnode.dev/the-smallest-go-binary-5kb https://github.com/DataDog/go-profiler-notes https://eblog.fly.dev/startfast.html https://pkg.go.dev/modernc.org/memory https://shane.ai/posts/threads-and-goroutines/ https://github.com/stackimpact/stackimpact-go</p><pre><code data-lang="go">reportMem := func() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&amp;m)
+	log.Println("total alloc:", m.TotalAlloc, "mallocs:", m.Mallocs)
+}
+reportMem()
+defer reportMem()
+f, err := os.Create("cpu.prof")
+if err != nil {
+	log.Fatal("could not create CPU profile: ", err)
+}
+defer f.Close()
+if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
+	// if err := pprof.StartCPUProfile(f); err != nil {
+	log.Fatal("could not start CPU profile: ", err)
+}
+defer pprof.StopCPUProfile()</code></pre><p>https://gitlab.com/gitlab-com/support/toolbox/strace-parser pretty strace output https://github.com/samonzeweb/profilinggo https://github.com/sebbbi/OffsetAllocator https://medium.com/@lordmoma/6-tips-on-high-performance-go-advanced-go-topics-37b601fa329d https://github.com/felixge/fgprof https://github.com/zjc17/pprof-web https://mazzo.li/posts/fast-pipes.html https://nanxiao.gitbooks.io/perf-little-book/content/ https://github.com/dgraph-io/ristretto/tree/master/z<a href="https://flamegraph.com/">flame graph online</a>https://jvns.ca/perf-zine.pdf</p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

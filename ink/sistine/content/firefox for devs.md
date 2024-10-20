@@ -1,1 +1,0 @@
-https://www.mozilla.org/ru/firefox/developer/

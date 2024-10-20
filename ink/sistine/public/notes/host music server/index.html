@@ -1,0 +1,72 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p>#in<a href="/note/self%20hosting">self hosting</a></p><p>use exec <a href="http://45.87.153.219:4646/ui/jobs">jobs</a> if possible upload music files to <a href="https://console.cloud.yandex.ru/folders/b1gcjejr56jpj3kms7d9/storage/buckets">s3</a> bucket mount s3 using <a href="https://github.com/kahing/goofys">goofys</a> or <a href="https://github.com/yandex-cloud/geesefs">geesefs</a>serve music using <a href="https://www.navidrome.org/docs/overview/">navidrome</a> (replace with executable)</p><pre><code data-lang="bash">docker run --name navidrome --user $(id -u):$(id -g) -v /mnt/hdd/music:/music -v $(pwd):/data -p 4533:4533 deluan/navidrome:latest</code></pre><p>serve player ui using  <a href="https://github.com/jeffvli/feishin">feishin</a></p><pre><code data-lang="bash">docker run --name feishin -p 9180:9180 ghcr.io/jeffvli/feishin:latest</code></pre><p>download and save youtube playlist music somehow</p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

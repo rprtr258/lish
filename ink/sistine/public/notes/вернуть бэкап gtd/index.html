@@ -1,0 +1,111 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p>#someday_maybe</p><p><code>Makefile</code></p><pre><code data-lang="makefile">backup:
+	gobackup perform</code></pre><p><code>gobackup.yaml</code></p><pre><code data-lang="yaml">{
+  web: {
+    host: "0.0.0.0",
+    port: 2703,
+    username: "rprtr258",
+    password: "fgjepr8tghje3p865t4u9r253h2",
+  },
+  models: {
+    gtd: {
+      schedule: {
+        cron: "0 0 * * *",
+      },
+      compress_with: {
+        type: "tgz",
+      },
+      storages: {
+        s3: {
+          type: "s3",
+          bucket: "backup--gtd",
+          region: "ru-central1",
+          access_key_id: "YCAJE4HHa8pyWzSI2GJC97vEn",
+          secret_access_key: "YCOrOR1SXioPH0tVXFkFM_Z7hZ_zF9YWs2rO0NCh",
+          endpoint: "storage.yandexcloud.net",
+          keep: 1 * 7, // 1 per day, 1 * 7 per week
+        },
+      },
+      archive: {
+        includes: ["."],
+      },
+      notifiers: {
+        telegram: {
+          type: "telegram",
+          chat_id: "310506774",
+          token: "5415014383:AAElsIuS3hqpF0PUayvhsIznbbDMSB4Ioh8",
+        },
+      },
+    },
+  },
+}</code></pre>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

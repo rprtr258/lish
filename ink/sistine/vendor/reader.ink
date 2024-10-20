@@ -1,8 +1,7 @@
-std := import('../vendor/std')
-str := import('../vendor/str')
-
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 slice := std.slice
 append := std.append
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 split := str.split
 hasPrefix? := str.hasPrefix?
 
@@ -17,54 +16,54 @@ Reader := s => (
   peek := () => s.(S.i)
   last := () => s.(S.i - 1)
   back := () => S.i :: {
-  	0 -> 0
-  	_ -> S.i := S.i - 1
+    0 -> 0
+    _ -> S.i := S.i - 1
   }
   next := () => S.i :: {
-  	len(s) -> ()
-  	_ -> (
-  		c := s.(S.i)
-  		S.i := S.i + 1
-  		c
-  	)
+    len(s) -> ()
+    _ -> (
+      c := s.(S.i)
+      S.i := S.i + 1
+      c
+    )
   }
   expect? := prefix => hasPrefix?(slice(s, S.i, len(s)), prefix) :: {
-  	true -> (
-  		S.i := S.i + len(prefix)
-  		true
-  	)
-  	_ -> false
+    true -> (
+      S.i := S.i + len(prefix)
+      true
+    )
+    _ -> false
   }
   itemIndex := (list, it) => (sub := i => i < len(list) :: {
-  	true -> list.(i) :: {
-  		it -> i
-  		_ -> sub(i + 1)
-  	}
-  	_ -> ~1
+    true -> list.(i) :: {
+      it -> i
+      _ -> sub(i + 1)
+    }
+    _ -> ~1
   })(0)
   readUntil := c => i := itemIndex(slice(s, S.i, len(s)), c) :: {
-  	~1 -> ()
-  	_ -> (
-  		substr := slice(s, S.i, S.i + i)
-  		S.i := S.i + i
-  		substr
-  	)
+    ~1 -> ()
+    _ -> (
+      substr := slice(s, S.i, S.i + i)
+      S.i := S.i + i
+      substr
+    )
   }
   readUntilPrefix := prefix => (sub := i => i + len(prefix) > len(s) :: {
-  	true -> ()
-  	_ -> part := slice(s, i, i + len(prefix)) :: {
-  		prefix -> (
-  			substr := slice(s, S.i, i)
-  			S.i := i
-  			substr
-  		)
-  		_ -> sub(i + 1)
-  	}
+    true -> ()
+    _ -> part := slice(s, i, i + len(prefix)) :: {
+      prefix -> (
+        substr := slice(s, S.i, i)
+        S.i := i
+        substr
+      )
+      _ -> sub(i + 1)
+    }
   })(S.i)
   readUntilEnd := () => (
-  	substr := slice(s, S.i, len(s))
-  	S.i := len(s)
-  	substr
+    substr := slice(s, S.i, len(s))
+    S.i := len(s)
+    substr
   )
   ` readUntilMatchingDelim is a helper specifically for parsing delimited
   expressions like text in [] or (), that will attempt to read until a
@@ -72,43 +71,44 @@ Reader := s => (
   if no match exists. This fn accounts for nested delimiters and ignores
   matching pairs within the delimited text expression. `
   readUntilMatchingDelim := left => (
-  	right := (left :: {
-  		` currently only supprots [] and () (for Markdown links) `
-  		'[' -> ']'
-  		'(' -> ')'
-  		_ -> ()
-  	})
+    right := (left :: {
+      ` currently only supprots [] and () (for Markdown links) `
+      '[' -> ']'
+      '(' -> ')'
+      _ -> ()
+    })
 
-  	matchingDelimIdx := (sub := (i, stack) => stack :: {
-  		0 -> i - 1
-  		_ -> c := s.(i) :: {
-  			() -> ~1
-  			left -> sub(i + 1, stack + 1)
-  			right -> sub(i + 1, stack - 1)
-  			_ -> sub(i + 1, stack)
-  		}
-  	})(S.i, 1)
+    matchingDelimIdx := (sub := (i, stack) => stack :: {
+      0 -> i - 1
+      _ -> c := s.(i) :: {
+        () -> ~1
+        left -> sub(i + 1, stack + 1)
+        right -> sub(i + 1, stack - 1)
+        _ -> sub(i + 1, stack)
+      }
+    })(S.i, 1)
 
-  	matchingDelimIdx :: {
-  		~1 -> ()
-  		_ -> (
-  			substr := slice(s, S.i, matchingDelimIdx)
-  			S.i := matchingDelimIdx
-  			substr
-  		)
-  	}
+    matchingDelimIdx :: {
+      ~1 -> ()
+      _ -> (
+        substr := slice(s, S.i, matchingDelimIdx)
+        S.i := matchingDelimIdx
+        substr
+      )
+    }
   )
 
   {
-  	peek: peek
-  	last: last
-  	back: back
-  	next: next
-  	expect?: expect?
-  	readUntil: readUntil
-  	readUntilPrefix: readUntilPrefix
-  	readUntilEnd: readUntilEnd
-  	readUntilMatchingDelim: readUntilMatchingDelim
+    peek: peek
+    last: last
+    back: back
+    next: next
+    expect?: expect?
+    readUntil: readUntil
+    readUntilPrefix: readUntilPrefix
+    readUntilEnd: readUntilEnd
+    readUntilMatchingDelim: readUntilMatchingDelim
   }
 )
 
+{Reader: Reader}

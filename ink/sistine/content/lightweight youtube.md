@@ -1,1 +1,0 @@
-https://vid.puffyan.us/

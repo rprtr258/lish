@@ -1,8 +1,8 @@
-` the sistine help command `
+# the sistine help command
 
-log := import('../vendor/std').log
+log := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink').log
 
-main := () => log('Sistine is a static site generator.
+() => log('Sistine is a static site generator.
 
 Quick start
   1. Place your Markdown content in content/
@@ -14,7 +14,7 @@ Quick start
   More documentation at github.com/thesephist/sistine.
 
 Commands
-  build	build the current site
-  help	show this help message
+  build  build the current site
+  help  show this help message
 
 Sistine is a project by @thesephist built with Ink.')

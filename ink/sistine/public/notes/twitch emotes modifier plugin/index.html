@@ -1,0 +1,75 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p>#someday_maybe #project</p><p><a href="https://github.com/rprtr258/twitch-emotes-modifier-plugin/pull/1">link</a></p><h2>backend</h2><ul><li><input type="checkbox" checked /> get 7tv id by emote name on channel ✅ 2023-02-11</li></ul><h2>frontend</h2><p>https://github.com/FrankerFaceZ/Add-Ons</p><ul><li><input type="checkbox"  /> userscript/ffz plugin to replace emote strings to images</li></ul><h2>filters</h2><ul><li><input type="checkbox"  /> hats (mostly covered by <code>hover</code> with zero-width emotes modifier?)<ul><li><input type="checkbox"  /> Top</li><li><input type="checkbox"  /> Santa</li><li><input type="checkbox"  /> comfy</li><li><input type="checkbox"  /> sunglasses(EZ)</li><li><input type="checkbox"  /> snow</li><li><input type="checkbox"  /> rain</li><li><input type="checkbox"  /> glitch https://7tv.app/emotes/60af306712d770149135895e</li><li><input type="checkbox"  /> glitch2 https://7tv.app/emotes/624f8a706bb22d4119fc86f6</li><li><input type="checkbox"  /> <a href="https://7tv.app/emotes?sortBy=popularity&page=0&filter=%5Bobject%20Object%5D">7TV.APP</a></li></ul></li><li><input type="checkbox"  /> raw text, e.g. <code>СРАТЬ</code> or <code>ВЕЧНО</code></li><li><input type="checkbox"  /> unicode emotes</li><li><input type="checkbox"  /> modifiers<ul><li><input type="checkbox"  /> wide(4HEader) - see <code>iscalex</code></li><li><input type="checkbox"  /> color modifiers<ul><li><input type="checkbox" checked /> grayscale ✅ 2023-02-11</li><li><input type="checkbox"  /> change tone/brightness/contrast</li></ul></li></ul></li><li><input type="checkbox"  /> crowd https://7tv.app/emotes/63affc7cad551e191f8a0c18</li><li><input type="checkbox"  /> animation<ul><li><input type="checkbox" checked /> reverse time ✅ 2023-01-15</li><li><input type="checkbox" checked /> mirror horizontally/vertically ✅ 2023-01-15</li><li><input type="checkbox" checked /> <code>scalex</code>, <code>scaley</code> - resize, <code>scalet</code> - speedup/slowdown; particularly <code>{i,d,}scale{x,y,t}</code>: ✅ 2023-01-22<ul><li><input type="checkbox" checked /> <code>i</code> - <code>i</code>ncrease 2 times ✅ 2023-01-22</li><li><input type="checkbox" checked /> <code>d</code> - <code>d</code>ecrease 2 times ✅ 2023-01-22</li><li><input type="checkbox" checked /> empty - scale size is taken from stack ✅ 2023-01-22</li></ul></li><li><input type="checkbox" checked /> concat ✅ 2023-01-15</li><li><input type="checkbox" checked /> rename <code>concat</code> to <code>stackt</code> ✅ 2023-01-16</li><li><input type="checkbox" checked /> <code>stackx</code>, <code>stacky</code> ✅ 2023-01-16</li><li><input type="checkbox" checked /> shake (x,y=random()) ✅ 2023-02-11</li><li><input type="checkbox" checked /> rave (hue=time) ✅ 2023-02-11</li><li><input type="checkbox"  /> roll (x=time)</li><li><input type="checkbox"  /> spin</li><li><input type="checkbox" checked /> slide in = <code>slide out > revt</code> ✅ 2023-02-11</li><li><input type="checkbox" checked /> slide out = <code>slide in > revt</code> ✅ 2023-02-11</li><li><input type="checkbox"  /> lurk https://7tv.app/emotes/61fe873323f0a55b0ba891d4</li><li><input type="checkbox"  /> petpet https://github.com/tsoding/emoteJAM/issues/46</li><li><input type="checkbox"  /> bonk https://github.com/tsoding/emoteJAM/issues/41</li><li><input type="checkbox"  /> poof https://7tv.app/emotes/6040aa41cf6746000db1034e</li><li><input type="checkbox"  /> exploding(waytoo) https://github.com/tsoding/emoteJAM/issues/9</li><li><input type="checkbox"  /> linear interpolation from one to another</li></ul></li><li><input type="checkbox"  /> rotations</li><li><input type="checkbox"  /> positoning<ul><li><input type="checkbox"  /> position using coordinates(e.g. Pog under Champ), maybe not needed, covered by <code>stacky</code> and precise coordinates seem not to be useful</li></ul></li><li><input type="checkbox"  /> stack manipulation<ul><li><input type="checkbox" checked /> dup ✅ 2023-01-22</li><li><input type="checkbox" checked /> swap/xchg ✅ 2023-01-22</li><li><input type="checkbox"  /> see stack languages for examples (e.g. Forth)</li></ul></li><li><input type="checkbox"  /> take emotes from current channel e.g. <code>peepoHappy</code> (OR by id e.g. <code>#b23d1a86cc2abf69ca3f0657b</code> - only in frontend site, for testing/demonstration purposes)</li><li><input type="checkbox"  /> diagrams - trees where childs are source emotes and result is emote with resulting emote from modifier</li></ul><pre><code data-lang="embed">title: 'emoteJAM — Generate animated emotes from static images'
+image: 'https://t0.gstatic.com/faviconV2?client=SOCIAL&amp;type=FAVICON&amp;fallback_opts=TYPE,SIZE,URL&amp;url=https://github.io/emoteJAM/&amp;size=128'
+description: 'Welcome to emoteJAM — a simple website that generates animated BTTV emotes from static images. Let’s get started!'
+url: 'https://tsoding.github.io/emoteJAM/'</code></pre><p><a href="https://7tv.app/emotes?page=1&filter=zero_width">7tv zero width emotes</a>https://api.frankerfacez.com/docs/#emote-effects<a href="https://www.reddit.com/r/betterponymotes/comments/1y7vel/complete_list_of_tags_cheat_sheet/">Complete list of tags [Cheat Sheet]</a><a href="https://www.reddit.com/r/Twitch/comments/j5gqg4/for_all_those_looking_for_halloween_emotes_heres/">FOR ALL THOSE LOOKING FOR HALLOWEEN EMOTES HERES A LIST &lt;3</a>store emotes under identifiers to database as aliases to e.g.<code>Kappa-long-shaking-rave-50%-30%-50px/50px</code></p><p>sunglasses+shake https://github.com/tsoding/emoteJAM/issues/56<code>OOOO</code> = <code>PogFish</code> > <code>-shake</code><code>sratVechno</code> = <code>Basedge,callmehand>stackx,срать,вечно>stacky>stackx</code></p><p>![[data/static/old/someday_maybe/programming_projects/twitch emotes modifier plugin/PogFish.png]] ![[data/static/old/someday_maybe/programming_projects/twitch emotes modifier plugin/peepoHappy.png]] ![[data/static/old/someday_maybe/programming_projects/twitch emotes modifier plugin/coMMMMfy.png]] https://7tv.app/emotes/64136af65997ea325d92b9db https://7tv.app/emotes/645cc58178ffa284f316dd8f</p><pre><code>ffmpeg -i input.mp4 -filter_complex "[0]reverse[r];[0][r]concat=n=2:v=1:a=0" output.gif</code></pre>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

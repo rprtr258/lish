@@ -1,5 +1,0 @@
-[300 KB desktop client for Slack, Skype, Gmail, Twitter, Facebook and more](https://volt-app.com/)
-[flow browser](https://www.ekioh.com/flow-browser/)
-[grid-speed](https://datatable.dev/)
-[idx](https://idx.dev/)
-[zed code editor](https://zed.dev/)

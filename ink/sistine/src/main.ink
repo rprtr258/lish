@@ -1,15 +1,13 @@
 #!/usr/bin/env ink
 
-cli := import('../vendor/cli')
+cli := import('../vendor/cli.ink')
 
-` sistine commands `
-build := import('build').main
-help := import('help').main
+# sistine commands
+help := import('help.ink')
 
 given := (cli.parsed)()
 given.verb :: {
-  'build' -> build()
+  'build' -> import('build.ink')()
   'help' -> help()
-  _ -> build()
+  _ -> help()
 }
-

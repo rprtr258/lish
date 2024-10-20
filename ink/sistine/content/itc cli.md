@@ -1,3 +1,0 @@
-- [ ] `itc etcd diff <service> <version1> <version2>` see example implementation here https://gitlab.ozon.ru/at/qa/qa-autotests/-/blob/master/cli.py
-- [ ] merge existing duplicate commands
-- [ ] fix existing commands

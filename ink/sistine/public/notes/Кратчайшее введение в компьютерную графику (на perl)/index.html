@@ -1,0 +1,72 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p><a href="https://colab.research.google.com/drive/1eQ05Ji9BA1GDXPObn_L76sWgu0c6DJ-t">Google Colaboratory</a></p><p><a href="https://colab.research.google.com/drive/1x09T23Ew7MdSaYor2AlWQM5sIX44OeHH">Google Colaboratory</a></p><p>Будем рендерить модель лица африканца. Для этого будем использовать Python 3.?, PIL для создания изображения с использованием только функции изменения отдельных пикселей и Colaboratory, чтобы запустить код.</p><p>Выведем красный пиксель на черном фоне:</p><p><img alt="https://sun9-26.userapi.com/impf/dmx_8oAU3_psX8VgmdRldJY0AQGP2hcud-3oxQ/ATWVCuRA2Yk.jpg?size=454x301&quality=96&proxy=1&sign=51298c046019fbae941f19077839981b&type=album" src="https://sun9-26.userapi.com/impf/dmx_8oAU3_psX8VgmdRldJY0AQGP2hcud-3oxQ/ATWVCuRA2Yk.jpg?size=454x301&quality=96&proxy=1&sign=51298c046019fbae941f19077839981b&type=album"/></p><p>Нарисуем отрезки:</p><p><img alt="https://sun9-24.userapi.com/impf/i9wegjN2aHvl6Poik0N8a34PZLcNDm6OgGGDhg/TsW8EHzrPiM.jpg?size=442x529&quality=96&proxy=1&sign=5e31b1913236d557b2e7965a1680b66a&type=album" src="https://sun9-24.userapi.com/impf/i9wegjN2aHvl6Poik0N8a34PZLcNDm6OgGGDhg/TsW8EHzrPiM.jpg?size=442x529&quality=96&proxy=1&sign=5e31b1913236d557b2e7965a1680b66a&type=album"/></p><p>Оптимизация aka алгоритм Брезенхема:</p><p><img alt="https://sun9-69.userapi.com/impf/6fqanSn68dcf2bZMN0XqQ7HzSQDE4-_54jQixw/wKrbVT63l14.jpg?size=469x617&quality=96&proxy=1&sign=1e3bb3cc2d925265fa381f5f7d55fd8d&type=album" src="https://sun9-69.userapi.com/impf/6fqanSn68dcf2bZMN0XqQ7HzSQDE4-_54jQixw/wKrbVT63l14.jpg?size=469x617&quality=96&proxy=1&sign=1e3bb3cc2d925265fa381f5f7d55fd8d&type=album"/></p><p>Этим алгоритмом мы и будем пользоваться далее.</p><p>Имея возможность рисовать отрезки, мы теперь можем «отрендерить» каркас нашей модели, просто отрисовав все ребра:</p><p><img alt="https://sun9-72.userapi.com/impf/9smV-ijaXZflJ-axb6enIpE_y7LqHnBD4nPQqQ/mkGnmEBZx1A.jpg?size=730x448&quality=96&proxy=1&sign=7cd1a6fb238438e258d9a412733a704e&type=album" src="https://sun9-72.userapi.com/impf/9smV-ijaXZflJ-axb6enIpE_y7LqHnBD4nPQqQ/mkGnmEBZx1A.jpg?size=730x448&quality=96&proxy=1&sign=7cd1a6fb238438e258d9a412733a704e&type=album"/></p><p>Далее нужно залить грани цветом. Для этого надо научиться заливать произвольные треугольники. Сначала нарисуем какие-нибудь треугольники:</p><p><img alt="https://sun9-66.userapi.com/impf/eRp1OwcLM3qDqixRZBjyZq5eJoKoKksKZzZU7A/yQFkVvnbBUk.jpg?size=573x440&quality=96&proxy=1&sign=9f2d007ddb6f44a7cfa9619499256533&type=album" src="https://sun9-66.userapi.com/impf/eRp1OwcLM3qDqixRZBjyZq5eJoKoKksKZzZU7A/yQFkVvnbBUk.jpg?size=573x440&quality=96&proxy=1&sign=9f2d007ddb6f44a7cfa9619499256533&type=album"/></p><p>Чтобы заполнить их цветом будем идти от левой линии до правой. Сначала отсортируем точки по y-координате и отобразим самую длинную линию зеленым цветом, а остальные красным:</p><p><img alt="https://sun9-28.userapi.com/impf/uArtb8qAmnF07FUjPQhk4rAWvzDhZ6fwlycXow/CbwElnyPMZE.jpg?size=555x473&quality=96&proxy=1&sign=d50555cd644bf0443e2eeb4c82015724&type=album" src="https://sun9-28.userapi.com/impf/uArtb8qAmnF07FUjPQhk4rAWvzDhZ6fwlycXow/CbwElnyPMZE.jpg?size=555x473&quality=96&proxy=1&sign=d50555cd644bf0443e2eeb4c82015724&type=album"/></p><p>Чтобы залить треугольники, отдельно зальем верхнюю и нижнюю части. Для этого нам нужно получить крайние слева и справа точки сторон треугольник, поэтому мы снова должны отрисовать их как отрезки, но сейчас уже можно не пользоваться Брезенхемом, потому что контура все равно в итоге не будет. Например покажем нижнюю часть для заливки:</p><p><img alt="https://sun9-68.userapi.com/impf/qkaJxK880TTmfplB4Keox0sd4HppJROcU5zIAw/2hXuoReVIHc.jpg?size=558x585&quality=96&proxy=1&sign=d944530cc9cbbe109773e6c54f60bc84&type=album" src="https://sun9-68.userapi.com/impf/qkaJxK880TTmfplB4Keox0sd4HppJROcU5zIAw/2hXuoReVIHc.jpg?size=558x585&quality=96&proxy=1&sign=d944530cc9cbbe109773e6c54f60bc84&type=album"/></p><p>Теперь мы можем залить эту часть треугольников например белым цветом, пройдя слева направо по каждой строчке от одной границы треугольника до другой:</p><p><img alt="https://sun9-53.userapi.com/impf/ORBbJiho1HAhqIWqkm7f9x9xTBsw5t8b8RId8Q/sxPo-QMB36E.jpg?size=573x630&quality=96&proxy=1&sign=ba123624473acd113704972ba0089e96&type=album" src="https://sun9-53.userapi.com/impf/ORBbJiho1HAhqIWqkm7f9x9xTBsw5t8b8RId8Q/sxPo-QMB36E.jpg?size=573x630&quality=96&proxy=1&sign=ba123624473acd113704972ba0089e96&type=album"/></p><p>Наконец, зальем аналогично и верхнюю часть и уберем границы:</p><p><img alt="https://sun9-31.userapi.com/impf/ldXaYnxNd5iDI6uvDPzr1tSijFzeRsk2WMFvyQ/zK16pQabEzU.jpg?size=577x602&quality=96&proxy=1&sign=cc08aeeebd134ff2b33cd27db99013ec&type=album" src="https://sun9-31.userapi.com/impf/ldXaYnxNd5iDI6uvDPzr1tSijFzeRsk2WMFvyQ/zK16pQabEzU.jpg?size=577x602&quality=96&proxy=1&sign=cc08aeeebd134ff2b33cd27db99013ec&type=album"/></p><p>Теперь мы можем отрисовать нашу модель, заполняя каждую грань случайным цветом:</p><p><img alt="https://sun9-61.userapi.com/impf/koIVwRjct2-TRo_DX7dbI2U-H1lcpYyJ_XBuLA/wVwSFtForig.jpg?size=801x801&quality=96&proxy=1&sign=9ee1ed444e907dc79d59462dcf6e7abb&type=album" src="https://sun9-61.userapi.com/impf/koIVwRjct2-TRo_DX7dbI2U-H1lcpYyJ_XBuLA/wVwSFtForig.jpg?size=801x801&quality=96&proxy=1&sign=9ee1ed444e907dc79d59462dcf6e7abb&type=album"/></p><p>Осталось посчитать свет каждой грани и отрисовать, удалив невидимые грани, и мы получим простейший рендеринг. Из физики известно, что количество света на поверхности равно скалярному произведению нормали поверхности на вектор источника света. Нормаль к треугольнику можно посчитать, как векторное произведение двух сторон, и затем нормаль мы должны нормировать, то есть сделать его длину равной 1:</p><p><img alt="https://sun9-59.userapi.com/impf/3CuuywppL_7D5Pn60-sverwjNdnX8CSPQYxyOw/by98xpVCUVw.jpg?size=807x606&quality=96&sign=16fae55906c0eeb0afe4749bd80144e4&type=album" src="https://sun9-59.userapi.com/impf/3CuuywppL_7D5Pn60-sverwjNdnX8CSPQYxyOw/by98xpVCUVw.jpg?size=807x606&quality=96&sign=16fae55906c0eeb0afe4749bd80144e4&type=album"/></p><p>Видим, что из-за того, что грани рисуются те, которые мы видим, и те, которые не видим, в случайном порядке. Из-за этого, так как задние(невидимые) грани не освещаются светом, они рисуются черным, портя нам изображение. Для решения этой проблемы мы могли бы просто удалить те грани, которые не видим, но для простоты удалим те грани, у которых освещенность отрицательная:</p><p><img alt="https://sun9-7.userapi.com/impf/bQwOx0QZooQAUkkHtc3DdH51dfUHcJpSclXyKw/TAEhw_Y2Q80.jpg?size=750x279&quality=96&proxy=1&sign=9308ca5c3bd0dbade9a932c435ef050b&type=album" src="https://sun9-7.userapi.com/impf/bQwOx0QZooQAUkkHtc3DdH51dfUHcJpSclXyKw/TAEhw_Y2Q80.jpg?size=750x279&quality=96&proxy=1&sign=9308ca5c3bd0dbade9a932c435ef050b&type=album"/></p><p>Таким образом мы сделали простейшее удаление невидимых граней, которое работало бы на выпуклых моделях. Но, у нас модель сложнее и поэтому вместо рта рисуются задние грани. Тем не менее, удаление граней по отрицательной освещенности можно использовать для оптимизации перед применением более сложных методов.</p><p>А именно, будем использовать z-buffer. Координату z будем интерполировать из треугольников в момент заливки цветом:</p><p><img alt="https://sun9-42.userapi.com/impf/2mGm0j0TyvGBwq6-R8B4MrhsJ4W-A2pO2169UQ/U6LsEzR1UR8.jpg?size=755x720&quality=96&proxy=1&sign=b0f3d7fbc5ab49f13f4eda32ea9272d7&type=album" src="https://sun9-42.userapi.com/impf/2mGm0j0TyvGBwq6-R8B4MrhsJ4W-A2pO2169UQ/U6LsEzR1UR8.jpg?size=755x720&quality=96&proxy=1&sign=b0f3d7fbc5ab49f13f4eda32ea9272d7&type=album"/></p><p>Накладываем текстуру:</p><p><img alt="https://sun9-67.userapi.com/impf/Giu4nW5zAW5pG-Z20f0cxCekNgTHhNqswXrKeQ/BOaKqUHKAs8.jpg?size=800x800&quality=96&proxy=1&sign=2c80d69af0ee20637e3853f33439a2f9&type=album" src="https://sun9-67.userapi.com/impf/Giu4nW5zAW5pG-Z20f0cxCekNgTHhNqswXrKeQ/BOaKqUHKAs8.jpg?size=800x800&quality=96&proxy=1&sign=2c80d69af0ee20637e3853f33439a2f9&type=album"/></p><p><a href="https://habr.com/en/post/434528/">Расшифровка трассировщика лучей размером с открытку</a></p><p><a href="https://habr.com/en/post/248153/">Краткий курс компьютерной графики: пишем упрощённый OpenGL своими руками, статья 1 из 6</a></p><p><a href="https://habr.com/ru/post/436790/">256 строчек голого C++: пишем трассировщик лучей с нуля за несколько часов</a></p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

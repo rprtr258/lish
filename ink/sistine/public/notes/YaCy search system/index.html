@@ -1,0 +1,72 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p>#someday_maybe #project</p><p>Распределённая система поиска P2P, никому не принадлежит, никому не подчиняется, ну просто класс. Сразу же возникли технические вопросы — а сколько она сгенерит трафика (ну не весь же веб она ко мне в локальный индекс притащит), а как там с действующими пирами, а... Ну, вы поняли. Аж захотелось попробовать.</p><p>Зашёл на сайт, и началось. С отключённым JS там тупо блоки друг на друга налезают, за такую вёрстку надо убивать просто сразу — это даже не техническая безграмотность, это какое-то дебильное и бессмысленное вредительство. Сама она написана на Java, ну спасибо, матерь ихнюю так. О возможности разделения на серверную и клиентскую часть — ни слова, во всяком случае с ходу; вот у меня есть сервер в датацентре, я бы ту часть, которая по вебу ползает и с пирами общается, там запустил, а с домашних машин уже бы к этому всему хозяйству обращался. Впрочем, даже если бы такая возможность была предусмотрена, я на своих серверах Java в любом случае поднимать не стану, это долго и не факт, что вообще получится. Под Openwall её придётся собирать из исходников, и в своё время с Erlang'ом у меня это не вышло, вот просто тупо не собралось с невнятной диагностикой, а Java пожирнее будет и уж наверняка покапризнее.</p><p>Короче, разбег на рубль, прыжок даже не на копейку, а на грошик ломаный. В нынешнем виде это не взлетит.</p><p>Что нужно, чтобы она взлетела? Нужно говорить не о "программе", а о системе с открытым протоколом. Нужно подробно, вдумчиво документировать этот протокол, чтобы кто-нибудь мог сделать альтернативную реализацию хотя бы серверной части. Потом нужно найти того (тех), кто реально это сделает на чистом Си или хотя бы на C++. Вот после этого появится призрачный шанс, что оно хоть как-то взлетит.</p><p>А вообще поисковики, как я уже говорил, зло. Они тупо брутфорсят проблему, требующую аккуратного и вдумчивого решения. И я сильно сомневаюсь, что вот этой "грубой силы" окажется достаточно (хоть для какой-то осмысленной работы) у любой системы, пусть и распределённой, если в неё не вбухано много-много ярдов баксов, как в поисковики гугла и яндекса. Но проблемы надо решать не грубой силой, а приложением интеллекта; вместо поисковиков с их огромными тупыми индексами нужно разрабатывать распределённые системы каталогизации и классификации. Вот только пользоваться этим никто не будет, пока есть гугл. Выхода из ситуации я не вижу.</p>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>

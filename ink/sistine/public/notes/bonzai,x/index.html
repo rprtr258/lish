@@ -1,0 +1,82 @@
+<!doctype html>
+
+<head>
+    <title>Sistine</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Newsreader:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <!-- Facebook Open Graph tags -->
+    <meta property="og:url" content="https://sistine.vercel.app" />
+    <meta property="og:title" content="Sistine, the static site engine" />
+    <meta property="og:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta property="og:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+
+    <!-- Twitter Card (large image card) tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@thesephist">
+    <meta name="twitter:title" content="Sistine, the static site engine">
+    <meta name="twitter:description" content="A simple, flexible, productive static site engine written in Ink" />
+    <meta name="twitter:image" content="https://sistine.vercel.app/img/sistine-screenshot.png" />
+</head>
+
+
+<body>
+<main>
+    <header>
+    <nav class="left-nav">
+        <a href="/"><strong>Sistine</strong></a>
+        <a href="/docs/">Docs</a>
+        <a href="/start/">Get started</a>
+    </nav>
+    <nav class="right-nav">
+        <a href="https://github.com/thesephist/sistine">GitHub</a>
+    </nav>
+</header>
+
+
+    <article>
+        
+<div class="breadcrumbs">
+    
+        
+        
+    
+        
+        <span class="breadcrumb-item">
+            <a href="/notes/">Notes</a>
+        </span>
+        
+    
+</div>
+
+
+        
+        <p>#project</p><ul><li>random.org like funcs</li><li>on bonzai</li></ul><p>https://github.com/rwxrob/bonzai https://github.com/rwxrob/z/blob/main/main.go</p><ul><li>blog posts creation<ul><li>one small note, big note</li><li>repost to telegram</li><li>month, year report</li></ul></li><li>dns lookup with all record types by default</li><li>save cheatsheets, notes for commands/configs/etc. https://github.com/cheat/cheat<ul><li>в <code>x</code> и на сайт</li><li>ascii таблица</li><li>краткие справки по командам</li><li>git commands cheatsheets, ascii illustrations</li></ul></li><li>networking info dump https://github.com/rprtr258/x/pull/3</li></ul><p>  <br/></p><pre><code data-lang="embed">title: 'Dangit, Git!?!'
+image: 'https://dangitgit.com/favicon-32x32.png'
+description: 'Git is hard: messing up is easy, and figuring out how to fix your mistakes is impossible. Git documentation has this chicken and egg problem where you can’t search for how to get yourself out of a mess, unless you already know the name of the thing you need to know about in order to fix your problem…'
+url: 'https://dangitgit.com/'</code></pre><p>https://www.kdnuggets.com/publications/sheets/Git<em>Cheatsheet</em>KDnuggets.pdf</p><pre><code data-lang="embed">title: '7 tips for improving your productivity with Git'
+image: 'https://res.cloudinary.com/practicaldev/image/fetch/s--5fM3nWOL--/c_imagga_scale,f_auto,fl_progressive,h_500,q_auto,w_1000/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/m5yq9kgbcn6zr034k7r4.jpg'
+description: 'Introduction Git is the most popular source control system with an incredible 93.87% of...'
+url: 'https://dev.to/dgenezini/7-tips-for-improving-your-productivity-with-git-ajg'</code></pre><pre><code data-lang="embed">title: 'GitHub - cheat/cheat: cheat allows you to create and view interactive cheatsheets on the command-line. It was designed to help remind *nix system administrators of options for commands that they use frequently, but not frequently enough to remember.'
+image: 'https://opengraph.githubassets.com/995c69c68ab404bcc8cd97853be83c7fde97c34a9602d03b79788a41d0d22987/cheat/cheat'
+description: 'cheat allows you to create and view interactive cheatsheets on the command-line. It was designed to help remind *nix system administrators of options for commands that they use frequently, but not ...'
+url: 'https://github.com/cheat/cheat'</code></pre><pre><code data-lang="sql">GRANT SELECT, INSERT ON TABLE users TO appuser -- Grant permissions on a table
+REVOKE DELETE ON TABLE users FROM appuser      -- Revoke permission on a table</code></pre><p>https://github.com/chubin/cheat.sheets/blob/master/sheets/apt-get https://github.com/chubin/cheat.sheets/blob/master/sheets/convert https://github.com/chubin/cheat.sheets/blob/master/sheets/df https://github.com/chubin/cheat.sheets/blob/master/sheets/du https://github.com/chubin/cheat.sheets/blob/master/sheets/htop https://github.com/chubin/cheat.sheets/blob/master/sheets/proc https://github.com/chubin/cheat.sheets/blob/master/sheets/ss https://github.com/chubin/cheat.sheets/blob/master/sheets/ssh [[reference/devops, sre, admin/devops, sre, admin#ssh]]</p><ul><li>twitch chat integration</li></ul><p>    <code>x twitch chat satont | rg coopert1no | x twitch send satont</code> repeats <code>coopert1no</code> messages</p><ul><li>gtd integration<ul><li>reference dir</li><li>in dir</li></ul></li><li>key-value configs, file saving using <a href="https://github.com/charmbracelet/charm">https://github.com/charmbracelet/charm</a></li><li>command configuration using <a href="https://github.com/BoRuDar/configuration">https://github.com/BoRuDar/configuration</a> or similar</li><li>store password, give back by master password</li><li>random music from saved musics</li></ul><pre><code data-lang="sh">find /mnt/hdd/music -name '*.mp3' | rg -iv '(BIG RUSSIAN BOSS|oxxxymiron)' | shuf -n1 | python3 -c 'import pathlib;print(pathlib.Path(input()).stem)' | python3 ~/abobus.py</code></pre><ul><li>https://devhints.io/</li></ul>
+    </article>
+
+    <footer>
+    <p>
+        Sistine is a project by
+        <a href="https://thesephist.com/" target="_blank">Linus</a>
+        built with
+        <a href="https://dotink.co/" target="_blank">Ink</a>.
+    </p>
+</footer>
+
+</main>
+
+<script src="/js/main.js"></script>
+
+</body>
