@@ -27,7 +27,4 @@ writeFile := (path, data, cb) => delete(path, evt => evt.type :: {
   _ -> cb(())
 })
 
-{
-  readFile: readFile
-  writeFile: writeFile
-}
+{readFile, writeFile}

@@ -89,11 +89,11 @@ each := (it, f) => (
 collect := it => foldl(it, (acc, x) => acc.(len(acc)) := x, [])
 
 {
-  range: range
-  map: map
-  foldl: foldl
-  generate: generate
-  takeWhile: takeWhile
-  collect: collect
-  each: each
+  range
+  map
+  foldl
+  generate
+  takeWhile
+  collect
+  each
 }

@@ -263,34 +263,34 @@ format := (raw, values) => (
 )
 
 {
-  upper?: upper?
-  lower?: lower?
-  digit?: digit?
-  letter?: letter?
-  ws?: ws?
-  hasPrefix?: hasPrefix?
-  hasSuffix?: hasSuffix?
-  matchesAt?: matchesAt?
-  index: index
-  contains?: contains?
-  lower: lower
-  upper: upper
-  title: title
-  replace: replace
-  chars: chars
-  split: split
-  trimPrefixNonEmpty: trimPrefixNonEmpty
-  trimPrefix: trimPrefix
-  trimSuffixNonEmpty: trimSuffixNonEmpty
-  trimSuffix: trimSuffix
-  trim: trim
-  hToN: hToN
-  nToH: nToH
-  hex: hex
-  xeh: xeh
-  stringList: stringList
-  join: join
-  encode: encode
-  decode: decode
-  format: format
+  upper?
+  lower?
+  digit?
+  letter?
+  ws?
+  hasPrefix?
+  hasSuffix?
+  matchesAt?
+  index
+  contains?
+  lower
+  upper
+  title
+  replace
+  chars
+  split
+  trimPrefixNonEmpty
+  trimPrefix
+  trimSuffixNonEmpty
+  trimSuffix
+  trim
+  hToN
+  nToH
+  hex
+  xeh
+  stringList
+  join
+  encode
+  decode
+  format
 }

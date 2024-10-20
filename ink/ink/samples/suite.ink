@@ -38,19 +38,10 @@ label => (
       expected -> s.passed := s.passed + 1
       _ -> s.msgs.(len(s.msgs)) := f('  * {{ label }}
   {{ indent }}got {{ result }}
-  {{ indent }}exp {{ expected }}', {
-        label: label
-        result: result
-        expected: expected
-        indent: indent
-      })
+  {{ indent }}exp {{ expected }}', {label, result, expected, indent})
     }
   )
 
   # expose API functions
-  {
-    mark: mark
-    test: test
-    end: end
-  }
+  {mark, test, end}
 )

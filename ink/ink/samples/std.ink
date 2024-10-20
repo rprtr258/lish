@@ -22,16 +22,13 @@ slice := (s, start, end) => (
     end := mmin(end, max)
     start := mmin(start, end)
 
-    {
-      start: start
-      end: end
-    }
+    {start, end}
   )
 
   # bounds checks
-  x := clamp(start, end, 0, len(s))
-  start := x.start
-  max := x.end - start
+  {start: xstart, end: xend} := clamp(start, end, 0, len(s))
+  start := xstart
+  max := xend - start
 
   (sub := (i, acc) => i :: {
     max -> acc
@@ -53,8 +50,4 @@ clone := x => (
   }
 )
 
-{
-  scan: scan
-  slice: slice
-  clone: clone
-}
+{scan, slice, clone}

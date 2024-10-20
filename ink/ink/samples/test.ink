@@ -433,7 +433,7 @@ m('bitwise operations on byte strings')
 
 m('min/max')
 (
-  {min: min, max: max} := functional
+  {min, max} := functional
 
   t('min of list of 1', min([~30]), ~30)
   t('minimum of list', min([39, 254, 5, ~2, 0, 3]), ~2)
@@ -471,7 +471,7 @@ m('logic composition correctness, std.some/std.every')
   t('f ^ t', false ^ true, true)
   t('f ^ f', false ^ false, false)
 
-  {some: some, every: every} := functional
+  {some, every} := functional
 
   t('std.some() of empty list is false', some([]), false)
   t('std.every() of empty list is true', every([]), true)
@@ -688,8 +688,8 @@ m('type() builtin function')
 
 m('std.range/slice/append/join/cat and stringList')
 (
-  {stringList: stringList, join: cat} := str
-  {range: range, reverse: reverse} := functional
+  {stringList, join: cat} := str
+  {range, reverse} := functional
   slice := std.slice
 
   # slice returns copies
@@ -747,7 +747,7 @@ m('std.range/slice/append/join/cat and stringList')
 
 m('hexadecimal conversions, hex & xeh')
 (
-  {hex: hex, xeh: xeh} := str
+  {hex, xeh} := str
 
   # base cases
   t('hex(0)', hex(0), '0')
@@ -773,7 +773,7 @@ m('hexadecimal conversions, hex & xeh')
 
 m('ascii <-> char point conversions and string encode/decode')
 (
-  {encode: encode, decode: decode} := str
+  {encode, decode} := str
 
   s1 := 'this is a long piece of string
   with weird line
@@ -797,10 +797,7 @@ m('ascii <-> char point conversions and string encode/decode')
 
 m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
 (
-  {
-    map: map, filter: filter, reduce: reduce, reduceBack: reduceBack,
-    each: each, reverse: reverse, flatten: flatten, append: append,
-  } := functional
+  {map, filter, reduce, reduceBack, each, reverse, flatten, append} := functional
 
   list := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -857,7 +854,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
 
 m('std.format -- the standard library formatter / templater')
 (
-  {format: f, stringList: stringList} := str
+  {format: f, stringList} := str
 
   values := {
     first: 'ABC'
@@ -892,8 +889,8 @@ m('std.format -- the standard library formatter / templater')
 m('uuid -- uuid v4 generator')
 (
   uuid := import('uuid.ink')
-  {xeh: xeh, split: split} := str
-  {range: range, map: map, every: every, reduce: reduce} := functional
+  {xeh, split} := str
+  {range, map, every, reduce} := functional
 
   uuids := map(range(0, 200, 1), uuid)
 
@@ -1015,8 +1012,8 @@ me')
 
 m('str.upper/lower/digit/letter/ws? -- checked char ranges')
 (
-  {upper?: upper?, lower?: lower?, digit?: digit?, letter?: letter?, ws?: ws?} := str
-  {every: every, some: some, map: map} := functional
+  {upper?, lower?, digit?, letter?, ws?} := str
+  {every, some, map} := functional
 
   t('upper? verifies uppercase letters'
     every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZ', upper?)), true)
@@ -1040,7 +1037,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('ws? rejects all non-whitespace'
     some(map('jafsioSINDFOEJ#@%@()_#9u40529' + char(250), ws?)), false)
 
-  {hasPrefix?: hasPrefix?, hasSuffix?: hasSuffix?} := str
+  {hasPrefix?, hasSuffix?} := str
 
   t('hasPrefix? detects prefix'
     hasPrefix?('programming', 'prog'), true)
@@ -1109,7 +1106,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('contains? = false if not contained'
     contains?('quick brown fox', 'lazy dog'), false)
 
-  {lower: lower, upper: upper, title: title} := str
+  {lower, upper, title} := str
   given := 'MIXED case StrinG with ?!~:punct'
 
   t('lower transforms string to lowercase'
@@ -1147,7 +1144,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('returns one chunk if no match of delimiter found'
     split('no taste whatsoever!', 'grand'), ['no taste whatsoever!'])
 
-  {trimPrefix: trimPrefix, trimSuffix: trimSuffix, trim: trim} := str
+  {trimPrefix, trimSuffix, trim} := str
 
   t('trimPrefix is a no-op with empty string'
     trimPrefix('???????what???', ''), '???????what???')

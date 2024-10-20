@@ -19,7 +19,7 @@ fastappend := (base, child, baseLength, childLength) => (
 # utility to time things
 startTime := time()
 mk := msg => log(f('{{ time }}ms -> {{ msg }}', {
-  msg: msg
+  msg
   time: floor((time() - startTime) * 1000)
 }))
 

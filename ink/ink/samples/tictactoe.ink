@@ -106,7 +106,7 @@ stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
       )
       # the cell is already occupied, try again
       _ -> (
-        log(f('{{ idx }} is already taken!', {idx: idx}))
+        log(f('{{ idx }} is already taken!', {idx}))
         out(f('Move for player {{ player }}: ', {
           player: Label.(getPlayer(bd))
         }))

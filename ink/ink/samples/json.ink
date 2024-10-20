@@ -49,8 +49,8 @@ reader := s => (
   }
 
   {
-    next: next
-    peek: peek
+    next
+    peek
     # fast-forward through whitespace
     ff: () => (sub := () => ws?(peek()) :: {
       true -> (

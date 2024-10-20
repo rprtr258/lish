@@ -26,18 +26,9 @@ TODO: ({
 `
 # req := req
 
-methodNoBody := method => (url, headers, cb) => req({
-  method: method
-  url: url
-  headers: headers
-}, cb)
+methodNoBody := method => (url, headers, cb) => req({method, url, headers}, cb)
 
-methodBody := method => (url, body, headers, cb) => req({
-  method: method
-  url: url
-  headers: headers
-  body: body
-}, cb)
+methodBody := method => (url, body, headers, cb) => req({method, url, headers, body}, cb)
 
 {
   get:     methodNoBody('GET')     # (string, {[string]: string}, Response => T) => T

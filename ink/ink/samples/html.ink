@@ -6,7 +6,7 @@ map := import('functional.ink').map
 classes := classes => join(classes, ' ')
 el := (tag, attrs, children) =>
   f('<{{ tag }}{{ props }}>{{ children }}</{{ tag }}>', {
-    tag: tag
+    tag
     props: len(attrs) :: {
       0 -> ''
       _ -> ' ' + join(map(keys(attrs), k => (
@@ -20,8 +20,8 @@ el := (tag, attrs, children) =>
 bindEl := tag => (props, children) => el(tag, props, children)
 
 {
-  classes: classes
-  el: el
+  classes
+  el
   title: s => el('title', {}, s)
   meta:   bindEl('meta')
   link:   bindEl('link')

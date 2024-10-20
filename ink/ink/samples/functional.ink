@@ -159,25 +159,25 @@ max := numbers => reduce(numbers, (acc, n) => n > acc :: {
 }, numbers.0)
 
 {
-  map: map
-  flatmap: flatmap
-  filter: filter
-  each: each
-  find: find
-  indexOf: indexOf
-  pipe: pipe
-  reduce: reduce
-  reduceBack: reduceBack
-  append: append
-  flatten: flatten
-  some: some
-  every: every
-  reverse: reverse
-  objReduce: objReduce
-  objFilter: objFilter
-  listToObj: listToObj
-  objToList: objToList
-  range: range
-  min: min
-  max: max
+  map
+  flatmap
+  filter
+  each
+  find
+  indexOf
+  pipe
+  reduce
+  reduceBack
+  append
+  flatten
+  some
+  every
+  reverse
+  objReduce
+  objFilter
+  listToObj
+  objToList
+  range
+  min
+  max
 }

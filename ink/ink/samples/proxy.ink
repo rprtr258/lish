@@ -60,14 +60,14 @@ handleRequest := (data, end) => (
 # handles when proxied request fails
 handleProxyError := (dest, data, end) => (
   log(f('Error in proxied request to {{ dest }}: {{ err }}', {
-    dest: dest
+    dest
     err: data.message
   }))
   end({
     status: 502
     headers: DefaultHeaders
     body: f('proxied service {{ dest }} was not available for {{ url }}', {
-      dest: dest
+      dest
       url: data.url
     })
   })
@@ -76,7 +76,7 @@ handleProxyError := (dest, data, end) => (
 # handles when proxied request succeeds
 handleProxyResponse := (dest, data, end) => (
   log(f('Proxied {{ dest }} success', {
-    dest: dest
+    dest
   }))
   end({
     status: data.status

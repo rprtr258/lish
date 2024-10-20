@@ -45,6 +45,6 @@ sortBy := (v, pred) => (
 sort! := v => sortBy(v, x => x)
 
 {
-  sort!: sort!
+  sort!
   sort: v => sort!(clone(v))
 }

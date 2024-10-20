@@ -55,7 +55,7 @@ Logger := (name) => (
 `
 Logger := (name) => (
   this := {
-    name: name
+    name
     logLevel: Level.INFO
     format: '[{{level}}] {{message}}\n' # TODO: format func
     fields: {}
@@ -69,7 +69,7 @@ Logger := (name) => (
         Level.ERROR    -> 'ERROR'
         Level.CRITICAL -> 'CRITICAL'
       }
-      message: message
+      message
       fields: this.fields
     }))
   }
@@ -92,9 +92,9 @@ Logger := (name) => (
 logger := Logger('root')
 
 {
-  Level: Level
-  Logger: Logger
-  logger: logger
+  Level
+  Logger
+  logger
   debug: logger.debug
   info: logger.info
   warn: logger.warn
