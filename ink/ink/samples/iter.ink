@@ -87,3 +87,8 @@ each := (it, f) => (
 )
 
 collect := it => foldl(it, (acc, x) => acc.(len(acc)) := x, [])
+
+{
+  range: range
+  each: each
+}
