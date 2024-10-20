@@ -203,7 +203,7 @@ func inkLoad(ctx *Context, in []Value) (Value, *Err) {
 	// imports via load() are assumed to be relative
 	importPath := string(givenPath) + ".ink"
 	if !filepath.IsAbs(importPath) {
-		importPath = filepath.Join(ctx.Cwd, importPath)
+		importPath = filepath.Join(ctx.WorkingDirectory, importPath)
 	}
 
 	// evalLock blocks file eval; temporary unlock it for the load to run.
@@ -212,8 +212,8 @@ func inkLoad(ctx *Context, in []Value) (Value, *Err) {
 	ctx.Engine.mu.Unlock()
 	defer ctx.Engine.mu.Lock()
 
-	childCtx, prs := ctx.Engine.Contexts[importPath]
-	if !prs {
+	childCtx, ok := ctx.Engine.Contexts[importPath]
+	if !ok {
 		// The loaded program runs in a "child context", a distinct context from
 		// the importing program. The "child" term is a bit of a misnomer as Contexts
 		// do not exist in a hierarchy, but conceptually makes sense here.
@@ -223,8 +223,7 @@ func inkLoad(ctx *Context, in []Value) (Value, *Err) {
 		// Execution here follows updating ctx.Engine.Contexts
 		// to behave correctly in the case where A loads B loads A again,
 		// and still only import one instance of A.
-		err := childCtx.ExecPath(importPath)
-		if err != nil {
+		if err := childCtx.ExecPath(importPath); err != nil {
 			return nil, &Err{ErrRuntime, fmt.Sprintf("error importing file %s", importPath)}
 		}
 	}

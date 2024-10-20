@@ -760,8 +760,8 @@ func (n NodeIdentifierEmpty) Eval(*Scope, bool) (Value, *Err) {
 }
 
 func (n NodeIdentifier) Eval(scope *Scope, _ bool) (Value, *Err) {
-	val, prs := scope.Get(n.val)
-	if !prs {
+	val, ok := scope.Get(n.val)
+	if !ok {
 		return nil, &Err{ErrRuntime, fmt.Sprintf("%s is not defined [%s]", n.val, poss(n))}
 	}
 	return val, nil
@@ -923,10 +923,10 @@ func (eng *Engine) CreateContext() *Context {
 }
 
 // Context represents a single, isolated execution context with its global heap,
-// imports, call stack, and cwd (working directory).
+// imports, call stack, and working directory.
 type Context struct {
-	// Cwd is an always-absolute path to current working dir (of module system)
-	Cwd string
+	// WorkingDirectory is absolute path to current working dir (of module system)
+	WorkingDirectory string
 	// currently executing file's path, if any
 	File   string
 	Engine *Engine
@@ -936,7 +936,7 @@ type Context struct {
 
 func (ctx *Context) resetWd() {
 	var err error
-	ctx.Cwd, err = os.Getwd()
+	ctx.WorkingDirectory, err = os.Getwd()
 	if err != nil {
 		log.Fatal().Err(err).Stringer("kind", ErrSystem).Msg("could not identify current working directory")
 	}
@@ -987,7 +987,7 @@ func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 // ExecPath is a convenience function to Exec() a program file in a given Context.
 func (ctx *Context) ExecPath(filePath string) *Err {
 	// update Cwd for any potential load() calls this file will make
-	ctx.Cwd = filepath.Dir(filePath)
+	ctx.WorkingDirectory = filepath.Dir(filePath)
 	ctx.File = filePath
 
 	file, err := os.Open(filePath)
