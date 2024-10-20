@@ -1,5 +1,4 @@
 # traceur 🔭
-
 Traceur (pronounced like _trace_ + _connoisseur_) is an experimental path tracing 3D renderer written in [Ink](https://github.com/thesephist/ink), a dynamically-typed, functional programming language I created. You can read more about Traceur in my [blog post about it](https://dotink.co/posts/traceur/) on the Ink language blog.
 
 ![Header image render](img/main.bmp)
@@ -7,7 +6,6 @@ Traceur (pronounced like _trace_ + _connoisseur_) is an experimental path tracin
 There is also a direct and well-optimized Web and JavaScript port of Traceur at [thesephist/traceur-web](https://github.com/thesephist/traceur-web). If you want a taste of how path tracing in Traceur works, you can try an interactive demo at [traceur-web.thesephist.repl.co](https://traceur-web.thesephist.repl.co/).
 
 ## Motivation
-
 Traceur isn't meant to be a path tracer for everyday use or for generating large, high quality renders. It's more of a proof of concept for using Ink in a substantial, nontrivial project, and it was my introduction into physically based rendering and path tracing.
 
 Traceur has two goals.
@@ -16,7 +14,6 @@ Traceur has two goals.
 2. **Testing Ink on a non-trivial and interesting project.** Traceur is only the third non-trivial project written in Ink, following [Polyx](https://github.com/thesephist/polyx) and [inkfmt](https://github.com/thesephist/inkfmt). As a part of building Traceur, I created conventions for how to organize Ink projects of this size, around `lib` for first-party shared libraries, `vendor` for third-party or stdlib dependencies, and `test` for tests, with main programs residing at the root of the project, like `traceur.ink`. Traceur is also the most substantial Ink project to date in the level of compute **performance** it requires. Ink is designed quite poorly for numerical workloads, so it doesn't fare well, but Traceur demonstrated an upper limit in the performance gap that can exist between low level, compiled languages and Ink's standard Go-based interpreter.
 
 ## Design and progress
-
 Traceur is a straightforward path tracer that follows rays cast (with some pseudorandom noise) from the camera lens through each pixel in the viewport. It finds intersections and hit points on spheres, the only shape currently supported, analytically. Following the path tracing guide above, Traceur currently supports:
 
 - Spheres and "planes" approximated with large spheres
@@ -27,7 +24,6 @@ Traceur is a straightforward path tracer that follows rays cast (with some pseud
 - Saving to a `.bmp` bitmap image format
 
 ### Future work
-
 There's a few things I'd like to explore in either this project or traceur-web going forward.
 
 - Triangle mesh and rectangular shapes
@@ -37,7 +33,6 @@ There's a few things I'd like to explore in either this project or traceur-web g
 - Lighting and object-based illumination, including accurate caustics
 
 ## Usage
-
 Make sure you have Ink installed on your system, and `inkfmt` installed for `make fmt`.
 
 - `make` (or `make run`) to run the path tracer. The output file defaults to `./out.bmp`

@@ -250,7 +250,7 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "in(): " + err, pos}
 	}
 
-	cbErr := func(err error) {
+	cbErr := func(err *Err) {
 		LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to in(), %s", err.Error()), pos})
 	}
 
@@ -268,7 +268,7 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 				"data": ValueString(str),
 			})
 			if errEval != nil {
-				cbErr(err)
+				cbErr(errEval)
 				return
 			}
 
@@ -322,7 +322,7 @@ func inkDir(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "dir(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to dir(), %s", err.Error()), pos})
 		}
@@ -379,7 +379,7 @@ func inkMake(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "make(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to make(), %s", err.Error()), pos})
 		}
@@ -401,7 +401,7 @@ func inkMake(ctx *Context, in []Value) (Value, *Err) {
 		}
 
 		ctx.ExecListener(func() {
-			_, err = evalInkFunction(cb, false, pos, ValueComposite{
+			_, err := evalInkFunction(cb, false, pos, ValueComposite{
 				"type": ValueString("end"),
 			})
 			cbMaybeErr(err)
@@ -425,7 +425,7 @@ func inkStat(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "stat(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to stat(): %s", err.Error()), pos})
 		}
@@ -491,7 +491,7 @@ func inkRead(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "read(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to read(): %s", err.Error()), pos})
 		}
@@ -532,7 +532,7 @@ func inkRead(ctx *Context, in []Value) (Value, *Err) {
 		if err == io.EOF && count == 0 {
 			// if first read returns EOF, it may just be an empty file
 			ctx.ExecListener(func() {
-				_, err = evalInkFunction(cb, false, pos, ValueComposite{
+				_, err := evalInkFunction(cb, false, pos, ValueComposite{
 					"type": ValueString("data"),
 					"data": ValueString{},
 				})
@@ -545,7 +545,7 @@ func inkRead(ctx *Context, in []Value) (Value, *Err) {
 		}
 
 		ctx.ExecListener(func() {
-			_, err = evalInkFunction(cb, false, pos, ValueComposite{
+			_, err := evalInkFunction(cb, false, pos, ValueComposite{
 				"type": ValueString("data"),
 				"data": ValueString(buf[:count]),
 			})
@@ -574,7 +574,7 @@ func inkWrite(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "write(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to write(): %s", err.Error()), pos})
 		}
@@ -624,7 +624,7 @@ func inkWrite(ctx *Context, in []Value) (Value, *Err) {
 		}
 
 		ctx.ExecListener(func() {
-			_, err = evalInkFunction(cb, false, pos, ValueComposite{
+			_, err := evalInkFunction(cb, false, pos, ValueComposite{
 				"type": ValueString("end"),
 			})
 			cbMaybeErr(err)
@@ -648,7 +648,7 @@ func inkDelete(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "delete(): " + err, pos}
 	}
 
-	cbMaybeErr := func(err error) {
+	cbMaybeErr := func(err *Err) {
 		if err != nil {
 			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to delete(): %s", err.Error()), pos})
 		}
@@ -671,7 +671,7 @@ func inkDelete(ctx *Context, in []Value) (Value, *Err) {
 		}
 
 		ctx.ExecListener(func() {
-			_, err = evalInkFunction(cb, false, pos, ValueComposite{
+			_, err := evalInkFunction(cb, false, pos, ValueComposite{
 				"type": ValueString("end"),
 			})
 			cbMaybeErr(err)
