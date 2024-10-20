@@ -48,10 +48,10 @@ func LogError(err *Err) {
 func LogErr(ctx *Context, err *Err) {
 	msg := err.message
 	if ctx.File != "" {
-		msg += " in " + ctx.File
+		msg += " in " + ctx.File // TODO: is needed meaning we already have our position in error itself
 	}
 
-	LogError(&Err{err.reason, msg})
+	LogError(&Err{err.reason, msg, err.pos})
 }
 
 func LogScope(scope *Scope) {

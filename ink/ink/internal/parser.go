@@ -254,11 +254,11 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) *Err {
 		return nil
 	}
 
-	if len(tokens) > 0 {
-		return &Err{ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1])}
+	if len(tokens) == 0 {
+		return &Err{ErrSyntax, fmt.Sprintf("unexpected end of input"), position{}} // TODO: report filename and position
 	}
 
-	return &Err{ErrSyntax, fmt.Sprintf("unexpected end of input")}
+	return &Err{ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].position}
 }
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
@@ -490,7 +490,7 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 			position:  nextTok.position,
 		}, idx, nil
 	default:
-		return nil, 0, &Err{ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok)}
+		return nil, 0, &Err{ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.position}
 	}
 }
 
@@ -615,7 +615,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			}
 
 			if tokens[idx].kind != KeyValueSeparator {
-				return nil, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx])}
+				return nil, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.position}
 			}
 
 			idx++
@@ -670,7 +670,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			position: tok.position,
 		}, idx, nil
 	default:
-		return nil, 0, &Err{ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok)}
+		return nil, 0, &Err{ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.position}
 	}
 
 	// bounds check here because parseExpression may have
@@ -733,7 +733,7 @@ func parseMatchClause(tokens []Token) (NodeMatchClause, int, *Err) {
 	}
 
 	if tokens[idx].kind != CaseArrow {
-		return NodeMatchClause{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx])}
+		return NodeMatchClause{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].position}
 	}
 	idx++ // CaseArrow
 
@@ -784,7 +784,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 			}
 
 			if tokens[idx].kind != Separator {
-				return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx])}
+				return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].position}
 			}
 			idx++ // Separator
 		}
@@ -793,7 +793,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 			return NodeLiteralFunction{}, 0, err
 		}
 		if tokens[idx].kind != ParenRight {
-			return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx])}
+			return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].position}
 		}
 		idx++ // RightParen
 	case Identifier:
@@ -803,7 +803,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 		idNode := NodeIdentifierEmpty{tok.position}
 		arguments = append(arguments, idNode)
 	default:
-		return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok)}
+		return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.position}
 	}
 
 	if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
@@ -811,7 +811,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 	}
 
 	if tokens[idx].kind != FunctionArrow {
-		return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx])}
+		return NodeLiteralFunction{}, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].position}
 	}
 	idx++ // FunctionArrow
 

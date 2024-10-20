@@ -33,8 +33,9 @@ const (
 type Err struct {
 	reason  ErrorReason
 	message string
+	pos     position
 }
 
 func (e Err) Error() string {
-	return fmt.Sprintf("%s error: %s", e.reason, e.message)
+	return fmt.Sprintf("%s error: %s [%s]", e.reason, e.message, e.pos)
 }

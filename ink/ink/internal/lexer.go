@@ -77,6 +77,10 @@ type position struct {
 }
 
 func (p position) String() string {
+	if p == (position{}) {
+		return "??:??:??"
+	}
+
 	return fmt.Sprintf("%s:%d:%d", p.file, p.line, p.col)
 }
 
@@ -141,8 +145,7 @@ func tokenize(file string, r io.Reader) <-chan Token {
 			case unicode.IsDigit(rune(cbuf[0])):
 				f, err := strconv.ParseFloat(string(cbuf), 64)
 				if err != nil {
-					message := fmt.Sprintf("can't parse number at %d:%d: %s", lineNo, colNo, err.Error())
-					LogError(&Err{ErrSyntax, message})
+					LogError(&Err{ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), position{file, lineNo, colNo - len(cbuf)}})
 				}
 				simpleCommit(Token{
 					num:      f,
