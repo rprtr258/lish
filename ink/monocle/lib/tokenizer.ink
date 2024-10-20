@@ -89,3 +89,6 @@ tokenize := s => (
   }, {})
 )
 
+{
+  tokenize: tokenize
+}

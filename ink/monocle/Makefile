@@ -61,6 +61,7 @@ watch:
 	ls lib/*.ink src/*.ink modules/*.ink | entr make build
 
 # run all tests under test/
+.PHONY: test
 test:
 	ink ./test/main.ink
 

@@ -2,7 +2,7 @@
 
 tokenize := import('../lib/tokenizer.ink').tokenize
 
-run := (m, t) => (
+(m, t) => (
   m('tokenize')
   (
     t(
@@ -50,4 +50,3 @@ run := (m, t) => (
     )
   )
 )
-
