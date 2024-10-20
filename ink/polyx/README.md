@@ -1,5 +1,4 @@
 # Polyx
-
 Productivity suite written from scratch in [Ink](https://github.com/thesephist/ink) on the backend, and Ink (with [September](https://github.com/thesephist/september)) and [Torus](https://github.com/thesephist/torus) on the web.
 
 Polyx is a project currently in progress, and aims to replace all of my day-to-day productivity software with home-grown tools I can deploy anywhere that gives me 100% control over data and deployment. I can probably cover 80% of my use cases and value with existing solutions (I'm moving to Polyx from Dropbox, Simplenote, Todoist, and Pocket), but I like building my own solutions, and these tools are designed to fit my personal workflows perfectly, so I don't have to change how I work to fit my tools.
@@ -7,7 +6,6 @@ Polyx is a project currently in progress, and aims to replace all of my day-to-d
 I've written at length about my approach to tools and workflows [on my blog](https://thesephist.com/posts/tools/).
 
 ## Applications
-
 The Polyx suite of software currently contains six applications.
 
 - Noct: distributed file syncing
@@ -18,7 +16,6 @@ The Polyx suite of software currently contains six applications.
 - Fortress: service supervisor
 
 ### Noct
-
 Noct is in many ways my Dropbox replacement and manages a set of unified filesystems across my devices. I depend on Noct to:
 
 - Keep a directory of all of my files synchronized across machines
@@ -47,7 +44,6 @@ noct sync --remote <remote addr> <sync root dir>
 - Currently, there is no way to sync a sub-directory of the target root directory, because my workflow never needs it. If this changes in the future, we may introduce a `--part` flag to sync a sub-path in a partial sync.
 
 ### Ligature
-
 Ligature is where I take, keep, and archive all of my notes. I use Ligature notes to:
 
 - Keep track of [long-term goals](https://linus.zone/goalpost)
@@ -69,7 +65,6 @@ The `--db` configuration is optional (defaults to CWD) and points the server to 
 Ligature is temporarily running as an systemd service, until Fortress is ready for production.
 
 ### Sigil
-
 Sigil is a task manager and to-do list specifically designed for my workflow. I've used basically every popular task manager out there from Things to Wunderlist, Trello, Apple Reminders, and even pen-and-paper. Most recently, I used Todoist, which has fit my workflow best. Since 2015, I've used Todoist as my full-time and only task manager. But even that doesn't exactly cater to the way I want to work. So Sigil is designed for me, and nobody else, to fit my existing workflow. This mean Sigil has some quirks as a consequence of how I organize tasks.
 
 - Tasks have no notion of reminders or due dates (I use neither), but instead have granular priorities.
@@ -78,11 +73,9 @@ Sigil is a task manager and to-do list specifically designed for my workflow. I'
 - The flow is optimized for fast entry of ideas into the database, and then efficient triaging and organization after the fact of even very large task queues.
 
 ### Nought
-
 Nought is a personal people-manager, what some people might call a contact list or CRM.
 
 ### Ria
-
 Ria is a read-it-later service for articles on the web.
 
 Ria stores all of its data in a single text file that functions as a plain text list of all saved links. Each line in the file is formatted:
@@ -94,11 +87,9 @@ Ria stores all of its data in a single text file that functions as a plain text 
 At the moment, Ria will allow exact substring searches on the description. Other indexing schemes + search methods may reveal themselves later, and we may add them as I start needing them.
 
 ### Fortress
-
 Fortress is a process manager / supervisor that manages deployment and monitoring of all Polyx services.
 
 ## Deploy
-
 Polyx applications are deployed with Fortress.
 
 The `conf/` directory contains a collection of configuration files and scripts I use to provision and deploy a server that runs the Fortress instance.
@@ -107,7 +98,6 @@ The `conf/` directory contains a collection of configuration files and scripts I
 - `nginx.conf`: Nginx reverse proxy configurations
 
 ### Provision
-
 To provision a Fortress server:
 
 1. Start up a clean Linux install with `systemd`. Fortress uses systemd as the init system to run as a daemon.
@@ -120,7 +110,6 @@ To provision a Fortress server:
 8. Install and setup `certbot` to get and auto-renew HTTPS certs for all set-up domains.
 
 ### Extras
-
 - Make a user a sudoer from root with `usermod -aG sudo <user>`
 - Remove the default login banner with `sudo chmod -x /etc/update-motd.d/*`
 - Install Go to bootstrap Ink. First, download Google's official tarball, then un-tar it to `/usr/local`. For example, for Go 1.13.5. We need to also ensure that Go's binary is in `$PATH`:
