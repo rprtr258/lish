@@ -17,9 +17,9 @@ f := std.format
 suite := label => (
   ` suite data store `
   s := {
-  	all: 0
-  	passed: 0
-  	msgs: []
+    all: 0
+    passed: 0
+    msgs: []
   }
 
   ` mark sections of a test suite with human labels `
@@ -27,51 +27,51 @@ suite := label => (
 
   ` signal end of test suite, print out results `
   end := () => (
-  	log(f('suite: {{ label }}', {label: label}))
-  	each(s.msgs, m => log('  ' + m))
-  	s.passed :: {
-  		s.all -> log(f('ALL {{ passed }} / {{ all }} PASSED', s))
-  		_ -> (
-  			log(f('PARTIAL: {{ passed }} / {{ all }} PASSED', s))
-  			exit(1)
-  		)
-  	}
+    log(f('suite: {{ label }}', {label: label}))
+    each(s.msgs, m => log('  ' + m))
+    s.passed :: {
+      s.all -> log(f('ALL {{ passed }} / {{ all }} PASSED', s))
+      _ -> (
+        log(f('PARTIAL: {{ passed }} / {{ all }} PASSED', s))
+        exit(1)
+      )
+    }
   )
 
   ` log a passed test `
   onSuccess := () => (
-  	s.all := s.all + 1
-  	s.passed := s.passed + 1
+    s.all := s.all + 1
+    s.passed := s.passed + 1
   )
 
   ` log a failed test `
   onFail := msg => (
-  	s.all := s.all + 1
-  	s.msgs.len(s.msgs) := msg
+    s.all := s.all + 1
+    s.msgs.len(s.msgs) := msg
   )
 
   ` perform a new test case `
   indent := '  ' + '  ' + '  ' + '  '
   test := (label, result, expected) => result :: {
-  	expected -> onSuccess()
-  	_ -> (
-  		msg := f('  * {{ label }}
+    expected -> onSuccess()
+    _ -> (
+      msg := f('  * {{ label }}
 {{ indent }}got {{ result }}
 {{ indent }}exp {{ expected }}', {
-  			label: label
-  			result: result
-  			expected: expected
-  			indent: indent
-  		})
-  		onFail(msg)
-  	)
+        label: label
+        result: result
+        expected: expected
+        indent: indent
+      })
+      onFail(msg)
+    )
   }
 
   ` expose API functions `
   {
-  	mark: mark
-  	test: test
-  	end: end
+    mark: mark
+    test: test
+    end: end
   }
 )
 
@@ -130,13 +130,13 @@ m('value equality')
 m('composite value access')
 (
   obj := {
-  	39: 'clues'
-  	('ex' + 'pr'): 'ession'
+    39: 'clues'
+    ('ex' + 'pr'): 'ession'
   }
 
   ` when calling a function that's a prop of a composite,
-  	we need to remember that AccessorOp is just a binary op
-  	and the function call precedes it in priority `
+    we need to remember that AccessorOp is just a binary op
+    and the function call precedes it in priority `
   obj.fn := () => 'xyz'
   obj.fz := f => f() + f()
 
@@ -152,24 +152,24 @@ m('composite value access')
   t('string index access at 0', ('hello').0, 'h')
   t('string index access', ('what').3, 't')
   t('out of bounds string index access (negative)'
-  	('hi').(~1), ())
+    ('hi').(~1), ())
   t('out of bounds string index access (too large)'
-  	('hello, world!').len('hello, world!'), ())
+    ('hello, world!').len('hello, world!'), ())
 
   ` nested composites `
   comp := {list: ['hi', 'hello', {what: 'thing'}]}
 
   ` can't just do comp.list.2.what because
-  	2.what is not a valid identifier.
-  	these are some other recommended ways `
+    2.what is not a valid identifier.
+    these are some other recommended ways `
   t('nested composite value access with number value'
-  	comp.list.(2).what, 'thing')
+    comp.list.(2).what, 'thing')
   t('nested composite value access with string value'
-  	comp.list.('2').what, 'thing')
+    comp.list.('2').what, 'thing')
   t('nested composite value access, parenthesized'
-  	(comp.list.2).what, 'thing')
+    (comp.list.2).what, 'thing')
   t('nested composite value access, double-parenthesized'
-  	(comp.list).(2).what, 'thing')
+    (comp.list).(2).what, 'thing')
   t('string at index in computed string', comp.('li' + 'st').0, 'hi')
   t('nested property access returns composite', comp.list.2, {what: 'thing'})
 
@@ -185,20 +185,20 @@ m('function, expression, and lexical scope')
 (
   thing := 3
   state := {
-  	thing: 21
+    thing: 21
   }
   fn := () => thing := 4
   fn2 := thing => thing := 24
   fn3 := () => (
-  	state.thing := 100
-  	thing := ~3
+    state.thing := 100
+    thing := ~3
   )
 
   fn()
   fn2()
   fn3()
   (
-  	thing := 200
+    thing := 200
   )
 
   t('function body forms a new scope', fn(), 4)
@@ -212,8 +212,8 @@ m('function, expression, and lexical scope')
   z := 100
   w := 100
   x := 200 :: {
-  	y := 200 -> 1000
-  	(w := 200) -> 2000
+    y := 200 -> 1000
+    (w := 200) -> 2000
   }
   nop := () => ()
   nop(nop(z := 300, z := 400), z := 500, (w := 300))
@@ -234,77 +234,77 @@ m('tail call optimizations and thunk unwrap order')
   f2 := appender('f2_')
 
   sub := () => (
-  	f1('hi')
-  	(
-  		f2('what')
-  	)
-  	f3 := () => (
-  		f2('hg')
-  		f1('bb')
-  	)
-  	f1('sup')
-  	f2('sample')
-  	f3()
-  	f2('xyz')
+    f1('hi')
+    (
+      f2('what')
+    )
+    f3 := () => (
+      f2('hg')
+      f1('bb')
+    )
+    f1('sup')
+    f2('sample')
+    f3()
+    f2('xyz')
   )
 
   sub()
 
   t('tail optimized thunks are unwrapped in correct order'
-  	acc.0, 'f1_hif2_whatf1_supf2_samplef2_hgf1_bbf2_xyz')
+    acc.0, 'f1_hif2_whatf1_supf2_samplef2_hgf1_bbf2_xyz')
 )
 
 m('match expressions')
 (
   x := ('what ' + string(1 + 2 + 3 + 4) :: {
-  	'what 10' -> 'what 10'
-  	_ -> '??'
+    'what 10' -> 'what 10'
+    _ -> '??'
   })
   t('match expression follows matched clause', x, 'what 10')
 
   x := ('what ' + string(1 + 2 + 3 + 4) :: {
-  	'what 11' -> 'what 11'
-  	_ -> '??'
+    'what 11' -> 'what 11'
+    _ -> '??'
   })
   t('match expression follows through to empty identifier', x, '??')
 
   x := (
-  	y := {z: 9}
-  	12 :: {
-  		y.z + 1 + 5 - 3 -> 'correct'
-  		12 -> 'incorrect'
-  		10 -> 'incorrect'
-  		_ -> 'wrong'
-  	}
+    y := {z: 9}
+    12 :: {
+      y.z + 1 + 5 - 3 -> 'correct'
+      12 -> 'incorrect'
+      10 -> 'incorrect'
+      _ -> 'wrong'
+    }
   )
   t('match expression target can be complex binary expressions', x, 'correct')
 
   x := ('a' :: {
-  	1 :: {
-  		2 -> 'b'
-  		1 -> 'a'
-  	} -> 'c'
-  	_ -> 'd'
+    1 :: {
+      2 -> 'b'
+      1 -> 'a'
+    } -> 'c'
+    _ -> 'd'
   })
   t('match expression in match target position', x, 'c')
 
   N := {
-  	A: 1
-  	B: 2
-  	C: 3
-  	D: 4
+    A: 1
+    B: 2
+    C: 3
+    D: 4
   }
   x := (3 :: {
-  	N.A -> 'a'
-  	N.B -> 'b'
-  	N.C -> 'c'
-  	N.D -> 'd'
+    N.A -> 'a'
+    N.B -> 'b'
+    N.C -> 'c'
+    N.D -> 'd'
   })
   t('match expression target can be object property', x, 'c')
 
   x := [1, 2, [3, 4, ['thing']], {a: ['b']}]
   t('composite deep equality after match expression'
-  	x, [1, 2, [3, 4, ['thing']], {a: ['b']}])
+    x, [1, 2, [3, 4, ['thing']], {a: ['b']}])
 )
 
 m('accessing properties strangely, accessing nonexistent properties')
@@ -318,15 +318,15 @@ m('accessing properties strangely, accessing nonexistent properties')
   ` also: composite parts can be empty `
   t('composite parts can be empty', [_, _, 'hix'].('2'), 'hix')
   t('property access with computed string'
-  	string({test: 4200.00}.('te' + 'st')), '4200')
+    string({test: 4200.00}.('te' + 'st')), '4200')
   t('nested property access with computed string'
-  	string({test: 4200.00}.('te' + 'st')).1, '2')
+    string({test: 4200.00}.('te' + 'st')).1, '2')
   t('nested property access with computed string, nonexistent key'
-  	string({test: 4200.00}.('te' + 'st')).10, ())
+    string({test: 4200.00}.('te' + 'st')).10, ())
 
   dashed := {'test-key': 14}
   t('property access with string literal that is not valid identifier'
-  	string(dashed.('test-key')), '14')
+    string(dashed.('test-key')), '14')
 )
 
 m('calling functions with mismatched argument length')
@@ -344,9 +344,9 @@ m('argument order of evaluation')
   fn := (x, y) => (acc.len(acc) := x, y)
 
   t('function arguments are evaluated in order, I'
-  	fn(fn(fn(fn('i', '?'), 'h'), 'g'), 'k'), 'k')
+    fn(fn(fn(fn('i', '?'), 'h'), 'g'), 'k'), 'k')
   t('function arguments are evaluated in order, II'
-  	acc, ['i', '?', 'h', 'g'])
+    acc, ['i', '?', 'h', 'g'])
 )
 
 m('empty identifier "_" in arguments and functions')
@@ -356,7 +356,7 @@ m('empty identifier "_" in arguments and functions')
 
   t('_ is a valid argument placeholder', emptySingle(), 'snowman')
   t('_ can be used multiple times in a single function as argument placeholders'
-  	emptyMultiple('bright', 'rain', 'sky', 'bow'), 'rainbow')
+    emptyMultiple('bright', 'rain', 'sky', 'bow'), 'rainbow')
 )
 
 m('comment syntaxes')
@@ -373,15 +373,15 @@ m('more complex pattern matching')
 (
   t('nested list pattern matches correctly', [_, [2, _], 6], [10, [2, 7], 6])
   t('nested composite pattern matches correctly', {
-  	hi: 'hello'
-  	bye: {
-  		good: 'goodbye'
-  	}
-  	}, {
-  	hi: _
-  	bye: {
-  		good: _
-  	}
+    hi: 'hello'
+    bye: {
+      good: 'goodbye'
+    }
+    }, {
+    hi: _
+    bye: {
+      good: _
+    }
   })
   t('nested list pattern matches with empty identifiers', [_, [2, _], 6, _], [10, [2, 7], 6, _])
   t('composite pattern matches with empty identifiers', {6: 9, 7: _}, {6: _, 7: _})
@@ -427,39 +427,39 @@ m('bitwise operations on byte strings')
   b := 'abcdEFg'
 
   t('bitwise & of byte strings'
-  	a & b, 'ABCDEFG')
+    a & b, 'ABCDEFG')
   t('bitwise | of byte strings'
-  	a | b, 'abcdEFg')
+    a | b, 'abcdEFg')
   t('bitwise ^ of byte strings'
-  	a ^ b, '    ' + ZZ + ' ')
+    a ^ b, '    ' + ZZ + ' ')
 
   ` of different lengths (byte strings are zero-extended at lower bytes) `
   a := 'ABCD'
   b := 'abcdXYZ'
 
   t('bitwise & of diff length byte strings'
-  	a & b, 'ABCD' + ZZZ)
+    a & b, 'ABCD' + ZZZ)
   t('bitwise | of diff length byte strings'
-  	a | b, 'abcdXYZ')
+    a | b, 'abcdXYZ')
   t('bitwise ^ of diff length byte strings'
-  	a ^ b, '    XYZ')
+    a ^ b, '    XYZ')
 
   t('bitwise & of diff length byte strings, reverse order'
-  	b & a, 'ABCD' + ZZZ)
+    b & a, 'ABCD' + ZZZ)
   t('bitwise | of diff length byte strings, reverse order'
-  	b | a, 'abcdXYZ')
+    b | a, 'abcdXYZ')
   t('bitwise ^ of diff length byte strings, reverse order'
-  	b ^ a, '    XYZ')
+    b ^ a, '    XYZ')
 
   ` of same byte strings `
   a := 'some_byte'
 
   t('bitwise & of same byte string'
-  	a & a, a)
+    a & a, a)
   t('bitwise | of same byte string'
-  	a | a, a)
+    a | a, a)
   t('bitwise ^ of same byte string'
-  	a ^ a, ZZZ + ZZZ + ZZZ)
+    a ^ a, ZZZ + ZZZ + ZZZ)
 )
 
 m('min/max')
@@ -510,40 +510,40 @@ m('logic composition correctness, std.some/std.every')
   t('std.some() of empty list is false', some([]), false)
   t('std.every() of empty list is true', every([]), true)
   t('std.some() is true if at least one in list is true'
-  	some([false, false, true, false]), true)
+    some([false, false, true, false]), true)
   t('std.some() is false if none in list is true'
-  	some([false, false, false, false]), false)
+    some([false, false, false, false]), false)
   t('std.every() is true if all in list is true'
-  	every([true, true, true, true, true]), true)
+    every([true, true, true, true, true]), true)
   t('std.every() is false if at least one in list is false'
-  	every([true, true, true, false, true]), false)
+    every([true, true, true, false, true]), false)
 )
 
 m('object keys / list, mutable strings, std.clone')
 (
   clone := std.clone
   obj := {
-  	first: 1
-  	second: 2
-  	third: 3
+    first: 1
+    second: 2
+    third: 3
   }
   list := ['red', 'green', 'blue']
 
   ks := {
-  	first: false
-  	second: false
-  	third: false
+    first: false
+    second: false
+    third: false
   }
   ky := keys(obj)
   ` keys are allowed to be out of insertion order
-  	-- composites are unordered maps`
+    -- composites are unordered maps`
   ks.(ky.0) := true
   ks.(ky.1) := true
   ks.(ky.2) := true
   t('keys() builtin for composite returns keys'
-  	[ks.first, ks.second, ks.third], [true, true, true])
+    [ks.first, ks.second, ks.third], [true, true, true])
   t('keys() builtin for composite returns all keys'
-  	len(keys(obj)), 3)
+    len(keys(obj)), 3)
 
   cobj := clone(obj)
   obj.fourth := 4
@@ -556,24 +556,24 @@ m('object keys / list, mutable strings, std.clone')
   t('std.clone creates a new copy of list', len(clist), 3)
 
   ` len() should count the number of keys on a composite,
-  	not just integer indexes like ECMAScript `
+    not just integer indexes like ECMAScript `
   t('len() builtin on manually indexed composite', len({
-  	0: 1
-  	1: 'order'
-  	2: 'natural'
+    0: 1
+    1: 'order'
+    2: 'natural'
   }), 3)
   t('len() builtin on non-number keyed composite', len({
-  	hi: 'h'
-  	hello: 'he'
-  	thing: 'th'
-  	what: 'w'
+    hi: 'h'
+    hello: 'he'
+    thing: 'th'
+    what: 'w'
   }), 4)
   t('len() builtin counts non-consecutive integer keys', len({
-  	0: 'hi'
-  	'1': 100
-  	3: 'x'
-  	5: []
-  	'word': 0
+    0: 'hi'
+    '1': 100
+    3: 'x'
+    5: []
+    'word': 0
   }), 5)
 
   str := 'hello'
@@ -608,10 +608,10 @@ m('string/composite pass by reference / mutation check')
   t('std.clone creates a copy of composite', len(clone), 3)
 
   t('assignment to composite key returns composite itself, updated', clone.hi := 'x', {
-  	0: 1
-  	1: 2
-  	2: 3
-  	hi: 'x'
+    0: 1
+    1: 2
+    2: 3
+    hi: 'x'
   })
 
   str := 'hello, world'
@@ -631,14 +631,14 @@ m('string/composite pass by reference / mutation check')
 
   str := '00000000'
   mut := (i, s) => (
-  	str.(i) := s
+    str.(i) := s
   )
   mut(4, 'AAA')
   t('assigning to string index with more than one char modifies multiple indexes'
-  	str, '0000AAA0')
+    str, '0000AAA0')
   mut(8, 'YYY')
   t('assigning to string index with more than one char appends as necessary'
-  	str, '0000AAA0YYY')
+    str, '0000AAA0YYY')
 )
 
 m('number & composite/list -> string conversions')
@@ -646,18 +646,18 @@ m('number & composite/list -> string conversions')
   stringList := std.stringList
 
   t('string(number) uses least number of digits necessary, integer'
-  	string(42), '42')
+    string(42), '42')
   t('string(number) uses least number of digits necessary, short decimal'
-  	string(3.14), '3.14')
+    string(3.14), '3.14')
   t('string(number) uses least number of digits necessary, long decimal'
-  	string(5 / 3), '1.6666666666666667')
+    string(5 / 3), '1.6666666666666667')
   ` speed of light in microns per second `
   t('string(number) uses least number of digits necessary, large number'
-  	string(299792458000000), '299792458000000')
+    string(299792458000000), '299792458000000')
   t('string(number) uses least number of digits necessary, small exponential'
-  	string(0.0000000001), '1e-10')
+    string(0.0000000001), '1e-10')
   t('string(number) uses least number of digits necessary, big exponential'
-  	string(2997924580000000000000), '2.99792458e+21')
+    string(2997924580000000000000), '2.99792458e+21')
   t('string(true)', string(true), 'true')
   t('string(false)', string(false), 'false')
   t('string(string) returns itself', string('hello'), 'hello')
@@ -692,9 +692,9 @@ m('function/composite equality checks')
   fn2 := () => (3 + 4, 'hello')
 
   t('functions are equal if they are the same function'
-  	fn1 = fnc, true)
+    fn1 = fnc, true)
   t('functions are different if they are defined separately, even if same effect'
-  	fn1 = fn2, false)
+    fn1 = fn2, false)
 
   ` composite equality `
   comp1 := {1: 2, hi: '4'}
@@ -735,18 +735,18 @@ m('std.range/slice/append/join/cat and stringList')
 
   ` slice returns copies `
   (
-  	st := '12345'
-  	li := [1, 2, 3, 4, 5]
+    st := '12345'
+    li := [1, 2, 3, 4, 5]
 
-  	stc := slice(st, 0, len(st))
-  	lic := slice(li, 0, len(li))
-  	stc.2 := 'x'
-  	lic.2 := 'x'
+    stc := slice(st, 0, len(st))
+    lic := slice(li, 0, len(li))
+    stc.2 := 'x'
+    lic.2 := 'x'
 
-  	t('slice(string) should make a copy', st, '12345')
-  	t('slice(string) should return a copy', stc, '12x45')
-  	t('slice(list) should make a copy', li, [1, 2, 3, 4, 5])
-  	t('slice(list) should return a copy', lic, [1, 2, 'x', 4, 5])
+    t('slice(string) should make a copy', st, '12345')
+    t('slice(string) should return a copy', stc, '12x45')
+    t('slice(list) should make a copy', li, [1, 2, 3, 4, 5])
+    t('slice(list) should return a copy', lic, [1, 2, 'x', 4, 5])
   )
 
   sl := (l, s, e) => stringList(slice(l, s, e))
@@ -762,11 +762,11 @@ m('std.range/slice/append/join/cat and stringList')
   list := reverse(range(0, 11, 1))
 
   t('join() homogeneous lists', stringList(join(
-  	slice(list, 0, 5), slice(list, 5, 200)
+    slice(list, 0, 5), slice(list, 5, 200)
   )), '[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]')
   t('join() heterogeneous lists', stringList(join(
-  	[1, 2, 3]
-  	join([4, 5, 6], ['a', 'b', 'c'])
+    [1, 2, 3]
+    join([4, 5, 6], ['a', 'b', 'c'])
   )), '[1, 2, 3, 4, 5, 6, a, b, c]')
 
   t('slice() from 0', slice(str, 0, 5), 'abrac')
@@ -782,8 +782,8 @@ m('std.range/slice/append/join/cat and stringList')
   t('cat() with empty string delimiter', cat(['good', 'bye', 'friend'], ''), 'goodbyefriend')
   t('cat() with comma separator', cat(['good', 'bye', 'friend'], ', '), 'good, bye, friend')
   t('cat() with manually indexed composite', cat({
-  	0: 'first'
-  	1: 'last'
+    0: 'first'
+    1: 'last'
   }, ' and '), 'first and last')
 )
 
@@ -853,14 +853,14 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   t('std.map', map(list, n => n * n), [1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
   t('std.filter', filter(list, n => n % 2 = 0), [2, 4, 6, 8, 10])
   t('std.reduce', reduce(list, (acc, n) => acc + string(n), '')
-  	'12345678910')
+    '12345678910')
   t('std.reduceBack', reduceBack(list, (acc, n) => acc + string(n), '')
-  	'10987654321')
+    '10987654321')
   t('std.flatten', flatten([[1, 2, 3], [4], [], [[5], 6, 7, [8, 9, 10]]])
-  	[1, 2, 3, 4, [5], 6, 7, [8, 9, 10]])
+    [1, 2, 3, 4, [5], 6, 7, [8, 9, 10]])
   t('std.reverse', reverse(list), [10, 9, 8, 7, 6, 5, 4, 3, 2, 1])
   t('std.join', join(list, list), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-  	1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
   ` degenerate cases on reverse `
   t('std.reverse on empty', reverse([]), [])
@@ -870,23 +870,23 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
 
   ` passing index in callback `
   t('std.map passes index to callback', map(list, (_, i) => i)
-  	[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   t('std.filter passes index to callback', filter(list, (_, i) => i % 2 = 1)
-  	[2, 4, 6, 8, 10])
+    [2, 4, 6, 8, 10])
   t('std.reduce passes index to callback'
-  	reduce(list, (acc, _, i) => acc + string(i), ''), '0123456789')
+    reduce(list, (acc, _, i) => acc + string(i), ''), '0123456789')
   t('std.reduceBack passes index to callback'
-  	reduceBack(list, (acc, _, i) => acc + string(i), ''), '9876543210')
+    reduceBack(list, (acc, _, i) => acc + string(i), ''), '9876543210')
   (
-  	eachAcc := []
-  	each(list, (_, i) => eachAcc.len(eachAcc) := i)
-  	t('std.each passes index to callback', eachAcc
-  		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    eachAcc := []
+    each(list, (_, i) => eachAcc.len(eachAcc) := i)
+    t('std.each passes index to callback', eachAcc
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   )
 
   ` each doesn't return anything meaningful `
   acc := {
-  	str: ''
+    str: ''
   }
   twice := f => x => (f(x), f(x))
   each(list, twice(n => acc.str := acc.str + string(n)))
@@ -895,7 +895,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   ` append mutates `
   append(list, list)
   t('std.append', list, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-  	1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 )
 
 m('std.format -- the standard library formatter / templater')
@@ -904,11 +904,11 @@ m('std.format -- the standard library formatter / templater')
   stringList := std.stringList
 
   values := {
-  	first: 'ABC'
-  	'la' + 'st': 'XYZ'
-  	thingOne: 1
-  	thingTwo: stringList([5, 4, 3, 2, 1])
-  	'magic+eye': 'add_sign'
+    first: 'ABC'
+    'la' + 'st': 'XYZ'
+    thingOne: 1
+    thingTwo: stringList([5, 4, 3, 2, 1])
+    'magic+eye': 'add_sign'
   }
 
   t('std.format empty string', f('', {}), '')
@@ -917,19 +917,19 @@ m('std.format -- the standard library formatter / templater')
   {{ sup }} line', {sup: 42}), 'new
   42 line')
   t('std.format with non-terminated slot ignores rest'
-  	f('now {{ then now', {then: 'then'}), 'now ')
+    f('now {{ then now', {then: 'then'}), 'now ')
   t('std.format with unusual (tighter) spacing', f(
-  	' {{thingTwo}}+{{ magic+eye }}  '
-  	values
+    ' {{thingTwo}}+{{ magic+eye }}  '
+    values
   ), ' [5, 4, 3, 2, 1]+add_sign  ')
   t('std.format with unusual (tighter) spacing and more replacements', f(
-  	'{{last }} {{ first}} {{ thing One }} {{ thing Two }}'
-  	values
+    '{{last }} {{ first}} {{ thing One }} {{ thing Two }}'
+    values
   ), 'XYZ ABC 1 [5, 4, 3, 2, 1]')
   t(
-  	'std.format with non-format braces'
-  	f('{ {  this is not } {{ thingOne } wut } {{ nonexistent }}', values)
-  	'{ {  this is not } 1 ()'
+    'std.format with non-format braces'
+    f('{ {  this is not } {{ thingOne } wut } {{ nonexistent }}', values)
+    '{ {  this is not } 1 ()'
   )
 )
 
@@ -946,97 +946,97 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   map := std.map
 
   t('upper? verifies uppercase letters'
-  	every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZ', upper?)), true)
+    every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZ', upper?)), true)
   t('upper? rejects non-uppercase-letters'
-  	some(map('onawfepd913043?-~\'!/.,;()$@)%', upper?)), false)
+    some(map('onawfepd913043?-~\'!/.,;()$@)%', upper?)), false)
   t('lower? verifies lowercase letters'
-  	every(map('abcdefghijklmnopqrstuvwxyz', lower?)), true)
+    every(map('abcdefghijklmnopqrstuvwxyz', lower?)), true)
   t('lower? rejects non-lowercase-letters'
-  	some(map('ONAWFEPD913043?-~\'!/.,;()$@)%', lower?)), false)
+    some(map('ONAWFEPD913043?-~\'!/.,;()$@)%', lower?)), false)
   t('digit? verifies digits'
-  	every(map('0123456789', digit?)), true)
+    every(map('0123456789', digit?)), true)
   t('digit? rejects non-digits, including punctuations'
-  	some(map('~@!#@$%^()&?!.;,-', digit?)), false)
+    some(map('~@!#@$%^()&?!.;,-', digit?)), false)
   t('letter? verifies all alphabet letters'
-  	every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', letter?))
+    every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', letter?))
   true)
   t('letter? rejects non-letters'
-  	some(map('913043?-~\'!/.,;()$@)%', upper?)), false)
+    some(map('913043?-~\'!/.,;()$@)%', upper?)), false)
   t('ws? verifies whitespace characters'
-  	every(map('
+    every(map('
 ', ws?)), true)
   t('ws? rejects all non-whitespace'
-  	some(map('jafsioSINDFOEJ#@%@()_#9u40529' + char(250), ws?)), false)
+    some(map('jafsioSINDFOEJ#@%@()_#9u40529' + char(250), ws?)), false)
 
   hasPrefix? := str.hasPrefix?
   hasSuffix? := str.hasSuffix?
 
   t('hasPrefix? detects prefix'
-  	hasPrefix?('programming', 'prog'), true)
+    hasPrefix?('programming', 'prog'), true)
   t('hasPrefix? returns true for empty prefix'
-  	hasPrefix?('programming', ''), true)
+    hasPrefix?('programming', ''), true)
   t('hasPrefix? returns true if s = prefix'
-  	hasPrefix?('programming', 'programming'), true)
+    hasPrefix?('programming', 'programming'), true)
   t('hasPrefix? returns false if not prefix'
-  	hasPrefix?('programming', 'progx'), false)
+    hasPrefix?('programming', 'progx'), false)
   t('hasPrefix? accumulates equality correctly, pos 2'
-  	hasPrefix?('d: test', '::'), false)
+    hasPrefix?('d: test', '::'), false)
   t('hasPrefix? accumulates equality correctly, pos 5'
-  	hasPrefix?('e123e test', 'e321e'), false)
+    hasPrefix?('e123e test', 'e321e'), false)
 
   t('hasSuffix? detects suffix'
-  	hasSuffix?('programming', 'mming'), true)
+    hasSuffix?('programming', 'mming'), true)
   t('hasSuffix? returns true for empty suffix'
-  	hasSuffix?('programming', ''), true)
+    hasSuffix?('programming', ''), true)
   t('hasSuffix? returns true if s = suffix'
-  	hasSuffix?('programming', 'programming'), true)
+    hasSuffix?('programming', 'programming'), true)
   t('hasSuffix? returns false if not suffix'
-  	hasSuffix?('programming', 'science'), false)
+    hasSuffix?('programming', 'science'), false)
   t('hasSuffix? accumulates equality correctly, pos 2'
-  	hasSuffix?('test: xa', 'xb'), false)
+    hasSuffix?('test: xa', 'xb'), false)
   t('hasSuffix? accumulates equality correctly, pos 5'
-  	hasSuffix?('__ e123e', 'e321e'), false)
+    hasSuffix?('__ e123e', 'e321e'), false)
 
   both := '_x_init()_x_'
   piece := '_x_'
   t('hasPrefix? and hasSuffix? used together'
-  	hasPrefix?(both, piece) & hasSuffix?(both, piece), true)
+    hasPrefix?(both, piece) & hasSuffix?(both, piece), true)
 
   matchesAt? := str.matchesAt?
 
   t('matchesAt? returns true for empty substring'
-  	matchesAt?('some substring', ''), true)
+    matchesAt?('some substring', ''), true)
   t('matchesAt? returns true if string matches at idx'
-  	matchesAt?('some substring', 'substr', 5), true)
+    matchesAt?('some substring', 'substr', 5), true)
   t('matchesAt? returns false if string matches not at idx'
-  	matchesAt?('some substring', 'substr', 2), false)
+    matchesAt?('some substring', 'substr', 2), false)
   t('matchesAt? returns false if no match'
-  	matchesAt?('some substring', 'other', 5), false)
+    matchesAt?('some substring', 'other', 5), false)
 
   index := str.index
 
   t('index = 0 for empty string', index('quick brown fox', ''), 0)
   t('index returns index of substring'
-  	index('quick brown fox', 'ick'), 2)
+    index('quick brown fox', 'ick'), 2)
   t('index returns 0 if matches whole string'
-  	index('quick brown fox', 'quick brown fox'), 0)
+    index('quick brown fox', 'quick brown fox'), 0)
   t('index returns ~1 if no match'
-  	index('quick brown fox', 'lazy dog'), ~1)
+    index('quick brown fox', 'lazy dog'), ~1)
   t('index returned is first occurrence'
-  	index('quick brown fox', 'o'), 8)
+    index('quick brown fox', 'o'), 8)
   t('index works if substring longer than string'
-  	index('quick brown fox', 'jumps over the lazy dog'), ~1)
+    index('quick brown fox', 'jumps over the lazy dog'), ~1)
 
   contains? := str.contains?
 
   t('contains? = true for empty string'
-  	contains?('quick brown fox', ''), true)
+    contains?('quick brown fox', ''), true)
   t('contains? = true if string fits substring'
-  	contains?('quick brown fox', 'fox'), true)
+    contains?('quick brown fox', 'fox'), true)
   t('contains? = true if substring fits multiple times'
-  	contains?('quick brown fox', 'o'), true)
+    contains?('quick brown fox', 'o'), true)
   t('contains? = false if not contained'
-  	contains?('quick brown fox', 'lazy dog'), false)
+    contains?('quick brown fox', 'lazy dog'), false)
 
   lower := str.lower
   upper := str.upper
@@ -1044,49 +1044,49 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   given := 'MIXED case StrinG with ?!~:punct'
 
   t('lower transforms string to lowercase'
-  	lower(given), 'mixed case string with ?!~:punct')
+    lower(given), 'mixed case string with ?!~:punct')
   t('upper transforms string to uppercase'
-  	upper(given), 'MIXED CASE STRING WITH ?!~:PUNCT')
+    upper(given), 'MIXED CASE STRING WITH ?!~:PUNCT')
   t('title returns uppercase first + lowercase rest'
-  	title(given), 'Mixed case string with ?!~:punct')
+    title(given), 'Mixed case string with ?!~:punct')
 
   replace := str.replace
 
   t('replace is no-op if empty string'
-  	replace('he stared in amazement', '', '__')
+    replace('he stared in amazement', '', '__')
   'he stared in amazement')
   t('replace replaces all instances of given substring'
-  	replace('he stared in amazement', 'e', 'j')
+    replace('he stared in amazement', 'e', 'j')
   'hj starjd in amazjmjnt')
   t('replace works for multi-character substring'
-  	replace('he is staring in amazement', 'in', 'xx')
+    replace('he is staring in amazement', 'in', 'xx')
   'he is starxxg xx amazement')
   t('replace accounts for different old/new substring lengths'
-  	replace('he is staring in amazement', 'in', 'wonder')
+    replace('he is staring in amazement', 'in', 'wonder')
   'he is starwonderg wonder amazement')
   t('replace deals gracefully with overlapping matches'
-  	replace('wow what a sight, wow', 'ow', 'wow')
+    replace('wow what a sight, wow', 'ow', 'wow')
   'wwow what a sight, wwow')
   t('replace works if new substring is empty'
-  	replace('wow what a sight, wow', 'wow', '')
+    replace('wow what a sight, wow', 'wow', '')
   ' what a sight, ')
   t('replace works even if new str contains recursive match'
-  	replace('a {} b {} c {}', '{}', '{}-{}')
+    replace('a {} b {} c {}', '{}', '{}-{}')
   'a {}-{} b {}-{} c {}-{}')
 
   split := str.split
 
   t('split splits string into letters if empty'
-  	split('alphabet', '')
+    split('alphabet', '')
   ['a', 'l', 'p', 'h', 'a', 'b', 'e', 't'])
   t('splits with given delimiter'
-  	split('a,b,cde,fg', ',')
+    split('a,b,cde,fg', ',')
   ['a', 'b', 'cde', 'fg'])
   t('splits with empty strings if delimiter in start or end'
-  	split(', original taste, ', ', ')
+    split(', original taste, ', ', ')
   ['', 'original taste', ''])
   t('returns one chunk if no match of delimiter found'
-  	split('no taste whatsoever!', 'grand')
+    split('no taste whatsoever!', 'grand')
   ['no taste whatsoever!'])
 
   trimPrefix := str.trimPrefix
@@ -1094,29 +1094,29 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   trim := str.trim
 
   t('trimPrefix is a no-op with empty string'
-  	trimPrefix('???????what???', ''), '???????what???')
+    trimPrefix('???????what???', ''), '???????what???')
   t('trimPrefix trims given prefix until it does not prefix'
-  	trimPrefix('???????what???', '?'), 'what???')
+    trimPrefix('???????what???', '?'), 'what???')
   t('trimPrefix works with multi-char prefix'
-  	trimPrefix('abababacdef', 'ab'), 'acdef')
+    trimPrefix('abababacdef', 'ab'), 'acdef')
   t('trimPrefix only trims whole multiples of prefix'
-  	trimPrefix('aaaaaaaadef', 'aaa'), 'aadef')
+    trimPrefix('aaaaaaaadef', 'aaa'), 'aadef')
 
   t('trimSuffix is a no-op with empty string'
-  	trimSuffix('???????what???', ''), '???????what???')
+    trimSuffix('???????what???', ''), '???????what???')
   t('trimSuffix trims given suffix until it does not suffix'
-  	trimSuffix('???????what???', '?'), '???????what')
+    trimSuffix('???????what???', '?'), '???????what')
   t('trimSuffix works with multi-char suffix'
-  	trimSuffix('abacdefabcabab', 'ab'), 'abacdefabc')
+    trimSuffix('abacdefabcabab', 'ab'), 'abacdefabc')
   t('trimSuffix only trims whole multiples of suffix'
-  	trimSuffix('xxxyyyyyyyy', 'yyy'), 'xxxyy')
+    trimSuffix('xxxyyyyyyyy', 'yyy'), 'xxxyy')
 
   t('trim trims given string from both sides'
-  	trim('????what?????', '?'), 'what')
+    trim('????what?????', '?'), 'what')
   t('trim is a no-op with empty string'
-  	trim('????what?????', ''), '????what?????')
+    trim('????what?????', ''), '????what?????')
   t('trim trims whole multiples of substring from both sides'
-  	trim('????what?????', '???'), '?what??')
+    trim('????what?????', '???'), '?what??')
 )
 
 ` end test suite, print result `

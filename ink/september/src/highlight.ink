@@ -1,6 +1,6 @@
 ` september syntax highlighter command `
 
-std := import('../vendor/std')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 
 log := std.log
 map := std.map
@@ -8,7 +8,7 @@ each := std.each
 slice := std.slice
 cat := std.cat
 
-ansi := import('../vendor/ansi')
+ansi := import('../vendor/ansi.ink')
 
 Norm := s => s
 Gray := ansi.Gray
@@ -19,7 +19,7 @@ Blue := ansi.Blue
 Magenta := ansi.Magenta
 Cyan := ansi.Cyan
 
-Tokenize := import('tokenize')
+Tokenize := import('tokenize.ink')
 Tok := Tokenize.Tok
 tokenize := Tokenize.tokenizeWithComments
 
@@ -72,24 +72,26 @@ colorFn := tok => tok.type :: {
 main := prog => (
   tokens := tokenize(prog)
   spans := map(tokens, (tok, i) => {
-  	colorFn: [tok.type, tokens.(i + 1)] :: {
-  		` direct function calls are marked green
-  			on a best-effort basis `
-  		[
-  			Tok.Ident
-  			{type: Tok.LParen, val: _, line: _, col: _, i: _}
-  		] -> Green
-  		_ -> colorFn(tok)
-  	}
-  	start: tok.i
-  	end: tokens.(i + 1) :: {
-  		() -> len(prog)
-  		_ -> tokens.(i + 1).i
-  	}
+    colorFn: [tok.type, tokens.(i + 1)] :: {
+      ` direct function calls are marked green
+        on a best-effort basis `
+      [
+        Tok.Ident
+        {type: Tok.LParen, val: _, line: _, col: _, i: _}
+      ] -> Green
+      _ -> colorFn(tok)
+    }
+    start: tok.i
+    end: tokens.(i + 1) :: {
+      () -> len(prog)
+      _ -> tokens.(i + 1).i
+    }
   })
   pcs := map(
-  	spans
-  	span => (span.colorFn)(slice(prog, span.start, span.end))
+    spans
+    span => (span.colorFn)(slice(prog, span.start, span.end))
   )
   cat(pcs, '')
 )
+
+{main: main}

@@ -12,8 +12,8 @@ fib := n => (sub := (a, b, i) => i :: {
   0 -> a + b
   1 -> a + b
   _ -> (
-  	next := i - 1
-  	sub(b, a + b, next)
+    next := i - 1
+    sub(b, a + b, next)
   )
 })(0, 1, n)
 

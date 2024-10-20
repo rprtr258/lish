@@ -1,6 +1,6 @@
 #!/usr/bin/env ink
 
-std := import('../vendor/std')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 
 log := std.log
 f := std.format
@@ -9,11 +9,11 @@ cat := std.cat
 each := std.each
 readFile := std.readFile
 
-cli := import('../vendor/cli')
+cli := import('../vendor/cli.ink')
 
 ` september subcommands `
-highlight := import('../src/highlight').main
-translate := import('../src/translate').main
+highlight := import('../src/highlight.ink').main
+translate := import('../src/translate.ink').main
 
 Newline := char(10)
 Tab := char(9)
@@ -22,62 +22,62 @@ PreamblePath := './runtime/ink.js'
 given := (cli.parsed)()
 given.verb :: {
   ` syntax-highlight input Ink programs from the token stream
-  	and print them to stdout `
+    and print them to stdout `
   'print' -> (
-  	files := given.args
-  	each(files, path => (
-  		readFile(path, data => out(highlight(data)))
-  	))
+    files := given.args
+    each(files, path => (
+      readFile(path, data => out(highlight(data)))
+    ))
   )
   ` translate translates input Ink programs to JavaScript and
-  	print them to stdout `
+    print them to stdout `
   'translate' -> (
-  	js := []
-  	files := given.args
-  	each(files, (path, i) => readFile(path, data => (
-  		js.(i) := translate(data)
-  		len(files) :: {
-  			len(js) -> log(cat(js, Newline))
-  		}
-  	)))
+    js := []
+    files := given.args
+    each(files, (path, i) => readFile(path, data => (
+      js.(i) := translate(data)
+      len(files) :: {
+        len(js) -> log(cat(js, Newline))
+      }
+    )))
   )
   'translate-full' -> readFile(PreamblePath, preamble => (
-  	js := [preamble]
-  	files := given.args
-  	each(files, (path, i) => readFile(path, data => (
-  		js.(i + 1) := translate(data)
-  		len(files) + 1 :: {
-  			len(js) -> log(cat(js, Newline))
-  		}
-  	)))
+    js := [preamble]
+    files := given.args
+    each(files, (path, i) => readFile(path, data => (
+      js.(i + 1) := translate(data)
+      len(files) + 1 :: {
+        len(js) -> log(cat(js, Newline))
+      }
+    )))
   ))
   'run' -> readFile(PreamblePath, preamble => (
-  	js := [preamble]
-  	files := given.args
-  	each(files, (path, i) => readFile(path, data => (
-  		js.(i + 1) := translate(data)
-  		len(files) + 1 :: {
-  			len(js) -> exec(
-  				'node'
-  				['--']
-  				cat(js, ';' + Newline)
-  				evt => out(evt.data)
-  			)
-  		}
-  	)))
+    js := [preamble]
+    files := given.args
+    each(files, (path, i) => readFile(path, data => (
+      js.(i + 1) := translate(data)
+      len(files) + 1 :: {
+        len(js) -> exec(
+          'node'
+          ['--']
+          cat(js, ';' + Newline)
+          evt => out(evt.data)
+        )
+      }
+    )))
   ))
   ` start an interactive REPL backed by Node.js, if installed.
-  	might end up being the default behavior `
+    might end up being the default behavior `
   'repl' -> log('command "repl" not implemented!')
   _ -> (
-  	commands := [
-  		'print'
-  		'translate'
-  		'translate-full'
-  		'run'
-  	]
-  	log(f('command "{{ verb }}" not recognized', given))
-  	log('September supports: ' + Newline + Tab +
-  			cat(commands, Newline + Tab))
+    commands := [
+      'print'
+      'translate'
+      'translate-full'
+      'run'
+    ]
+    log(f('command "{{ verb }}" not recognized', given))
+    log('September supports: ' + Newline + Tab +
+        cat(commands, Newline + Tab))
   )
 }

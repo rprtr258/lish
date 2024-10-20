@@ -13,11 +13,11 @@ isPrime := n => (
   ` is n coprime with nums < p? `
   max := floor(pow(n, 0.5)) + 1
   (ip := p => p :: {
-  	max -> true
-  	_ -> n % p :: {
-  		0 -> false
-  		_ -> ip(p + 1)
-  	}
+    max -> true
+    _ -> n % p :: {
+      0 -> false
+      _ -> ip(p + 1)
+    }
   })(2) ` start with smaller # = more efficient `
 )
 
@@ -26,11 +26,11 @@ buildConsecutive := max => (
   peak := max + 1
   acc := []
   (bc := i => i :: {
-  	peak -> ()
-  	_ -> (
-  		acc.(i - 2) := i
-  		bc(i + 1)
-  	)
+    peak -> ()
+    _ -> (
+      acc.(i - 2) := i
+      bc(i + 1)
+    )
   })(2)
   acc
 )
