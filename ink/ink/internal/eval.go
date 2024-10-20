@@ -157,18 +157,20 @@ func (v ValueBoolean) Equals(other Value) bool {
 // ValueComposite includes all objects and list values
 type ValueComposite ValueTable
 
-func (v ValueComposite) String() string {
-	n := len(v)
-	isList := true
-	for i := 0; i < n; i++ {
+func (v ValueComposite) isList() bool {
+	for i := 0; i < len(v); i++ {
 		if _, ok := v[strconv.Itoa(i)]; !ok {
-			isList = false
-			break
+			return false
 		}
 	}
+	return true
+}
 
+func (v ValueComposite) String() string {
 	var sb strings.Builder
-	if isList {
+	if v.isList() {
+		n := len(v)
+
 		sb.WriteString("[")
 		for i := 0; i < n; i++ {
 			val := v[strconv.Itoa(i)]
@@ -481,9 +483,35 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				base = append(base, right...)
 				return ValueString(base), nil
 			}
+		// TODO: remove, same as |
 		case ValueBoolean:
 			if right, ok := rightValue.(ValueBoolean); ok {
 				return ValueBoolean(left || right), nil
+			}
+		case ValueComposite:
+			if right, ok := rightValue.(ValueComposite); ok {
+				leftIsList := left.isList()
+				rightIsList := right.isList()
+				if leftIsList && rightIsList { // list + list
+					res := make(ValueTable, len(left)+len(right))
+					for i := 0; i < len(left); i++ {
+						k := strconv.Itoa(i)
+						res[k] = left[k]
+					}
+					for i := 0; i < len(right); i++ {
+						res[strconv.Itoa(i+len(left))] = right[strconv.Itoa(i)]
+					}
+					return ValueComposite(res), nil
+				} else if !leftIsList && !rightIsList { // dict + dict
+					res := make(ValueTable, len(left)+len(right))
+					for k, v := range left {
+						res[k] = v
+					}
+					for k, v := range right {
+						res[k] = v
+					}
+					return ValueComposite(res), nil
+				}
 			}
 		}
 
@@ -512,6 +540,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 			if right, ok := rightValue.(ValueNumber); ok {
 				return left * right, nil
 			}
+		// TODO: remove, same as &
 		case ValueBoolean:
 			if right, ok := rightValue.(ValueBoolean); ok {
 				return ValueBoolean(left && right), nil
