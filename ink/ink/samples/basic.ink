@@ -1,6 +1,6 @@
 # first program written in Ink, kept for historical reasons
 
-log := load('std').log
+log := import('std').log
 
 fn1 := n => log('Hello, World!')
 

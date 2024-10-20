@@ -3,9 +3,9 @@ arrays on a best-effort basis and orders object keys lexicographically, to
 optimize for compression ratio. It's used in Monocle for space efficiency of
 JSON indexes. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
-quicksort := load('../vendor/quicksort')
+std := import('../vendor/std')
+str := import('../vendor/str')
+quicksort := import('../vendor/quicksort')
 
 map := std.map
 cat := std.cat

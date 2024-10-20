@@ -14,7 +14,7 @@ scan := cb => (
 # clamp start and end numbers to ranges, such that
 # start < end. Utility used in slice
 clamp := (start, end, min, max) => (
-  m := load('math')
+  m := import('math')
   start := (m.max)(start, min)
   end := (m.max)(end, min)
   end := (m.min)(end, max)
@@ -45,7 +45,7 @@ slice := (s, start, end) => (
 # clone a composite value
 clone := x => type(x) :: {
   'string' -> '' + x
-  'composite' -> (load('functional').reduce)(keys(x), (acc, k) => acc.(k) := x.(k), {})
+  'composite' -> (import('functional').reduce)(keys(x), (acc, k) => acc.(k) := x.(k), {})
   _ -> x
 }
 

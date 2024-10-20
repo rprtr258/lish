@@ -1,12 +1,12 @@
 # bitmap image test: generate an RGB rainbow gradient
 
-log := load('logging').log
-std := load('functional')
+log := import('logging').log
+std := import('functional')
 range := std.range
 map := std.map
 reduce := std.reduce
-f := load('str').format
-bmp := load('bmp').bmp
+f := import('str').format
+bmp := import('bmp').bmp
 
 # modified version of std.append that's faster when we know the length of the base and child arrays
 fastappend := (base, child, baseLength, childLength) => (
@@ -51,7 +51,7 @@ mk('generated pixel array')
 file := bmp(W, H, pixels)
 mk('generated bmp file')
 
-(load('io').writeFile)('img.bmp', file, result => result :: {
+(import('io').writeFile)('img.bmp', file, result => result :: {
   () -> log(f('file write error: {{ message }}', evt))
 })
 mk('saved file')

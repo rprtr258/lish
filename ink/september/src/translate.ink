@@ -1,24 +1,24 @@
 ` september translate command `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 map := std.map
 each := std.each
 cat := std.cat
 
-Tokenize := load('tokenize')
+Tokenize := import('tokenize')
 tokenize := Tokenize.tokenize
 tkString := Tokenize.tkString
 
-Parse := load('parse')
+Parse := import('parse')
 parse := Parse.parse
 ndString := Parse.ndString
 
-Analyze := load('analyze')
+Analyze := import('analyze')
 analyze := Analyze.analyze
 
-Gen := load('gen')
+Gen := import('gen')
 gen := Gen.gen
 
 Newline := char(10)

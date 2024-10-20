@@ -1,16 +1,16 @@
 ` http server abstraction `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
 slice := std.slice
 each := std.each
 
-auth := load('auth')
+auth := import('auth')
 allow? := auth.allow?
 
-route := load('route')
+route := import('route')
 
 new := () => (
   router := (route.new)()

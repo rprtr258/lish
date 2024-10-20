@@ -1,6 +1,6 @@
-f := load('str').format
-fatal := load('logging').critical
-iter := load('iter')
+f := import('str').format
+fatal := import('logging').critical
+iter := import('iter')
 range := n => (iter.range)(0, n, 1)
 each := iter.each
 

@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
@@ -7,12 +7,12 @@ map := std.map
 each := std.each
 cat := std.cat
 
-Tokenize := load('tokenize')
+Tokenize := import('tokenize')
 Tok := Tokenize.Tok
 typeName := Tokenize.typeName
 tkString := Tokenize.tkString
 
-mkiota := load('iota').new
+mkiota := import('iota').new
 
 iota := mkiota().next
 Node := {

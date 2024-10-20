@@ -1,6 +1,6 @@
 # implementation of Newton's method to square root
 
-log := load('logging').log
+log := import('logging').log
 
 # higher order function that returns a root finder
 # with the given degree of precision threshold

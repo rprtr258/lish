@@ -1,13 +1,13 @@
 # generate bitmap graph images
 
-log := load('logging').log
-f := load('str').format
-std := load('functional')
+log := import('logging').log
+f := import('str').format
+std := import('functional')
 range := std.range
 each := std.each
 map := std.map
-wf := load('io').writeFile
-bmp := load('bmp').bmp
+wf := import('io').writeFile
+bmp := import('bmp').bmp
 
 # some basic configuration
 WIDTH := 600

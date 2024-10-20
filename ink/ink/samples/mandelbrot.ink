@@ -1,14 +1,14 @@
 # generate a rendering of the Mandelbrot set
 
-bmp := load('bmp').bmp
-log := load('logging').log
-f := load('str').format
-std := load('functional')
+bmp := import('bmp').bmp
+log := import('logging').log
+f := import('str').format
+std := import('functional')
 map := std.map
 reduce := std.reduce
 range := std.range
-wf := load('io').writeFile
-math := load('math')
+wf := import('io').writeFile
+math := import('math')
 max := math.max
 iverson := math.iverson
 

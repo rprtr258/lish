@@ -1,6 +1,6 @@
 ` local and global variable scopes `
 
-std := load('./runtime/std')
+std := import('./runtime/std')
 
 log := std.log
 

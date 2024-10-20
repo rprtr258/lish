@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 cat := std.cat
 slice := std.slice
 map := std.map
@@ -8,7 +8,7 @@ each := std.each
 every := std.every
 append := std.append
 f := std.format
-str := load('../vendor/str')
+str := import('../vendor/str')
 ws? := str.ws?
 digit? := str.digit?
 letter? := str.letter?
@@ -19,7 +19,7 @@ trimPrefix := str.trimPrefix
 replace := str.replace
 split := str.split
 
-Reader := load('reader').Reader
+Reader := import('reader').Reader
 
 Newline := char(10)
 Tab := char(9)

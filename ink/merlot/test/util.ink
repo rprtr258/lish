@@ -1,10 +1,10 @@
 # application utility tests
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 f := std.format
 each := std.each
 
-formatNumber := load('../lib/util').formatNumber
+formatNumber := import('../lib/util').formatNumber
 
 run := (m, t) => (
   m('formatNumber')

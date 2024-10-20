@@ -1,11 +1,11 @@
 # interactive terminal tic tac toe in Ink
 
 log := s => out(s + '\n')
-std := load('std')
+std := import('std')
 scan := std.scan
 slice := std.slice
-f := load('str').format
-functional := load('functional')
+f := import('str').format
+functional := import('functional')
 map := functional.map
 reduce := functional.reduce
 filter := functional.filter

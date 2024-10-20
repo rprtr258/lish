@@ -1,16 +1,16 @@
 # filesystem i/o demo
 
-log := load('logging').log
-std := load('std')
+log := import('logging').log
+std := import('std')
 slice := std.slice
-functional := load('functional')
+functional := import('functional')
 map := functional.map
 each := functional.each
-str := load('str')
+str := import('str')
 f := str.format
 decode := str.decode
 stringList := std.stringList
-io := load('io')
+io := import('io')
 readFile := io.readFile
 writeFile := io.writeFile
 

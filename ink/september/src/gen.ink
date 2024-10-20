@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
@@ -6,18 +6,18 @@ clone := std.clone
 map := std.map
 cat := std.cat
 
-str := load('../vendor/str')
+str := import('../vendor/str')
 
 replace := str.replace
 
-quicksort := load('../vendor/quicksort')
+quicksort := import('../vendor/quicksort')
 
 sort! := quicksort.sort!
 
-Tokenize := load('tokenize')
+Tokenize := import('tokenize')
 Tok := Tokenize.Tok
 
-Parse := load('parse')
+Parse := import('parse')
 Node := Parse.Node
 ident? := Parse.ident?
 ndString := Parse.ndString

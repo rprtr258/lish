@@ -1,6 +1,6 @@
 ` the sistine help command `
 
-log := load('../vendor/std').log
+log := import('../vendor/std').log
 
 main := () => log('Sistine is a static site generator.
 

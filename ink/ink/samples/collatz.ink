@@ -1,16 +1,16 @@
 # finding long collatz sequences
 
-log := load('logging').log
-f := load('str').format
-pipe := load('functional').pipe
-iter := load('iter')
+log := import('logging').log
+f := import('str').format
+pipe := import('functional').pipe
+iter := import('iter')
 range := iter.range
 map := iter.map
 fold := iter.foldl
 generate := iter.generate
 takeWhile := iter.takeWhile
 collect := iter.collect
-ternary := load('math').ternary
+ternary := import('math').ternary
 
 sequence := start => pipe(start, [
   n => generate(n, n => n % 2 :: {

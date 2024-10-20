@@ -3,15 +3,15 @@
 # an http static file server
 # with support for directory indexes
 
-log := load('logging').log
-slice := load('std').slice
-str := load('str')
+log := import('logging').log
+slice := import('std').slice
+str := import('str')
 f := str.format
 cat := str.join
-std := load('functional')
+std := import('functional')
 map := std.map
 each := std.each
-readFile := load('io').readFile
+readFile := import('io').readFile
 
 DIR := '.'
 PORT := 7800

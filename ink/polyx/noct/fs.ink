@@ -1,8 +1,8 @@
 ` filesystem abstractions `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
-json := load('../vendor/json')
+std := import('../vendor/std')
+str := import('../vendor/str')
+json := import('../vendor/json')
 
 log := std.log
 cat := std.cat
@@ -15,7 +15,7 @@ replace := str.replace
 readFile := std.readFile
 writeFile := std.writeFile
 
-queue := load('../lib/queue')
+queue := import('../lib/queue')
 
 ` prevent climbing out of root directory of noct service `
 cleanPath := path => (

@@ -1,7 +1,7 @@
 ` fibonacci sequence generator
   copied from ink/samples/fib.ink `
 
-std := load('./runtime/std')
+std := import('./runtime/std')
 
 log := std.log
 

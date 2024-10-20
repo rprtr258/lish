@@ -1,8 +1,8 @@
 ` json database abstraction `
 
-std := load('../vendor/std')
-uuid := load('../vendor/uuid')
-json := load('../vendor/json')
+std := import('../vendor/std')
+uuid := import('../vendor/uuid')
+json := import('../vendor/json')
 
 log := std.log
 readFile := std.readFile

@@ -1,6 +1,6 @@
 # mime type
 
-split := load('../vendor/str').split
+split := import('../vendor/str').split
 
 MimeTypes := {
   'html': 'text/html'

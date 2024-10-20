@@ -4,9 +4,9 @@ internally by the searcher and are not meant to be exposed outside of the
 library, though it can be used outside of the library if desired -- the
 interface is probably stable. `
 
-std := load('../vendor/std')
-quicksort := load('../vendor/quicksort')
-fastsort := load('fastsort.js')
+std := import('../vendor/std')
+quicksort := import('../vendor/quicksort')
+fastsort := import('fastsort.js')
 
 map := std.map
 reduce := std.reduce

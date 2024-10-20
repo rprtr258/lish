@@ -1,7 +1,7 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 slice := std.slice
 append := std.append
-str := load('../vendor/str')
+str := import('../vendor/str')
 split := str.split
 hasPrefix? := str.hasPrefix?
 

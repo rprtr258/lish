@@ -1,6 +1,6 @@
-std := load('../vendor/std')
-str := load('../vendor/str')
-json := load('../lib/rejson')
+std := import('../vendor/std')
+str := import('../vendor/str')
+json := import('../lib/rejson')
 
 log := std.log
 f := std.format
@@ -14,26 +14,26 @@ split := str.split
 deJSON := json.de
 serJSON := json.ser
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 
-indexer := load('../lib/indexer')
+indexer := import('../lib/indexer')
 indexDocs := indexer.indexDocs
 
-searcher := load('../lib/searcher')
+searcher := import('../lib/searcher')
 findDocs := searcher.findDocs
 
 ` modules `
 Modules := {
-	www: load('../modules/www')
-	entr: load('../modules/entr')
-	mira: load('../modules/mira')
-	tweets: load('../modules/tweets')
-	pocket: load('../modules/pocket')
-	lifelog: load('../modules/lifelog')
-	ligature: load('../modules/ligature')
-	ideaflow: load('../modules/ideaflow')
+	www: import('../modules/www')
+	entr: import('../modules/entr')
+	mira: import('../modules/mira')
+	tweets: import('../modules/tweets')
+	pocket: import('../modules/pocket')
+	lifelog: import('../modules/lifelog')
+	ligature: import('../modules/ligature')
+	ideaflow: import('../modules/ideaflow')
 }
 ModuleState := {
 	loadedModules: 0

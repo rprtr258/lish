@@ -1,8 +1,8 @@
 # minimal quicksort implementation
 # using hoare partition
 
-map := load('functional').map
-clone := load('std').clone
+map := import('functional').map
+clone := import('std').clone
 
 sortBy := (v, pred) => (
   partition := (v, lo, hi) => (

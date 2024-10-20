@@ -1,6 +1,6 @@
-runTokenizerTests := load('tokenizer').run
+runTokenizerTests := import('tokenizer').run
 
-s := (load('../vendor/suite').suite)(
+s := (import('../vendor/suite').suite)(
 	'Monocle test suite'
 )
 

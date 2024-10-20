@@ -1,6 +1,6 @@
 ` escaping various formats `
 
-str := load('../vendor/str')
+str := import('../vendor/str')
 replace := str.replace
 
 html := s => (

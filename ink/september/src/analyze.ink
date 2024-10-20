@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
@@ -8,11 +8,11 @@ filter := std.filter
 clone := std.clone
 append := std.append
 
-Tokenize := load('tokenize')
+Tokenize := import('tokenize')
 Tok := Tokenize.Tok
 tkString := Tokenize.tkString
 
-Parse := load('parse')
+Parse := import('parse')
 Node := Parse.Node
 ident? := Parse.ident?
 ndString := Parse.ndString

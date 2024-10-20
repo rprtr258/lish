@@ -1,6 +1,6 @@
 ` prime sieve `
 
-std := load('std')
+std := import('std')
 
 log := std.log
 stringList := std.stringList

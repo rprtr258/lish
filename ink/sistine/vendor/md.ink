@@ -1,5 +1,5 @@
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 cat := std.cat
 slice := std.slice
@@ -20,7 +20,7 @@ trimPrefix := str.trimPrefix
 replace := str.replace
 split := str.split
 
-Reader := load('reader').Reader
+Reader := import('reader').Reader
 
 Newline := char(10)
 Tab := char(9)

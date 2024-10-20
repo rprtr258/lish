@@ -1,7 +1,7 @@
 ` Module "www" indexes every post from my blog thesephist.com. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 f := std.format
@@ -16,7 +16,7 @@ index := str.index
 split := str.split
 trim := str.trim
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 

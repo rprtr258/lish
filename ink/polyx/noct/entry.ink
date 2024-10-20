@@ -1,21 +1,21 @@
 ` noct server `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 log := std.log
 readFile := std.readFile
 writeFile := std.writeFile
-json := load('../vendor/json')
+json := import('../vendor/json')
 
-http := load('../lib/http')
-cli := load('../lib/cli')
-pctDecode := load('../lib/percent').decode
+http := import('../lib/http')
+cli := import('../lib/cli')
+pctDecode := import('../lib/percent').decode
 
-fs := load('fs')
+fs := import('fs')
 cleanPath := fs.cleanPath
 describe := fs.describe
 flatten := fs.flatten
 ensurePDE := fs.ensureParentDirExists
-sync := load('sync')
+sync := import('sync')
 
 Port := 7280
 

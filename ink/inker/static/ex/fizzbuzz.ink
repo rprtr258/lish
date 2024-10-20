@@ -1,6 +1,6 @@
 ` ink fizzbuzz implementation `
 
-std := load('std')
+std := import('std')
 
 log := std.log
 range := std.range

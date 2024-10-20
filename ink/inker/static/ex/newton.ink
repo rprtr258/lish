@@ -1,6 +1,6 @@
 ` implementation of Newton's method to square root `
 
-std := load('std')
+std := import('std')
 
 log := std.log
 f := std.format

@@ -1,6 +1,6 @@
 ` fibonacci sequence generator `
 
-log := load('std').log
+log := import('std').log
 
 ` naive implementation `
 fib := n => n :: {

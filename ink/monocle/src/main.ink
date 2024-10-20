@@ -1,15 +1,15 @@
 ` main.ink serves files `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 f := std.format
 readFile := std.readFile
 contains? := str.contains?
 
-http := load('../vendor/http')
-mimeForPath := load('../vendor/mime').forPath
+http := import('../vendor/http')
+mimeForPath := import('../vendor/mime').forPath
 
 Port := 9999
 

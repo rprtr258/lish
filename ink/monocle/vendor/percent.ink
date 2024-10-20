@@ -1,7 +1,7 @@
 ` percent encoding, also known as URI encoding `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 reduce := std.reduce

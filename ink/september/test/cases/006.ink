@@ -2,8 +2,8 @@
   to only test against std and str `
 
 ` load std & str once for all tests `
-std := load('./runtime/std')
-str := load('./runtime/str')
+std := import('./runtime/std')
+str := import('./runtime/str')
 
 ` borrow from std `
 log := std.log

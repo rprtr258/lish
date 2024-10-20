@@ -3,7 +3,7 @@ clear := '__cleared'
 # ink language test suite,
 # built on the suite library for testing
 
-s := load('suite')(
+s := import('suite')(
   'Ink language and standard library'
 )
 
@@ -11,11 +11,11 @@ s := load('suite')(
 m := s.mark
 t := s.test
 
-# load std & str once for all tests
-std := load('std')
-math := load('math')
-str := load('str')
-functional := load('functional')
+# import std & str once for all tests
+std := import('std')
+math := import('math')
+str := import('str')
+functional := import('functional')
 
 m('eval with #!/usr/bin/env ink')
 (
@@ -881,7 +881,7 @@ m('std.format -- the standard library formatter / templater')
 
 m('uuid -- uuid v4 generator')
 (
-  uuid := load('uuid')
+  uuid := import('uuid')
   xeh := str.xeh
   range := functional.range
   map := functional.map
@@ -929,7 +929,7 @@ m('json ser/de')
 (
   clone := std.clone
 
-  json := load('json')
+  json := import('json')
   ser := json.ser
   de := json.de
 
@@ -1184,12 +1184,12 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
     trim('????what?????', '???'), '?what??')
 )
 
-m('load() import semantics')
+m('import() import semantics')
 (
-  getObjA := load('load_dedup')
-  getObjB := load('load_dedup/load_dedup_child')
+  getObjA := import('load_dedup')
+  getObjB := import('load_dedup/load_dedup_child')
 
-  t('load() from different contexts should be deduplicated'
+  t('import() from different contexts should be deduplicated'
     getObjA() = getObjB(), true)
 )
 
@@ -1208,7 +1208,7 @@ m('args() list')
 
 m('html')
 (
-  H := load('html')
+  H := import('html')
   html := H.html
   title := H.title
   h1 := H.h1
@@ -1227,9 +1227,9 @@ m('html')
 
 m('sort')
 (
-  range := load('functional').range
+  range := import('functional').range
   clone := std.clone
-  quicksort := load('quicksort')
+  quicksort := import('quicksort')
   sort := quicksort.sort
   sort! := quicksort.sort!
 
@@ -1248,7 +1248,7 @@ m('sort')
 
 m('stack')
 (
-  stack := load('stack').new
+  stack := import('stack').new
 
   s := stack()
   (s.push)(0)

@@ -1,8 +1,8 @@
 ` command-line interface abstractions
   for [cmd] [verb] [options] form`
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 each := std.each
 slice := std.slice

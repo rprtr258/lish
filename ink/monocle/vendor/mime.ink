@@ -1,6 +1,6 @@
 ` mime type `
 
-str := load('../vendor/str')
+str := import('../vendor/str')
 split := str.split
 
 MimeTypes := {

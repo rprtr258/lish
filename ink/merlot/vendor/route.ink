@@ -1,7 +1,7 @@
 # url router
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 slice := std.slice
@@ -11,7 +11,7 @@ cat := std.cat
 filter := std.filter
 split := str.split
 
-percent := load('percent')
+percent := import('percent')
 pctDecode := percent.decode
 
 new := () => []

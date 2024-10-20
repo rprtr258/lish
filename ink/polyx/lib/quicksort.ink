@@ -1,7 +1,7 @@
 ` minimal quicksort implementation
   using hoare partition `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 map := std.map
 clone := std.clone

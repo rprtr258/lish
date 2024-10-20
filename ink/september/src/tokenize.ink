@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
@@ -7,13 +7,13 @@ map := std.map
 reduce := std.reduce
 every := std.every
 
-str := load('../vendor/str')
+str := import('../vendor/str')
 
 digit? := str.digit?
 hasPrefix? := str.hasPrefix?
 index := str.index
 
-mkiota := load('iota').new
+mkiota := import('iota').new
 
 Newline := char(10)
 Tab := char(9)

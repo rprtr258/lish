@@ -1,6 +1,6 @@
 #!/usr/bin/env ink
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 f := std.format
@@ -9,11 +9,11 @@ cat := std.cat
 each := std.each
 readFile := std.readFile
 
-cli := load('../vendor/cli')
+cli := import('../vendor/cli')
 
 ` september subcommands `
-highlight := load('../src/highlight').main
-translate := load('../src/translate').main
+highlight := import('../src/highlight').main
+translate := import('../src/translate').main
 
 Newline := char(10)
 Tab := char(9)

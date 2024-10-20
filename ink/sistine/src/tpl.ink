@@ -1,4 +1,4 @@
-std := load('../vendor/std')
+std := import('../vendor/std')
 log := std.log
 f := std.format
 pipe := std.pipe
@@ -9,12 +9,12 @@ map := std.map
 each := std.each
 filter := std.filter
 reverse := std.reverse
-str := load('../vendor/str')
+str := import('../vendor/str')
 split := str.split
 trim := str.trim
-sortBy := load('../vendor/quicksort').sortBy
-escapeHTML := load('../vendor/escape').html
-Reader := load('../vendor/reader').Reader
+sortBy := import('../vendor/quicksort').sortBy
+escapeHTML := import('../vendor/escape').html
+Reader := import('../vendor/reader').Reader
 
 iota := (
   S := {i: 0}

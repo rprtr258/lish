@@ -14,11 +14,11 @@
   - Enforce mutability restrictions at the type level -- variables are (deeply) immutable by default, must be marked as mutable to allow mutation. This also improves functional ergonomics of the language.
   - Potential type annotation: `myVar<type>` (`myVar` is of type `type`), `myFunc<string, boolean => {number}>` (`myFunc` is of type function mapping `string`, `boolean` to type composite of `number`)
   - types are conversion functions, e.g. `string` converts anything to `string` type
-- [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := load('functional')`
+- [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := import('functional')`
 - [ ] value semantics
 - [ ] make `:: {...}` mean `true :: {...}` as a common case
 - [ ] `<=`, `>=`, `!=` operators
-- [ ] `load` from url
+- [ ] `import` from url
 - [ ] async/futures
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
 - [ ] make it possible to use oneline match expression, block expression

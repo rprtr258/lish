@@ -1,8 +1,8 @@
-runMarkdownTests := load('md').run
-runReaderTests := load('reader').run
-runUtilTests := load('util').run
+runMarkdownTests := import('md').run
+runReaderTests := import('reader').run
+runUtilTests := import('util').run
 
-s := (load('../vendor/suite').suite)(
+s := (import('../vendor/suite').suite)(
   'Merlot test suite'
 )
 

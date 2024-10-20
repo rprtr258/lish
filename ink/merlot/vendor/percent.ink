@@ -1,13 +1,13 @@
 # percent encoding, also known as URI encoding
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 log := std.log
 reduce := std.reduce
 map := std.map
 cat := std.cat
 hex := std.hex
 xeh := std.xeh
-str := load('../vendor/str')
+str := import('../vendor/str')
 digit? := str.digit?
 upper? := str.upper?
 lower? := str.lower?

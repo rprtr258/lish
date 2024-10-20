@@ -1,9 +1,9 @@
 # ink standard test suite tools
 
 # borrow from std
-log := load('logging').log
-each := load('functional').each
-f := load('str').format
+log := import('logging').log
+each := import('functional').each
+f := import('str').format
 
 # suite constructor
 label => (

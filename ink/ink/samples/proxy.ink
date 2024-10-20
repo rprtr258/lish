@@ -1,8 +1,8 @@
 # basic HTTP proxy
 
-log := load('logging').log
-f := load('str').format
-slice := load('std').slice
+log := import('logging').log
+f := import('str').format
+slice := import('std').slice
 
 PORT := 7900
 

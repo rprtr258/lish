@@ -1,7 +1,7 @@
 ` the indexer takes a map of documents to tokens, and generates a posting list
 used for querying. `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 each := std.each
 

@@ -1,9 +1,9 @@
 # Markdown parser's Reader tests
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 each := std.each
 
-Reader := load('../lib/reader').Reader
+Reader := import('../lib/reader').Reader
 
 run := (m, t) => (
   m('Reader.peek')

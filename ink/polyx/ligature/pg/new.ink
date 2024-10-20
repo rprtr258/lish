@@ -1,10 +1,10 @@
 ` /new `
 
-std := load('../../vendor/std')
-str := load('../../vendor/str')
+std := import('../../vendor/std')
+str := import('../../vendor/str')
 f := std.format
 
-HeadTemplate := load('head').Template
+HeadTemplate := import('head').Template
 
 render := cb => (
   cb(Template())

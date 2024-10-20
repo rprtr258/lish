@@ -47,8 +47,8 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 // LoadEnvironment loads all builtins (functions and constants) to a given Context.
 func (ctx *Context) LoadEnvironment() {
 	for name, fn := range map[string]func(*Context, []Value) (Value, *Err){
-		"load": inkLoad,
-		"par":  inkPar,
+		"import": inkImport,
+		"par":    inkPar,
 
 		// system interfaces
 		"args":   inkArgs,
@@ -190,38 +190,38 @@ func validateCustom(condition bool, msg string) string {
 	return ""
 }
 
-func inkLoad(ctx *Context, in []Value) (Value, *Err) {
+func inkImport(ctx *Context, in []Value) (Value, *Err) {
 	var givenPath ValueString
 	if err, ok := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &givenPath),
 		validateCustom(len(givenPath) > 0, "arg must be path without the .ink suffix"),
 	); ok {
-		return nil, &Err{ErrRuntime, "load(): " + err, position{ctx.File, 0, 0}} // TODO: pass position here and everywhere
+		return nil, &Err{ErrRuntime, "import(): " + err, position{ctx.File, 0, 0}} // TODO: pass position here and everywhere
 	}
 
-	// imports via load() are assumed to be relative
+	// imports via import() are assumed to be relative
 	importPath := string(givenPath) + ".ink"
 	if !filepath.IsAbs(importPath) {
 		importPath = filepath.Join(ctx.WorkingDirectory, importPath)
 	}
 
-	// evalLock blocks file eval; temporary unlock it for the load to run.
-	// Calling load() from within a running program is not supported, so we
+	// evalLock blocks file eval; temporary unlock it for the import to run.
+	// Calling import() from within a running program is not supported, so we
 	// don't really care if catastrophic things happen because of unlocked evalLock.
 	ctx.Engine.mu.Unlock()
 	defer ctx.Engine.mu.Lock()
 
 	childCtx, ok := ctx.Engine.Contexts[importPath]
 	if !ok {
-		// The loaded program runs in a "child context", a distinct context from
+		// The imported program runs in a "child context", a distinct context from
 		// the importing program. The "child" term is a bit of a misnomer as Contexts
 		// do not exist in a hierarchy, but conceptually makes sense here.
 		childCtx = ctx.Engine.CreateContext()
 		ctx.Engine.Contexts[importPath] = childCtx
 
 		// Execution here follows updating ctx.Engine.Contexts
-		// to behave correctly in the case where A loads B loads A again,
+		// to behave correctly in the case where A imports B imports A again,
 		// and still only import one instance of A.
 		value, err := childCtx.ExecPath(importPath)
 		if err != nil {
@@ -1481,8 +1481,8 @@ func inkPar(ctx *Context, in []Value) (Value, *Err) {
 		return nil, &Err{ErrRuntime, "par(): " + err, pos}
 	}
 
-	// evalLock blocks file eval; temporary unlock it for the load to run.
-	// Calling load() from within a running program is not supported, so we
+	// evalLock blocks file eval; temporary unlock it for the import to run.
+	// Calling import() from within a running program is not supported, so we
 	// don't really care if catastrophic things happen because of unlocked evalLock.
 	ctx.Engine.mu.Unlock()
 	defer ctx.Engine.mu.Lock()

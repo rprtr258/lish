@@ -1,8 +1,8 @@
 # prime sieve
 
-log := load('logging').log
-filter := load('functional').filter
-range := load('functional').range
+log := import('logging').log
+filter := import('functional').filter
+range := import('functional').range
 
 # is a single number prime?
 isPrime := n =>

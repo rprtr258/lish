@@ -21,7 +21,7 @@ To compile Ink program files (say, `a.ink`), run `september translate` to compil
 
 ```sh
 $ cat a.ink # example program
-std := load('./runtime/std')
+std := import('./runtime/std')
 
 log := std.log
 
@@ -62,7 +62,7 @@ Because September contains a fully self-hosted tokenizer and parser, September c
 
 ```sh
 $ september print a.ink
-std := load('./runtime/std')
+std := import('./runtime/std')
 
 log := std.log
 

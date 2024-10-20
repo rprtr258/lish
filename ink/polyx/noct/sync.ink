@@ -1,9 +1,9 @@
 ` sync operations `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 each := std.each
 
-fs := load('fs')
+fs := import('fs')
 
 actions := {
   up: 0

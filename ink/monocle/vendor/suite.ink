@@ -1,6 +1,6 @@
 ` ink standard test suite tools `
 
-std := load('std')
+std := import('std')
 
 ` borrow from std `
 log := std.log

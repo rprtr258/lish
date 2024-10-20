@@ -1,7 +1,7 @@
 ` /index.html `
 
-std := load('../../vendor/std')
-str := load('../../vendor/str')
+std := import('../../vendor/std')
+str := import('../../vendor/str')
 f := std.format
 each := std.each
 map := std.map
@@ -9,11 +9,11 @@ cat := std.cat
 split := str.split
 readFile := std.readFile
 
-quicksort := load('../../lib/quicksort')
+quicksort := import('../../lib/quicksort')
 sortBy := quicksort.sortBy
 
-HeadTemplate := load('head').Template
-NoteCard := load('card').Template
+HeadTemplate := import('head').Template
+NoteCard := import('card').Template
 
 render := (dbPath, cb) => dir(dbPath, evt => evt.type :: {
   'error' -> cb('error finding notes')

@@ -1,6 +1,6 @@
 # this file exists to test whether
 # imported Ink contexts are deduplicated correctly
 
-std := load('../std')
+std := import('../std')
 
-load('../load_dedup')
+import('../load_dedup')

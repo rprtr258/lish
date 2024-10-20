@@ -1,6 +1,6 @@
 #!/usr/bin/env ink
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 

@@ -1,6 +1,6 @@
 ` shared partial <head> `
 
-std := load('../../vendor/std')
+std := import('../../vendor/std')
 f := std.format
 
 Template := title => f('

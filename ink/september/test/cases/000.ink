@@ -1,7 +1,7 @@
 ` 000 tests `
 
-std := load('./runtime/std')
-# std := load('../../vendor/std')
+std := import('./runtime/std')
+# std := import('../../vendor/std')
 
 ` scratchpad `
 

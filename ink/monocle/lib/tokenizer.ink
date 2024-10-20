@@ -5,8 +5,8 @@ Many functions in this file could be written more readably, but would sacrifice
 speed. Functions here, especially the ones heavy on iteration, are written with
 hand-written loops for maximum performance with the standard Ink interpreter. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 f := std.format
 each := std.each

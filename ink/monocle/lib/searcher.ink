@@ -1,14 +1,14 @@
 ` the searcher handles stemming and synonym handling `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 map := std.map
 slice := std.slice
 filter := std.filter
 reduce := std.reduce
 
-tokenizer := load('tokenizer')
-ranker := load('ranker')
+tokenizer := import('tokenizer')
+ranker := import('ranker')
 
 tokenize := tokenizer.tokenize
 rankDocs := ranker.rankDocs

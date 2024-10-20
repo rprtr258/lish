@@ -1,7 +1,7 @@
-# runMarkdownTests := load('md').run
-# runReaderTests := load('reader').run
+# runMarkdownTests := import('md').run
+# runReaderTests := import('reader').run
 
-s := (load('../vendor/suite').suite)(
+s := (import('../vendor/suite').suite)(
   'Sistine test suite'
 )
 

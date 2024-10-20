@@ -1,8 +1,8 @@
 # JSON serde
 
-map := load('functional').map
+map := import('functional').map
 
-str := load('str')
+str := import('str')
 cat := str.join
 ws? := str.ws?
 digit? := str.digit?

@@ -1,8 +1,8 @@
 # Monte-Carlo estimation of pi using random number generator
 
-log := load('logging').log
-sqrt := load('math').sqrt
-f := load('str').format
+log := import('logging').log
+sqrt := import('math').sqrt
+f := import('str').format
 
 # take count from CLI, defaulting to 250k
 Count := (c := number(args().2) :: {

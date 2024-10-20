@@ -2,8 +2,8 @@
 when I started keeping them in my system. These entries life in a specific file
 format in Polyx (thesephist/polyx)i, at LifeLogDir. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 slice := std.slice
@@ -20,7 +20,7 @@ split := str.split
 replace := str.replace
 trim := str.trim
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 

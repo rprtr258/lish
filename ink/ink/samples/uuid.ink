@@ -1,8 +1,8 @@
 # uuid
 
-hex := load('str').nToH
-# {range map} := load('functional')
-functional := load('functional')
+hex := import('str').nToH
+# {range map} := import('functional')
+functional := import('functional')
 range := functional.range
 map := functional.map
 

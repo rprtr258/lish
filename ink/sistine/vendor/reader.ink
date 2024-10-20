@@ -1,5 +1,5 @@
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 slice := std.slice
 append := std.append

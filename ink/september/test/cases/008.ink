@@ -1,8 +1,8 @@
 ` prime sieve
   taken from thesephist/ink/samples/`
 
-std := load('./runtime/std')
-# std := load('../../vendor/std')
+std := import('./runtime/std')
+# std := import('../../vendor/std')
 
 log := std.log
 filter := std.filter

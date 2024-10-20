@@ -1,6 +1,6 @@
 ` standard string library `
 
-std := load('std')
+std := import('std')
 
 map := std.map
 slice := std.slice

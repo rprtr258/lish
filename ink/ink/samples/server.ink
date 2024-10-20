@@ -1,6 +1,6 @@
 # a primitive HTTP server
 
-log := load('logging').log
+log := import('logging').log
 
 close := listen('0.0.0.0:8080', evt => (
   log(evt)

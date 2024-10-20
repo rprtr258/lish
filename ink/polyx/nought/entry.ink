@@ -1,4 +1,4 @@
-http := load('../lib/http')
+http := import('../lib/http')
 
 PORT := 9220
 

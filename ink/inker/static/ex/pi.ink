@@ -1,6 +1,6 @@
 ` Monte-Carlo estimation of pi using random number generator `
 
-log := load('std').log
+log := import('std').log
 
 ` take count from CLI, defaulting to 250k `
 Count := (c := number(args().2) :: {

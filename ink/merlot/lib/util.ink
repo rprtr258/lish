@@ -1,6 +1,6 @@
 # potentially shared utility functions and values
 
-str := load('../vendor/str')
+str := import('../vendor/str')
 trimPrefix := str.trimPrefix
 
 zeroFillTo3Digits := s => len(s) :: {

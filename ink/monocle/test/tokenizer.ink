@@ -1,6 +1,6 @@
 ` tokenizer tests `
 
-tokenize := load('../lib/tokenizer').tokenize
+tokenize := import('../lib/tokenizer').tokenize
 
 run := (m, t) => (
 	m('tokenize')

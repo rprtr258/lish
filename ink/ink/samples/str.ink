@@ -1,9 +1,9 @@
 # standard string library
 
-std := load('functional')
+std := import('functional')
 map := std.map
 reduce := std.reduce
-slice := load('std').slice
+slice := import('std').slice
 
 # checking if a given character is of a type
 checkRange := (lo, hi) => c => (

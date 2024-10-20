@@ -2,8 +2,8 @@
 of quotes and ideas Linus keeps internally in Polyx (thesephist/polyx), at
 EntrFilePath. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 slice := std.slice
@@ -18,7 +18,7 @@ replace := str.replace
 hasPrefix? := str.hasPrefix?
 trimPrefix := str.trimPrefix
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 

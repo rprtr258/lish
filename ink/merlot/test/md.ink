@@ -1,10 +1,10 @@
 # Markdown library tests
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 cat := std.cat
 
-md := load('../lib/md')
+md := import('../lib/md')
 compile := md.compile
 
 Newline := char(10)

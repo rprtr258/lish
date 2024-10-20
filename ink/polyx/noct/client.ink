@@ -2,26 +2,26 @@
 
 ` noct client `
 
-std := load('../vendor/std')
-json := load('../vendor/json')
+std := import('../vendor/std')
+json := import('../vendor/json')
 log := std.log
 f := std.format
 each := std.each
 readFile := std.readFile
 writeFile := std.writeFile
 
-cli := load('../lib/cli')
-queue := load('../lib/queue')
-percent := load('../lib/percent')
+cli := import('../lib/cli')
+queue := import('../lib/queue')
+percent := import('../lib/percent')
 pctEncode := percent.encodeKeepSlash
 
-fs := load('fs')
+fs := import('fs')
 cleanPath := fs.cleanPath
 describe := fs.describe
 flatten := fs.flatten
 ensurePDE := fs.ensureParentDirExists
-server := load('entry')
-sync := load('sync')
+server := import('entry')
+sync := import('sync')
 diff := sync.diff
 
 ` so we only log the default override msg once `

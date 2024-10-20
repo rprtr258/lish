@@ -1,8 +1,8 @@
 ` Module "ligature" indexes all notes in the Ligature notes app, which I use
 for long-term archival notes as a part of my Polyx (thesephist/polyx) suite. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 log := std.log
 f := std.format
@@ -16,7 +16,7 @@ readFile := std.readFile
 split := str.split
 trim := str.trim
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 

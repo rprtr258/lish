@@ -1,7 +1,7 @@
 ` JSON serde `
 
-std := load('std')
-str := load('str')
+std := import('std')
+str := import('str')
 
 map := std.map
 cat := std.cat

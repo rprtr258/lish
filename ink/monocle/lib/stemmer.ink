@@ -1,13 +1,13 @@
 ` the stemmer encodes stemming rules for query normalization `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 
 filter := std.filter
 hasSuffix? := str.hasSuffix?
 trimSuffix := str.trimSuffix
 
-tokenizer := load('tokenizer')
+tokenizer := import('tokenizer')
 tokenize := tokenizer.tokenize
 
 uniq := list => keys(reduce(list, (set, it) => set.(it) := true, {}))

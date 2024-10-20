@@ -1,6 +1,6 @@
 ` uuid `
 
-std := load('std')
+std := import('std')
 
 hex := std.hex
 range := std.range

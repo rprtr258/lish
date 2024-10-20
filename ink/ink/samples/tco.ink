@@ -1,6 +1,6 @@
 # stress tests for tail call optimization
 
-log := load('logging').log
+log := import('logging').log
 
 # recursion tests need some very large stack size goal.
 # Minimum stack size to cause Goroutine overflow:

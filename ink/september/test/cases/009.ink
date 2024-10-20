@@ -1,7 +1,7 @@
 ` tail call elimination tests
   with a large fibonacci seq `
 
-std := load('./runtime/std')
+std := import('./runtime/std')
 
 log := std.log
 range := std.range

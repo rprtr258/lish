@@ -46,7 +46,7 @@ test:
 	./ink samples/pingpong.ink
 	./ink samples/exec.ink
 	# test -eval flag
-	./ink -eval "log:=load('samples/logging').log,f:=x=>()=>log('Eval test: '+x),f('passed!')()"
+	./ink -eval "log:=import('samples/logging').log,f:=x=>()=>log('Eval test: '+x),f('passed!')()"
 	rm ./ink
 
 # build for specific OS target

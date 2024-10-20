@@ -1,6 +1,6 @@
 ` september syntax highlighter command `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 map := std.map
@@ -8,7 +8,7 @@ each := std.each
 slice := std.slice
 cat := std.cat
 
-ansi := load('../vendor/ansi')
+ansi := import('../vendor/ansi')
 
 Norm := s => s
 Gray := ansi.Gray
@@ -19,7 +19,7 @@ Blue := ansi.Blue
 Magenta := ansi.Magenta
 Cyan := ansi.Cyan
 
-Tokenize := load('tokenize')
+Tokenize := import('tokenize')
 Tok := Tokenize.Tok
 tokenize := Tokenize.tokenizeWithComments
 

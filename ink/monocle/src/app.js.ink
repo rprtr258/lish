@@ -1,6 +1,6 @@
 ` Main application UI `
 
-std := load('std')
+std := import('std')
 log := std.log
 f := std.format
 

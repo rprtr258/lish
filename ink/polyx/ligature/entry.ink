@@ -1,7 +1,7 @@
 ` ligature server `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
+std := import('../vendor/std')
+str := import('../vendor/str')
 log := std.log
 f := std.format
 reduce := std.reduce
@@ -12,18 +12,18 @@ letter? := str.letter?
 digit? := str.digit?
 trimPrefix := str.trimPrefix
 
-http := load('../lib/http')
-cli := load('../lib/cli')
-mime := load('../lib/mime')
-percent := load('../lib/percent')
+http := import('../lib/http')
+cli := import('../lib/cli')
+mime := import('../lib/mime')
+percent := import('../lib/percent')
 mimeForPath := mime.forPath
 pctDecode := percent.decode
 
 Pages := {
-  index: load('pg/index')
-  note: load('pg/note')
-  new: load('pg/new')
-  find: load('pg/find')
+  index: import('pg/index')
+  note: import('pg/note')
+  new: import('pg/new')
+  find: import('pg/find')
 }
 
 Port := 7282

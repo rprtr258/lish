@@ -1,6 +1,6 @@
 ` note card component `
 
-std := load('../../vendor/std')
+std := import('../../vendor/std')
 f := std.format
 
 Template := note => (

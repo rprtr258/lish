@@ -1,14 +1,14 @@
 ` /note/:label `
 
-std := load('../../vendor/std')
-str := load('../../vendor/str')
+std := import('../../vendor/std')
+str := import('../../vendor/str')
 f := std.format
 readFile := std.readFile
 
-escape := load('../../lib/escape')
+escape := import('../../lib/escape')
 escapeHTML := escape.html
 
-HeadTemplate := load('head').Template
+HeadTemplate := import('head').Template
 
 render := (dbPath, label, cb) => (
   readFile(dbPath + '/' + label + '.md', file => file :: {

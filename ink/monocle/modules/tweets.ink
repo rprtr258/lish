@@ -1,9 +1,9 @@
 ` Module "tweets" indexes and makes searchable all of my tweets, from a Twitter
 archive download. `
 
-std := load('../vendor/std')
-str := load('../vendor/str')
-json := load('../vendor/json')
+std := import('../vendor/std')
+str := import('../vendor/str')
+json := import('../vendor/json')
 
 log := std.log
 slice := std.slice
@@ -20,7 +20,7 @@ hasPrefix? := str.hasPrefix?
 trimPrefix := str.trimPrefix
 deJSON := json.de
 
-tokenizer := load('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 

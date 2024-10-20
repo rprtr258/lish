@@ -1,7 +1,7 @@
 ` /find?q=search%20term `
 
-std := load('../../vendor/std')
-str := load('../../vendor/str')
+std := import('../../vendor/std')
+str := import('../../vendor/str')
 f := std.format
 each := std.each
 map := std.map
@@ -12,11 +12,11 @@ split := str.split
 replace := str.replace
 trimPrefix := str.trimPrefix
 
-quicksort := load('../../lib/quicksort')
+quicksort := import('../../lib/quicksort')
 sortBy := quicksort.sortBy
 
-HeadTemplate := load('head').Template
-NoteCard := load('card').Template
+HeadTemplate := import('head').Template
+NoteCard := import('card').Template
 
 ` we delegate the search code to grep (or in the future perhaps some other optimized
   file searcher like fgrep/ag) to be fast, and keep ligature's codebase small `

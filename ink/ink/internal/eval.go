@@ -1110,7 +1110,7 @@ func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
 func (ctx *Context) ExecPath(filePath string) (Value, *Err) {
-	// update Cwd for any potential load() calls this file will make
+	// update Cwd for any potential import() calls this file will make
 	ctx.WorkingDirectory = filepath.Dir(filePath)
 	ctx.File = filePath
 

@@ -1,6 +1,6 @@
 ` the sistine build command `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 log := std.log
 f := std.format
 pipe := std.pipe
@@ -13,20 +13,20 @@ peach := std.peach
 filter := std.filter
 readFile := std.readFile
 writeFile := std.writeFile
-str := load('../vendor/str')
+str := import('../vendor/str')
 index := str.index
 split := str.split
 hasSuffix? := str.hasSuffix?
 trimPrefix := str.trimPrefix
 trimSuffix := str.trimSuffix
 trim := str.trim
-json := load('../vendor/json')
+json := import('../vendor/json')
 deJSON := json.de
-Reader := load('../vendor/reader').Reader
-md := load('../vendor/md')
+Reader := import('../vendor/reader').Reader
+md := import('../vendor/md')
 compileMarkdown := md.transform
 
-tpl := load('tpl')
+tpl := import('tpl')
 compile := tpl.compile
 generate := tpl.generate
 

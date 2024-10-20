@@ -1,6 +1,6 @@
 ` concurrent task queue `
 
-std := load('../vendor/std')
+std := import('../vendor/std')
 
 log := std.log
 each := std.each
