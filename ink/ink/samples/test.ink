@@ -24,6 +24,15 @@ m('eval with #!/usr/bin/env ink')
     clear, '__cleared')
 )
 
+m('destructure assignment')
+(
+  list := [1, 2, 3]
+  [a, b, c] := list
+  t('a is 1', a, 1)
+  t('b is 2', b, 2)
+  t('c is 3', c, 3)
+)
+
 m('value equality')
 (
   # with primitives

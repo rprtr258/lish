@@ -28,4 +28,5 @@
 - [ ] make it possible to use oneline match expression, block expression
 - [ ] escape sequences in strings (e.g. `\x1b`)
 - [ ] operator overloading through methods, e.g. `a + b` is equivalent to `a.+(b)`, then we can define `+` as a method on `NumberValue` and `StringValue` that calls `+` on the underlying value and define `+` on custom values and composite values
+- [ ] shorthand dict syntax, e.g. `{pos, value}` meaning `{pos: pos, value: value}`, should work both for right side values and for destructure assignments
 - [ ] Add to [GitHub Linguist](https://github.com/github/linguist)

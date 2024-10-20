@@ -339,23 +339,14 @@ func operandToStringKey(rightOperand Node, scope *Scope) (string, *Err) {
 	}
 }
 
-func define(scope *Scope, left, right Node) (Value, *Err) {
-	switch leftSide := left.(type) {
+func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
+	switch leftSide := leftNode.(type) {
 	case NodeIdentifier:
-		if _, isEmpty := right.(NodeIdentifierEmpty); isEmpty {
-			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s", leftSide), left.Position()}
-		}
-
-		rightValue, err := right.Eval(scope, false)
-		if err != nil {
-			return nil, err
-		}
-
 		scope.Set(leftSide.val, rightValue)
 		return rightValue, nil
 	case NodeExprBinary:
 		if leftSide.operator != OpAccessor {
-			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), left.Position()}
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), leftNode.Position()}
 		}
 
 		leftValue, err := leftSide.left.Eval(scope, false)
@@ -370,11 +361,6 @@ func define(scope *Scope, left, right Node) (Value, *Err) {
 
 		switch left := leftValue.(type) {
 		case ValueComposite:
-			rightValue, err := right.Eval(scope, false)
-			if err != nil {
-				return nil, err
-			}
-
 			left[leftKey] = rightValue
 			return left, nil
 		case ValueString:
@@ -383,14 +369,9 @@ func define(scope *Scope, left, right Node) (Value, *Err) {
 				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), leftSide.right.Position()}
 			}
 
-			rightValue, err := right.Eval(scope, false)
-			if err != nil {
-				return nil, err
-			}
-
 			rightString, isString := rightValue.(ValueString)
 			if !isString {
-				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set part of string to a non-character %s", rightValue), right.Position()}
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set part of string to a non-character %s", rightValue), leftNode.Position()} // TODO: put right position
 			}
 
 			rightNum, errr := strconv.ParseInt(leftKey, 10, 64)
@@ -419,22 +400,46 @@ func define(scope *Scope, left, right Node) (Value, *Err) {
 		default:
 			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), leftSide.left.Position()}
 		}
-	// case NodeLiteralList:
-	// 	return nil, &Err{}
+	case NodeLiteralList: // list destructure: [a, b, c] = list
+		rightComposite, isComposite := rightValue.(ValueComposite)
+		if !isComposite || !rightComposite.isList() {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure non-list value %s into list", rightValue), leftNode.Position()}
+		} else if len(leftSide.vals) != len(rightComposite) {
+		}
+
+		res := make(ValueComposite, len(leftSide.vals))
+		for i, leftSide := range leftSide.vals {
+			k := strconv.Itoa(i)
+			v, err := define(scope, leftSide, rightComposite[k])
+			if err != nil {
+				return nil, err
+			}
+			res[k] = v
+		}
+		return res, nil
 	default:
-		leftt, err := left.Eval(scope, false)
+		leftt, err := leftNode.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftt), left.Position()}
+		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftt), leftNode.Position()}
 	}
 }
 
 func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	switch n.operator {
 	case OpDefine:
-		return define(scope, n.left, n.right)
+		if _, isEmpty := n.right.(NodeIdentifierEmpty); isEmpty {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s (actually anything)", n.left), n.left.Position()}
+		}
+
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot evaluate right-side of assignment: %s", err.Error()), n.left.Position()}
+		}
+
+		return define(scope, n.left, rightValue)
 	case OpAccessor:
 		leftValue, err := n.left.Eval(scope, false)
 		if err != nil {

@@ -2,7 +2,7 @@ package internal
 
 import "fmt"
 
-type ErrorReason int
+type ErrorReason int8
 
 func (r ErrorReason) String() string {
 	switch r {
@@ -31,6 +31,7 @@ const (
 
 // Err constants represent possible errors that Ink interpreter binding functions may return.
 type Err struct {
+	// TODO: parent error
 	reason  ErrorReason
 	message string
 	pos     position
