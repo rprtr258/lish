@@ -673,7 +673,6 @@ m('std.range/slice/append/join/cat and stringList')
   range := functional.range
   reverse := functional.reverse
   slice := std.slice
-  join := functional.join
   cat := str.join
 
   # slice returns copies
@@ -704,13 +703,12 @@ m('std.range/slice/append/join/cat and stringList')
   # redefine list using range and reverse, to t those
   list := reverse(range(0, 11, 1))
 
-  t('join() homogeneous lists', stringList(join(
-    slice(list, 0, 5), slice(list, 5, 200)
-  )), '[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]')
-  t('join() heterogeneous lists', stringList(join(
-    [1, 2, 3]
-    join([4, 5, 6], ['a', 'b', 'c'])
-  )), '[1, 2, 3, 4, 5, 6, a, b, c]')
+  t('join() homogeneous lists', stringList(
+    slice(list, 0, 5) + slice(list, 5, 200)
+  ), '[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]')
+  t('join() heterogeneous lists', stringList(
+    [1, 2, 3] + [4, 5, 6] + ['a', 'b', 'c']
+  ), '[1, 2, 3, 4, 5, 6, a, b, c]')
 
   t('slice() from 0', slice(str, 0, 5), 'abrac')
   t('slice() from nonzero', slice(str, 2, 4), 'ra')
@@ -782,7 +780,7 @@ m('ascii <-> char point conversions and string encode/decode')
   t('escape return',  point('\r'), 13)
 )
 
-m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
+m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
 (
   map := functional.map
   filter := functional.filter
@@ -792,7 +790,6 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   reverse := functional.reverse
   flatten := functional.flatten
   append := functional.append
-  join := functional.join
 
   list := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -805,8 +802,11 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, join/append')
   t('std.flatten', flatten([[1, 2, 3], [4], [], [[5], 6, 7, [8, 9, 10]]])
     [1, 2, 3, 4, [5], 6, 7, [8, 9, 10]])
   t('std.reverse', reverse(list), [10, 9, 8, 7, 6, 5, 4, 3, 2, 1])
-  t('functional.join', join(list, list), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  t('list + list', list + list, [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+  ])
+  t('dict + dict', {a: 1, b: 2} + {b: 3, c: 4}, {a: 1, b: 3, c: 4})
 
   # degenerate cases on reverse
   t('std.reverse on empty', reverse([]), [])

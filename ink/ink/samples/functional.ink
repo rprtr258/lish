@@ -68,7 +68,7 @@ reduceBack := (list, f, acc) => (sub := (i, acc) => i :: {
   _ -> sub(i - 1, f(acc, list.(i), i))
 })(len(list) - 1, acc)
 
-# join one list to the end of another, return the original first list
+# append one list to the end of another, return the original first list
 append := (base, child) => (
   baseLength := len(base)
   childLength := len(child)
@@ -81,12 +81,9 @@ append := (base, child) => (
   })(0)
 )
 
-# join one list to the end of another, return the third list
-join := (base, child) => base + child
-
 # flatten by depth 1
 # ([][]T) => []T
-flatten := list => reduce(list, append, [])
+flatten := list => reduce(list, (acc, x, _) => acc + x, [])
 
 # true iff some items in list are true
 # ([]boolean) => boolean
@@ -169,7 +166,6 @@ max := numbers => reduce(numbers, (acc, n) => n > acc :: {
   reduce: reduce
   reduceBack: reduceBack
   append: append
-  join: join
   flatten: flatten
   some: some
   every: every
