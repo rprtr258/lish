@@ -1,82 +1,86 @@
 ` http server abstraction `
 
-std := import('../vendor/std')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 
 log := std.log
 f := std.format
 slice := std.slice
 each := std.each
 
-auth := import('auth')
+auth := import('auth.ink')
 allow? := auth.allow?
 
-route := import('route')
+route := import('route.ink')
 
 new := () => (
-	router := (route.new)()
+  router := (route.new)()
 
-	` routes added to router here `
+  ` routes added to router here `
 
-	start := port => listen('0.0.0.0:' + string(port), evt => (
-		(route.catch)(router, params => (req, end) => end({
-			status: 404
-			body: 'service not found'
-		}))
+  start := port => listen('0.0.0.0:' + string(port), evt => (
+    (route.catch)(router, params => (req, end) => end({
+      status: 404
+      body: 'service not found'
+    }))
 
-		evt.type :: {
-			'error' -> log('server start error: ' + evt.message)
-			'req' -> (
-				log(f('{{ method }}: {{ url }}', evt.data))
+    evt.type :: {
+      'error' -> log('server start error: ' + evt.message)
+      'req' -> (
+        log(f('{{ method }}: {{ url }}', evt.data))
 
-				handleWithHeaders := evt => (
-					handler := (route.match)(router, evt.data.url)
-					handler(evt.data, resp => (
-						resp.headers := hdr(resp.headers :: {
-							() -> {}
-							_ -> resp.headers
-						})
-						(evt.end)(resp)
-					))
-				)
-				[allow?(evt.data), evt.data.method] :: {
-					[true, 'GET'] -> handleWithHeaders(evt)
-					[true, 'POST'] -> handleWithHeaders(evt)
-					[true, 'PUT'] -> handleWithHeaders(evt)
-					[true, 'DELETE'] -> handleWithHeaders(evt)
-					_ -> (evt.end)({
-						status: 405
-						headers: hdr({})
-						body: 'method not allowed'
-					})
-				}
-			)
-		}
-	))
+        handleWithHeaders := evt => (
+          handler := (route.match)(router, evt.data.url)
+          handler(evt.data, resp => (
+            resp.headers := hdr(resp.headers :: {
+              () -> {}
+              _ -> resp.headers
+            })
+            (evt.end)(resp)
+          ))
+        )
+        [allow?(evt.data), evt.data.method] :: {
+          [true, 'GET'] -> handleWithHeaders(evt)
+          [true, 'POST'] -> handleWithHeaders(evt)
+          [true, 'PUT'] -> handleWithHeaders(evt)
+          [true, 'DELETE'] -> handleWithHeaders(evt)
+          _ -> (evt.end)({
+            status: 405
+            headers: hdr({})
+            body: 'method not allowed'
+          })
+        }
+      )
+    }
+  ))
 
-	{
-		addRoute: (url, handler) => (route.add)(router, url, handler)
-		start: start
-	}
+  {
+    addRoute: (url, handler) => (route.add)(router, url, handler)
+    start: start
+  }
 )
 
-` prepare standard header `
+# prepare standard header
 hdr := attrs => (
-	base := {
-		'X-Served-By': 'ink-serve'
-		'Content-Type': 'text/plain'
-	}
-	each(keys(attrs), k => base.(k) := attrs.(k))
-	base
+  base := {
+    'X-Served-By': 'ink-serve'
+    'Content-Type': 'text/plain'
+  }
+  each(keys(attrs), k => base.(k) := attrs.(k))
+  base
 )
 
-` trim query parameters `
+# trim query parameters
 trimQP := path => (
-	max := len(path)
-	(sub := (idx, acc) => idx :: {
-		max -> path
-		_ -> path.(idx) :: {
-			'?' -> acc
-			_ -> sub(idx + 1, acc + path.(idx))
-		}
-	})(0, '')
+  max := len(path)
+  (sub := (idx, acc) => idx :: {
+    max -> path
+    _ -> path.(idx) :: {
+      '?' -> acc
+      _ -> sub(idx + 1, acc + path.(idx))
+    }
+  })(0, '')
 )
+
+{
+  new: new
+}

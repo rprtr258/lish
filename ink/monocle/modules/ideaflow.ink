@@ -14,9 +14,9 @@ JSON.stringify(
 );
 `
 
-std := import('../vendor/std')
-str := import('../vendor/str')
-json := import('../vendor/json')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
+json := import('../vendor/json.ink')
 
 log := std.log
 slice := std.slice
@@ -42,32 +42,32 @@ Newline := char(10)
 IdeaflowExportPath := '/tmp/ideaflow.json'
 
 getDocs := withDocs => readFile(IdeaflowExportPath, file => file :: {
-	() -> (
-		log('[ideaflow] could not read ideaflow export file!')
-		[]
-	)
-	_ -> (
-		notes := deJSON(file)
-		docs := map(notes, (note, i) => (
-			lines := split(note.content, Newline)
-			title := (len(lines) > 1 :: {
-				true -> lines.0
-				_ -> ()
-			})
-			content := (len(lines) > 1 :: {
-				true -> cat(slice(lines, 1, len(lines)), Newline)
-				_ -> note.content
-			})
+  () -> (
+    log('[ideaflow] could not read ideaflow export file!')
+    []
+  )
+  _ -> (
+    notes := deJSON(file)
+    docs := map(notes, (note, i) => (
+      lines := split(note.content, Newline)
+      title := (len(lines) > 1 :: {
+        true -> lines.0
+        _ -> ()
+      })
+      content := (len(lines) > 1 :: {
+        true -> cat(slice(lines, 1, len(lines)), Newline)
+        _ -> note.content
+      })
 
-			{
-				id: 'if' + string(i)
-				tokens: tokenize(note.content)
-				content: content
-				title: title
-				href: 'https://ideaflow.app/?page=1&noteId=' + note.id
-			}
-		))
-		withDocs(docs)
-	)
+      {
+        id: 'if' + string(i)
+        tokens: tokenize(note.content)
+        content: content
+        title: title
+        href: 'https://ideaflow.app/?page=1&noteId=' + note.id
+      }
+    ))
+    withDocs(docs)
+  )
 })
 

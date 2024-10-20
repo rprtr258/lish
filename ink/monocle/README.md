@@ -16,9 +16,9 @@ Motivated by those ideas, Monocle is designed with a focus on speed and effectiv
 
 1. **Quick time-to-first-result**. When I open Monocle to perform a search, I either already know what I'm looking for and need to find it again, or don't know what exactly I'm looking for and need to explore the list of results. In both cases, the critical variable of speed is what I call "time to first result": the time between me having the thought to search for something, and the first search result popping up on screen.
 
-	Optimizing time-to-first-result involves a few different kinds of design decisions and technical performance metrics. The most significant among these is that I wanted results to appear live, as you type. Ideally, results would appear on every keystroke, even on slower connections. This one constraint had many consequences. This meant, for example, that the search index had to live on the client and search and ranking needed to be performed in the browser, in JavaScript. It meant I needed to optimize the index for download size, and minimize compute required on every keystroke to perform a new search.
+  Optimizing time-to-first-result involves a few different kinds of design decisions and technical performance metrics. The most significant among these is that I wanted results to appear live, as you type. Ideally, results would appear on every keystroke, even on slower connections. This one constraint had many consequences. This meant, for example, that the search index had to live on the client and search and ranking needed to be performed in the browser, in JavaScript. It meant I needed to optimize the index for download size, and minimize compute required on every keystroke to perform a new search.
 
-	The result is worth it: on a modern smartphone or laptop, Monocle can search through tens of thousands of documents as you type, on every keystroke, with minimal lag, using an index a few megabytes in size.
+  The result is worth it: on a modern smartphone or laptop, Monocle can search through tens of thousands of documents as you type, on every keystroke, with minimal lag, using an index a few megabytes in size.
 2. **Reasonably accurate English stemming**. Monocle includes a simple, hand-written [stemming](https://en.wikipedia.org/wiki/Stemming) algorithm for the English language. It's not smart or sophisticated, and is optimized for code size and for running on queries to expand each keyword into its variations (in that way, it's more of a reverse-stemmer) since it runs on the client rather than during indexing.
 3. **Static deploy with pre-compiled index**. In Monocle, the search index is an inverted index (also called a posting list) generated from the source document set at build time. This index is reused until a new index is generated, which can be done periodically. Because I didn't really have a need for ingesting documents or new notes any more frequently than a few times a week, this worked for me, and minimized work, especially on the backend where I pay for my own compute! This lets me host Monocle as a static site deployment.
 4. **Keyword match highlights in both results list and preview**. Although not perfect (mostly for performance reasons), the search results listing and document previews include highlights for matches to search keywords, which makes it much easier to visually parse and understand individual search results.
@@ -36,20 +36,20 @@ Every data source, from my Tweet archive to my notes, has a specific Monocle "mo
 
 ```ts
 type Doc = {
-	// A globally unique identifier for this document across all Monocle
-	// documents. It's usually a 2-3 letter prefix for the module (like "tw"
-	// for Tweets) followed by a number.
-	id: string
-	// A map of each token in the document to the number of times it appears
-	// in the document.
-	tokens: Map<string, number>
-	// The document's text content that will be displayed in the results page
-	content: string
-	// Optionally, the doc's title
-	title?: string
-	// Optionally a link to this document on the web that Monocle can use to
-	// "link out" to the original document from the search result.
-	href?: string
+  // A globally unique identifier for this document across all Monocle
+  // documents. It's usually a 2-3 letter prefix for the module (like "tw"
+  // for Tweets) followed by a number.
+  id: string
+  // A map of each token in the document to the number of times it appears
+  // in the document.
+  tokens: Map<string, number>
+  // The document's text content that will be displayed in the results page
+  content: string
+  // Optionally, the doc's title
+  title?: string
+  // Optionally a link to this document on the web that Monocle can use to
+  // "link out" to the original document from the search result.
+  href?: string
 }
 ```
 
@@ -91,14 +91,14 @@ Monocle, like most Ink projects, (ab)uses a Makefile for development tasks. Here
 
 - Just `make`, or `make run`, will run the static file server that serves the Monocle web app, exactly as in my private production (not public-facing) deployment. This server serves docs and indexes from the gzippsd versions rather than plain JSON versions on disk.
 - `make index` will (re-)index documents from all modules. Each module will skip work if there's a cached JSON for it in `./static/indexes`. If I want to force a module to re-generate its docs list, I can just delete that cached file.
-- `make check` or `make t` will run the unit test suite for the Monocle full text search library.
-- `make format` or `make f` formats all source files (outside of `./vendor`) with `inkfmt`, assuming I have it installed.
+- `make test` will run the unit test suite for the Monocle full text search library.
+- `make format` formats all source files (outside of `./vendor`) with `inkfmt`, assuming I have it installed.
 - `make build` commands (re-)build the frontend JavaScript bundle from Ink sources:
-	- `make build-libs` builds the vendor bundle of dependencies and libraries. This rarely needs to be re-run.
-	- `make build-monocle` builds the monocle full text search library into `./static/ink/monocle.js`.
-	- `make build` builds the main app code and links up the whole bundle to `ink/bundle.js`. This is usually what I re-run every change.
-	- `make build-all` Runs the whole build from top to bottom.
-	- `make watch` or `make w` runs `make build` on every Ink file change.
+  - `make build-libs` builds the vendor bundle of dependencies and libraries. This rarely needs to be re-run.
+  - `make build-monocle` builds the monocle full text search library into `./static/ink/monocle.js`.
+  - `make build` builds the main app code and links up the whole bundle to `ink/bundle.js`. This is usually what I re-run every change.
+  - `make build-all` Runs the whole build from top to bottom.
+  - `make watch` runs `make build` on every Ink file change.
 
 ### Generating and rebuilding indexes
 
@@ -107,32 +107,32 @@ Nearly all the modules, except third-party data sources mentioned below, pull da
 For third-party data modules `tweets`, `pocket`, and `ideaflow`, I need to pre-process the data into a JSON file, and then point these modules to those files.
 
 - For Tweets, I export my Tweets from Twitter using the archive / export feature, and save a JSON array of my Tweets with schema
-	```ts
-	type Tweets = {
-		id: string // Tweet Snowflake ID
-		content: string // Tweet full_text, with expanded entities
-	}[]
-	```
+  ```ts
+  type Tweets = {
+    id: string // Tweet Snowflake ID
+    content: string // Tweet full_text, with expanded entities
+  }[]
+  ```
 - For bookmarks I've saved on Pocket, I click on "Export" under "Manage your account" in the web interface to get an HTML archive of all my bookmarked notes. I do this instead of going through the API because this is much faster than waiting for Pocket's API rate limits if I simply want to get a list of URLs, which is all I need. This functionality is also accessible at [https://getpocket.com/export](https://getpocket.com/export).
 
-	After I have that list of URLs, I open it in the browser and run the little JavaScript snippet in `modules/pocket.ink` to produce a JSON of titles and links.
+  After I have that list of URLs, I open it in the browser and run the little JavaScript snippet in `modules/pocket.ink` to produce a JSON of titles and links.
 
-	Then, I run _that_ through `node modules/pocket-full-text/index.js` which optionally downloads, parses, and re-saves a full-text archive of all of those pages using Mozilla's excellent [Readability.js](https://github.com/mozilla/readability) library. This is to make the full text of all of those bookmarked pages indexable in Monocle. This produces a JSON array saved to the specified destination file of the following format:
-	```ts
-	type Page = {
-		title: string // document title + site name
-		content: string // parsed full text of the bookmarked page
-		href: string // link to the bookmarked page
-	}[]
-	```
-	Finally, I run the indexer in `modules/pocket.ink`.
+  Then, I run _that_ through `node modules/pocket-full-text/index.js` which optionally downloads, parses, and re-saves a full-text archive of all of those pages using Mozilla's excellent [Readability.js](https://github.com/mozilla/readability) library. This is to make the full text of all of those bookmarked pages indexable in Monocle. This produces a JSON array saved to the specified destination file of the following format:
+  ```ts
+  type Page = {
+    title: string // document title + site name
+    content: string // parsed full text of the bookmarked page
+    href: string // link to the bookmarked page
+  }[]
+  ```
+  Finally, I run the indexer in `modules/pocket.ink`.
 - For Ideaflow notes, I serialize my notes out to text and similarly save them into a JSON array of notes with schema
-	```ts
-	type Notes = {
-		id: string // Note ID for deep links
-		content: string // Text-serialized note content
-	}[]
-	```
+  ```ts
+  type Notes = {
+    id: string // Note ID for deep links
+    content: string // Text-serialized note content
+  }[]
+  ```
 
 ## Future work
 

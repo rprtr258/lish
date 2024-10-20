@@ -38,7 +38,6 @@ build:
 		static/ink/monocle.js \
 		static/ink/common.js \
 		> static/ink/bundle.js
-b: build
 
 # run all builds from scratch
 build-all: build-libs build-monocle build
@@ -60,14 +59,10 @@ index:
 # build whenever Ink sources change
 watch:
 	ls lib/*.ink src/*.ink modules/*.ink | entr make build
-w: watch
 
 # run all tests under test/
-check:
+test:
 	ink ./test/main.ink
-t: check
 
 fmt:
 	inkfmt fix lib/*.ink src/*.ink modules/*.ink test/*.ink
-f: fmt
-

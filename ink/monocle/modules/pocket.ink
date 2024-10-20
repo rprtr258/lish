@@ -14,9 +14,9 @@ JSON.stringify(Array.from(document.querySelectorAll('a')).map(a => {
 }));
 `
 
-std := import('../vendor/std')
-str := import('../vendor/str')
-json := import('../vendor/json')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
+json := import('../vendor/json.ink')
 
 log := std.log
 slice := std.slice
@@ -33,7 +33,7 @@ hasPrefix? := str.hasPrefix?
 trimPrefix := str.trimPrefix
 deJSON := json.de
 
-tokenizer := import('../lib/tokenizer')
+tokenizer := import('../lib/tokenizer.ink')
 tokenize := tokenizer.tokenize
 tokenFrequencyMap := tokenizer.tokenFrequencyMap
 
@@ -42,27 +42,27 @@ Newline := char(10)
 PocketExportPath := '/tmp/pocket-full-text.json'
 
 getDocs := withDocs => readFile(PocketExportPath, file => file :: {
-	() -> (
-		log('[pocket] could not read pocket export file!')
-		[]
-	)
-	_ -> (
-		links := deJSON(file)
-		docs := map(links, (link, i) => (
-			i % 100 :: {
-				0 -> log(string(i) + ' pages tokenized...')
-			}
-			{
-				id: 'pk' + string(i)
-				tokens: tokenize(link.title + ' ' + link.href + ' ' + link.content)
-				` take the first 200 words or so, so our doc index doens't blow
-				up completely in size `
-				content: link.href + Newline + slice(link.content, 0, 1000)
-				title: link.title
-				href: link.href
-			}
-		))
-		withDocs(docs)
-	)
+  () -> (
+    log('[pocket] could not read pocket export file!')
+    []
+  )
+  _ -> (
+    links := deJSON(file)
+    docs := map(links, (link, i) => (
+      i % 100 :: {
+        0 -> log(string(i) + ' pages tokenized...')
+      }
+      {
+        id: 'pk' + string(i)
+        tokens: tokenize(link.title + ' ' + link.href + ' ' + link.content)
+        ` take the first 200 words or so, so our doc index doens't blow
+        up completely in size `
+        content: link.href + Newline + slice(link.content, 0, 1000)
+        title: link.title
+        href: link.href
+      }
+    ))
+    withDocs(docs)
+  )
 })
 
