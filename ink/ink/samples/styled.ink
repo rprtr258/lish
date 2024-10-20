@@ -17,24 +17,24 @@ BgANSI := c => true :: {
 }
 
 mod := {
-  reset: '0'
-  bold: '1'
-  faint: '2'
-  italic: '3'
+  reset:     '0'
+  bold:      '1'
+  faint:     '2'
+  italic:    '3'
   underline: '4'
-  blink: '5'
-  reverse: '7'
-  crossout: '9'
-  overline: '53'
+  blink:     '5'
+  reverse:   '7'
+  crossout:  '9'
+  overline:  '53'
   fg: {
-    black   : FgANSI(0)
-    red     : FgANSI(1)
-    green   : FgANSI(2)
-    yellow  : FgANSI(3)
-    blue    : FgANSI(4)
-    magenta : FgANSI(5)
-    cyan    : FgANSI(6)
-    white   : FgANSI(7)
+    black     : FgANSI(0)
+    red       : FgANSI(1)
+    green     : FgANSI(2)
+    yellow    : FgANSI(3)
+    blue      : FgANSI(4)
+    magenta   : FgANSI(5)
+    cyan      : FgANSI(6)
+    white     : FgANSI(7)
     hiBlack   : FgANSI(8)
     hiRed     : FgANSI(9)
     hiGreen   : FgANSI(10)
@@ -47,14 +47,14 @@ mod := {
     rgb: (r, g, b) => '38;2;'+string(r)+';'+string(g)+';'+string(b)
   }
   bg: {
-    black   : BgANSI(0)
-    red     : BgANSI(1)
-    green   : BgANSI(2)
-    yellow  : BgANSI(3)
-    blue    : BgANSI(4)
-    magenta : BgANSI(5)
-    cyan    : BgANSI(6)
-    white   : BgANSI(7)
+    black     : BgANSI(0)
+    red       : BgANSI(1)
+    green     : BgANSI(2)
+    yellow    : BgANSI(3)
+    blue      : BgANSI(4)
+    magenta   : BgANSI(5)
+    cyan      : BgANSI(6)
+    white     : BgANSI(7)
     hiBlack   : BgANSI(8)
     hiRed     : BgANSI(9)
     hiGreen   : BgANSI(10)
