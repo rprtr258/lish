@@ -1,6 +1,6 @@
 # application utility tests
 
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 f := std.format
 each := std.each
 

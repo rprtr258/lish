@@ -1,4 +1,4 @@
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 cat := std.cat
 slice := std.slice
 map := std.map
@@ -8,7 +8,7 @@ each := std.each
 every := std.every
 append := std.append
 f := std.format
-str := import('../vendor/str')
+str := import('../vendor/str.ink')
 ws? := str.ws?
 digit? := str.digit?
 letter? := str.letter?
@@ -19,7 +19,7 @@ trimPrefix := str.trimPrefix
 replace := str.replace
 split := str.split
 
-Reader := import('reader').Reader
+Reader := import('reader.ink')
 
 Newline := char(10)
 Tab := char(9)
@@ -622,3 +622,6 @@ compileNode := node => type(node) :: {
 function to be invoked by the library consumer. `
 transform := text => compile(parse(text))
 
+{
+  transform: transform
+}

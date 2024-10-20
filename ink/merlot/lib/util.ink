@@ -1,6 +1,6 @@
 # potentially shared utility functions and values
 
-str := import('../vendor/str')
+str := import('../vendor/str.ink')
 trimPrefix := str.trimPrefix
 
 zeroFillTo3Digits := s => len(s) :: {
@@ -22,3 +22,8 @@ formatNumber := n => (
     _ -> trimPrefix(threeDigitStr, '0')
   }
 )
+
+{
+  zeroFillTo3Digits: zeroFillTo3Digits
+  formatNumber: formatNumber
+}

@@ -1,6 +1,6 @@
 # Markdown parser's Reader tests
 
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 each := std.each
 
 Reader := import('../lib/reader').Reader

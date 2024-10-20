@@ -1,18 +1,15 @@
 # url router
 
-std := import('../vendor/std')
-str := import('../vendor/str')
-
+std := import('../vendor/std.ink')
 log := std.log
 slice := std.slice
 each := std.each
 map := std.map
 cat := std.cat
 filter := std.filter
+str := import('../vendor/str.ink')
 split := str.split
-
-percent := import('percent')
-pctDecode := percent.decode
+pctDecode := import('percent.ink').decode
 
 new := () => []
 
@@ -30,12 +27,12 @@ matchPath := (pattern, path) => (
   pathParts := split(path, '?')
   path := pathParts.0
   pathParts.1 :: {
-  	() -> ()
-  	'' -> ()
-  	_ -> (
-  		queries := map(split(pathParts.1, '&'), pair => split(pair, '='))
-  		each(queries, pair => params.(pair.0) := pctDecode(pair.1))
-  	)
+    () -> ()
+    '' -> ()
+    _ -> (
+      queries := map(split(pathParts.1, '&'), pair => split(pair, '='))
+      each(queries, pair => params.(pair.0) := pctDecode(pair.1))
+    )
   }
 
   desired := splitPath(pattern)
@@ -43,54 +40,61 @@ matchPath := (pattern, path) => (
 
   max := len(desired)
   findMatchingParams := (sub := i => i :: {
-  	max -> params
-  	_ -> (
-  		desiredPart := (desired.(i) :: {
-  			() -> ''
-  			_ -> desired.(i)
-  		})
-  		actualPart := (actual.(i) :: {
-  			() -> ''
-  			_ -> actual.(i)
-  		})
+    max -> params
+    _ -> (
+      desiredPart := (desired.(i) :: {
+        () -> ''
+        _ -> desired.(i)
+      })
+      actualPart := (actual.(i) :: {
+        () -> ''
+        _ -> actual.(i)
+      })
 
-  		desiredPart.0 :: {
-  			':' -> (
-  				params.(slice(desiredPart, 1, len(desiredPart))) := actualPart
-  				sub(i + 1)
-  			)
-  			'*' -> (
-  				params.(slice(desiredPart, 1, len(desiredPart))) := cat(slice(actual, i, len(actual)), '/')
-  				params
-  			)
-  			_ -> desiredPart :: {
-  				actualPart -> sub(i + 1)
-  				_ -> ()
-  			}
-  		}
-  	)
+      desiredPart.0 :: {
+        ':' -> (
+          params.(slice(desiredPart, 1, len(desiredPart))) := actualPart
+          sub(i + 1)
+        )
+        '*' -> (
+          params.(slice(desiredPart, 1, len(desiredPart))) := cat(slice(actual, i, len(actual)), '/')
+          params
+        )
+        _ -> desiredPart :: {
+          actualPart -> sub(i + 1)
+          _ -> ()
+        }
+      }
+    )
   })
 
   [len(desired) < len(actual) | len(desired) = len(actual), pattern] :: {
-  	` '' is used as a catch-all pattern `
-  	[_, ''] -> params
-  	[true, _] -> findMatchingParams(0)
-  	_ -> ()
+    ` '' is used as a catch-all pattern `
+    [_, ''] -> params
+    [true, _] -> findMatchingParams(0)
+    _ -> ()
   }
 )
 
 # returns the proper handler curried with url params
 match := (router, path) => (sub := i => i :: {
   len(router) -> req => (req.end)({
-  	status: 200
-  	headers: {}
-  	body: 'dropped route. you should never see this in production.'
+    status: 200
+    headers: {}
+    body: 'dropped route. you should never see this in production.'
   })
   _ -> (
-  	result := matchPath(router.(i).0, path)
-  	result :: {
-  		() -> sub(i + 1)
-  		_ -> (router.(i).1)(result)
-  	}
+    result := matchPath(router.(i).0, path)
+    result :: {
+      () -> sub(i + 1)
+      _ -> (router.(i).1)(result)
+    }
   )
 })(0)
+
+{
+  new: new
+  catch: catch
+  match: match
+  add: add
+}

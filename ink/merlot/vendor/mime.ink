@@ -1,6 +1,6 @@
 # mime type
 
-split := import('../vendor/str').split
+split := import('../vendor/str.ink').split
 
 MimeTypes := {
   'html': 'text/html'
@@ -24,3 +24,7 @@ forPath := path => (
   	_ -> guess
   }
 )
+
+{
+  forPath: forPath
+}

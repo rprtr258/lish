@@ -1,6 +1,6 @@
 # Markdown library tests
 
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 
 cat := std.cat
 

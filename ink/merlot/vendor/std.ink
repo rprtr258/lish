@@ -6,11 +6,11 @@ log := val => out(string(val) + '
 scan := cb => (
   acc := ['']
   in(evt => evt.type :: {
-  	'end' -> cb(acc.0)
-  	'data' -> (
-  		acc.0 := acc.0 + slice(evt.data, 0, len(evt.data) - 1)
-  		false
-  	)
+    'end' -> cb(acc.0)
+    'data' -> (
+      acc.0 := acc.0 + slice(evt.data, 0, len(evt.data) - 1)
+      false
+    )
   })
 )
 
@@ -26,11 +26,11 @@ hex := n => (sub := (p, acc) => p < 16 :: {
 
 # take hex string, return number
 xeh := s => (
-  ` i is the num of places from the left, 0-indexed `
+  # i is the num of places from the left, 0-indexed
   max := len(s)
   (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, acc * 16 + hToN.(s.(i)))
+    max -> acc
+    _ -> sub(i + 1, acc * 16 + hToN.(s.(i)))
   })(0, 0)
 )
 
@@ -50,59 +50,58 @@ max := numbers => reduce(numbers, (acc, n) => n > acc :: {
 range := (start, end, step) => (
   span := end - start
   sub := (i, v, acc) => (v - start) / span < 1 :: {
-  	true -> (
-  		acc.(i) := v
-  		sub(i + 1, v + step, acc)
-  	)
-  	false -> acc
+    true -> (
+      acc.(i) := v
+      sub(i + 1, v + step, acc)
+    )
+    false -> acc
   }
 
-  ` preempt potential infinite loops `
+  # preempt potential infinite loops
   (end - start) / step > 0 :: {
-  	true -> sub(0, start, [])
-  	false -> []
+    true -> sub(0, start, [])
+    false -> []
   }
 )
 
-` clamp start and end numbers to ranges, such that
-  start < end. Utility used in slice `
+# clamp start and end numbers to ranges, such that start < end. Utility used in slice
 clamp := (start, end, min, max) => (
   start := (start < min :: {
-  	true -> min
-  	false -> start
+    true -> min
+    false -> start
   })
   end := (end < min :: {
-  	true -> min
-  	false -> end
+    true -> min
+    false -> end
   })
   end := (end > max :: {
-  	true -> max
-  	false -> end
+    true -> max
+    false -> end
   })
   start := (start > end :: {
-  	true -> end
-  	false -> start
+    true -> end
+    false -> start
   })
 
   {
-  	start: start
-  	end: end
+    start: start
+    end: end
   }
 )
 
 # get a substring of a given string, or sublist of a given list
 slice := (s, start, end) => (
-  ` bounds checks `
+  # bounds checks
   x := clamp(start, end, 0, len(s))
   start := x.start
   max := x.end - start
 
   (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, acc.(i) := s.(start + i))
+    max -> acc
+    _ -> sub(i + 1, acc.(i) := s.(start + i))
   })(0, type(s) :: {
-  	'string' -> ''
-  	'composite' -> []
+    'string' -> ''
+    'composite' -> []
   })
 )
 
@@ -111,11 +110,11 @@ append := (base, child) => (
   baseLength := len(base)
   childLength := len(child)
   (sub := i => i :: {
-  	childLength -> base
-  	_ -> (
-  		base.(baseLength + i) := child.(i)
-  		sub(i + 1)
-  	)
+    childLength -> base
+    _ -> (
+      base.(baseLength + i) := child.(i)
+      sub(i + 1)
+    )
   })(0)
 )
 
@@ -151,8 +150,8 @@ filter := (list, f) => reduce(list, (l, item, i) => f(item, i) :: {
 reduce := (list, f, acc) => (
   max := len(list)
   (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, f(acc, list.(i), i))
+    max -> acc
+    _ -> sub(i + 1, f(acc, list.(i), i))
   })(0, acc)
 )
 
@@ -175,8 +174,8 @@ every := list => reduce(list, (acc, x) => acc & x, true)
 cat := (list, joiner) => max := len(list) :: {
   0 -> ''
   _ -> (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, acc.len(acc) := joiner + list.(i))
+    max -> acc
+    _ -> sub(i + 1, acc.len(acc) := joiner + list.(i))
   })(1, clone(list.0))
 }
 
@@ -184,11 +183,11 @@ cat := (list, joiner) => max := len(list) :: {
 each := (list, f) => (
   max := len(list)
   (sub := i => i :: {
-  	max -> ()
-  	_ -> (
-  		f(list.(i), i)
-  		sub(i + 1)
-  	)
+    max -> ()
+    _ -> (
+      f(list.(i), i)
+      sub(i + 1)
+    )
   })(0)
 )
 
@@ -196,8 +195,8 @@ each := (list, f) => (
 encode := str => (
   max := len(str)
   (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, acc.(i) := point(str.(i)))
+    max -> acc
+    _ -> sub(i + 1, acc.(i) := point(str.(i)))
   })(0, [])
 )
 
@@ -206,100 +205,133 @@ decode := data => reduce(data, (acc, cp) => acc.len(acc) := char(cp), '')
 
 # utility for reading an entire file
 readFile := (path, cb) => (
-  BufSize := 4096 ` bytes `
+  BufSize := 4096 # bytes
   (sub := (offset, acc) => read(path, offset, BufSize, evt => evt.type :: {
-  	'error' -> cb(())
-  	'data' -> (
-  		dataLen := len(evt.data)
-  		dataLen = BufSize :: {
-  			true -> sub(offset + dataLen, acc.len(acc) := evt.data)
-  			false -> cb(acc.len(acc) := evt.data)
-  		}
-  	)
+    'error' -> cb(())
+    'data' -> (
+      dataLen := len(evt.data)
+      dataLen = BufSize :: {
+        true -> sub(offset + dataLen, acc.len(acc) := evt.data)
+        false -> cb(acc.len(acc) := evt.data)
+      }
+    )
   }))(0, '')
 )
 
-` utility for writing an entire file
-  it's not buffered, because it's simpler, but may cause jank later
-  we'll address that if/when it becomes a performance issue `
+# utility for writing an entire file
+# it's not buffered, because it's simpler, but may cause jank later
+# we'll address that if/when it becomes a performance issue
 writeFile := (path, data, cb) => delete(path, evt => evt.type :: {
-  ` write() by itself will not truncate files that are too long,
-  	so we delete the file and re-write. Not efficient, but writeFile
-  	is not meant for large files `
+  # write() by itself will not truncate files that are too long,
+  # so we delete the file and re-write. Not efficient, but writeFile
+  # is not meant for large files
   'end' -> write(path, 0, data, evt => evt.type :: {
-  	'error' -> cb(())
-  	'end' -> cb(true)
+    'error' -> cb(())
+    'end' -> cb(true)
   })
   _ -> cb(())
 })
 
 # template formatting with {{ key }} constructs
 format := (raw, values) => (
-  ` parser state `
+  # parser state
   state := {
-  	` current position in raw `
-  	idx: 0
-  	` parser internal state:
-  		0 -> normal
-  		1 -> seen one {
-  		2 -> seen two {
-  		3 -> seen a valid } `
-  	which: 0
-  	` buffer for currently reading key `
-  	key: ''
-  	` result build-up buffer `
-  	buf: ''
+    # current position in raw
+    idx: 0
+    # parser internal state:
+    # 0 -> normal
+    # 1 -> seen one {
+    # 2 -> seen two {
+    # 3 -> seen a valid }
+    which: 0
+    # buffer for currently reading key
+    key: ''
+    # result build-up buffer
+    buf: ''
   }
 
-  ` helper function for appending to state.buf `
+  # helper function for appending to state.buf
   append := c => state.buf := state.buf + c
 
-  ` read next token, update state `
+  # read next token, update state
   readNext := () => (
-  	c := raw.(state.idx)
+    c := raw.(state.idx)
 
-  	state.which :: {
-  		0 -> c :: {
-  			'{' -> state.which := 1
-  			_ -> append(c)
-  		}
-  		1 -> c :: {
-  			'{' -> state.which := 2
-  			` if it turns out that earlier brace was not
-  				a part of a format expansion, just backtrack `
-  			_ -> (
-  				append('{' + c)
-  				state.which := 0
-  			)
-  		}
-  		2 -> c :: {
-  			'}' -> (
-  				` insert key value `
-  				state.buf := state.buf + string(values.(state.key))
-  				state.key := ''
-  				state.which := 3
-  			)
-  			` ignore spaces in keys -- not allowed `
-  			' ' -> ()
-  			_ -> state.key := state.key + c
-  		}
-  		3 -> c :: {
-  			'}' -> state.which := 0
-  			` ignore invalid inputs -- treat them as nonexistent `
-  			_ -> ()
-  		}
-  	}
+    state.which :: {
+      0 -> c :: {
+        '{' -> state.which := 1
+        _ -> append(c)
+      }
+      1 -> c :: {
+        '{' -> state.which := 2
+        # if it turns out that earlier brace was not
+        # a part of a format expansion, just backtrack
+        _ -> (
+          append('{' + c)
+          state.which := 0
+        )
+      }
+      2 -> c :: {
+        '}' -> (
+          # insert key value
+          state.buf := state.buf + string(values.(state.key))
+          state.key := ''
+          state.which := 3
+        )
+        # ignore spaces in keys -- not allowed
+        ' ' -> ()
+        _ -> state.key := state.key + c
+      }
+      3 -> c :: {
+        '}' -> state.which := 0
+        # ignore invalid inputs -- treat them as nonexistent
+        _ -> ()
+      }
+    }
 
-  	state.idx := state.idx + 1
+    state.idx := state.idx + 1
   )
 
-  ` main recursive sub-loop `
+  # main recursive sub-loop
   max := len(raw)
   (sub := () => state.idx < max :: {
-  	true -> (
-  		readNext()
-  		sub()
-  	)
-  	false -> state.buf
+    true -> (
+      readNext()
+      sub()
+    )
+    false -> state.buf
   })()
 )
+
+{
+  log: log
+  scan: scan
+  hToN: hToN
+  nToH: nToH
+  hex: hex
+  xeh: xeh
+  min: min
+  max: max
+  range: range
+  clamp: clamp
+  slice: slice
+  append: append
+  join: join
+  clone: clone
+  stringList: stringList
+  reverse: reverse
+  map: map
+  filter: filter
+  reduce: reduce
+  reduceBack: reduceBack
+  flatten: flatten
+  some: some
+  every: every
+  cat: cat
+  each: each
+  encode: encode
+  decode: decode
+  readFile: readFile
+  writeFile: writeFile
+  format: format
+}

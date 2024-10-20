@@ -1,6 +1,6 @@
 # standard string library
 
-std := import('std')
+std := import('std.ink')
 
 map := std.map
 slice := std.slice
@@ -171,3 +171,28 @@ trimSuffix := (s, suffix) => suffix :: {
 
 # trim string from both start and end with substring ss
 trim := (s, ss) => trimPrefix(trimSuffix(s, ss), ss)
+
+{
+  upper?: upper?
+  lower?: lower?
+  digit?: digit?
+  letter?: letter?
+  ws?: ws?
+  hasPrefix?: hasPrefix?
+  hasSuffix?: hasSuffix?
+  matchesAt?: matchesAt?
+  index: index
+  contains?: contains?
+  lower: lower
+  upper: upper
+  title: title
+  replaceNonEmpty: replaceNonEmpty
+  replace: replace
+  splitNonEmpty: splitNonEmpty
+  split: split
+  trimPrefixNonEmpty: trimPrefixNonEmpty
+  trimPrefix: trimPrefix
+  trimSuffixNonEmpty: trimSuffixNonEmpty
+  trimSuffix: trimSuffix
+  trim: trim
+}

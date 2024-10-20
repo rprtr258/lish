@@ -1,4 +1,4 @@
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 log := std.log
 f := std.format
 cat := std.cat
@@ -7,16 +7,16 @@ filter := std.filter
 slice := std.slice
 readFile := std.readFile
 writeFile := std.writeFile
-str := import('../vendor/str')
+str := import('../vendor/str.ink')
 split := str.split
 hasSuffix? := str.hasSuffix?
-mimeForPath := import('../vendor/mime').forPath
-pctDecode := import('../vendor/percent').decode
-sort := import('../vendor/quicksort').sort
-http := import('../vendor/http')
+mimeForPath := import('../vendor/mime.ink').forPath
+pctDecode := import('../vendor/percent.ink').decode
+sort := import('../vendor/quicksort.ink').sort
+http := import('../vendor/http.ink')
 
-transform := import('../lib/md').transform
-formatNumber := import('../lib/util').formatNumber
+transform := import('../lib/md.ink').transform
+formatNumber := import('../lib/util.ink').formatNumber
 
 Port := 7650
 Newline := char(10)

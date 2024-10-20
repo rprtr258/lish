@@ -1,14 +1,14 @@
-std := import('../vendor/std')
+std := import('../vendor/std.ink')
 slice := std.slice
 append := std.append
-str := import('../vendor/str')
+str := import('../vendor/str.ink')
 split := str.split
 hasPrefix? := str.hasPrefix?
 
 ` Type-generic Reader over an Ink iterable interface, i.e. strings and lists.
 This Reader is generic so that we can read through either a string (a list of
 chars) or a list of strings. `
-Reader := s => (
+s => (
   S := {i: 0}
 
   peek := () => s.(S.i)
@@ -108,4 +108,3 @@ Reader := s => (
     readUntilMatchingDelim: readUntilMatchingDelim
   }
 )
-
