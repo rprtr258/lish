@@ -468,9 +468,7 @@ m('logic composition correctness, std.some/std.every')
   t('f ^ t', false ^ true, true)
   t('f ^ f', false ^ false, false)
 
-  # std.some and std.every
-  some := functional.some
-  every := functional.every
+  {some: some, every: every} := functional
 
   t('std.some() of empty list is false', some([]), false)
   t('std.every() of empty list is true', every([]), true)
