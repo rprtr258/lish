@@ -325,7 +325,7 @@ m('comment syntaxes')
 (
   # t(wrong, wrong)
   ping := 'pong'
-  # t(wrong, more wrong)
+  ` t(wrong, more wrong) `
   t('single line (line-lead) comments are recognized', ping, 'pong')
   t('inline comments are recognized', `hidden` '...thing', '...thing')
   t('inline comments terminate correctly', len('include `cmt` thing'), 19)
@@ -430,8 +430,7 @@ m('bitwise operations on byte strings')
 
 m('min/max')
 (
-  min := functional.min
-  max := functional.max
+  {min: min, max: max} := functional
 
   t('min of list of 1', min([~30]), ~30)
   t('minimum of list', min([39, 254, 5, ~2, 0, 3]), ~2)
