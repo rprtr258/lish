@@ -51,7 +51,6 @@ clone := x => type(x) :: {
 
 {
   scan: scan
-  clamp: clamp
   slice: slice
   clone: clone
 }
