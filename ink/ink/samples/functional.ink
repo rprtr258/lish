@@ -28,6 +28,7 @@ each := (list, f) => (
 # find first element in list that satisfies predicate
 # ([]T, (T, number) => boolean) => T | ()
 find := (list, f) => (
+  # TODO: optimize and dont store all matching elements
   elems := filter(list, f)
   len(elems) > 0 :: {
     true -> elems.0.0
@@ -39,7 +40,7 @@ find := (list, f) => (
 # ([]T, (T, number) => boolean) => number | ()
 indexOf := (list, f) => (
   listIndexed := map(list, (item, i) => {item: item, i: i})
-  itemIndex := find(listIndexed, (item, _) => f(item.item))
+  itemIndex := find(listIndexed, (item, i) => f(item.item, i))
   itemIndex :: {
     () -> ()
     _ -> itemIndex.i
