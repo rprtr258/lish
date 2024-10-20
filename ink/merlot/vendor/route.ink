@@ -13,17 +13,16 @@ pctDecode := import('percent.ink').decode
 
 new := () => []
 
-add := (router, pattern, handler) => router.len(router) := [pattern, handler]
+add := (router, pattern, handler) => router.(len(router)) := [pattern, handler]
 catch := (router, handler) => add(router, '', handler)
 
 splitPath := url => filter(split(url, '/'), s => ~(s = ''))
 
-` if path matches pattern, return a hash of matched params.
-  else, return () `
+# if path matches pattern, return a hash of matched params, else return ()
 matchPath := (pattern, path) => (
   params := {}
 
-  ` process query parameters `
+  # process query parameters
   pathParts := split(path, '?')
   path := pathParts.0
   pathParts.1 :: {
@@ -69,7 +68,7 @@ matchPath := (pattern, path) => (
   })
 
   [len(desired) < len(actual) | len(desired) = len(actual), pattern] :: {
-    ` '' is used as a catch-all pattern `
+    # '' is used as a catch-all pattern
     [_, ''] -> params
     [true, _] -> findMatchingParams(0)
     _ -> ()

@@ -21,7 +21,7 @@ encodeChar := encodeSlash => c => (
   })
   digit?(c) | upper?(c) | lower?(c) | isValidPunct :: {
     true -> c
-    false -> '%' + upper(hex(point(c)))
+    _ -> '%' + upper(hex(point(c)))
   }
 )
 encodeKeepSlash := piece => cat(map(piece, encodeChar(false)), '')
@@ -53,14 +53,14 @@ decode := str => (
       _ -> decoded + curr
     }
     1 -> hex?(curr) :: {
-      false -> (
-        s.stage := 0
-        decoded + '%' + curr
-      )
-      _ -> (
+      true -> (
         s.stage := 2
         s.buf := curr
         decoded
+      )
+      _ -> (
+        s.stage := 0
+        decoded + '%' + curr
       )
     }
     _ -> (
