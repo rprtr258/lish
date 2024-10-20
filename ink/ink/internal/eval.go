@@ -464,13 +464,14 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	if err != nil {
 		return nil, err
 	}
-	rightValue, err := n.right.Eval(scope, false)
-	if err != nil {
-		return nil, err
-	}
 
 	switch n.operator {
 	case OpAdd:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -494,6 +495,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support addition [%s]", leftValue, rightValue, poss(n))}
 	case OpSubtract:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -502,6 +508,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 		}
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction [%s]", leftValue, rightValue, poss(n))}
 	case OpMultiply:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -515,6 +526,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication [%s]", leftValue, rightValue, poss(n))}
 	case OpDivide:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		if leftNum, isNum := leftValue.(ValueNumber); isNum {
 			if right, ok := rightValue.(ValueNumber); ok {
 				if right == 0 {
@@ -527,6 +543,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support division [%s]", leftValue, rightValue, poss(n))}
 	case OpModulus:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		if leftNum, isNum := leftValue.(ValueNumber); isNum {
 			if right, ok := rightValue.(ValueNumber); ok {
 				if right == 0 {
@@ -545,6 +566,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	case OpLogicalAnd:
 		switch left := leftValue.(type) {
 		case ValueNumber:
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
 			if right, ok := rightValue.(ValueNumber); ok {
 				if isInteger(left) && isInteger(right) {
 					return ValueNumber(int64(left) & int64(right)), nil
@@ -553,6 +579,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s [%s]", nvToS(right), nvToS(left), poss(n))}
 			}
 		case ValueString:
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
 			if right, ok := rightValue.(ValueString); ok {
 				max := max(len(left), len(right))
 
@@ -564,23 +595,51 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				return ValueString(c), nil
 			}
 		case ValueBoolean:
-			if right, ok := rightValue.(ValueBoolean); ok {
-				return ValueBoolean(left && right), nil
+			if !left { // false & x = false
+				return ValueBoolean(false), nil
 			}
+
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
+			right, ok := rightValue.(ValueBoolean)
+			if !ok {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot take bitwise & of %T and %T [%s]", left, right, poss(n))}
+			}
+
+			return ValueBoolean(right), nil
+		}
+
+		// TODO: do not evaluate `right`` here
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
 		}
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical & [%s]", leftValue, rightValue, poss(n))}
 	case OpLogicalOr:
 		switch left := leftValue.(type) {
 		case ValueNumber:
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
 			if right, ok := rightValue.(ValueNumber); ok {
-				if isInteger(left) && isInteger(left) {
-					return ValueNumber(int64(left) | int64(right)), nil
+				if !isInteger(left) || !isInteger(left) {
+					return nil, &Err{ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s [%s]", nvToS(right), nvToS(left), poss(n))}
 				}
 
-				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s [%s]", nvToS(right), nvToS(left), poss(n))}
+				return ValueNumber(int64(left) | int64(right)), nil
 			}
 		case ValueString:
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
 			if right, ok := rightValue.(ValueString); ok {
 				max := max(len(left), len(right))
 
@@ -592,13 +651,36 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				return ValueString(c), nil
 			}
 		case ValueBoolean:
-			if right, ok := rightValue.(ValueBoolean); ok {
-				return ValueBoolean(left || right), nil
+			if left { // true | x = true
+				return ValueBoolean(true), nil
 			}
+
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
+			right, ok := rightValue.(ValueBoolean)
+			if !ok {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T [%s]", left, right, poss(n))}
+			}
+
+			return ValueBoolean(right), nil
+		}
+
+		// TODO: do not evaluate `right`` here
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
 		}
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical | [%s]", leftValue, rightValue, poss(n))}
 	case OpLogicalXor:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -627,6 +709,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^ [%s]", leftValue, rightValue, poss(n))}
 	case OpGreaterThan:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -640,6 +727,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support comparison [%s]", leftValue, rightValue, poss(n))}
 	case OpLessThan:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		switch left := leftValue.(type) {
 		case ValueNumber:
 			if right, ok := rightValue.(ValueNumber); ok {
@@ -653,6 +745,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 		return nil, &Err{ErrRuntime, fmt.Sprintf("values %s and %s do not support comparison [%s]", leftValue, rightValue, poss(n))}
 	case OpEqual:
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
 		return ValueBoolean(leftValue.Equals(rightValue)), nil
 	default:
 		log.Fatal().Stringer("kind", ErrAssert).Msgf("unknown binary operator %s", n.String())

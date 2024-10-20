@@ -8,8 +8,8 @@ import (
 	"unicode"
 )
 
-// Kind is the sum type of all possible types
-// of tokens in an Ink program
+// Kind is the sum type of all possible types of tokens in an Ink program
+// TODO: separate unary and binary kinds of operators
 type Kind int
 
 const (
