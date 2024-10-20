@@ -2,10 +2,7 @@
 
 log := import('logging.ink').log
 f := import('str.ink').format
-std := import('functional.ink')
-range := std.range
-each := std.each
-map := std.map
+{range: range, each: each, map: map} := import('functional.ink')
 wf := import('io').writeFile
 bmp := import('bmp').bmp
 
