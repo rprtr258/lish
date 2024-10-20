@@ -21,9 +21,9 @@ MAXITER := 600
 
 # set the correct "escape" threshold for sequence
 ESCAPE := (WIDTH > HEIGHT :: {
-  true -> WIDTH / SCALE
-  false -> HEIGHT / SCALE
-})
+  true -> WIDTH
+  false -> HEIGHT
+}) / SCALE
 ESCAPE := (ESCAPE < 2 :: {
   true -> 2
   false -> ESCAPE

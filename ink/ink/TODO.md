@@ -16,6 +16,7 @@
 - [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := load('functional')`
 - [ ] value semantics
 - [ ] make `:: {...}` mean `true :: {...}` as a common case
+- [ ] `<=` and `>=` operators
 - [ ] export last expression from file, instead of all declarations
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
 - [ ] make it possible to use oneline match expression, block expression
