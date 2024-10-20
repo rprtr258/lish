@@ -26,9 +26,9 @@ slice := (s, start, end) => (
   )
 
   # bounds checks
-  {start: xstart, end: xend} := clamp(start, end, 0, len(s))
-  start := xstart
-  max := xend - start
+  x := clamp(start, end, 0, len(s))
+  start := x.start
+  max := x.end - start
 
   (sub := (i, acc) => i :: {
     max -> acc
