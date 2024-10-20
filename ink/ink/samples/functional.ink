@@ -82,7 +82,7 @@ append := (base, child) => (
 )
 
 # join one list to the end of another, return the third list
-join := (base, child) => append((load('std').clone)(base), child)
+join := (base, child) => base + child
 
 # flatten by depth 1
 # ([][]T) => []T
