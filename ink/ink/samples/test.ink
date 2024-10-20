@@ -685,11 +685,10 @@ m('type() builtin function')
 
 m('std.range/slice/append/join/cat and stringList')
 (
-  stringList := str.stringList
+  {stringList: stringList, join: cat} := str
   range := functional.range
   reverse := functional.reverse
   slice := std.slice
-  cat := str.join
 
   # slice returns copies
   (
