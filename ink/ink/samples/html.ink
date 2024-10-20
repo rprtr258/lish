@@ -39,11 +39,9 @@ span := bindEl('span')
 # simple div helper
 d := children => div({}, children)
 
-# html wrapper helper
-html := (head, body) => '<!doctype html>' + el('head', {}, head) + el('body', {}, body)
-
 # export
 {
+  classes: classes
   el: el
   title: title
   meta: meta
@@ -57,6 +55,9 @@ html := (head, body) => '<!doctype html>' + el('head', {}, head) + el('body', {}
   div: div
   span: span
   d: d
-  html: html
-  classes: classes
+  # html wrapper helper
+  html: (head, body) =>
+    '<!doctype html>' +
+    el('head', {}, head) +
+    el('body', {}, body)
 }
