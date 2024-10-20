@@ -1,8 +1,8 @@
 f := import('str.ink').format
 fatal := import('logging.ink').critical
-iter := import('iter.ink')
-range := n => (iter.range)(0, n, 1)
-each := iter.each
+{each: each, range: rawRange} := import('iter.ink')
+
+range := n => rawRange(0, n, 1)
 
 len(args()) :: {
   3 -> ()

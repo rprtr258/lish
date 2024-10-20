@@ -1,7 +1,4 @@
-std := import('samples/std.ink')
-range := std.range
-each := std.each
-log := std.log
+{range: range, each: each, log: log} := import('samples/std.ink')
 get := import('samples/requests.ink').get
 
 # TODO: remove whole file

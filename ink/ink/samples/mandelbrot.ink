@@ -3,14 +3,9 @@
 bmp := import('bmp').bmp
 log := import('logging.ink').log
 f := import('str.ink').format
-std := import('functional.ink')
-map := std.map
-reduce := std.reduce
-range := std.range
+{map: map, reduce: reduce, range: range} := import('functional.ink')
 wf := import('io').writeFile
-math := import('math.ink')
-max := math.max
-iverson := math.iverson
+{max: max, iverson: iverson} := import('math.ink')
 
 # graph position
 CENTERX := ~0.540015
