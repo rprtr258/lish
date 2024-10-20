@@ -43,11 +43,15 @@ slice := (s, start, end) => (
 )
 
 # clone a composite value
-clone := x => type(x) :: {
-  'string' -> '' + x
-  'composite' -> (import('functional.ink').reduce)(keys(x), (acc, k) => acc.(k) := x.(k), {})
-  _ -> x
-}
+clone := x => (
+  reduce := import('functional.ink').reduce
+
+  type(x) :: {
+    'string' -> '' + x
+    'composite' -> reduce(keys(x), (acc, k) => acc.(k) := x.(k), {})
+    _ -> x
+  }
+)
 
 {
   scan: scan

@@ -1,14 +1,10 @@
 # interactive terminal tic tac toe in Ink
 
-log := s => out(s + '\n')
-std := import('std.ink')
-scan := std.scan
-slice := std.slice
+{scan: scan, slice: slice} := import('std.ink')
 f := import('str.ink').format
-functional := import('functional.ink')
-map := functional.map
-reduce := functional.reduce
-filter := functional.filter
+{map: map, reduce: reduce, filter: filter} := import('functional.ink')
+
+log := s => out(s + '\n')
 
 # async version of a while(... condition, ... predicate)
 # that takes a callback

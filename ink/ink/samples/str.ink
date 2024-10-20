@@ -1,8 +1,6 @@
 # standard string library
 
-std := import('functional.ink')
-map := std.map
-reduce := std.reduce
+{map: map, reduce: reduce} := import('functional.ink')
 slice := import('std.ink').slice
 
 # checking if a given character is of a type

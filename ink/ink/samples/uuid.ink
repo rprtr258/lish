@@ -1,10 +1,7 @@
 # uuid
 
 hex := import('str.ink').nToH
-# {range map} := import('functional.ink')
-functional := import('functional.ink')
-range := functional.range
-map := functional.map
+{range: range, map: map} := import('functional.ink')
 
 () => (
   # generate 16 random bytes
