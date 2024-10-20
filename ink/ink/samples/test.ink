@@ -889,12 +889,8 @@ m('std.format -- the standard library formatter / templater')
 m('uuid -- uuid v4 generator')
 (
   uuid := import('uuid.ink')
-  xeh := str.xeh
-  range := functional.range
-  map := functional.map
-  every := functional.every
-  reduce := functional.reduce
-  split := str.split
+  {xeh: xeh, split: split} := str
+  {range: range, map: map, every: every, reduce: reduce} := functional
 
   uuids := map(range(0, 200, 1), uuid)
 
