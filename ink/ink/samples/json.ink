@@ -177,7 +177,7 @@ deList := r => (
 
   (sub := acc => (r.err?)() :: {
     true -> ()
-    false -> p() :: {
+    _ -> p() :: {
       '' -> (
         (r.err)()
         ()
@@ -214,7 +214,7 @@ deComp := r => (
 
   (sub := acc => (r.err?)() :: {
     true -> ()
-    false -> p() :: {
+    _ -> p() :: {
       '' -> (r.err)()
       '}' -> (
         n()
@@ -270,7 +270,7 @@ der := r => (
   # if there was a parse error, just return null result
   (r.err?)() :: {
     true -> ()
-    false -> result
+    _ -> result
   }
 )
 
@@ -285,7 +285,7 @@ serialize := c => type(c) :: {
   'number' -> string(c)
   'boolean' -> c :: {
     true -> 'true'
-    false -> 'false'
+    _ -> 'false'
   }
   'function' -> 'null' # do not serialize functions
   'composite' -> '{' + cat(map(keys(c), k => '"' + escape(k) + '":' + serialize(c.(k))), ',') + '}'
