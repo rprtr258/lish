@@ -87,10 +87,13 @@ flatten := list => reduce(list, (acc, x, _) => acc + x, [])
 
 # true iff some items in list are true
 # ([]boolean) => boolean
+# TODO: stop on first match
+# TODO: rename to any?
 some := list => reduce(list, (acc, x) => acc | x, false)
 
 # true iff every item in list is true
 # ([]boolean) => boolean
+# TODO: rename to all?
 every := list => reduce(list, (acc, x) => acc & x, true)
 
 # tail recursive reversing a list
