@@ -17,7 +17,7 @@
 - [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := load('functional')`
 - [ ] value semantics
 - [ ] make `:: {...}` mean `true :: {...}` as a common case
-- [ ] `<=` and `>=` operators
+- [ ] `<=`, `>=`, `!=` operators
 - [ ] `load` from url
 - [ ] async/futures
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
