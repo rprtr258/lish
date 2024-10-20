@@ -1235,9 +1235,7 @@ m('sort')
 (
   range := import('functional.ink').range
   clone := std.clone
-  quicksort := import('quicksort.ink')
-  sort := quicksort.sort
-  sort! := quicksort.sort!
+  {sort: sort, sort!: sort!} := import('quicksort.ink')
 
   # rint := () => floor(rand() * 500)
   # L := map(range(0, 250, 1), rint)
