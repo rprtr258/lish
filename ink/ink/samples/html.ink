@@ -53,3 +53,21 @@ log(
     ])
   )
 )
+
+# export
+{
+  el: el
+  title: title
+  meta: meta
+  link: link
+  h1: h1
+  h2: h2
+  h3: h3
+  p: p
+  em: em
+  strong: strong
+  div: div
+  span: span
+  d: d
+  html: html
+}
