@@ -1,6 +1,6 @@
 # html rendering library
 
-{format: f, join: join} := import('str.ink')
+{format: f, join} := import('str.ink')
 map := import('functional.ink').map
 
 classes := classes => join(classes, ' ')

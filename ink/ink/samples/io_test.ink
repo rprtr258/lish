@@ -1,10 +1,10 @@
 # filesystem i/o demo
 
 log := import('logging.ink').log
-{slice: slice, stringList: stringList} := import('std.ink')
-{map: map, each: each} := import('functional.ink')
-{format: f, decode: decode} := import('str.ink')
-{readFile: readFile, writeFile: writeFile} := import('io')
+{slice, stringList} := import('std.ink')
+{map, each} := import('functional.ink')
+{format: f, decode} := import('str.ink')
+{readFile, writeFile} := import('io')
 
 SOURCE := 'pkg/ink/eval.go'
 TARGET := 'test_io.go'

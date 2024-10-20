@@ -1,7 +1,7 @@
 # bitmap image test: generate an RGB rainbow gradient
 
 log := import('logging.ink').log
-{range: range, map: map, reduce: reduce} := import('functional.ink')
+{range, map, reduce} := import('functional.ink')
 f := import('str.ink').format
 bmp := import('bmp').bmp
 
