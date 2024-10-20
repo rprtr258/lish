@@ -211,7 +211,7 @@ type NodeObjectEntry struct {
 }
 
 func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("Object Entry (%s): (%s)", n.key, n.val)
+	return fmt.Sprintf("(%s): (%s)", n.key, n.val)
 }
 
 type NodeLiteralList struct {

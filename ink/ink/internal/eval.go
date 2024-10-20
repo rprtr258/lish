@@ -314,16 +314,16 @@ func (n NodeExprUnary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	}
 }
 
-func operandToStringKey(rightOperand Node, scope *Scope) (string, *Err) {
-	switch right := rightOperand.(type) {
+func operandToStringKey(scope *Scope, keyOperand Node) (string, *Err) {
+	switch keyNode := keyOperand.(type) {
 	case NodeIdentifier:
-		return right.val, nil
+		return keyNode.val, nil
 	case NodeLiteralString:
-		return right.val, nil
+		return keyNode.val, nil
 	case NodeLiteralNumber:
-		return nToS(right.val), nil
+		return nToS(keyNode.val), nil
 	default:
-		rightEvaluatedValue, err := rightOperand.Eval(scope, false)
+		rightEvaluatedValue, err := keyOperand.Eval(scope, false)
 		if err != nil {
 			return "", err
 		}
@@ -334,12 +334,16 @@ func operandToStringKey(rightOperand Node, scope *Scope) (string, *Err) {
 		case ValueNumber:
 			return nvToS(rv), nil
 		default:
-			return "", &Err{ErrRuntime, fmt.Sprintf("cannot access invalid property name %s of a composite value", rightEvaluatedValue), rightOperand.Position()}
+			return "", &Err{ErrRuntime, fmt.Sprintf("cannot access invalid property name %s of a composite value", rightEvaluatedValue), keyOperand.Position()}
 		}
 	}
 }
 
 func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
+	if _, isEmpty := rightValue.(ValueEmpty); isEmpty {
+		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty value to %s (actually anything)", leftNode), leftNode.Position()}
+	}
+
 	switch leftSide := leftNode.(type) {
 	case NodeIdentifier:
 		scope.Set(leftSide.val, rightValue)
@@ -354,7 +358,7 @@ func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
 			return nil, err
 		}
 
-		leftKey, err := operandToStringKey(leftSide.right, scope)
+		leftKey, err := operandToStringKey(scope, leftSide.right)
 		if err != nil {
 			return nil, err
 		}
@@ -405,6 +409,7 @@ func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
 		if !isComposite || !rightComposite.isList() {
 			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure non-list value %s into list", rightValue), leftNode.Position()}
 		} else if len(leftSide.vals) != len(rightComposite) {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure list into different length: %d value into %d", len(rightComposite), len(leftSide.vals)), leftNode.Position()}
 		}
 
 		res := make(ValueComposite, len(leftSide.vals))
@@ -417,23 +422,40 @@ func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
 			res[k] = v
 		}
 		return res, nil
-	default:
-		leftt, err := leftNode.Eval(scope, false)
-		if err != nil {
-			return nil, err
+	case NodeLiteralObject: // dict destructure: {log: log, format: f} = std
+		rightComposite, isComposite := rightValue.(ValueComposite)
+		if !isComposite {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure non-list value %s into list", rightValue), leftNode.Position()}
 		}
 
-		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftt), leftNode.Position()}
+		res := make(ValueComposite, len(leftSide.entries))
+		for _, entry := range leftSide.entries {
+			k, err := operandToStringKey(scope, entry.key)
+			if err != nil {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("invalid key in dict destructure assignment: %s", err.Error()), entry.position}
+			}
+
+			rightSide, ok := rightComposite[k]
+			if !ok {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure unknown key in dict: %s", k), entry.key.Position()}
+			}
+
+			v, err := define(scope, entry.val, rightSide)
+			if err != nil {
+				return nil, err
+			}
+			res[k] = v
+		}
+		return res, nil
+	default:
+		// TODO: show node as-is, store position start and end instead of just start
+		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftNode), leftNode.Position()}
 	}
 }
 
 func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	switch n.operator {
 	case OpDefine:
-		if _, isEmpty := n.right.(NodeIdentifierEmpty); isEmpty {
-			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s (actually anything)", n.left), n.left.Position()}
-		}
-
 		rightValue, err := n.right.Eval(scope, false)
 		if err != nil {
 			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot evaluate right-side of assignment: %s", err.Error()), n.left.Position()}
@@ -446,7 +468,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 			return nil, err
 		}
 
-		rightValueStr, err := operandToStringKey(n.right, scope)
+		rightValueStr, err := operandToStringKey(scope, n.right)
 		if err != nil {
 			return nil, err
 		}
@@ -920,7 +942,7 @@ func (n NodeLiteralBoolean) Eval(*Scope, bool) (Value, *Err) {
 func (n NodeLiteralObject) Eval(scope *Scope, _ bool) (Value, *Err) {
 	obj := make(ValueComposite, len(n.entries))
 	for _, entry := range n.entries {
-		keyStr, err := operandToStringKey(entry.key, scope)
+		keyStr, err := operandToStringKey(scope, entry.key)
 		if err != nil {
 			return nil, err
 		}

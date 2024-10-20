@@ -24,13 +24,23 @@ m('eval with #!/usr/bin/env ink')
     clear, '__cleared')
 )
 
-m('destructure assignment')
+m('destructure assignment into list')
 (
   list := [1, 2, 3]
   [a, b, c] := list
+
   t('a is 1', a, 1)
   t('b is 2', b, 2)
   t('c is 3', c, 3)
+)
+
+m('destructure assignment into dict')
+(
+  dict := {a: 'A', b: 'B', c: 'C'}
+  {a: a, b: bb} := dict
+
+  t('a is "A"', a, 'A')
+  t('b is "B"', bb, 'B')
 )
 
 m('value equality')
