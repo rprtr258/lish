@@ -1,21 +1,3 @@
-fract := x => x - floor(x)
-
-ceil := x => fract(x) :: {
-  0 -> x
-  _ -> fract(x + 1)
-}
-# floor := floor
-round := x => floor(x + 0.5)
-trunc := x => x > 0 :: {
-  true -> floor(x)
-  false -> ceil(x)
-}
-
-abs := x => x :: {
-  x < 0 -> ~x
-  _ -> x
-}
-
 sqrt := x => pow(x, 0.5)
 # pow := pow
 E := 2.718281828459045
@@ -38,3 +20,13 @@ ternary := (p, x, y) => p :: {
 min := (x, y) => ternary(x < y, x, y)
 max := (x, y) => ternary(x > y, x, y)
 iverson := p => ternary(p, 1, 0)
+abs := x => x * ternary(x < 0, ~1, 1)
+
+fract := x => x - floor(x)
+ceil := x => fract(x) :: {
+  0 -> x
+  _ -> fract(x + 1)
+}
+# floor := floor
+round := x => floor(x + 0.5)
+trunc := x => ternary(x > 0, floor, ceil)(x)
