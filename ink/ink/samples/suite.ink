@@ -15,7 +15,7 @@ label => (
   }
 
   # mark sections of a test suite with human labels
-  mark := label => s.msgs.len(s.msgs) := '- ' + label
+  mark := label => s.msgs.(len(s.msgs)) := '- ' + label
 
   # signal end of test suite, print out results
   end := () => (
@@ -36,7 +36,7 @@ label => (
     s.all := s.all + 1
     result :: {
       expected -> s.passed := s.passed + 1
-      _ -> s.msgs.len(s.msgs) := f('  * {{ label }}
+      _ -> s.msgs.(len(s.msgs)) := f('  * {{ label }}
   {{ indent }}got {{ result }}
   {{ indent }}exp {{ expected }}', {
         label: label
