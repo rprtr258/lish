@@ -287,6 +287,6 @@ serialize := c => type(c) :: {
 }
 
 {
-  de: parse # TODO: remove
-  ser: serialize # TODO: remove
+  parse
+  serialize
 }
