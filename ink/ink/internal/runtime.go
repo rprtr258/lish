@@ -251,7 +251,7 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 	}
 
 	cbErr := func(err error) {
-		LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to in(), %s", err.Error()), pos})
+		LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to in(), %s", err.Error()), pos})
 	}
 
 	ctx.ExecListener(func() {
@@ -277,7 +277,7 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 					break
 				}
 			} else {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("callback to in() should return a boolean, but got %s", rv), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("callback to in() should return a boolean, but got %s", rv), pos})
 				return
 			}
 		}
@@ -324,7 +324,7 @@ func inkDir(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to dir(), %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to dir(), %s", err.Error()), pos})
 		}
 	}
 
@@ -381,7 +381,7 @@ func inkMake(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to make(), %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to make(), %s", err.Error()), pos})
 		}
 	}
 
@@ -427,7 +427,7 @@ func inkStat(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to stat(): %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to stat(): %s", err.Error()), pos})
 		}
 	}
 
@@ -493,7 +493,7 @@ func inkRead(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to read(): %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to read(): %s", err.Error()), pos})
 		}
 	}
 
@@ -576,7 +576,7 @@ func inkWrite(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to write(): %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to write(): %s", err.Error()), pos})
 		}
 	}
 
@@ -650,7 +650,7 @@ func inkDelete(ctx *Context, in []Value) (Value, *Err) {
 
 	cbMaybeErr := func(err error) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to delete(): %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to delete(): %s", err.Error()), pos})
 		}
 	}
 
@@ -694,7 +694,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to listen(): %s", err.Error()), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to listen(): %s", err.Error()), pos})
 		}
 	}
 
@@ -730,10 +730,10 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// this is what Ink's callback calls to send a response
 	endHandler := func(ctx *Context, in []Value) (Value, *Err) {
 		if len(in) != 1 {
-			LogErr(ctx, &Err{ErrRuntime, "end() callback to listen() must have one argument", pos})
+			LogError(&Err{ErrRuntime, "end() callback to listen() must have one argument", pos})
 		}
 		if responseEnded {
-			LogErr(ctx, &Err{ErrRuntime, "end() callback to listen() was called more than once", pos})
+			LogError(&Err{ErrRuntime, "end() callback to listen() was called more than once", pos})
 		}
 		responseEnded = true
 		responses <- in[0]
@@ -763,7 +763,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp := <-responses
 	rsp, isComposite := resp.(ValueComposite)
 	if !isComposite {
-		LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("callback to listen() should return a response, got %s", resp), pos})
+		LogError(&Err{ErrRuntime, fmt.Sprintf("callback to listen() should return a response, got %s", resp), pos})
 		return
 	}
 
@@ -778,7 +778,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resBody, okBody := bodyVal.(ValueString)
 
 	if !okStatus || !okHeaders || !okBody {
-		LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("callback to listen() returned malformed response, %s", rsp), pos})
+		LogError(&Err{ErrRuntime, fmt.Sprintf("callback to listen() returned malformed response, %s", rsp), pos})
 		return
 	}
 
@@ -788,7 +788,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if str, isStr := v.(ValueString); isStr {
 			w.Header().Set(k, string(str))
 		} else {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("could not set response header, value %s was not a string", v), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("could not set response header, value %s was not a string", v), pos})
 			return
 		}
 	}
@@ -797,7 +797,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// guard against invalid HTTP codes, which cause Go panics.
 	// https://golang.org/src/net/http/server.go
 	if code < 100 || code > 599 {
-		LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("could not set response status code, code %d is not valid", code), pos})
+		LogError(&Err{ErrRuntime, fmt.Sprintf("could not set response status code, code %d is not valid", code), pos})
 		return
 	}
 
@@ -834,7 +834,7 @@ func inkListen(ctx *Context, in []Value) (Value, *Err) {
 		ctx.ExecListener(func() {
 			_, err := evalInkFunction(cb, false, pos, errMsg(msg))
 			if err != nil {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to listen(), %s", err.Error()), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to listen(), %s", err.Error()), pos})
 			}
 		})
 	}
@@ -909,7 +909,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
 			if _, err := evalInkFunction(cb, false, pos, errMsg(msg)); err != nil {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
 			}
 		})
 	}
@@ -944,7 +944,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 		reqBody, okBody := bodyVal.(ValueString)
 
 		if !okMethod || !okURL || !okHeaders || !okBody {
-			LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("request in req() is malformed, %s", data), pos})
+			LogError(&Err{ErrRuntime, fmt.Sprintf("request in req() is malformed, %s", data), pos})
 			return
 		}
 
@@ -967,7 +967,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 			if str, isStr := v.(ValueString); isStr {
 				req.Header.Set(k, string(str))
 			} else {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("could not set request header, value %s was not a string", v), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("could not set request header, value %s was not a string", v), pos})
 			}
 		}
 
@@ -1007,7 +1007,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 				},
 			})
 			if err != nil {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
 			}
 		})
 	}()
@@ -1069,7 +1069,7 @@ func inkWait(ctx *Context, in []Value) (Value, *Err) {
 
 		ctx.ExecListener(func() {
 			if _, err := evalInkFunction(in[1], false, pos); err != nil {
-				LogErr(ctx, err)
+				LogError(err)
 			}
 		})
 	}()
@@ -1113,7 +1113,7 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 		ctx.ExecListener(func() {
 			_, err := evalInkFunction(stdoutFn, false, pos, errMsg(msg))
 			if err != nil {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
 			}
 		})
 	}
@@ -1151,7 +1151,7 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 				"data": ValueString(output),
 			})
 			if err != nil {
-				LogErr(ctx, &Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
+				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
 			}
 		})
 	}

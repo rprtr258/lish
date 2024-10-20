@@ -1075,7 +1075,7 @@ func (ctx *Context) Eval(nodes <-chan Node) (val Value, err *Err) {
 
 	for node := range nodes {
 		if val, err = node.Eval(ctx.Scope, false); err != nil {
-			LogErr(ctx, err)
+			LogError(err)
 			break
 		}
 	}

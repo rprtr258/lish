@@ -42,16 +42,7 @@ func LogError(err *Err) {
 		e = log.Fatal()
 	}
 
-	e.Stringer("kind", err.reason).Msg(err.message)
-}
-
-func LogErr(ctx *Context, err *Err) {
-	msg := err.message
-	if ctx.File != "" {
-		msg += " in " + ctx.File // TODO: is needed meaning we already have our position in error itself
-	}
-
-	LogError(&Err{err.reason, msg, err.pos})
+	e.Stringer("at", err.pos).Stringer("kind", err.reason).Msg(err.message)
 }
 
 func LogScope(scope *Scope) {
