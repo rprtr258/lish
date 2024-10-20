@@ -142,7 +142,7 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
   )
   {dir: true, name: _, len: _, mod: _} -> dirPath?(path) :: {
     true -> handleDir(url, path, data, end, getElapsed)
-    false -> (
+    _ -> (
       log(f('  -> {{ url }} returned redirect to {{ url }}/ in {{ ms }}ms', {
         url: url
         ms: getElapsed()
@@ -227,7 +227,7 @@ handleDir := (url, path, data, end, getElapsed) => (
 # handle a directory we stat() confirmed to exist
 handleExistingDir := (url, path, end, getElapsed) => ALLOWINDEX :: {
   true -> handleNoIndexDir(url, path, end, getElapsed)
-  false -> (
+  _ -> (
     log(f('  -> {{ url }} not allowed in {{ ms }}ms', {
       url: url
       ms: getElapsed()
@@ -277,7 +277,7 @@ handleNoIndexDir := (url, path, end, getElapsed) => dir(path, evt => evt.type ::
           fileStat
           fileStat.dir :: {
             true -> '/'
-            false -> ''
+            _ -> ''
           }
         )), '')
       )
