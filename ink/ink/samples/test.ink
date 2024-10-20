@@ -1019,15 +1019,8 @@ me')
 
 m('str.upper/lower/digit/letter/ws? -- checked char ranges')
 (
-  upper? := str.upper?
-  lower? := str.lower?
-  digit? := str.digit?
-  letter? := str.letter?
-  ws? := str.ws?
-
-  every := functional.every
-  some := functional.some
-  map := functional.map
+  {upper?: upper?, lower?: lower?, digit?: digit?, letter?: letter?, ws?: ws?} := str
+  {every: every, some: some, map: map} := functional
 
   t('upper? verifies uppercase letters'
     every(map('ABCDEFGHIJKLMNOPQRSTUVWXYZ', upper?)), true)
@@ -1051,8 +1044,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('ws? rejects all non-whitespace'
     some(map('jafsioSINDFOEJ#@%@()_#9u40529' + char(250), ws?)), false)
 
-  hasPrefix? := str.hasPrefix?
-  hasSuffix? := str.hasSuffix?
+  {hasPrefix?: hasPrefix?, hasSuffix?: hasSuffix?} := str
 
   t('hasPrefix? detects prefix'
     hasPrefix?('programming', 'prog'), true)
@@ -1121,9 +1113,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('contains? = false if not contained'
     contains?('quick brown fox', 'lazy dog'), false)
 
-  lower := str.lower
-  upper := str.upper
-  title := str.title
+  {lower: lower, upper: upper, title: title} := str
   given := 'MIXED case StrinG with ?!~:punct'
 
   t('lower transforms string to lowercase'
@@ -1161,9 +1151,7 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
   t('returns one chunk if no match of delimiter found'
     split('no taste whatsoever!', 'grand'), ['no taste whatsoever!'])
 
-  trimPrefix := str.trimPrefix
-  trimSuffix := str.trimSuffix
-  trim := str.trim
+  {trimPrefix: trimPrefix, trimSuffix: trimSuffix, trim: trim} := str
 
   t('trimPrefix is a no-op with empty string'
     trimPrefix('???????what???', ''), '???????what???')
