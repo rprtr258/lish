@@ -121,13 +121,13 @@ func errMsg(message string) ValueComposite {
 	}
 }
 
-func validate(errs ...string) (string, bool) {
+func validate(errs ...string) *Err {
 	for _, err := range errs {
 		if err != "" {
-			return err, true
+			return &Err{nil, ErrRuntime, err, position{}} // TODO: pass position
 		}
 	}
-	return "", false
+	return nil
 }
 
 func validateArgsLen(in []Value, expected int) string {
@@ -197,12 +197,12 @@ func validateCustom(condition bool, msg string) string {
 func inkImport(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var givenPath ValueString
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &givenPath),
 		validateCustom(len(givenPath) > 0, "arg must be path"),
-	); ok {
-		return nil, &Err{ErrRuntime, "import(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "import()", pos}
 	}
 
 	// imports via import() are assumed to be relative
@@ -237,7 +237,7 @@ func inkImport(ctx *Context, in []Value) (Value, *Err) {
 		// and still only import one instance of A.
 		value, err := childCtx.ExecPath(importPath)
 		if err != nil {
-			return nil, &Err{ErrRuntime, fmt.Sprintf("error importing file %s: %s", importPath, err.Error()), pos}
+			return nil, &Err{err, ErrRuntime, fmt.Sprintf("error importing file %s", importPath), pos}
 		}
 
 		ctx.Engine.values[importPath] = value
@@ -256,14 +256,14 @@ func inkArgs(*Context, []Value) (Value, *Err) {
 
 func inkIn(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
-	); ok {
-		return nil, &Err{ErrRuntime, "in(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "in()", pos}
 	}
 
 	cbErr := func(err *Err) {
-		LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to in(), %s", err.Error()), pos})
+		LogError(&Err{err, ErrRuntime, "error in callback to in()", pos})
 	}
 
 	ctx.ExecListener(func() {
@@ -289,7 +289,7 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 					break
 				}
 			} else {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("callback to in() should return a boolean, but got %s", rv), pos})
+				LogError(&Err{nil, ErrRuntime, fmt.Sprintf("callback to in() should return a boolean, but got %s", rv), pos})
 				return
 			}
 		}
@@ -309,11 +309,11 @@ func inkIn(ctx *Context, in []Value) (Value, *Err) {
 func inkOut(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var output ValueString
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &output),
-	); ok {
-		return nil, &Err{ErrRuntime, "out(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "out()", pos}
 	}
 
 	os.Stdout.Write([]byte(output))
@@ -326,17 +326,17 @@ func inkDir(ctx *Context, in []Value) (Value, *Err) {
 		dirPath ValueString
 		cb      ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &dirPath),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "dir(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "dir()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to dir(), %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to dir()", pos})
 		}
 	}
 
@@ -383,17 +383,17 @@ func inkMake(ctx *Context, in []Value) (Value, *Err) {
 		dirPath ValueString
 		cb      ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &dirPath),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "make(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "make()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to make(), %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to make()", pos})
 		}
 	}
 
@@ -429,17 +429,17 @@ func inkStat(ctx *Context, in []Value) (Value, *Err) {
 		statPath ValueString
 		cb       ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &statPath),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "stat(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "stat()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to stat(): %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to stat()", pos})
 		}
 	}
 
@@ -493,19 +493,19 @@ func inkRead(ctx *Context, in []Value) (Value, *Err) {
 		length   ValueNumber
 		cb       ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &offset),
 		validateArgType(in, 2, &length),
 		validateArgType(in, 3, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "read(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "read()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to read(): %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to read()", pos})
 		}
 	}
 
@@ -576,19 +576,19 @@ func inkWrite(ctx *Context, in []Value) (Value, *Err) {
 		buf      ValueString
 		cb       ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &offset),
 		validateArgType(in, 2, &buf),
 		validateArgType(in, 3, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "write(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "write()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to write(): %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to write()", pos})
 		}
 	}
 
@@ -652,17 +652,17 @@ func inkDelete(ctx *Context, in []Value) (Value, *Err) {
 		filePath ValueString
 		cb       ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "delete(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "delete()", pos}
 	}
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to delete(): %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to delete()", pos})
 		}
 	}
 
@@ -706,7 +706,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cbMaybeErr := func(err *Err) {
 		if err != nil {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to listen(): %s", err.Error()), pos})
+			LogError(&Err{err, ErrRuntime, "error in callback to listen()", pos})
 		}
 	}
 
@@ -742,10 +742,10 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// this is what Ink's callback calls to send a response
 	endHandler := func(ctx *Context, in []Value) (Value, *Err) {
 		if len(in) != 1 {
-			LogError(&Err{ErrRuntime, "end() callback to listen() must have one argument", pos})
+			LogError(&Err{nil, ErrRuntime, "end() callback to listen() must have one argument", pos})
 		}
 		if responseEnded {
-			LogError(&Err{ErrRuntime, "end() callback to listen() was called more than once", pos})
+			LogError(&Err{nil, ErrRuntime, "end() callback to listen() was called more than once", pos})
 		}
 		responseEnded = true
 		responses <- in[0]
@@ -775,7 +775,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp := <-responses
 	rsp, isComposite := resp.(ValueComposite)
 	if !isComposite {
-		LogError(&Err{ErrRuntime, fmt.Sprintf("callback to listen() should return a response, got %s", resp), pos})
+		LogError(&Err{nil, ErrRuntime, fmt.Sprintf("callback to listen() should return a response, got %s", resp), pos})
 		return
 	}
 
@@ -790,7 +790,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resBody, okBody := bodyVal.(ValueString)
 
 	if !okStatus || !okHeaders || !okBody {
-		LogError(&Err{ErrRuntime, fmt.Sprintf("callback to listen() returned malformed response, %s", rsp), pos})
+		LogError(&Err{nil, ErrRuntime, fmt.Sprintf("callback to listen() returned malformed response, %s", rsp), pos})
 		return
 	}
 
@@ -800,7 +800,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if str, isStr := v.(ValueString); isStr {
 			w.Header().Set(k, string(str))
 		} else {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("could not set response header, value %s was not a string", v), pos})
+			LogError(&Err{nil, ErrRuntime, fmt.Sprintf("could not set response header, value %s was not a string", v), pos})
 			return
 		}
 	}
@@ -809,7 +809,7 @@ func (h inkHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// guard against invalid HTTP codes, which cause Go panics.
 	// https://golang.org/src/net/http/server.go
 	if code < 100 || code > 599 {
-		LogError(&Err{ErrRuntime, fmt.Sprintf("could not set response status code, code %d is not valid", code), pos})
+		LogError(&Err{nil, ErrRuntime, fmt.Sprintf("could not set response status code, code %d is not valid", code), pos})
 		return
 	}
 
@@ -834,19 +834,18 @@ func inkListen(ctx *Context, in []Value) (Value, *Err) {
 		host ValueString
 		cb   ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &host),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "listen(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "listen()", pos}
 	}
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			_, err := evalInkFunction(cb, false, pos, errMsg(msg))
-			if err != nil {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to listen(), %s", err.Error()), pos})
+			if _, err := evalInkFunction(cb, false, pos, errMsg(msg)); err != nil {
+				LogError(&Err{err, ErrRuntime, "error in callback to listen()", pos})
 			}
 		})
 	}
@@ -897,12 +896,12 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 		data ValueComposite
 		cb   ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &data),
 		validateArgType(in, 1, &cb),
-	); ok {
-		return nil, &Err{ErrRuntime, "req(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "req()", pos}
 	}
 
 	client := &http.Client{
@@ -921,7 +920,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
 			if _, err := evalInkFunction(cb, false, pos, errMsg(msg)); err != nil {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
+				LogError(&Err{err, ErrRuntime, "error in callback to req()", pos})
 			}
 		})
 	}
@@ -956,7 +955,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 		reqBody, okBody := bodyVal.(ValueString)
 
 		if !okMethod || !okURL || !okHeaders || !okBody {
-			LogError(&Err{ErrRuntime, fmt.Sprintf("request in req() is malformed, %s", data), pos})
+			LogError(&Err{nil, ErrRuntime, fmt.Sprintf("request in req() is malformed, %s", data), pos})
 			return
 		}
 
@@ -979,7 +978,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 			if str, isStr := v.(ValueString); isStr {
 				req.Header.Set(k, string(str))
 			} else {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("could not set request header, value %s was not a string", v), pos})
+				LogError(&Err{nil, ErrRuntime, fmt.Sprintf("could not set request header, value %s was not a string", v), pos})
 			}
 		}
 
@@ -1019,7 +1018,7 @@ func inkReq(ctx *Context, in []Value) (Value, *Err) {
 				},
 			})
 			if err != nil {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to req(), %s", err.Error()), pos})
+				LogError(&Err{err, ErrRuntime, "error in callback to req()", pos})
 			}
 		})
 	}()
@@ -1038,11 +1037,11 @@ func inkRand(ctx *Context, in []Value) (Value, *Err) {
 func inkUrand(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var bufLength ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &bufLength),
-	); ok {
-		return nil, &Err{ErrRuntime, "urand(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "urand()", pos}
 	}
 
 	buf := make([]byte, int64(bufLength))
@@ -1061,11 +1060,11 @@ func inkTime(ctx *Context, in []Value) (Value, *Err) {
 func inkWait(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var secs ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &secs),
-	); ok {
-		return nil, &Err{ErrRuntime, "wait(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "wait()", pos}
 	}
 
 	// This is a bit tricky, since we don't want wait() to hold the evalLock
@@ -1097,14 +1096,14 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 		stdin    ValueString
 		stdoutFn ValueFunction
 	)
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &path),
 		validateArgListOf(in, 1, &args),
 		validateArgType(in, 2, &stdin),
 		validateArgType(in, 3, &stdoutFn),
-	); ok {
-		return nil, &Err{ErrRuntime, "exec(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "exec()", pos}
 	}
 
 	argsList := make([]string, len(args))
@@ -1116,16 +1115,15 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 	// cmdMutex locks control over reading and modifying child
 	// process state, because both the Ink eval thread and exec
 	// thread must read from/write to cmd.
-	cmdMutex := sync.Mutex{}
+	cmdMutex := sync.Mutex{} // TODO: remove as much mutexes as possible
 	stdout := bytes.Buffer{}
 	cmd.Stdin = strings.NewReader(string(stdin))
 	cmd.Stdout = &stdout
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			_, err := evalInkFunction(stdoutFn, false, pos, errMsg(msg))
-			if err != nil {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
+			if _, err := evalInkFunction(stdoutFn, false, pos, errMsg(msg)); err != nil {
+				LogError(&Err{err, ErrRuntime, "error in callback to exec()", pos})
 			}
 		})
 	}
@@ -1134,14 +1132,12 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 		cmdMutex.Lock()
 		err := cmd.Start()
 		cmdMutex.Unlock()
-
 		if err != nil {
 			sendErr(fmt.Sprintf("error starting command in exec(), %s", err.Error()))
 			return
 		}
 
-		err = cmd.Wait()
-		if err != nil {
+		if err = cmd.Wait(); err != nil {
 			// if there is an err but err is just ExitErr, this means
 			// the process ran successfully but exited with an error code.
 			// We consider this ok and keep going.
@@ -1158,12 +1154,12 @@ func inkExec(ctx *Context, in []Value) (Value, *Err) {
 		}
 
 		ctx.ExecListener(func() {
-			_, err := evalInkFunction(stdoutFn, false, pos, ValueComposite{
+			in := ValueComposite{
 				"type": ValueString("data"),
 				"data": ValueString(output),
-			})
-			if err != nil {
-				LogError(&Err{ErrRuntime, fmt.Sprintf("error in callback to exec(), %s", err.Error()), pos})
+			}
+			if _, err := evalInkFunction(stdoutFn, false, pos, in); err != nil {
+				LogError(&Err{err, ErrRuntime, "error in callback to exec()", pos})
 			}
 		})
 	}
@@ -1221,11 +1217,11 @@ func inkEnv(ctx *Context, in []Value) (Value, *Err) {
 func inkExit(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var code ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &code),
-	); ok {
-		return nil, &Err{ErrRuntime, "exit(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "exit()", pos}
 	}
 
 	os.Exit(int(code))
@@ -1237,11 +1233,11 @@ func inkExit(ctx *Context, in []Value) (Value, *Err) {
 func inkSin(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var inNum ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
-	); ok {
-		return nil, &Err{ErrRuntime, "sin(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "sin()", pos}
 	}
 
 	return ValueNumber(math.Sin(float64(inNum))), nil
@@ -1250,11 +1246,11 @@ func inkSin(ctx *Context, in []Value) (Value, *Err) {
 func inkCos(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var inNum ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
-	); ok {
-		return nil, &Err{ErrRuntime, "cos(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "cos()", pos}
 	}
 
 	return ValueNumber(math.Cos(float64(inNum))), nil
@@ -1263,12 +1259,12 @@ func inkCos(ctx *Context, in []Value) (Value, *Err) {
 func inkAsin(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var inNum ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 		validateCustom(inNum >= -1 && inNum <= 1, fmt.Sprintf("number must be in range [-1, 1], got %v", inNum)),
-	); ok {
-		return nil, &Err{ErrRuntime, "asin(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "asin()", pos}
 	}
 
 	return ValueNumber(math.Asin(float64(inNum))), nil
@@ -1277,12 +1273,12 @@ func inkAsin(ctx *Context, in []Value) (Value, *Err) {
 func inkAcos(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var inNum ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 		validateCustom(inNum >= -1 && inNum <= 1, fmt.Sprintf("number must be in range [-1, 1], got %v", inNum)),
-	); ok {
-		return nil, &Err{ErrRuntime, "acos(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "acos()", pos}
 	}
 
 	return ValueNumber(math.Acos(float64(inNum))), nil
@@ -1291,14 +1287,14 @@ func inkAcos(ctx *Context, in []Value) (Value, *Err) {
 func inkPow(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var base, exp ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &base),
 		validateArgType(in, 1, &exp),
 		validateCustom(base != 0 || exp != 0, "math error, pow(0, 0) is not defined"),
 		validateCustom(base >= 0 || isInteger(exp), "math error, fractional power of negative number"),
-	); ok {
-		return nil, &Err{ErrRuntime, "pow(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "pow()", pos}
 	}
 
 	return ValueNumber(math.Pow(float64(base), float64(exp))), nil
@@ -1307,12 +1303,12 @@ func inkPow(ctx *Context, in []Value) (Value, *Err) {
 func inkLn(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var n ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &n),
 		validateCustom(n > 0, fmt.Sprintf("cannot take natural logarithm of non-positive number %s", nvToS(n))),
-	); ok {
-		return nil, &Err{ErrRuntime, "ln(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "ln()", pos}
 	}
 
 	return ValueNumber(math.Log(float64(n))), nil
@@ -1321,11 +1317,11 @@ func inkLn(ctx *Context, in []Value) (Value, *Err) {
 func inkFloor(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var n ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &n),
-	); ok {
-		return nil, &Err{ErrRuntime, "floor(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "floor()", pos}
 	}
 
 	return ValueNumber(math.Trunc(float64(n))), nil
@@ -1333,10 +1329,10 @@ func inkFloor(ctx *Context, in []Value) (Value, *Err) {
 
 func inkString(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
-	); ok {
-		return nil, &Err{ErrRuntime, "string(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "string()", pos}
 	}
 
 	switch v := in[0].(type) {
@@ -1359,10 +1355,10 @@ func inkString(ctx *Context, in []Value) (Value, *Err) {
 
 func inkNumber(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
-	); ok {
-		return nil, &Err{ErrRuntime, "number(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "number()", pos}
 	}
 
 	switch v := in[0].(type) {
@@ -1390,12 +1386,12 @@ func inkNumber(ctx *Context, in []Value) (Value, *Err) {
 func inkPoint(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var str ValueString
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &str),
 		validateCustom(len(str) >= 1, "argument must be of length at least 1"),
-	); ok {
-		return nil, &Err{ErrRuntime, "point(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "point()", pos}
 	}
 
 	return ValueNumber(str[0]), nil
@@ -1404,11 +1400,11 @@ func inkPoint(ctx *Context, in []Value) (Value, *Err) {
 func inkChar(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var cp ValueNumber
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &cp),
-	); ok {
-		return nil, &Err{ErrRuntime, "char(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "char()", pos}
 	}
 
 	return ValueString([]byte{byte(cp)}), nil
@@ -1416,10 +1412,10 @@ func inkChar(ctx *Context, in []Value) (Value, *Err) {
 
 func inkType(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
-	); ok {
-		return nil, &Err{ErrRuntime, "type(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "type()", pos}
 	}
 
 	switch in[0].(type) {
@@ -1442,10 +1438,10 @@ func inkType(ctx *Context, in []Value) (Value, *Err) {
 
 func inkLen(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
-	); ok {
-		return nil, &Err{ErrRuntime, "len(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "len()", pos}
 	}
 
 	if list, isComposite := in[0].(ValueComposite); isComposite {
@@ -1454,17 +1450,17 @@ func inkLen(ctx *Context, in []Value) (Value, *Err) {
 		return ValueNumber(len(str)), nil
 	}
 
-	return nil, &Err{ErrRuntime, fmt.Sprintf("len() takes a string or composite value, but got %s", in[0]), pos}
+	return nil, &Err{nil, ErrRuntime, fmt.Sprintf("len() takes a string or composite value, but got %s", in[0]), pos}
 }
 
 func inkKeys(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var obj ValueComposite
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &obj),
-	); ok {
-		return nil, &Err{ErrRuntime, "keys(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "keys()", pos}
 	}
 
 	cv := make(ValueComposite, len(obj))
@@ -1480,11 +1476,11 @@ func inkKeys(ctx *Context, in []Value) (Value, *Err) {
 func inkPar(ctx *Context, in []Value) (Value, *Err) {
 	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var funcs ValueComposite
-	if err, ok := validate(
+	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &funcs),
-	); ok {
-		return nil, &Err{ErrRuntime, "par(): " + err, pos}
+	); err != nil {
+		return nil, &Err{err, ErrRuntime, "par()", pos}
 	}
 
 	// evalLock blocks file eval; temporary unlock it for the import to run.

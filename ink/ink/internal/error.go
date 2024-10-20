@@ -31,12 +31,19 @@ const (
 
 // Err constants represent possible errors that Ink interpreter binding functions may return.
 type Err struct {
-	// TODO: parent error
+	parent  *Err
 	reason  ErrorReason
 	message string
 	pos     position
 }
 
 func (e Err) Error() string {
+	// TODO: print beautiful stack trace
+	// TODO: skip reasons down the stack
+	message := e.message
+	if e.parent != nil {
+		message = message + ": " + e.parent.Error()
+	}
+
 	return fmt.Sprintf("%s error: %s [%s]", e.reason, e.message, e.pos)
 }

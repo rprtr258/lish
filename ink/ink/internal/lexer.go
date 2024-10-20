@@ -242,7 +242,7 @@ func tokenize(file string, r io.Reader) <-chan Token {
 			case unicode.IsDigit(rune(cbuf[0])):
 				f, err := strconv.ParseFloat(string(cbuf), 64)
 				if err != nil {
-					LogError(&Err{ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), position{file, lineNo, colNo - len(cbuf)}})
+					LogError(&Err{nil, ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), position{file, lineNo, colNo - len(cbuf)}})
 				}
 				simpleCommit(Token{
 					num:      f,
