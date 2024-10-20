@@ -80,12 +80,12 @@ deNull := r => (
 # deserialize string
 deString := r => (
   n := r.next
-  p := r.peek
+  peek := r.peek
 
   # known to be a '"'
   n()
 
-  (sub := acc => p() :: {
+  (sub := acc => peek() :: {
     '' -> (
       (r.err)()
       ()
@@ -112,22 +112,22 @@ deString := r => (
 # deserialize number
 deNumber := r => (
   n := r.next
-  p := r.peek
+  peek := r.peek
   state := {
     # have we seen a '.' yet?
     negate?: false
     decimal?: false
   }
 
-  p() :: {
+  peek() :: {
     '-' -> (
       n()
       state.negate? := true
     )
   }
 
-  result := (sub := acc => num?(p()) :: {
-    true -> p() :: {
+  result := (sub := acc => num?(peek()) :: {
+    true -> peek() :: {
       '.' -> state.decimal? :: {
         true -> (r.err)()
         _ -> (
@@ -165,7 +165,7 @@ deFalse := r => (
 # deserialize list
 deList := r => (
   n := r.next
-  p := r.peek
+  peek := r.peek
   ff := r.ff
   state := {
     idx: 0
@@ -177,7 +177,7 @@ deList := r => (
 
   (sub := acc => (r.err?)() :: {
     true -> ()
-    _ -> p() :: {
+    _ -> peek() :: {
       '' -> (
         (r.err)()
         ()
@@ -191,7 +191,7 @@ deList := r => (
         state.idx := state.idx + 1
 
         ff()
-        p() :: {
+        peek() :: {
           ',' -> n()
         }
 
@@ -205,7 +205,7 @@ deList := r => (
 # deserialize composite
 deComp := r => (
   n := r.next
-  p := r.peek
+  peek := r.peek
   ff := r.ff
 
   # known to be a '{'
@@ -214,7 +214,7 @@ deComp := r => (
 
   (sub := acc => (r.err?)() :: {
     true -> ()
-    _ -> p() :: {
+    _ -> peek() :: {
       '' -> (r.err)()
       '}' -> (
         n()
@@ -226,7 +226,7 @@ deComp := r => (
         (r.err?)() :: {
           false -> (
             ff()
-            p() :: {
+            peek() :: {
               ':' -> n()
             }
 
@@ -236,7 +236,7 @@ deComp := r => (
             (r.err?)() :: {
               false -> (
                 ff()
-                p() :: {
+                peek() :: {
                   ',' -> n()
                 }
 
