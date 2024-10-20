@@ -12,7 +12,7 @@ split := str.split
 hasSuffix? := str.hasSuffix?
 mimeForPath := import('../vendor/mime.ink').forPath
 pctDecode := import('../vendor/percent.ink').decode
-sort := import('../vendor/quicksort.ink').sort
+sort := import('../vendor/mod.ink').quicksort.sort
 http := import('../vendor/http.ink')
 
 transform := import('../lib/md.ink').transform

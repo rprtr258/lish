@@ -623,5 +623,7 @@ function to be invoked by the library consumer. `
 transform := text => compile(parse(text))
 
 {
+  parse: parse
+  compile: compile
   transform: transform
 }

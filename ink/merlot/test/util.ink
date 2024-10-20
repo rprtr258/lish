@@ -4,9 +4,9 @@ std := import('../vendor/mod.ink').std
 f := std.format
 each := std.each
 
-formatNumber := import('../lib/util').formatNumber
+formatNumber := import('../lib/util.ink').formatNumber
 
-run := (m, t) => (
+(m, t) => (
   m('formatNumber')
   TestVals := [
     # normal cases

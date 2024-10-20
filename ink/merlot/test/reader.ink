@@ -2,10 +2,9 @@
 
 std := import('../vendor/mod.ink').std
 each := std.each
+Reader := import('../lib/reader.ink')
 
-Reader := import('../lib/reader').Reader
-
-run := (m, t) => (
+(m, t) => (
   m('Reader.peek')
   (
     t('peek the next character', (
@@ -308,4 +307,3 @@ run := (m, t) => (
     # ), ['first', 'second', 'third', 'fourth'])
   )
 )
-

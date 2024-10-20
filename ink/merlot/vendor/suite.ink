@@ -1,14 +1,12 @@
 # ink standard test suite tools
 
-std := import('std')
-
-# borrow from std
+std := import('mod.ink').std
 log := std.log
 each := std.each
 f := std.format
 
 # suite constructor
-suite := label => (
+label => (
   ` suite data store `
   s := {
   	all: 0

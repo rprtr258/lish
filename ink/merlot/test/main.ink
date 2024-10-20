@@ -1,13 +1,9 @@
-runMarkdownTests := import('md').run
-runReaderTests := import('reader').run
-runUtilTests := import('util').run
-
-s := (import('../vendor/suite').suite)(
+s := import('../vendor/suite.ink')(
   'Merlot test suite'
 )
 
-runMarkdownTests(s.mark, s.test)
-runReaderTests(s.mark, s.test)
-runUtilTests(s.mark, s.test)
+import('md.ink')(s.mark, s.test)
+import('reader.ink')(s.mark, s.test)
+import('util.ink')(s.mark, s.test)
 
 (s.end)()

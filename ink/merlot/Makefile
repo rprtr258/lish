@@ -41,7 +41,8 @@ watch:
 	ls lib/* src/* | entr make build
 
 # run all tests under test/
-check:
+.PHONY: test
+test:
 	ink ./test/main.ink
 
 fmt:

@@ -2,12 +2,12 @@
 
 std := import('../vendor/mod.ink').std
 cat := std.cat
-md := import('../lib/md')
+md := import('../lib/md.ink')
 compile := md.compile
 
 Newline := char(10)
 
-run := (m, t) => (
+(m, t) => (
   ` NOTE: Because we don't want the tests to depend on any internal
   implementation detail, we only test two high level components of the
   Markdown module: md.parse: text -> AST and md.compile: AST -> text. `
