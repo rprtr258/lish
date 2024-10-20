@@ -54,3 +54,7 @@ suite := label => (
     end: end
   }
 )
+
+{
+  suite: suite
+}

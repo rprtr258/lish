@@ -881,8 +881,7 @@ m('std.format -- the standard library formatter / templater')
 
 m('uuid -- uuid v4 generator')
 (
-  uuid := load('uuid').uuid
-
+  uuid := load('uuid')
   xeh := str.xeh
   range := functional.range
   map := functional.map
@@ -1187,15 +1186,11 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
 
 m('load() import semantics')
 (
-  A := load('load_dedup')
-  B := load('load_dedup/load_dedup_child')
-  getObjA := A.getObj
-  getObjB := B.getObj
+  getObjA := load('load_dedup')
+  getObjB := load('load_dedup/load_dedup_child')
 
   t('load() from different contexts should be deduplicated'
     getObjA() = getObjB(), true)
-  t('load() of different source files should still return different contexts'
-    A = B, false)
 )
 
 m('args() list')

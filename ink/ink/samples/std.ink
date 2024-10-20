@@ -48,3 +48,10 @@ clone := x => type(x) :: {
   'composite' -> (load('functional').reduce)(keys(x), (acc, k) => acc.(k) := x.(k), {})
   _ -> x
 }
+
+{
+  scan: scan
+  clamp: clamp
+  slice: slice
+  clone: clone
+}

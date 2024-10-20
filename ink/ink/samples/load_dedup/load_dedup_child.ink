@@ -3,4 +3,4 @@
 
 std := load('../std')
 
-getObj := load('../load_dedup').getObj
+load('../load_dedup')

@@ -2,4 +2,5 @@
 # imported Ink contexts are deduplicated correctly
 
 obj := () => ()
-getObj := () => obj
+
+() => obj

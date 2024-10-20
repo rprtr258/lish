@@ -6,7 +6,7 @@ functional := load('functional')
 range := functional.range
 map := functional.map
 
-uuid := () => (
+() => (
   # generate 16 random bytes
   r := map(urand(16), (c, _) => point(c))
 

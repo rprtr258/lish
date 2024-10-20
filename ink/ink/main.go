@@ -107,7 +107,7 @@ func main() {
 		ctx.Exec("eval", strings.NewReader(*eval))
 	case len(args) > 0:
 		filePath := args[0]
-		if err := ctx.ExecPath(filePath); err != nil {
+		if _, err := ctx.ExecPath(filePath); err != nil {
 			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
 		}
 	case stdin.Mode()&os.ModeCharDevice == 0:

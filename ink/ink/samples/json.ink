@@ -276,7 +276,6 @@ der := r => (
 
 # JSON string to composite
 parse := s => der(reader(s))
-de := parse # TODO: remove
 
 # composite to JSON string
 serialize := c => type(c) :: {
@@ -290,4 +289,8 @@ serialize := c => type(c) :: {
   'function' -> 'null' # do not serialize functions
   'composite' -> '{' + cat(map(keys(c), k => '"' + escape(k) + '":' + serialize(c.(k))), ',') + '}'
 }
-ser := serialize # TODO: remove
+
+{
+  de: parse # TODO: remove
+  ser: serialize # TODO: remove
+}

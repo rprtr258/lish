@@ -30,3 +30,20 @@ ceil := x => fract(x) :: {
 # floor := floor
 round := x => floor(x + 0.5)
 trunc := x => ternary(x > 0, floor, ceil)(x)
+
+{
+  sqrt: sqrt
+  E: E
+  exp: exp
+  log: log
+  tan: tan
+  ternary: ternary
+  min: min
+  max: max
+  iverson: iverson
+  abs: abs
+  fract: fract
+  ceil: ceil
+  round: round
+  trunc: trunc
+}

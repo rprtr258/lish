@@ -89,10 +89,15 @@ Logger := (name) => (
 )
 
 logger := Logger('root')
-debug := logger.debug
-info := logger.info
-warn := logger.warn
-error := logger.error
-critical := logger.critical
 
-log := val => info(string(val))
+{
+  Level: Level
+  Logger: Logger
+  logger: logger
+  debug: logger.debug
+  info: logger.info
+  warn: logger.warn
+  error: logger.error
+  critical: logger.critical
+  log: val => (logger.info)(string(val))
+}

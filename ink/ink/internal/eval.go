@@ -988,17 +988,16 @@ func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(filePath string) *Err {
+func (ctx *Context) ExecPath(filePath string) (Value, *Err) {
 	// update Cwd for any potential load() calls this file will make
 	ctx.WorkingDirectory = filepath.Dir(filePath)
 	ctx.File = filePath
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n\t-> %s", filePath, err)}
+		return nil, &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n\t-> %s", filePath, err)}
 	}
 	defer file.Close()
 
-	_, errExec := ctx.Exec(filePath, file)
-	return errExec
+	return ctx.Exec(filePath, file)
 }

@@ -223,12 +223,15 @@ func inkLoad(ctx *Context, in []Value) (Value, *Err) {
 		// Execution here follows updating ctx.Engine.Contexts
 		// to behave correctly in the case where A loads B loads A again,
 		// and still only import one instance of A.
-		if err := childCtx.ExecPath(importPath); err != nil {
+		value, err := childCtx.ExecPath(importPath)
+		if err != nil {
 			return nil, &Err{ErrRuntime, fmt.Sprintf("error importing file %s", importPath)}
 		}
+
+		ctx.Engine.values[importPath] = value
 	}
 
-	return ValueComposite(childCtx.Scope.vt), nil
+	return ctx.Engine.values[importPath], nil
 }
 
 func inkArgs(*Context, []Value) (Value, *Err) {

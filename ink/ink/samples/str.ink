@@ -263,3 +263,36 @@ format := (raw, values) => (
     _ -> state.buf
   })()
 )
+
+{
+  upper?: upper?
+  lower?: lower?
+  digit?: digit?
+  letter?: letter?
+  ws?: ws?
+  hasPrefix?: hasPrefix?
+  hasSuffix?: hasSuffix?
+  matchesAt?: matchesAt?
+  index: index
+  contains?: contains?
+  lower: lower
+  upper: upper
+  title: title
+  replace: replace
+  chars: chars
+  split: split
+  trimPrefixNonEmpty: trimPrefixNonEmpty
+  trimPrefix: trimPrefix
+  trimSuffixNonEmpty: trimSuffixNonEmpty
+  trimSuffix: trimSuffix
+  trim: trim
+  hToN: hToN
+  nToH: nToH
+  hex: hex
+  xeh: xeh
+  stringList: stringList
+  join: join
+  encode: encode
+  decode: decode
+  format: format
+}
