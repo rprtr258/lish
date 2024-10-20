@@ -35,11 +35,7 @@ Here's an implementation of FizzBuzz in Ink.
 ```python
 # ink fizzbuzz implementation
 
-std := import('std.ink')
-
-log := std.log
-range := std.range
-each := std.each
+{log: log, range: range, each: each} := import('std.ink')
 
 fizzbuzz := n => each(
   range(1, n + 1, 1)
@@ -57,9 +53,7 @@ fizzbuzz(100)
 Here's a simple Hello World HTTP server program.
 
 ```js
-std := import('std.ink')
-
-log := std.log
+{log: log} := import('std.ink')
 
 listen('0.0.0.0:8080', evt => (
   evt.type :: {

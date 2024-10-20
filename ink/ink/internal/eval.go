@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rprtr258/fun"
 	"github.com/rs/zerolog/log"
 )
 
@@ -437,7 +438,8 @@ func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
 
 			rightSide, ok := rightComposite[k]
 			if !ok {
-				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure unknown key in dict: %s", k), entry.key.Position()}
+				knownKeys := fun.Keys(rightComposite)
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", k, knownKeys), entry.key.Position()}
 			}
 
 			v, err := define(scope, entry.val, rightSide)

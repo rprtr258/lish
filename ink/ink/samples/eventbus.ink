@@ -1,6 +1,6 @@
 format := import('str.ink').format
 print := import('logging.ink').log
-functional := import('functional.ink')
+{filter: filter, each: each} := import('functional.ink')
 
 EventBus := () => (
   # event name to list of subscribers
@@ -22,11 +22,11 @@ EventBus := () => (
     }
     unsubscribe: (name, callback) => subscribers.(name) :: {
       () -> println(format('No such event "{{.0}}"', [name]))
-      _ -> subscribers.(name) = (functional.filter)(subscribers.(name), (sub, _) => sub = callback)
+      _ -> subscribers.(name) = filter(subscribers.(name), (sub, _) => sub = callback)
     }
     emit: (name, payload) => subscribers.(name) :: {
       () -> () # no such event, skip
-      _ -> (functional.each)(subscribers.(name), (sub, _) => sub(payload))
+      _ -> each(subscribers.(name), (sub, _) => sub(payload))
     }
   }
 )

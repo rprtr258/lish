@@ -5,13 +5,9 @@
 
 log := import('logging.ink').log
 slice := import('std.ink').slice
-str := import('str.ink')
-f := str.format
-cat := str.join
-std := import('functional.ink')
-map := std.map
-each := std.each
-readFile := import('io').readFile
+{format: f, join: cat} := import('str.ink')
+{map: map, each: each} := import('functional.ink')
+readFile := import('io.ink').readFile
 
 DIR := '.'
 PORT := 7800

@@ -3,13 +3,7 @@
 log := import('logging.ink').log
 f := import('str.ink').format
 pipe := import('functional.ink').pipe
-iter := import('iter.ink')
-range := iter.range
-map := iter.map
-fold := iter.foldl
-generate := iter.generate
-takeWhile := iter.takeWhile
-collect := iter.collect
+{range: range, map: map, foldl: fold, generate: generate, takeWhile: takeWhile, collect: collect} := import('iter.ink')
 ternary := import('math.ink').ternary
 
 sequence := start => pipe(start, [
