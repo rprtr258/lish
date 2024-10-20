@@ -8,7 +8,9 @@ map := std.map
 reduce := std.reduce
 range := std.range
 wf := load('io').writeFile
-max := load('math').max
+math := load('math')
+max := math.max
+iverson := math.iverson
 
 # graph position
 CENTERX := ~0.540015
@@ -68,14 +70,8 @@ hsl := (h, s, l) => (
   # ported from https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
   h2rgb := (p, q, t) => (
     # wrap to [0, 1)
-    t := (t < 1 :: {
-      true -> t + 1
-      _ -> t
-    })
-    t := (t > 1 :: {
-      true -> t - 1
-      _ -> t
-    })
+    t := t + iverson(t < 1)
+    t := t - iverson(t > 1)
 
     [t < 1 / 6, t < 1 / 2, t < 2 / 3] :: {
       [true, _, _] -> p + (q - p) * 6 * t

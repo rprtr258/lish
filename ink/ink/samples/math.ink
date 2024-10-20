@@ -37,3 +37,4 @@ ternary := (p, x, y) => p :: {
 }
 min := (x, y) => ternary(x < y, x, y)
 max := (x, y) => ternary(x > y, x, y)
+iverson := p => ternary(p, 1, 0)
