@@ -26,39 +26,23 @@ TODO: ({
 `
 # req := req
 
-# (string, {[string]: string}, Response => T) => T
-get := (url, headers, cb) => req({
-  method: 'GET'
+methodNoBody := method => (url, headers, cb) => req({
+  method: method
   url: url
   headers: headers
 }, cb)
 
-# (string, {[string]: string}, Response => T) => T
-options := (url, headers, cb) => req({
-  method: 'OPTIONS'
+methodBody := method => (url, body, headers, cb) => req({
+  method: method
   url: url
   headers: headers
-}, cb)
-
-# (string, string, {[string]: string}, Response => T) => T
-post := (url, body, headers, cb) => req({
-  method: 'POST'
-  url: url
   body: body
-  headers: headers
 }, cb)
 
-# (string, string, {[string]: string}, Response => T) => T
-put := (url, body, headers, cb) => req({
-method: 'PUT'
-url: url
-body: body
-headers: headers
-}, cb)
-
-# (string, {[string]: string}, Response => T) => T
-delete := (url, headers, cb) => req({
-method: 'DELETE'
-url: url
-headers: headers
-}, cb)
+{
+  get:     methodNoBody('GET')     # (string, {[string]: string}, Response => T) => T
+  options: methodNoBody('OPTIONS') # (string, {[string]: string}, Response => T) => T
+  delete:  methodNoBody('DELETE')  # (string, {[string]: string}, Response => T) => T
+  post:    methodBody('POST')      # (string, string, {[string]: string}, Response => T) => T
+  put:     methodBody('PUT')       # (string, string, {[string]: string}, Response => T) => T
+}
