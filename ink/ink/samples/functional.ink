@@ -31,7 +31,7 @@ find := (list, f) => (
   elems := filter(list, f)
   len(elems) > 0 :: {
     true -> elems.0.0
-    false -> ()
+    _ -> ()
   }
 )
 
@@ -112,7 +112,7 @@ objReduce := (obj, f, acc) => reduce(keys(obj), (acc, k) => f(acc, k, obj.(k)), 
 # ({[K]: V}, (K, V) => boolean) => {[K]: V}
 objFilter := (obj, f) => objReduce(obj, (acc, k, v) => f(k, v) :: {
   true -> acc.(k) := v
-  false -> acc
+  _ -> acc
 }, {})
 
 # Transform values in an object using a transformation function and return a new object.
@@ -135,24 +135,24 @@ range := (start, end, step) => (
       acc.(i) := v
       sub(i + 1, v + step, acc)
     )
-    false -> acc
+    _ -> acc
   }
 
   # preempt potential infinite loops
   span / step < 1 :: {
     true -> []
-    false -> sub(0, start, [])
+    _ -> sub(0, start, [])
   }
 )
 
 # find minimum in list
 min := numbers => reduce(numbers, (acc, n) => n < acc :: {
   true -> n
-  false -> acc
+  _ -> acc
 }, numbers.0)
 
 # find maximum in list
 max := numbers => reduce(numbers, (acc, n) => n > acc :: {
   true -> n
-  false -> acc
+  _ -> acc
 }, numbers.0)
