@@ -8,6 +8,6 @@
   "dependencies": {
     "@mozilla/readability": "^0.4.1",
     "jsdom": "^16.6.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.7"
   }
 }
