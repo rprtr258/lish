@@ -1,4 +1,4 @@
-{range: range, each: each, log: log} := import('samples/std.ink')
+{range, each, log} := import('samples/std.ink')
 get := import('samples/requests.ink').get
 
 # TODO: remove whole file

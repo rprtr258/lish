@@ -934,7 +934,7 @@ m('uuid -- uuid v4 generator')
 m('json ser/de')
 (
   clone := std.clone
-  {ser: ser, de: de} := import('json.ink')
+  {ser, de} := import('json.ink')
 
   # primitives
   t('ser null', ser(()), 'null')
@@ -1199,7 +1199,7 @@ m('args() list')
 
 m('html')
 (
-  {html: html, title: title, h1: h1, d: d, p: p, classes: classes} := import('html.ink')
+  {html, title, h1, d, p, classes} := import('html.ink')
 
   got := html(
     title('Test page')
@@ -1219,7 +1219,7 @@ m('sort')
 (
   range := import('functional.ink').range
   clone := std.clone
-  {sort: sort, sort!: sort!} := import('quicksort.ink')
+  {sort, sort!} := import('quicksort.ink')
 
   # rint := () => floor(rand() * 500)
   # L := map(range(0, 250, 1), rint)
