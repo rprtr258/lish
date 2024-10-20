@@ -1206,5 +1206,24 @@ m('args() list')
     hasSuffix?(as.1, 'test.ink'), true)
 )
 
+m('html')
+(
+  H := load('html')
+  html := H.html
+  title := H.title
+  h1 := H.h1
+  d := H.d
+  p := H.p
+  classes := H.classes
+
+  t('point(a)', html(
+    title('Test page')
+    d([
+      h1({class: classes(['title']), itemprop: 'title'}, 'Hello, World!')
+      p({class: classes(['body'])}, 'this is a body paragraph')
+    ])
+  ), '<!doctype html><head><title>Test page</title></head><body><div><h1 class="title" itemprop="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>')
+)
+
 # end test suite, print result
 (s.end)()

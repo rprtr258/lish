@@ -1,6 +1,5 @@
 # html rendering library
 
-log := s => out(s + '\n')
 std := load('str')
 f := std.format
 join := std.join
@@ -43,17 +42,6 @@ d := children => div({}, children)
 # html wrapper helper
 html := (head, body) => '<!doctype html>' + el('head', {}, head) + el('body', {}, body)
 
-# example usage
-log(
-  html(
-    title('Test page')
-    d([
-      h1({class: classes(['title']), itemprop: 'title'}, 'Hello, World!')
-      p({class: classes(['body'])}, 'this is a body paragraph')
-    ])
-  )
-)
-
 # export
 {
   el: el
@@ -70,4 +58,5 @@ log(
   span: span
   d: d
   html: html
+  classes: classes
 }
