@@ -130,19 +130,19 @@ deNumber := r => (
     true -> p() :: {
       '.' -> state.decimal? :: {
         true -> (r.err)()
-        false -> (
+        _ -> (
           state.decimal? := true
           sub(acc + n())
         )
       }
       _ -> sub(acc + n())
     }
-    false -> acc
+    _ -> acc
   })('')
 
   state.negate? :: {
-    false -> number(result)
     true -> ~number(result)
+    _ -> number(result)
   }
 )
 
