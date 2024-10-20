@@ -6,7 +6,7 @@
 log := import('logging.ink').log
 slice := import('std.ink').slice
 {format: f, join: cat} := import('str.ink')
-{map: map, each: each} := import('functional.ink')
+{map, each} := import('functional.ink')
 readFile := import('io.ink').readFile
 
 DIR := '.'
