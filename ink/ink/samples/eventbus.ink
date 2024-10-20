@@ -1,6 +1,6 @@
-format := import('str').format
-print := import('logging').log
-functional := import('functional')
+format := import('str.ink').format
+print := import('logging.ink').log
+functional := import('functional.ink')
 
 EventBus := () => (
   # event name to list of subscribers

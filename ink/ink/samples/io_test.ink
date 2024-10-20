@@ -1,12 +1,12 @@
 # filesystem i/o demo
 
-log := import('logging').log
-std := import('std')
+log := import('logging.ink').log
+std := import('std.ink')
 slice := std.slice
-functional := import('functional')
+functional := import('functional.ink')
 map := functional.map
 each := functional.each
-str := import('str')
+str := import('str.ink')
 f := str.format
 decode := str.decode
 stringList := std.stringList

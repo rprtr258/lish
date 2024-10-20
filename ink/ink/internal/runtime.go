@@ -193,17 +193,18 @@ func validateCustom(condition bool, msg string) string {
 }
 
 func inkImport(ctx *Context, in []Value) (Value, *Err) {
+	pos := position{ctx.File, 0, 0} // TODO: pass position here and everywhere
 	var givenPath ValueString
 	if err, ok := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &givenPath),
-		validateCustom(len(givenPath) > 0, "arg must be path without the .ink suffix"),
+		validateCustom(len(givenPath) > 0, "arg must be path"),
 	); ok {
-		return nil, &Err{ErrRuntime, "import(): " + err, position{ctx.File, 0, 0}} // TODO: pass position here and everywhere
+		return nil, &Err{ErrRuntime, "import(): " + err, pos}
 	}
 
 	// imports via import() are assumed to be relative
-	importPath := string(givenPath) + ".ink"
+	importPath := string(givenPath)
 	if !filepath.IsAbs(importPath) {
 		importPath = filepath.Join(ctx.WorkingDirectory, importPath)
 	}
@@ -227,7 +228,7 @@ func inkImport(ctx *Context, in []Value) (Value, *Err) {
 		// and still only import one instance of A.
 		value, err := childCtx.ExecPath(importPath)
 		if err != nil {
-			return nil, &Err{ErrRuntime, fmt.Sprintf("error importing file %s: %s", importPath, err.Error()), position{ctx.File, 0, 0}} // TODO: pass position here and everywhere
+			return nil, &Err{ErrRuntime, fmt.Sprintf("error importing file %s: %s", importPath, err.Error()), pos}
 		}
 
 		ctx.Engine.values[importPath] = value

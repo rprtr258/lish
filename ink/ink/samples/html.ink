@@ -1,9 +1,9 @@
 # html rendering library
 
-std := import('str')
+std := import('str.ink')
 f := std.format
 join := std.join
-map := import('functional').map
+map := import('functional.ink').map
 
 classes := classes => join(classes, ' ')
 el := (tag, attrs, children) =>

@@ -1,8 +1,8 @@
 # generate bitmap graph images
 
-log := import('logging').log
-f := import('str').format
-std := import('functional')
+log := import('logging.ink').log
+f := import('str.ink').format
+std := import('functional.ink')
 range := std.range
 each := std.each
 map := std.map

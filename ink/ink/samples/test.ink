@@ -3,7 +3,7 @@ clear := '__cleared'
 # ink language test suite,
 # built on the suite library for testing
 
-s := import('suite')(
+s := import('suite.ink')(
   'Ink language and standard library'
 )
 
@@ -12,10 +12,10 @@ m := s.mark
 t := s.test
 
 # import std & str once for all tests
-std := import('std')
-math := import('math')
-str := import('str')
-functional := import('functional')
+std := import('std.ink')
+math := import('math.ink')
+str := import('str.ink')
+functional := import('functional.ink')
 
 m('eval with #!/usr/bin/env ink')
 (
@@ -881,7 +881,7 @@ m('std.format -- the standard library formatter / templater')
 
 m('uuid -- uuid v4 generator')
 (
-  uuid := import('uuid')
+  uuid := import('uuid.ink')
   xeh := str.xeh
   range := functional.range
   map := functional.map
@@ -929,7 +929,7 @@ m('json ser/de')
 (
   clone := std.clone
 
-  json := import('json')
+  json := import('json.ink')
   ser := json.ser
   de := json.de
 
@@ -1186,8 +1186,8 @@ m('str.upper/lower/digit/letter/ws? -- checked char ranges')
 
 m('import() import semantics')
 (
-  getObjA := import('load_dedup')
-  getObjB := import('load_dedup/load_dedup_child')
+  getObjA := import('load_dedup.ink')
+  getObjB := import('load_dedup/load_dedup_child.ink')
 
   t('import() from different contexts should be deduplicated'
     getObjA() = getObjB(), true)
@@ -1208,7 +1208,7 @@ m('args() list')
 
 m('html')
 (
-  H := import('html')
+  H := import('html.ink')
   html := H.html
   title := H.title
   h1 := H.h1
@@ -1227,9 +1227,9 @@ m('html')
 
 m('sort')
 (
-  range := import('functional').range
+  range := import('functional.ink').range
   clone := std.clone
-  quicksort := import('quicksort')
+  quicksort := import('quicksort.ink')
   sort := quicksort.sort
   sort! := quicksort.sort!
 
@@ -1248,7 +1248,7 @@ m('sort')
 
 m('stack')
 (
-  stack := import('stack').new
+  stack := import('stack.ink').new
 
   s := stack()
   (s.push)(0)

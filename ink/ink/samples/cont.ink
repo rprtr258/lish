@@ -1,7 +1,7 @@
 print := (t, v) => out(t+': '+string(v)+'\n')
 print('print 1', 1)
 
-sqrt := import('math').sqrt
+sqrt := import('math.ink').sqrt
 print('sqrt 36', sqrt(36))
 
 pyth := (x, y) => sqrt(x*x + y*y)

@@ -1,7 +1,7 @@
 # ink fizzbuzz implementation
 
 log := s => out(string(s) + '\n')
-std := import('functional')
+std := import('functional.ink')
 range := std.range
 each := std.each
 

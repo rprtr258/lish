@@ -1,4 +1,4 @@
-join := import('str').join
+join := import('str.ink').join
 
 FgANSI := c => true :: {
   c < 0 -> ''

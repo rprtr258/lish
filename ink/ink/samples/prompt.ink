@@ -1,7 +1,7 @@
 # scan() / in() based prompt demo
 
-log := import('logging').log
-scan := import('std').scan
+log := import('logging.ink').log
+scan := import('std.ink').scan
 
 ask := (question, cb) => (
   log(question)

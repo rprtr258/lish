@@ -1,11 +1,11 @@
 # bitmap image test: generate an RGB rainbow gradient
 
-log := import('logging').log
-std := import('functional')
+log := import('logging.ink').log
+std := import('functional.ink')
 range := std.range
 map := std.map
 reduce := std.reduce
-f := import('str').format
+f := import('str.ink').format
 bmp := import('bmp').bmp
 
 # modified version of std.append that's faster when we know the length of the base and child arrays

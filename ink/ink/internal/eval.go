@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -1109,16 +1111,29 @@ func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(filePath string) (Value, *Err) {
+func (ctx *Context) ExecPath(path string) (Value, *Err) {
 	// update Cwd for any potential import() calls this file will make
-	ctx.WorkingDirectory = filepath.Dir(filePath)
-	ctx.File = filePath
+	ctx.WorkingDirectory = filepath.Dir(path)
+	ctx.File = path
 
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n: %s", filePath, err.Error()), position{}}
+	var r io.Reader
+	if u, err := url.Parse(path); err == nil && u.Scheme != "" {
+		resp, err := http.Get(path)
+		if err != nil {
+			return nil, &Err{ErrSystem, fmt.Sprintf("could not GET %s for execution:\n: %s", path, err.Error()), position{}}
+		}
+		defer resp.Body.Close()
+
+		r = resp.Body
+	} else {
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n: %s", path, err.Error()), position{}}
+		}
+		defer file.Close()
+
+		r = file
 	}
-	defer file.Close()
 
-	return ctx.Exec(filePath, file)
+	return ctx.Exec(path, r)
 }

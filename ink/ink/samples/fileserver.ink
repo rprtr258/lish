@@ -3,12 +3,12 @@
 # an http static file server
 # with support for directory indexes
 
-log := import('logging').log
-slice := import('std').slice
-str := import('str')
+log := import('logging.ink').log
+slice := import('std.ink').slice
+str := import('str.ink')
 f := str.format
 cat := str.join
-std := import('functional')
+std := import('functional.ink')
 map := std.map
 each := std.each
 readFile := import('io').readFile

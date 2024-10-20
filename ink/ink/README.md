@@ -35,7 +35,7 @@ Here's an implementation of FizzBuzz in Ink.
 ```python
 # ink fizzbuzz implementation
 
-std := import('std')
+std := import('std.ink')
 
 log := std.log
 range := std.range
@@ -57,7 +57,7 @@ fizzbuzz(100)
 Here's a simple Hello World HTTP server program.
 
 ```js
-std := import('std')
+std := import('std.ink')
 
 log := std.log
 
@@ -104,7 +104,7 @@ $ cat main.ink | ink
 $ ink < main.ink
 ```
 2. Use `ink main.ink` to execute an Ink script file.
-3. Invoke `ink` without flags to start an interactive repl session, and start typing Ink code. You can run files in this context by importing Ink files into the context using the `import` builtin function, like `import('main')`. (Note that we remove the `.ink` file extension when we call `import`.)
+3. Invoke `ink` without flags to start an interactive repl session, and start typing Ink code. You can run files in this context by importing Ink files into the context using the `import` builtin function, like `import('main.ink')`. (Note that we remove the `.ink` file extension when we call `import`.)
 
 Additionally, you can also invoke an Ink script with a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)). Mark the _first line_ of your Ink program file with this directive, which tells the operating system to run the program file with `ink`, which will then accept this file and run it for you when you execute the file.
 

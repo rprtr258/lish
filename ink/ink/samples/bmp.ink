@@ -1,6 +1,6 @@
 # a basic image encoder for bitmap files
 
-decode := import('str').decode
+decode := import('str.ink').decode
 
 # utility function for splitting a large number > 16^2 into 4-byte list
 hexsplit := n => (

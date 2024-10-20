@@ -1,7 +1,7 @@
 # demonstration of Ink calling into other
 # programs with exec(), assumes POSIX system
 
-log := import('logging').log
+log := import('logging.ink').log
 
 handleExec := evt => evt.type :: {
   'error' -> log(evt.message)
