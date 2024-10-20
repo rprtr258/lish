@@ -68,15 +68,6 @@ reader := s => (
   }
 )
 
-# deserialize null
-deNull := r => (
-  next := r.next
-  next() + next() + next() + next() :: {
-    'null' -> ()
-    _ -> (r.err)()
-  }
-)
-
 # deserialize string
 deString := r => (
   next := r.next
@@ -143,6 +134,15 @@ deNumber := r => (
   state.negate? :: {
     true -> ~number(result)
     _ -> number(result)
+  }
+)
+
+# deserialize null
+deNull := r => (
+  next := r.next
+  next() + next() + next() + next() :: {
+    'null' -> ()
+    _ -> (r.err)()
   }
 )
 
