@@ -2,7 +2,7 @@
 
 log := import('logging.ink').log
 f := import('str.ink').format
-{range: range, each: each, map: map} := import('functional.ink')
+{range, each, map} := import('functional.ink')
 wf := import('io').writeFile
 bmp := import('bmp').bmp
 

@@ -1,6 +1,6 @@
 # ink fizzbuzz implementation
 
-{range: range, each: each} := import('functional.ink')
+{range, each} := import('functional.ink')
 
 log := s => out(string(s) + '\n')
 
