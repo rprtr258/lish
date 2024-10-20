@@ -15,7 +15,6 @@
 ---
 
 ## Usage
-
 We can use September to translate Ink programs to JavaScript programs. If you have Node.js installed, September can also compile and run Ink code on Node.js.
 
 To compile Ink program files (say, `a.ink`), run `september translate` to compile and print the result.
@@ -77,7 +76,6 @@ log('Hello, World!')
 All September commands accept multiple files as input. If we want to run `a.ink` and `b.ink`, just run `september run a.ink b.ink`.
 
 ## How it works
-
 September, like any compiler, works in stages:
 
 1. **Construct an Ink parse tree** (`tokenize.ink`, `parse.ink`). This produces a data structure called the abstract syntax tree that represents well-formed Ink programs in a way the rest of September can understand. The syntax tree contains constructs like "binary addition expression" and "variable reference" and "function call".
@@ -96,7 +94,6 @@ Most of the time, the correct translation is a combination of some inline transf
 **September makes the following code transformations.**
 
 ### Operators
-
 - `~`: runtime function `__ink_negate` which performs a `-` if argument is number, `!` otherwise.
 - Basic arithmetic (`+ - * / %`) are translated verbatim, because they are valid JavaScript.
 - The equality comparison `=` does deep comparisons in Ink, which does not have a native JavaScript equivalent. Instead, we call out to a performance-optimized runtime function `__ink_eq` which has fast paths for simple types, and does deep comparisons for composite values.
@@ -105,7 +102,6 @@ Most of the time, the correct translation is a combination of some inline transf
 - Binary combinators `& | ^` have different behavior for numbers and booleans in Ink, like the fact that they do not short circuit in Ink, so they call out to their respective runtime functions, `__ink_{and, or, xor}`.
 
 ### Values and types
-
 - The **null** value `()` is translated to `null` in JavaScript.
 - Ink **numbers** are 64-bit floating point numbers, and are translated directly to JavaScript `number` values.
 - Ink **booleans** are `true` and `false` symbols and are translated literally to JavaScript boolean values.
@@ -120,7 +116,6 @@ Most of the time, the correct translation is a combination of some inline transf
 Ink has a special value `_` (the empty identifier), which is mapped to a `Symbol` in JavaScript. The empty identifier has special behavior in equality checks, defined in `__ink_eq`.
 
 ### Variable binding and scope
-
 Ink variables follow strict lexical binding and closely mirrors JavaScript's lexical binding rules. Because Ink variable bindings are always mutable, September defaults to translate all variable declarations (first variable reference in a scope) to a `let` declaration in JavaScript except top-level variables, which become globals in JavaScript. During semantic analysis, the compiler recognizes first assignments to names in a given scope and annotates each so it can be compiled to a `let` binding.
 
 In Ink, a variable declaration is an expression; in JavaScript it is a statement. This means variable bindings may need to be pulled out of an expression in Ink into its own statement in JavaScript.
@@ -128,7 +123,6 @@ In Ink, a variable declaration is an expression; in JavaScript it is a statement
 Further optimizations may be added in the future. In particular, normalizing expressions to [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form) might be interesting, though I suspect V8 already optimizes JS this way under the hood, so performance advantages might be underwhelming.
 
 ### Functions
-
 The behavior of Ink functions is a strict subset of that of JavaScript functions, so in translating Ink to JavaScript, we can map function definitions and invocations directly to JavaScript equivalents.
 
 One caveat is that, although modern JavaScript functions are tail-call-optimized by specification, only JavaScriptCore (Safari) implements it in practice. This means functions with recursive tail calls need to be transformed during compilation into a non-recursive form.
@@ -136,23 +130,19 @@ One caveat is that, although modern JavaScript functions are tail-call-optimized
 When calling a function that invokes recursive tail calls (calls to itself by its original bound name within its body), September detects it and automatically unrolls it into a [trampoline](https://en.wikipedia.org/wiki/Trampoline_(computing)) construct with a JavaScript `while` loop. This means September eliminates self-tail calls. However, JS limitations mean September cannot tail-call-eliminate mutual recursion.
 
 ### Match expressions
-
 In this first version of September, match expressions call out to the Ink runtime using the `__ink_match()` function, which takes match targets and clauses as closures. The compiler transforms a match expression into a single call to `__ink_match` with the correct closures.
 
 In the future, I hope to optimize the function away and compile matches straight down to `if...else` or `switch` blocks.
 
 ### Module system and imports
-
 The `load()` Ink builtin, normally used for module imports, is mapped transparently to Node.js's `require()` in the runtime. This means Ink code compiled with September can reference other JavaScript programs with the built-in module system.
 
 Importing Ink modules with `load()` is a work in progress.
 
 ## Performance
-
 Modern JavaScript runtimes are fast (though perhaps at the expense of memory footprint). Even in the current prototype that performs little to no optimizing transformations, Ink code compiled with September runs significantly faster on the V8 engine than when the Ink code is run natively with the [Go-based interpreter](https://github.com/thesephist/ink), for certain workloads like numeric compute.
 
 ### Optimizations
-
 September is designed to be an optimizing compiler. It aims to make the following optimizations.
 
 - [ ] Dead branch elimination
@@ -161,7 +151,6 @@ September is designed to be an optimizing compiler. It aims to make the followin
 - [ ] Inlined match expressions (rather than relying on a runtime function)
 
 ## Future work
-
 This is an informal list of things I'd like to implement, but haven't had time to yet.
 
 - Performance optimizations
@@ -169,7 +158,6 @@ This is an informal list of things I'd like to implement, but haven't had time t
 - Interoperability with JavaScript classes. Ink programs can currently construct objects with the runtime function `obj := jsnew(constructor, args)`, but cannot extend JavaScript classes properly.
 
 ## Prior art
-
 Language-to-language compilers is a rich and deep field with lots of priors. A few that were especially helpful are:
 
 - [Fengari](https://fengari.io), a Lua runtime on top of JavaScript. Especially helpful in thinking about how to translate mutable strings and Ink-JavaScript interoperability.

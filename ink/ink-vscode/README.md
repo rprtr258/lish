@@ -1,5 +1,4 @@
 # ink-vscode
-
 **ink-vscode** adds support for the [Ink programming language](https://github.com/thesephist/ink) to [Visual Studio Code](https://code.visualstudio.com/). Currently, the extension adds syntax highlighting support.
 
 ![Ink syntax highlighting in VSCode](/docs/screenshot.jpg)

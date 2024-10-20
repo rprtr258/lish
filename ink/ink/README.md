@@ -42,13 +42,13 @@ range := std.range
 each := std.each
 
 fizzbuzz := n => each(
-	range(1, n + 1, 1)
-	n => [n % 3, n % 5] :: {
-		[0, 0] -> log('FizzBuzz')
-		[0, _] -> log('Fizz')
-		[_, 0] -> log('Buzz')
-		_ -> log(n)
-	}
+  range(1, n + 1, 1)
+  n => [n % 3, n % 5] :: {
+    [0, 0] -> log('FizzBuzz')
+    [0, _] -> log('Fizz')
+    [_, 0] -> log('Buzz')
+    _ -> log(n)
+  }
 )
 
 fizzbuzz(100)
@@ -62,14 +62,14 @@ std := load('std')
 log := std.log
 
 listen('0.0.0.0:8080', evt => (
-	evt.type :: {
-		'error' -> log('Error: ' + evt.message)
-		'req' -> (evt.end)({
-			status: 200
-			headers: {'Content-Type': 'text/plain'}
-			body: 'Hello, World!'
-		})
-	}
+  evt.type :: {
+    'error' -> log('Error: ' + evt.message)
+    'req' -> (evt.end)({
+      status: 200
+      headers: {'Content-Type': 'text/plain'}
+      body: 'Hello, World!'
+    })
+  }
 ))
 ```
 
@@ -100,7 +100,7 @@ You can run Ink in three main ways:
 1. The Ink binary `ink` defaults to executing whatever comes through standard input, if there is any, or else starts a repl. So you can pipe any Ink script (say, `main.ink`) to the binary to execute it.
 ```bash
 $ cat main.ink | ink
-	# or
+# or
 $ ink < main.ink
 ```
 2. Use `ink main.ink` to execute an Ink script file.

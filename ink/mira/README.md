@@ -29,25 +29,25 @@ The frontend application is a pretty vanilla Torus application. The core of the 
 
 ```js
 class Contact extends Record {
-    singleProperties() {
-        return [
-            // [ui label, property name, placeholder, use <textarea>?]
-            ['name', 'name', 'name'],
-            ['place', 'place', 'place'],
-            ['work', 'work', 'work'],
-            ['twttr', 'twttr', '@username'],
-            ['last', 'last', 'last met...'],
-            ['notes', 'notes', 'notes', true],
-        ];
-    }
+  singleProperties() {
+    return [
+      // [ui label, property name, placeholder, use <textarea>?]
+      ['name', 'name', 'name'],
+      ['place', 'place', 'place'],
+      ['work', 'work', 'work'],
+      ['twttr', 'twttr', '@username'],
+      ['last', 'last', 'last met...'],
+      ['notes', 'notes', 'notes', true],
+    ];
+  }
 
-    multiProperties() {
-        return [
-            ['tel', 'tel', 'tel'],
-            ['email', 'email', 'email'],
-            ['mtg', 'mtg', 'meeting', true],
-        ]
-    }
+  multiProperties() {
+    return [
+      ['tel', 'tel', 'tel'],
+      ['email', 'email', 'email'],
+      ['mtg', 'mtg', 'meeting', true],
+    ]
+  }
 }
 ```
 
