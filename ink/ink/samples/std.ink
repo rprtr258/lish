@@ -11,23 +11,23 @@ scan := cb => (
   })
 )
 
-# clamp start and end numbers to ranges, such that
-# start < end. Utility used in slice
-clamp := (start, end, min, max) => (
-  m := import('math.ink')
-  start := (m.max)(start, min)
-  end := (m.max)(end, min)
-  end := (m.min)(end, max)
-  start := (m.min)(start, end)
-
-  {
-    start: start
-    end: end
-  }
-)
-
 # get a substring of a given string, or sublist of a given list
 slice := (s, start, end) => (
+  # clamp start and end numbers to ranges, such that
+  # start < end. Utility used in slice
+  clamp := (start, end, min, max) => (
+    m := import('math.ink')
+    start := (m.max)(start, min)
+    end := (m.max)(end, min)
+    end := (m.min)(end, max)
+    start := (m.min)(start, end)
+
+    {
+      start: start
+      end: end
+    }
+  )
+
   # bounds checks
   x := clamp(start, end, 0, len(s))
   start := x.start
