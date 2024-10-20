@@ -21,6 +21,7 @@ generate := (x0, f) => (
   )
 )
 
+# TODO: make methods of iterator
 list := list => (
   i := {value: 0}
   () => i.value < len(list) :: {
