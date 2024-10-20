@@ -1225,5 +1225,26 @@ m('html')
   ), '<!doctype html><head><title>Test page</title></head><body><div><h1 class="title" itemprop="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>')
 )
 
+m('sort')
+(
+  range := load('functional').range
+  clone := std.clone
+  quicksort := load('quicksort')
+  sort := quicksort.sort
+  sort! := quicksort.sort!
+
+  # rint := () => floor(rand() * 500)
+  # L := map(range(0, 250, 1), rint)
+  L := [5, 3, 2, 4, 1]
+  Before := clone(L)
+  t('before quicksort', L, [5, 3, 2, 4, 1])
+  t('after quicksort', sort(L), [1, 2, 3, 4, 5])
+  t('before intact', L, Before)
+
+  L := [5, 3, 2, 4, 1]
+  sort!(L)
+  t('after mutable sort', L, [1, 2, 3, 4, 5])
+)
+
 # end test suite, print result
 (s.end)()

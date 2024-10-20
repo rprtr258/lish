@@ -44,17 +44,7 @@ sortBy := (v, pred) => (
 
 sort! := v => sortBy(v, x => x)
 
-sort := v => sort!(clone(v))
-
-# TEST
-range := load('functional').range
-log := load('logging').log
-
-rint := () => floor(rand() * 500)
-L := map(range(0, 250, 1), rint)
-Before := clone(L)
-log('before quicksort: ' + string(L))
-log('after quicksort: ' + string(sort(L)))
-log('before intact?: ' + (L :: {Before -> 'yes', _ -> 'no'}))
-sort!(L)
-log('after mutable sort: ' + string(L))
+{
+  sort!: sort!
+  sort: v => sort!(clone(v))
+}
