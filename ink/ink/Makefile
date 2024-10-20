@@ -60,7 +60,7 @@ build: build-linux build-darwin build-windows build-openbsd
 install:
 	#cp utils/ink.vim ~/.vim/syntax/ink.vim
 	go install ${LDFLAGS} .
-	ls -l $(which ink)
+	ls -l `which ink`
 
 # pre-commit hook
 precommit:

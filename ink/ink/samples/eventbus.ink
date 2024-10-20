@@ -68,3 +68,6 @@ handleFundsRemoved := (payload) => (
 (ebus.emit)(Event.Funds.Added, {amount: 20})
 (ebus.emit)(Event.Funds.Removed, {amount: 13.46})
 (ebus.emit)(Event.Account.Deleted, {})
+
+# export
+EventBus
