@@ -91,7 +91,7 @@ func main() {
 		return
 	}
 
-	eng := &ink.Engine{}
+	eng := ink.NewEngine()
 	ink.L = ink.Logger{
 		DumpFrame:  *dump,
 		Lex:        *verbose || *debugLexer,

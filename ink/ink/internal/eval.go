@@ -884,9 +884,8 @@ func (s *Scope) String() string {
 // Within an Engine, there may exist multiple Contexts that each contain different
 // execution environments, running concurrently under a single lock.
 type Engine struct {
-	// Listeners keeps track of the concurrent threads of execution running
-	// in the Engine. Call `Engine.Listeners.Wait()` to block until all concurrent
-	// execution threads finish on an Engine.
+	// Listeners keeps track of the concurrent threads of execution running in the Engine.
+	// Call `Engine.Listeners.Wait()` to block until all concurrent execution threads finish on an Engine.
 	Listeners sync.WaitGroup
 
 	// Ink de-duplicates imported source files here, where
@@ -895,9 +894,19 @@ type Engine struct {
 	// imports from crashing the interpreter and allows other
 	// nice functionality.
 	Contexts map[string]*Context
+	values   map[string]Value
 
 	// Only a single function may write to the stack frames at any moment.
 	mu sync.Mutex
+}
+
+func NewEngine() *Engine {
+	return &Engine{
+		Contexts:  map[string]*Context{},
+		values:    map[string]Value{},
+		mu:        sync.Mutex{},
+		Listeners: sync.WaitGroup{},
+	}
 }
 
 // CreateContext creates and initializes a new Context tied to a given Engine.
@@ -908,12 +917,6 @@ func (eng *Engine) CreateContext() *Context {
 			parent: nil,
 			vt:     ValueTable{},
 		},
-	}
-
-	// If first time creating Context in this Engine,
-	// initialize the Contexts map
-	if eng.Contexts == nil {
-		eng.Contexts = make(map[string]*Context)
 	}
 
 	ctx.resetWd()
