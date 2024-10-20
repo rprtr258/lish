@@ -88,7 +88,7 @@ close := listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
 handlePath := (url, path, end, getElapsed) => stat(path, evt => evt.type :: {
   'error' -> (
     log(f('  -> {{ url }} led to error in {{ ms }}ms: {{ error }}', {
-      url: url
+      url
       ms: getElapsed()
       error: evt.message
     }))
@@ -110,7 +110,7 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
     stat(hpath, evt => evt.type :: {
       'error' -> (
         log(f('  -> {{ url }} (.html) led to error in {{ ms }}ms: {{ error }}', {
-          url: url
+          url
           ms: getElapsed()
           error: evt.message
         }))
@@ -124,7 +124,7 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
         {dir: false, name: _, len: _} -> handlePath(url, hpath, end, getElapsed)
         _ -> (
           log(f('  -> {{ url }} not found in {{ ms }}ms', {
-            url: url
+            url
             ms: getElapsed()
           }))
           end({
@@ -140,7 +140,7 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
     true -> handleDir(url, path, data, end, getElapsed)
     _ -> (
       log(f('  -> {{ url }} returned redirect to {{ url }}/ in {{ ms }}ms', {
-        url: url
+        url
         ms: getElapsed()
       }))
       end({
@@ -164,7 +164,7 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
 handleFileRead := (url, path, data, end, getElapsed) => data :: {
   () -> (
     log(f('  -> {{ url }} failed read in {{ ms }}ms', {
-      url: url
+      url
       ms: getElapsed()
     }))
     end({
@@ -176,7 +176,7 @@ handleFileRead := (url, path, data, end, getElapsed) => data :: {
   _ -> (
     fileType := getType(path)
     log(f('  -> {{ url }} ({{ type }}) served in {{ ms }}ms', {
-      url: url
+      url
       type: fileType
       ms: getElapsed()
     }))
@@ -196,7 +196,7 @@ handleDir := (url, path, data, end, getElapsed) => (
   stat(ipath, evt => evt.type :: {
     'error' -> (
       log(f('  -> {{ url }} (index) led to error in {{ ms }}ms: {{ error }}', {
-        url: url
+        url
         ms: getElapsed()
         error: evt.message
       }))
@@ -225,7 +225,7 @@ handleExistingDir := (url, path, end, getElapsed) => ALLOWINDEX :: {
   true -> handleNoIndexDir(url, path, end, getElapsed)
   _ -> (
     log(f('  -> {{ url }} not allowed in {{ ms }}ms', {
-      url: url
+      url
       ms: getElapsed()
     }))
     end({
@@ -247,7 +247,7 @@ makeIndexLi := (fileStat, separator) => '<li><a href="' + fileStat.name + '" tit
 handleNoIndexDir := (url, path, end, getElapsed) => dir(path, evt => evt.type :: {
   'error' -> (
     log(f('  -> {{ url }} dir() led to error in {{ ms }}ms: {{ error }}', {
-      url: url
+      url
       ms: getElapsed()
       error: evt.message
     }))
@@ -259,7 +259,7 @@ handleNoIndexDir := (url, path, end, getElapsed) => dir(path, evt => evt.type ::
   )
   'data' -> (
     log(f('  -> {{ url }} (index) served in {{ ms }}ms', {
-      url: url
+      url
       ms: getElapsed()
     }))
     end({
@@ -304,11 +304,9 @@ getType := path => (
 
 # given a path, get the file extension
 getPathEnding := path => (
-  (sub := (idx, acc) => idx :: {
-    0 -> path
-    _ -> path.(idx) :: {
-      '.' -> acc
-      _ -> sub(idx - 1, path.(idx) + acc)
-    }
+  (sub := (idx, acc) => true :: {
+    idx = 0 -> path
+    path.(idx) = '.' -> acc
+    _ -> sub(idx - 1, path.(idx) + acc)
   })(len(path) - 1, '')
 )
