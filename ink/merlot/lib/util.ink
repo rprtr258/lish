@@ -1,6 +1,6 @@
 # potentially shared utility functions and values
 
-str := import('../vendor/str.ink')
+str := import('../vendor/mod.ink').str
 trimPrefix := str.trimPrefix
 
 zeroFillTo3Digits := s => len(s) :: {

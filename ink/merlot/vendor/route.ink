@@ -7,7 +7,7 @@ each := std.each
 map := std.map
 cat := std.cat
 filter := std.filter
-str := import('../vendor/str.ink')
+str := import('mod.ink').str
 split := str.split
 pctDecode := import('percent.ink').decode
 

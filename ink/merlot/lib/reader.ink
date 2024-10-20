@@ -1,7 +1,7 @@
 std := import('../vendor/mod.ink').std
 slice := std.slice
 append := std.append
-str := import('../vendor/str.ink')
+str := import('../vendor/mod.ink').str
 split := str.split
 hasPrefix? := str.hasPrefix?
 

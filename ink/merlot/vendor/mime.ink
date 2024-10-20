@@ -1,6 +1,6 @@
 # mime type
 
-split := import('../vendor/str.ink').split
+split := import('mod.ink').str.split
 
 MimeTypes := {
   'html': 'text/html'

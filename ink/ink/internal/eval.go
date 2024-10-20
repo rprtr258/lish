@@ -1113,11 +1113,11 @@ func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
 // ExecPath is a convenience function to Exec() a program file in a given Context.
 func (ctx *Context) ExecPath(path string) (Value, *Err) {
 	// update Cwd for any potential import() calls this file will make
-	ctx.WorkingDirectory = filepath.Dir(path)
 	ctx.File = path
 
 	var r io.Reader
 	if u, err := url.Parse(path); err == nil && u.Scheme != "" {
+		ctx.WorkingDirectory = path
 		resp, err := http.Get(path)
 		if err != nil {
 			return nil, &Err{ErrSystem, fmt.Sprintf("could not GET %s for execution:\n: %s", path, err.Error()), position{}}
@@ -1126,6 +1126,7 @@ func (ctx *Context) ExecPath(path string) (Value, *Err) {
 
 		r = resp.Body
 	} else {
+		ctx.WorkingDirectory = filepath.Dir(path)
 		file, err := os.Open(path)
 		if err != nil {
 			return nil, &Err{ErrSystem, fmt.Sprintf("could not open %s for execution:\n: %s", path, err.Error()), position{}}

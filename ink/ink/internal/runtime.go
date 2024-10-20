@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -205,10 +206,16 @@ func inkImport(ctx *Context, in []Value) (Value, *Err) {
 	}
 
 	// imports via import() are assumed to be relative
+	// TODO: separate type and operations over import paths
 	importPath := string(givenPath)
 	if u, err := url.Parse(importPath); err == nil && u.Scheme != "" {
 	} else if !filepath.IsAbs(importPath) {
-		importPath = filepath.Join(ctx.WorkingDirectory, importPath)
+		if u, err := url.Parse(ctx.WorkingDirectory); err == nil && u.Scheme != "" {
+			u.Path = path.Join(path.Dir(u.Path), importPath)
+			importPath = u.String()
+		} else {
+			importPath = filepath.Join(ctx.WorkingDirectory, importPath)
+		}
 	}
 
 	// evalLock blocks file eval; temporary unlock it for the import to run.
