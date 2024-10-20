@@ -14,7 +14,7 @@ filter := functional.filter
 # that takes a callback
 asyncWhile := (cond, do) => (sub := () => cond() :: {
   true -> do(sub)
-  false -> ()
+  _ -> ()
 })()
 
 # shorthand tools for getting players and player labels
