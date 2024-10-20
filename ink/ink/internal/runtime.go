@@ -11,6 +11,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -205,7 +206,8 @@ func inkImport(ctx *Context, in []Value) (Value, *Err) {
 
 	// imports via import() are assumed to be relative
 	importPath := string(givenPath)
-	if !filepath.IsAbs(importPath) {
+	if u, err := url.Parse(importPath); err == nil && u.Scheme != "" {
+	} else if !filepath.IsAbs(importPath) {
 		importPath = filepath.Join(ctx.WorkingDirectory, importPath)
 	}
 
