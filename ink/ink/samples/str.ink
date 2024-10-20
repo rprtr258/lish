@@ -60,16 +60,16 @@ index := (s, substring) => (
 contains? := (s, substring) => index(s, substring) > ~1
 
 # transforms given string to lowercase
-lower := s => reduce(s, (acc, c, i) => upper?(c) :: {
-  true -> acc.(i) := char(point(c) + 32)
-  _ -> acc.(i) := c
-}, '')
+lower := s => reduce(s, (acc, c, i) => acc.(i) := (upper?(c) :: {
+  true -> char(point(c) + 32)
+  _ -> c
+}), '')
 
 # transforms given string to uppercase
-upper := s => reduce(s, (acc, c, i) => lower?(c) :: {
-  true -> acc.(i) := char(point(c) - 32)
-  _ -> acc.(i) := c
-}, '')
+upper := s => reduce(s, (acc, c, i) => acc.(i) := (lower?(c) :: {
+  true -> char(point(c) - 32)
+  _ -> c
+}), '')
 
 # primitive "title-case" transformation, uppercases first letter and lowercases the rest.
 title := s => (
