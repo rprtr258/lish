@@ -339,12 +339,48 @@ func operandToStringKey(rightOperand Node, scope *Scope) (string, *Err) {
 	}
 }
 
-func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
-	switch n.operator {
-	case OpDefine:
-		if leftIdent, okIdent := n.left.(NodeIdentifier); okIdent {
-			if _, isEmpty := n.right.(NodeIdentifierEmpty); isEmpty {
-				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s", leftIdent), n.left.Position()}
+func (n NodeExprBinary) define(scope *Scope) (Value, *Err) {
+	switch leftSide := n.left.(type) {
+	case NodeIdentifier:
+		if _, isEmpty := n.right.(NodeIdentifierEmpty); isEmpty {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s", leftSide), n.left.Position()}
+		}
+
+		rightValue, err := n.right.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
+		scope.Set(leftSide.val, rightValue)
+		return rightValue, nil
+	case NodeExprBinary:
+		if leftSide.operator != OpAccessor {
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), n.left.Position()}
+		}
+
+		leftValue, err := leftSide.left.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
+		leftKey, err := operandToStringKey(leftSide.right, scope)
+		if err != nil {
+			return nil, err
+		}
+
+		switch left := leftValue.(type) {
+		case ValueComposite:
+			rightValue, err := n.right.Eval(scope, false)
+			if err != nil {
+				return nil, err
+			}
+
+			left[leftKey] = rightValue
+			return left, nil
+		case ValueString:
+			leftIdent, isLeftIdent := leftSide.left.(NodeIdentifier)
+			if !isLeftIdent {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), leftSide.right.Position()}
 			}
 
 			rightValue, err := n.right.Eval(scope, false)
@@ -352,78 +388,51 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				return nil, err
 			}
 
-			scope.Set(leftIdent.val, rightValue)
-			return rightValue, nil
-		} else if leftAccess, okAccess := n.left.(NodeExprBinary); okAccess && leftAccess.operator == OpAccessor {
-			leftValue, err := leftAccess.left.Eval(scope, false)
-			if err != nil {
-				return nil, err
+			rightString, isString := rightValue.(ValueString)
+			if !isString {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set part of string to a non-character %s", rightValue), n.right.Position()}
 			}
 
-			leftKey, err := operandToStringKey(leftAccess.right, scope)
-			if err != nil {
-				return nil, err
+			rightNum, errr := strconv.ParseInt(leftKey, 10, 64)
+			if errr != nil {
+				return nil, &Err{ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), leftSide.right.Position()}
 			}
 
-			switch left := leftValue.(type) {
-			case ValueComposite:
-				rightValue, err := n.right.Eval(scope, false)
-				if err != nil {
-					return nil, err
-				}
-
-				left[leftKey] = rightValue
-				return left, nil
-			case ValueString:
-				leftIdent, isLeftIdent := leftAccess.left.(NodeIdentifier)
-				if !isLeftIdent {
-					return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), leftAccess.right.Position()}
-				}
-
-				rightValue, err := n.right.Eval(scope, false)
-				if err != nil {
-					return nil, err
-				}
-
-				rightString, isString := rightValue.(ValueString)
-				if !isString {
-					return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set part of string to a non-character %s", rightValue), n.right.Position()}
-				}
-
-				rightNum, errr := strconv.ParseInt(leftKey, 10, 64)
-				if errr != nil {
-					return nil, &Err{ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), leftAccess.right.Position()}
-				}
-
-				switch rn := int(rightNum); {
-				case 0 <= rn && rn < len(left):
-					for i, r := range rightString {
-						if rn+i < len(left) {
-							left[rn+i] = r
-						} else {
-							left = append(left, r)
-						}
+			switch rn := int(rightNum); {
+			case 0 <= rn && rn < len(left):
+				for i, r := range rightString {
+					if rn+i < len(left) {
+						left[rn+i] = r
+					} else {
+						left = append(left, r)
 					}
-					scope.Update(leftIdent.val, left)
-					return left, nil
-				case rn == len(left):
-					left = append(left, rightString...)
-					scope.Update(leftIdent.val, left)
-					return left, nil
-				default:
-					return nil, &Err{ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), leftAccess.right.Position()}
 				}
+				scope.Update(leftIdent.val, left)
+				return left, nil
+			case rn == len(left):
+				left = append(left, rightString...)
+				scope.Update(leftIdent.val, left)
+				return left, nil
 			default:
-				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), leftAccess.left.Position()}
+				return nil, &Err{ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), leftSide.right.Position()}
 			}
-		} else {
-			left, err := n.left.Eval(scope, false)
-			if err != nil {
-				return nil, err
-			}
-
-			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", left), n.left.Position()}
+		default:
+			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), leftSide.left.Position()}
 		}
+	default:
+		leftt, err := n.left.Eval(scope, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftt), n.left.Position()}
+	}
+}
+
+func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
+	switch n.operator {
+	case OpDefine:
+		return n.define(scope)
 	case OpAccessor:
 		leftValue, err := n.left.Eval(scope, false)
 		if err != nil {

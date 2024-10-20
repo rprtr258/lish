@@ -52,13 +52,29 @@ func LogScope(scope *Scope) {
 }
 
 func LogToken(tok Token) {
-	if L.Lex {
-		log.Debug().Stringer("token", tok).Msg("lex")
+	if !L.Lex {
+		return
 	}
+
+	e := log.Debug().
+		Stringer("at", tok.position).
+		Stringer("kind", tok.kind)
+	if tok.str != "" {
+		e = e.Str("str", tok.str)
+	}
+	if tok.num != 0 {
+		e = e.Float64("f64", tok.num)
+	}
+	e.Send()
 }
 
 func LogNode(node Node) {
-	if L.Parse {
-		log.Debug().Stringer("node", node).Msg("parse")
+	if !L.Parse {
+		return
 	}
+
+	log.Debug().
+		Stringer("at", node.Position()).
+		Stringer("node", node).
+		Send()
 }
