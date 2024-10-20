@@ -1215,13 +1215,7 @@ m('args() list')
 
 m('html')
 (
-  H := import('html.ink')
-  html := H.html
-  title := H.title
-  h1 := H.h1
-  d := H.d
-  p := H.p
-  classes := H.classes
+  {html: html, title: title, h1: h1, d: d, p: p, classes: classes} := import('html.ink')
 
   got := html(
     title('Test page')
