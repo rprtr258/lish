@@ -854,8 +854,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
 
 m('std.format -- the standard library formatter / templater')
 (
-  f := str.format
-  stringList := str.stringList
+  {format: f, stringList: stringList} := str
 
   values := {
     first: 'ABC'
