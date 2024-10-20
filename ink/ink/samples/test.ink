@@ -1246,5 +1246,19 @@ m('sort')
   t('after mutable sort', L, [1, 2, 3, 4, 5])
 )
 
+m('stack')
+(
+  stack := load('stack').new
+
+  s := stack()
+  (s.push)(0)
+  (s.push)(1)
+  (s.push)(2)
+  t('stack filled up', s.data, [0, 1, 2])
+  (s.pop)()
+  (s.pop)()
+  t('stack after two pops', s.data, [0])
+)
+
 # end test suite, print result
 (s.end)()
