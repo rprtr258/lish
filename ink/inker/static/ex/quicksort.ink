@@ -2,12 +2,10 @@
 	using hoare partition `
 
 std := import('std')
-
 map := std.map
-clone := std.clone
 
 sortBy := (v, pred) => (
-	vPred := map(v, pred)
+	vPred := map(v, (x, _) => pred(x))
 	partition := (v, lo, hi) => (
 		pivot := vPred.(lo)
 		lsub := i => (vPred.(i) < pivot) :: {
@@ -52,6 +50,7 @@ sortBy := (v, pred) => (
 
 sort! := v => sortBy(v, x => x)
 
+clone := std.clone
 sort := v => sort!(clone(v))
 
 ` TEST `

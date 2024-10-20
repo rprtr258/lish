@@ -7,8 +7,7 @@
   "author": "Linus Lee <linus@thesephist.com>",
   "license": "MIT",
   "scripts": {
-    "start": "node src/index.js",
-    "start:dev": "INKPATH=ink node src/index.js"
+    "start": "INKPATH=ink node src/index.js"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
