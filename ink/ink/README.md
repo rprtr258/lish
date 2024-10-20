@@ -198,4 +198,4 @@ func main() {
 ```
 
 ### IDE support
-Ink currently has a vim syntax definition file, under `utils/ink.vim`. I'm also hoping to support Monaco / VSCode's language definition format soon with LSP support, but those are on the backburner as I use vim full-time and don't have a personal need for more advanced LSP support.
+Ink currently has a vim syntax definition file, under [ink.vim](/ink.vim). I'm also hoping to support Monaco / VSCode's language definition format soon with LSP support, but those are on the backburner as I use vim full-time and don't have a personal need for more advanced LSP support.

@@ -105,7 +105,6 @@ a := 42
 
 b = 42 # false, since assignment of values are all copies
 
-
 # for composite values
 list := [1, 2, 3]
 twin := list
