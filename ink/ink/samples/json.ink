@@ -1,7 +1,7 @@
 # JSON serde
 
 map := import('functional.ink').map
-{join: cat, ws?: ws?, digit?: digit?} := import('str.ink')
+{join: cat, ws?, digit?} := import('str.ink')
 
 # string escape '"'
 esc := c => point(c) :: {

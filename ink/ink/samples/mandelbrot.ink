@@ -3,9 +3,9 @@
 bmp := import('bmp').bmp
 log := import('logging.ink').log
 f := import('str.ink').format
-{map: map, reduce: reduce, range: range} := import('functional.ink')
+{map, reduce, range} := import('functional.ink')
 wf := import('io').writeFile
-{max: max, iverson: iverson} := import('math.ink')
+{max, iverson} := import('math.ink')
 
 # graph position
 CENTERX := ~0.540015
