@@ -1,7 +1,7 @@
 ` /find?q=search%20term `
 
-std := import('../../vendor/std')
-str := import('../../vendor/str')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 f := std.format
 each := std.each
 map := std.map
@@ -12,11 +12,11 @@ split := str.split
 replace := str.replace
 trimPrefix := str.trimPrefix
 
-quicksort := import('../../lib/quicksort')
+quicksort := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/quicksort.ink')
 sortBy := quicksort.sortBy
 
-HeadTemplate := import('head').Template
-NoteCard := import('card').Template
+HeadTemplate := import('head.ink')
+NoteCard := import('card.ink')
 
 ` we delegate the search code to grep (or in the future perhaps some other optimized
   file searcher like fgrep/ag) to be fast, and keep ligature's codebase small `
@@ -26,57 +26,57 @@ render := (dbPath, query, cb) => exec('sh', ['-c', f('grep -sil "{{ query }}" {{
 })], '', evt => evt.type :: {
   'error' -> cb('error finding notes: ' + evt.message)
   _ -> (
-  	fileList := evt.data
-  	fileNames := map(split(evt.data, char(10)), path => trimPrefix(path, dbPath + '/'))
-  	fileNames := filter(fileNames, s => ~(s = ''))
-  	` key it into a map to make it an indexed set `
-  	fileNameKeyed := {}
-  	each(fileNames, p => fileNameKeyed.(p) := true)
+    fileList := evt.data
+    fileNames := map(split(evt.data, char(10)), path => trimPrefix(path, dbPath + '/'))
+    fileNames := filter(fileNames, s => ~(s = ''))
+    ` key it into a map to make it an indexed set `
+    fileNameKeyed := {}
+    each(fileNames, p => fileNameKeyed.(p) := true)
 
-  	` to get note metadata, we'll stat all notes, then
-  		filter the list down to matched notes `
-  	dir(dbPath, evt => evt.type :: {
-  		'error' -> cb('error finding notes')
-  		_ -> (
-  			sortBy(evt.data, fstat => ~(fstat.mod))
-  			matchedFiles := filter(evt.data, info => fileNameKeyed.(info.name))
+    ` to get note metadata, we'll stat all notes, then
+      filter the list down to matched notes `
+    dir(dbPath, evt => evt.type :: {
+      'error' -> cb('error finding notes')
+      _ -> (
+        sortBy(evt.data, fstat => ~(fstat.mod))
+        matchedFiles := filter(evt.data, info => fileNameKeyed.(info.name))
 
-  			notes := map(matchedFiles, fileInfo => {
-  				label: split(fileInfo.name, '.').0
-  				mod: fileInfo.mod
-  				firstLine: '...?'
-  			})
+        notes := map(matchedFiles, fileInfo => {
+          label: split(fileInfo.name, '.').0
+          mod: fileInfo.mod
+          firstLine: '...?'
+        })
 
-  			` below is a modified version of pg/index.ink `
-  			s := {
-  				count: 0
-  				total: len(notes)
-  			}
-  			len(notes) :: {
-  				0 -> cb(Template(notes, query))
-  			}
-  			each(notes, n => readFile(dbPath + '/' + n.label + '.md', file => (
-  				file :: {
-  					() -> n.firstLine := 'error reading...'
-  					` hand-rolled efficient code to only trim file to
-  						the first line (first newline character) `
-  					_ -> n.firstLine := (sub := (acc, i) => file.(i) :: {
-  						() -> acc
-  						char(10) -> acc
-  						_ -> (
-  							acc + file.(i)
-  							sub(acc + file.(i), i + 1)
-  						)
-  					})('', 0)
-  				}
+        ` below is a modified version of pg/index.ink `
+        s := {
+          count: 0
+          total: len(notes)
+        }
+        len(notes) :: {
+          0 -> cb(Template(notes, query))
+        }
+        each(notes, n => readFile(dbPath + '/' + n.label + '.md', file => (
+          file :: {
+            () -> n.firstLine := 'error reading...'
+            ` hand-rolled efficient code to only trim file to
+              the first line (first newline character) `
+            _ -> n.firstLine := (sub := (acc, i) => file.(i) :: {
+              () -> acc
+              char(10) -> acc
+              _ -> (
+                acc + file.(i)
+                sub(acc + file.(i), i + 1)
+              )
+            })('', 0)
+          }
 
-  				s.count := s.count + 1
-  				s.count :: {
-  					s.total -> cb(Template(notes, query))
-  				}
-  			)))
-  		)
-  	})
+          s.count := s.count + 1
+          s.count :: {
+            s.total -> cb(Template(notes, query))
+          }
+        )))
+      )
+    })
   )
 })
 
@@ -85,16 +85,16 @@ Template := (notes, query) => f('
 
 <body>
   <header>
-  	<a href="/" class="title">ligature</a>
-  	<form action="/find" method="GET" class="searchBar card">
-  		<input type="text" name="q" placeholder="search..." class="searchInput paper block" value="{{ query }}" autofocus/>
-  		<input type="submit" value="find" class="frost block"/>
-  	</form>
-  	<a href="/new" class="newButton frost card block">new</a>
+    <a href="/" class="title">ligature</a>
+    <form action="/find" method="GET" class="searchBar card">
+      <input type="text" name="q" placeholder="search..." class="searchInput paper block" value="{{ query }}" autofocus/>
+      <input type="submit" value="find" class="frost block"/>
+    </form>
+    <a href="/new" class="newButton frost card block">new</a>
   </header>
 
   <ul class="noteList">
-  	{{ noteCards }}
+    {{ noteCards }}
   </ul>
   <script src="/static/js/ligature.js"></script>
 </body>
@@ -103,3 +103,5 @@ Template := (notes, query) => f('
   noteCards: cat(map(notes, NoteCard), '')
   query: query
 })
+
+{render: render}

@@ -1,4 +1,4 @@
-http := import('../lib/http')
+http := import('../lib/http.ink')
 
 PORT := 7284
 

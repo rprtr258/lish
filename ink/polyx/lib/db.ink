@@ -1,8 +1,8 @@
 ` json database abstraction `
 
-std := import('../vendor/std')
-uuid := import('../vendor/uuid')
-json := import('../vendor/json')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+uuid := import('../vendor/uuid.ink')
+json := import('../vendor/json.ink')
 
 log := std.log
 readFile := std.readFile
@@ -20,19 +20,19 @@ de := json.de
 matches := (x, attrs) => every(map(
   keys(attrs)
   k => (
-  	v := attrs.(k)
-  	type(v) :: {
-  		'function' -> v(x.(k))
-  		_ -> x.(k) = v
-  	}
+    v := attrs.(k)
+    type(v) :: {
+      'function' -> v(x.(k))
+      _ -> x.(k) = v
+    }
   )
 ))
 
 ` get-or-create a collection `
 ensureCollection := db => name => db.data.(name) :: {
   () -> (
-  	db.data.(name) := []
-  	db.data.(name)
+    db.data.(name) := []
+    db.data.(name)
   )
   _ -> db.data.(name)
 }
@@ -64,11 +64,11 @@ update := db => (collection, attrs, delta) => (
 get := db => (collection, attrs) => (
   coll := (db.ensureCollection)(collection)
   (sub := i => i :: {
-  	len(coll) -> ()
-  	_ -> matches(coll.(i), attrs) :: {
-  		true -> coll.(i)
-  		false -> sub(i + 1)
-  	}
+    len(coll) -> ()
+    _ -> matches(coll.(i), attrs) :: {
+      true -> coll.(i)
+      false -> sub(i + 1)
+    }
   })(0)
 )
 
@@ -88,14 +88,14 @@ remove := db => (collection, attrs) => (
 ` instantiate a new database `
 new := path => (
   instance := {
-  	data: {}
+    data: {}
   }
 
   ` define scoped methods `
   instance.flush := () => writeFile(
-  	path
-  	ser(instance.data)
-  	() => log('flushed db at ' + string(floor(time())))
+    path
+    ser(instance.data)
+    () => log('flushed db at ' + string(floor(time())))
   )
   instance.ensureCollection := ensureCollection(instance)
   instance.create := create(instance)
@@ -105,12 +105,12 @@ new := path => (
   instance.remove := remove(instance)
 
   readFile(
-  	path
-  	s => de(s) :: {
-  		` guard against failed reads, crash early `
-  		() -> (std.log)('Failed database read!')
-  		_ -> instance.data := de(s)
-  	}
+    path
+    s => de(s) :: {
+      ` guard against failed reads, crash early `
+      () -> (std.log)('Failed database read!')
+      _ -> instance.data := de(s)
+    }
   )
 
   instance

@@ -1,6 +1,6 @@
 ` mime type `
 
-str := import('../vendor/str')
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 split := str.split
 
 MimeTypes := {
@@ -19,7 +19,11 @@ forPath := path => (
   ending := parts.(len(parts) - 1)
 
   guess := MimeTypes.(ending) :: {
-  	() -> 'application/octet-stream'
-  	_ -> guess
+    () -> 'application/octet-stream'
+    _ -> guess
   }
 )
+
+{
+  forPath: forPath
+}

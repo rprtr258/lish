@@ -1,7 +1,7 @@
 ` percent encoding, also known as URI encoding `
 
-std := import('../vendor/std')
-str := import('../vendor/str')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 
 log := std.log
 reduce := std.reduce
@@ -17,12 +17,12 @@ lower := str.lower
 
 encodeChar := encodeSlash => c => (
   isValidPunct := (encodeSlash :: {
-  	true -> (c = '.') | (c = '_') | (c = '-') | (c = '~')
-  	_ -> (c = '.') | (c = '_') | (c = '-') | (c = '~') | (c = '/')
+    true -> (c = '.') | (c = '_') | (c = '-') | (c = '~')
+    _ -> (c = '.') | (c = '_') | (c = '-') | (c = '~') | (c = '/')
   })
   digit?(c) | upper?(c) | lower?(c) | isValidPunct :: {
-  	true -> c
-  	false -> '%' + upper(hex(point(c)))
+    true -> c
+    false -> '%' + upper(hex(point(c)))
   }
 )
 encodeKeepSlash := piece => cat(map(piece, encodeChar(false)), '')
@@ -34,44 +34,48 @@ lowerAF? := checkRange(point('a') - 1, point('f') + 1)
 hex? := c => digit?(c) | upperAF?(c) | lowerAF?(c)
 decode := str => (
   s := {
-  	`
-  	0 -> default
-  	1 -> saw %
-  	2 -> saw 1 hex number
-  	`
-  	stage: 0
-  	buf: ()
+    `
+    0 -> default
+    1 -> saw %
+    2 -> saw 1 hex number
+    `
+    stage: 0
+    buf: ()
   }
   reduce(str, (decoded, curr) => s.stage :: {
-  	0 -> curr :: {
-  		'+' -> (
-  			decoded + ' '
-  		)
-  		'%' -> (
-  			s.stage := 1
-  			decoded
-  		)
-  		_ -> decoded + curr
-  	}
-  	1 -> hex?(curr) :: {
-  		false -> (
-  			s.stage := 0
-  			decoded + '%' + curr
-  		)
-  		_ -> (
-  			s.stage := 2
-  			s.buf := curr
-  			decoded
-  		)
-  	}
-  	_ -> (
-  		last := s.buf
-  		s.stage := 0
-  		s.buf := ()
-  		hex?(curr) :: {
-  			false -> decoded + '%' + last + curr
-  			_ -> decoded + char(xeh(lower(last + curr)))
-  		}
-  	)
+    0 -> curr :: {
+      '+' -> (
+        decoded + ' '
+      )
+      '%' -> (
+        s.stage := 1
+        decoded
+      )
+      _ -> decoded + curr
+    }
+    1 -> hex?(curr) :: {
+      false -> (
+        s.stage := 0
+        decoded + '%' + curr
+      )
+      _ -> (
+        s.stage := 2
+        s.buf := curr
+        decoded
+      )
+    }
+    _ -> (
+      last := s.buf
+      s.stage := 0
+      s.buf := ()
+      hex?(curr) :: {
+        false -> decoded + '%' + last + curr
+        _ -> decoded + char(xeh(lower(last + curr)))
+      }
+    )
   }, '')
 )
+
+{
+  decode: decode
+}

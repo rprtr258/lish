@@ -1,9 +1,9 @@
-` shared partial <head> `
+# shared partial <head>
 
-std := import('../../vendor/std')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 f := std.format
 
-Template := title => f('
+title => f('
 <head>
   <title>{{ title }}</title>
   <meta charset="UTF-8">

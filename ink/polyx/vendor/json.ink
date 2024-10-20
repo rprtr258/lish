@@ -1,7 +1,7 @@
 ` JSON serde `
 
-std := import('std')
-str := import('str')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+str := import('str.ink')
 
 map := std.map
 cat := std.cat
@@ -21,8 +21,8 @@ esc := c => point(c) :: {
 escape := s => (
   max := len(s)
   (sub := (i, acc) => i :: {
-  	max -> acc
-  	_ -> sub(i + 1, acc + esc(s.(i)))
+    max -> acc
+    _ -> sub(i + 1, acc + esc(s.(i)))
   })(0, '')
 )
 
@@ -47,37 +47,37 @@ num? := c => c :: {
 ` reader implementation with internal state for deserialization `
 reader := s => (
   state := {
-  	idx: 0
-  	` has there been a parse error? `
-  	err?: false
+    idx: 0
+    ` has there been a parse error? `
+    err?: false
   }
 
   next := () => (
-  	state.idx := state.idx + 1
-  	c := s.(state.idx - 1) :: {
-  		() -> ''
-  		_ -> c
-  	}
+    state.idx := state.idx + 1
+    c := s.(state.idx - 1) :: {
+      () -> ''
+      _ -> c
+    }
   )
 
   peek := () => c := s.(state.idx) :: {
-  	() -> ''
-  	_ -> c
+    () -> ''
+    _ -> c
   }
 
   {
-  	next: next
-  	peek: peek
-  	` fast-forward through whitespace `
-  	ff: () => (sub := () => ws?(peek()) :: {
-  		true -> (
-  			state.idx := state.idx + 1
-  			sub()
-  		)
-  	})()
-  	done?: () => ~(state.idx < len(s))
-  	err: () => state.err? := true
-  	err?: () => state.err?
+    next: next
+    peek: peek
+    ` fast-forward through whitespace `
+    ff: () => (sub := () => ws?(peek()) :: {
+      true -> (
+        state.idx := state.idx + 1
+        sub()
+      )
+    })()
+    done?: () => ~(state.idx < len(s))
+    err: () => state.err? := true
+    err?: () => state.err?
   }
 )
 
@@ -85,8 +85,8 @@ reader := s => (
 deNull := r => (
   n := r.next
   n() + n() + n() + n() :: {
-  	'null' -> ()
-  	_ -> (r.err)()
+    'null' -> ()
+    _ -> (r.err)()
   }
 )
 
@@ -99,26 +99,26 @@ deString := r => (
   n()
 
   (sub := acc => p() :: {
-  	'' -> (
-  		(r.err)()
-  		()
-  	)
-  	'\\' -> (
-  		` eat backslash `
-  		n()
-  		sub(acc + (c := n() :: {
-  			't' -> char(9)
-  			'n' -> char(10)
-  			'r' -> char(13)
-  			'"' -> '"'
-  			_ -> c
-  		}))
-  	)
-  	'"' -> (
-  		n()
-  		acc
-  	)
-  	_ -> sub(acc + n())
+    '' -> (
+      (r.err)()
+      ()
+    )
+    '\\' -> (
+      ` eat backslash `
+      n()
+      sub(acc + (c := n() :: {
+        't' -> char(9)
+        'n' -> char(10)
+        'r' -> char(13)
+        '"' -> '"'
+        _ -> c
+      }))
+    )
+    '"' -> (
+      n()
+      acc
+    )
+    _ -> sub(acc + n())
   })('')
 )
 
@@ -127,35 +127,35 @@ deNumber := r => (
   n := r.next
   p := r.peek
   state := {
-  	` have we seen a '.' yet? `
-  	negate?: false
-  	decimal?: false
+    ` have we seen a '.' yet? `
+    negate?: false
+    decimal?: false
   }
 
   p() :: {
-  	'-' -> (
-  		n()
-  		state.negate? := true
-  	)
+    '-' -> (
+      n()
+      state.negate? := true
+    )
   }
 
   result := (sub := acc => num?(p()) :: {
-  	true -> p() :: {
-  		'.' -> state.decimal? :: {
-  			true -> (r.err)()
-  			false -> (
-  				state.decimal? := true
-  				sub(acc + n())
-  			)
-  		}
-  		_ -> sub(acc + n())
-  	}
-  	false -> acc
+    true -> p() :: {
+      '.' -> state.decimal? :: {
+        true -> (r.err)()
+        false -> (
+          state.decimal? := true
+          sub(acc + n())
+        )
+      }
+      _ -> sub(acc + n())
+    }
+    false -> acc
   })('')
 
   state.negate? :: {
-  	false -> number(result)
-  	true -> ~number(result)
+    false -> number(result)
+    true -> ~number(result)
   }
 )
 
@@ -163,15 +163,15 @@ deNumber := r => (
 deTrue := r => (
   n := r.next
   n() + n() + n() + n() :: {
-  	'true' -> true
-  	_ -> (r.err)()
+    'true' -> true
+    _ -> (r.err)()
   }
 )
 deFalse := r => (
   n := r.next
   n() + n() + n() + n() + n() :: {
-  	'false' -> false
-  	_ -> (r.err)()
+    'false' -> false
+    _ -> (r.err)()
   }
 )
 
@@ -181,7 +181,7 @@ deList := r => (
   p := r.peek
   ff := r.ff
   state := {
-  	idx: 0
+    idx: 0
   }
 
   ` known to be a '[' `
@@ -189,29 +189,29 @@ deList := r => (
   ff()
 
   (sub := acc => (r.err?)() :: {
-  	true -> ()
-  	false -> p() :: {
-  		'' -> (
-  			(r.err)()
-  			()
-  		)
-  		']' -> (
-  			n()
-  			acc
-  		)
-  		_ -> (
-  			acc.(state.idx) := der(r)
-  			state.idx := state.idx + 1
+    true -> ()
+    false -> p() :: {
+      '' -> (
+        (r.err)()
+        ()
+      )
+      ']' -> (
+        n()
+        acc
+      )
+      _ -> (
+        acc.(state.idx) := der(r)
+        state.idx := state.idx + 1
 
-  			ff()
-  			p() :: {
-  				',' -> n()
-  			}
+        ff()
+        p() :: {
+          ',' -> n()
+        }
 
-  			ff()
-  			sub(acc)
-  		)
-  	}
+        ff()
+        sub(acc)
+      )
+    }
   })([])
 )
 
@@ -226,42 +226,42 @@ deComp := r => (
   ff()
 
   (sub := acc => (r.err?)() :: {
-  	true -> ()
-  	false -> p() :: {
-  		'' -> (r.err)()
-  		'}' -> (
-  			n()
-  			acc
-  		)
-  		_ -> (
-  			key := deString(r)
+    true -> ()
+    false -> p() :: {
+      '' -> (r.err)()
+      '}' -> (
+        n()
+        acc
+      )
+      _ -> (
+        key := deString(r)
 
-  			(r.err?)() :: {
-  				false -> (
-  					ff()
-  					p() :: {
-  						':' -> n()
-  					}
+        (r.err?)() :: {
+          false -> (
+            ff()
+            p() :: {
+              ':' -> n()
+            }
 
-  					ff()
-  					val := der(r)
+            ff()
+            val := der(r)
 
-  					(r.err?)() :: {
-  						false -> (
-  							ff()
-  							p() :: {
-  								',' -> n()
-  							}
+            (r.err?)() :: {
+              false -> (
+                ff()
+                p() :: {
+                  ',' -> n()
+                }
 
-  							ff()
-  							acc.(key) := val
-  							sub(acc)
-  						)
-  					}
-  				)
-  			}
-  		)
-  	}
+                ff()
+                acc.(key) := val
+                sub(acc)
+              )
+            }
+          )
+        }
+      )
+    }
   })({})
 )
 
@@ -271,19 +271,19 @@ der := r => (
   (r.ff)()
 
   result := ((r.peek)() :: {
-  	'n' -> deNull(r)
-  	'"' -> deString(r)
-  	't' -> deTrue(r)
-  	'f' -> deFalse(r)
-  	'[' -> deList(r)
-  	'{' -> deComp(r)
-  	_ -> deNumber(r)
+    'n' -> deNull(r)
+    '"' -> deString(r)
+    't' -> deTrue(r)
+    'f' -> deFalse(r)
+    '[' -> deList(r)
+    '{' -> deComp(r)
+    _ -> deNumber(r)
   })
 
   ` if there was a parse error, just return null result `
   (r.err?)() :: {
-  	true -> ()
-  	false -> result
+    true -> ()
+    false -> result
   }
 )
 

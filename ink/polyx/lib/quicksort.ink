@@ -1,7 +1,7 @@
 ` minimal quicksort implementation
   using hoare partition `
 
-std := import('../vendor/std')
+std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
 
 map := std.map
 clone := std.clone
@@ -9,44 +9,44 @@ clone := std.clone
 sortBy := (v, pred) => (
   vPred := map(v, pred)
   partition := (v, lo, hi) => (
-  	pivot := vPred.(lo)
-  	lsub := i => vPred.(i) < pivot :: {
-  		true -> lsub(i + 1)
-  		false -> i
-  	}
-  	rsub := j => vPred.(j) > pivot :: {
-  		true -> rsub(j - 1)
-  		false -> j
-  	}
-  	(sub := (i, j) => (
-  		i := lsub(i)
-  		j := rsub(j)
-  		i < j :: {
-  			false -> j
-  			true -> (
-  				` inlined swap! `
-  				tmp := v.(i)
-  				tmpPred := vPred.(i)
-  				v.(i) := v.(j)
-  				v.(j) := tmp
-  				vPred.(i) := vPred.(j)
-  				vPred.(j) := tmpPred
+    pivot := vPred.(lo)
+    lsub := i => vPred.(i) < pivot :: {
+      true -> lsub(i + 1)
+      false -> i
+    }
+    rsub := j => vPred.(j) > pivot :: {
+      true -> rsub(j - 1)
+      false -> j
+    }
+    (sub := (i, j) => (
+      i := lsub(i)
+      j := rsub(j)
+      i < j :: {
+        false -> j
+        true -> (
+          ` inlined swap! `
+          tmp := v.(i)
+          tmpPred := vPred.(i)
+          v.(i) := v.(j)
+          v.(j) := tmp
+          vPred.(i) := vPred.(j)
+          vPred.(j) := tmpPred
 
-  				sub(i + 1, j - 1)
-  			)
-  		}
-  	))(lo, hi)
+          sub(i + 1, j - 1)
+        )
+      }
+    ))(lo, hi)
   )
   (quicksort := (v, lo, hi) => len(v) :: {
-  	0 -> v
-  	_ -> lo < hi :: {
-  		false -> v
-  		true -> (
-  			p := partition(v, lo, hi)
-  			quicksort(v, lo, p)
-  			quicksort(v, p + 1, hi)
-  		)
-  	}
+    0 -> v
+    _ -> lo < hi :: {
+      false -> v
+      true -> (
+        p := partition(v, lo, hi)
+        quicksort(v, lo, p)
+        quicksort(v, p + 1, hi)
+      )
+    }
   })(v, 0, len(v) - 1)
 )
 

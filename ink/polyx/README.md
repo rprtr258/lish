@@ -10,8 +10,6 @@ The Polyx suite of software currently contains six applications.
 
 - Noct: distributed file syncing
 - Ligature: notes
-- Sigil: task manager
-- Nought: people manager
 - Ria: read-it-later service
 - Fortress: service supervisor
 
@@ -71,9 +69,6 @@ Sigil is a task manager and to-do list specifically designed for my workflow. I'
 - There are no notion of "projects" or "categories" of tasks that are separate lists. Tasks may be tagged, but they all exist in one singular list.
 - Tasks and comments underneath tasks are plain text or simple markup.
 - The flow is optimized for fast entry of ideas into the database, and then efficient triaging and organization after the fact of even very large task queues.
-
-### Nought
-Nought is a personal people-manager, what some people might call a contact list or CRM.
 
 ### Ria
 Ria is a read-it-later service for articles on the web.
