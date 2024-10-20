@@ -18,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rprtr258/fun"
 )
 
 // NativeFunctionValue represents a function whose implementation is written
@@ -1333,13 +1335,7 @@ func inkString(ctx *Context, in []Value) (Value, *Err) {
 	case ValueNumber:
 		return ValueString(nvToS(v)), nil
 	case ValueBoolean:
-		var res string
-		if v {
-			res = "true"
-		} else {
-			res = "false"
-		}
-		return ValueString(res), nil
+		return ValueString(fun.IF(bool(v), "true", "false")), nil
 	case ValueNull:
 		return ValueString("()"), nil
 	case ValueComposite:

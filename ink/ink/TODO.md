@@ -20,6 +20,7 @@
 - [ ] `<=`, `>=`, `!=` operators
 - [ ] `import` from url
 - [ ] async/futures
+- [ ] make commas required
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
 - [ ] make it possible to use oneline match expression, block expression
 - [ ] escape sequences in strings (e.g. `\x1b`)
