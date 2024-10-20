@@ -159,7 +159,7 @@ nToH := '0123456789abcdef'
 # take number, return hex string
 hex := n => (sub := (p, acc) => p < 16 :: {
   true -> nToH.(p) + acc
-  false -> sub(floor(p / 16), nToH.(p % 16) + acc)
+  _ -> sub(floor(p / 16), nToH.(p % 16) + acc)
 })(floor(n), '')
 
 # take hex string, return number
@@ -260,6 +260,6 @@ format := (raw, values) => (
       readNext()
       sub()
     )
-    false -> state.buf
+    _ -> state.buf
   })()
 )

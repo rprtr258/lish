@@ -118,7 +118,7 @@ stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
       )
     }
     # number not in range, try again
-    false -> (
+    _ -> (
       log('Enter a number 0 < n < 10.')
       out(f('Move for player {{ player }}: ', {
         player: Label.(getPlayer(bd))
