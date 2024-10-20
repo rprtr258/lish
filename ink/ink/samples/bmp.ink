@@ -13,7 +13,7 @@ hexsplit := n => (
       acc.(i) := p
       acc
     )
-    false -> (
+    _ -> (
       acc.(i) := p % 256
       sub(floor(p / 256), i + 1)
     )
