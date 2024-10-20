@@ -6,6 +6,7 @@
 - [ ] `NO_COLOR` env or piping for piping output to another application / for scripting use
 
 ## Language core
+- [ ] export last expression from file, instead of all declarations
 - [ ] Type system? I like the way typescript does it, I think Ink’s type checker should be a completely separate layer in the toolchain from the lex/parse/eval layer. But let’s think about the merits of having type annotations and how we can make it simple to lex/parse out while effective at bringing out the forte’s of Ink’s functional style.
   - It seems helpful to think of it as a constraint system on the source code, instead of as something that’s an attribute of the runtime execution itself.
   - Since Ink has no implicit casts, this seems like it'll be straightforward to infer most variable types from their declaration (what they're bound to in the beginning) and recurse up the tree. So to compute "what's the type of this expression?" the type checker will recursively ask its children for their types, and assuming none of them return an error, we can define a `func (n Node) Type() (Type, error)` that recursively descends to type check an entire AST node from the top. We can expose this behind an `ink -check <file>.ink` flag.
@@ -17,7 +18,8 @@
 - [ ] value semantics
 - [ ] make `:: {...}` mean `true :: {...}` as a common case
 - [ ] `<=` and `>=` operators
-- [ ] export last expression from file, instead of all declarations
+- [ ] `load` from url
+- [ ] async/futures
 - [ ] right-associative evaluation, e.g. `a.f(b)` instead of `(a.f)(b)`. how to `x := a < b :: {...}` instead of `x := (a < b :: {...})`?
 - [ ] make it possible to use oneline match expression, block expression
 - [ ] escape sequences in strings (e.g. `\x1b`)

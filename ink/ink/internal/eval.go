@@ -218,8 +218,8 @@ func (v ValueComposite) Equals(other Value) bool {
 
 // ValueFunction is the value of any variables referencing functions defined in an Ink program.
 type ValueFunction struct {
-	defn        *NodeLiteralFunction
-	parentFrame *StackFrame
+	defn  *NodeLiteralFunction
+	scope *Scope
 }
 
 func (v ValueFunction) String() string {
@@ -276,8 +276,8 @@ func (v ValueFunctionCallThunk) Equals(other Value) bool {
 // unwrapThunk expands out a recursive structure of thunks into a flat for loop control structure
 func unwrapThunk(thunk ValueFunctionCallThunk) (Value, *Err) {
 	for {
-		v, err := thunk.function.defn.body.Eval(&StackFrame{
-			parent: thunk.function.parentFrame,
+		v, err := thunk.function.defn.body.Eval(&Scope{
+			parent: thunk.function.scope,
 			vt:     thunk.vt,
 		}, true)
 
@@ -295,10 +295,10 @@ func poss(n Node) string {
 	return n.Position().String()
 }
 
-func (n NodeExprUnary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
+func (n NodeExprUnary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	switch n.operator {
 	case OpNegation:
-		operand, err := n.operand.Eval(frame, false)
+		operand, err := n.operand.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +316,7 @@ func (n NodeExprUnary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 	}
 }
 
-func operandToStringKey(rightOperand Node, frame *StackFrame) (string, *Err) {
+func operandToStringKey(rightOperand Node, scope *Scope) (string, *Err) {
 	switch right := rightOperand.(type) {
 	case NodeIdentifier:
 		return right.val, nil
@@ -325,7 +325,7 @@ func operandToStringKey(rightOperand Node, frame *StackFrame) (string, *Err) {
 	case NodeLiteralNumber:
 		return nToS(right.val), nil
 	default:
-		rightEvaluatedValue, err := rightOperand.Eval(frame, false)
+		rightEvaluatedValue, err := rightOperand.Eval(scope, false)
 		if err != nil {
 			return "", err
 		}
@@ -341,7 +341,7 @@ func operandToStringKey(rightOperand Node, frame *StackFrame) (string, *Err) {
 	}
 }
 
-func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
+func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 	switch n.operator {
 	case OpDefine:
 		if leftIdent, okIdent := n.left.(NodeIdentifier); okIdent {
@@ -349,27 +349,27 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign an empty identifier value to %s [%s]", leftIdent, poss(n.left))}
 			}
 
-			rightValue, err := n.right.Eval(frame, false)
+			rightValue, err := n.right.Eval(scope, false)
 			if err != nil {
 				return nil, err
 			}
 
-			frame.Set(leftIdent.val, rightValue)
+			scope.Set(leftIdent.val, rightValue)
 			return rightValue, nil
 		} else if leftAccess, okAccess := n.left.(NodeExprBinary); okAccess && leftAccess.operator == OpAccessor {
-			leftValue, err := leftAccess.left.Eval(frame, false)
+			leftValue, err := leftAccess.left.Eval(scope, false)
 			if err != nil {
 				return nil, err
 			}
 
-			leftKey, err := operandToStringKey(leftAccess.right, frame)
+			leftKey, err := operandToStringKey(leftAccess.right, scope)
 			if err != nil {
 				return nil, err
 			}
 
 			switch left := leftValue.(type) {
 			case ValueComposite:
-				rightValue, err := n.right.Eval(frame, false)
+				rightValue, err := n.right.Eval(scope, false)
 				if err != nil {
 					return nil, err
 				}
@@ -382,7 +382,7 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 					return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left)}
 				}
 
-				rightValue, err := n.right.Eval(frame, false)
+				rightValue, err := n.right.Eval(scope, false)
 				if err != nil {
 					return nil, err
 				}
@@ -406,11 +406,11 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 							left = append(left, r)
 						}
 					}
-					frame.Update(leftIdent.val, left)
+					scope.Update(leftIdent.val, left)
 					return left, nil
 				case rn == len(left):
 					left = append(left, rightString...)
-					frame.Update(leftIdent.val, left)
+					scope.Update(leftIdent.val, left)
 					return left, nil
 				default:
 					return nil, &Err{ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s [%s]", left, leftKey, poss(leftAccess.right))}
@@ -419,7 +419,7 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 				return nil, &Err{ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s [%s]", leftValue, poss(leftAccess.left))}
 			}
 		} else {
-			left, err := n.left.Eval(frame, false)
+			left, err := n.left.Eval(scope, false)
 			if err != nil {
 				return nil, err
 			}
@@ -427,12 +427,12 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 			return nil, &Err{ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s [%s]", left, poss(n.left))}
 		}
 	case OpAccessor:
-		leftValue, err := n.left.Eval(frame, false)
+		leftValue, err := n.left.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
 
-		rightValueStr, err := operandToStringKey(n.right, frame)
+		rightValueStr, err := operandToStringKey(n.right, scope)
 		if err != nil {
 			return nil, err
 		}
@@ -460,11 +460,11 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 		}
 	}
 
-	leftValue, err := n.left.Eval(frame, false)
+	leftValue, err := n.left.Eval(scope, false)
 	if err != nil {
 		return nil, err
 	}
-	rightValue, err := n.right.Eval(frame, false)
+	rightValue, err := n.right.Eval(scope, false)
 	if err != nil {
 		return nil, err
 	}
@@ -660,15 +660,15 @@ func (n NodeExprBinary) Eval(frame *StackFrame, _ bool) (Value, *Err) {
 	}
 }
 
-func (n NodeFunctionCall) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
-	fn, err := n.function.Eval(frame, false)
+func (n NodeFunctionCall) Eval(scope *Scope, allowThunk bool) (Value, *Err) {
+	fn, err := n.function.Eval(scope, false)
 	if err != nil {
 		return nil, err
 	}
 
 	argResults := make([]Value, len(n.arguments))
 	for i, arg := range n.arguments {
-		argResults[i], err = arg.Eval(frame, false)
+		argResults[i], err = arg.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
@@ -691,7 +691,7 @@ func evalInkFunction(fn Value, allowThunk bool, args ...Value) (Value, *Err) {
 		}
 
 		// TCO: used for evaluating expressions that may be in tail positions
-		// at the end of Nodes whose evaluation allocates another StackFrame
+		// at the end of Nodes whose evaluation allocates another Scope
 		// like ExpressionList and FunctionLiteral's body
 		returnThunk := ValueFunctionCallThunk{
 			vt:       argValueTable,
@@ -709,85 +709,85 @@ func evalInkFunction(fn Value, allowThunk bool, args ...Value) (Value, *Err) {
 	}
 }
 
-func (n NodeMatchClause) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeMatchClause) Eval(scope *Scope, allowThunk bool) (Value, *Err) {
 	log.Fatal().Stringer("kind", ErrAssert).Msg("cannot Eval a MatchClauseNode")
 	return nil, nil
 }
 
-func (n NodeMatchExpr) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
-	conditionVal, err := n.condition.Eval(frame, false)
+func (n NodeMatchExpr) Eval(scope *Scope, allowThunk bool) (Value, *Err) {
+	conditionVal, err := n.condition.Eval(scope, false)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, cl := range n.clauses {
-		targetVal, err := cl.target.Eval(frame, false)
+		targetVal, err := cl.target.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
 
 		if conditionVal.Equals(targetVal) {
-			return cl.expression.Eval(frame, allowThunk)
+			return cl.expression.Eval(scope, allowThunk)
 		}
 	}
 
 	return Null, nil
 }
 
-func (n NodeExprList) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeExprList) Eval(scope *Scope, allowThunk bool) (Value, *Err) {
 	length := len(n.expressions)
 	if length == 0 {
 		return Null, nil
 	}
 
-	callFrame := &StackFrame{
-		parent: frame,
+	newScope := &Scope{
+		parent: scope,
 		vt:     ValueTable{},
 	}
 	for _, expr := range n.expressions[:length-1] {
-		if _, err := expr.Eval(callFrame, false); err != nil {
+		if _, err := expr.Eval(newScope, false); err != nil {
 			return nil, err
 		}
 	}
 
 	// return values of expression lists are tail call optimized,
 	// so return a maybe ThunkValue
-	return n.expressions[length-1].Eval(callFrame, allowThunk)
+	return n.expressions[length-1].Eval(newScope, allowThunk)
 }
 
-func (n NodeIdentifierEmpty) Eval(*StackFrame, bool) (Value, *Err) {
+func (n NodeIdentifierEmpty) Eval(*Scope, bool) (Value, *Err) {
 	return ValueEmpty{}, nil
 }
 
-func (n NodeIdentifier) Eval(frame *StackFrame, _ bool) (Value, *Err) {
-	val, prs := frame.Get(n.val)
+func (n NodeIdentifier) Eval(scope *Scope, _ bool) (Value, *Err) {
+	val, prs := scope.Get(n.val)
 	if !prs {
 		return nil, &Err{ErrRuntime, fmt.Sprintf("%s is not defined [%s]", n.val, poss(n))}
 	}
 	return val, nil
 }
 
-func (n NodeLiteralNumber) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralNumber) Eval(*Scope, bool) (Value, *Err) {
 	return ValueNumber(n.val), nil
 }
 
-func (n NodeLiteralString) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralString) Eval(*Scope, bool) (Value, *Err) {
 	return ValueString(n.val), nil
 }
 
-func (n NodeLiteralBoolean) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralBoolean) Eval(*Scope, bool) (Value, *Err) {
 	return ValueBoolean(n.val), nil
 }
 
-func (n NodeLiteralObject) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralObject) Eval(scope *Scope, _ bool) (Value, *Err) {
 	obj := make(ValueComposite, len(n.entries))
 	for _, entry := range n.entries {
-		keyStr, err := operandToStringKey(entry.key, frame)
+		keyStr, err := operandToStringKey(entry.key, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		obj[keyStr], err = entry.val.Eval(frame, false)
+		obj[keyStr], err = entry.val.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
@@ -795,16 +795,16 @@ func (n NodeLiteralObject) Eval(frame *StackFrame, allowThunk bool) (Value, *Err
 	return obj, nil
 }
 
-func (n NodeObjectEntry) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeObjectEntry) Eval(*Scope, bool) (Value, *Err) {
 	log.Fatal().Stringer("kind", ErrAssert).Msg("cannot Eval an ObjectEntryNode")
 	return nil, nil
 }
 
-func (n NodeLiteralList) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralList) Eval(scope *Scope, _ bool) (Value, *Err) {
 	listVal := make(ValueComposite, len(n.vals))
 	for i, n := range n.vals {
 		var err *Err
-		listVal[strconv.Itoa(i)], err = n.Eval(frame, false)
+		listVal[strconv.Itoa(i)], err = n.Eval(scope, false)
 		if err != nil {
 			return nil, err
 		}
@@ -812,10 +812,10 @@ func (n NodeLiteralList) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) 
 	return listVal, nil
 }
 
-func (n NodeLiteralFunction) Eval(frame *StackFrame, allowThunk bool) (Value, *Err) {
+func (n NodeLiteralFunction) Eval(scope *Scope, _ bool) (Value, *Err) {
 	return ValueFunction{
-		defn:        &n,
-		parentFrame: frame,
+		defn:  &n,
+		scope: scope,
 	}, nil
 }
 
@@ -823,48 +823,48 @@ func (n NodeLiteralFunction) Eval(frame *StackFrame, allowThunk bool) (Value, *E
 // and is notably used to represent stack frames / heaps and CompositeValue dictionaries.
 type ValueTable = map[string]Value
 
-// StackFrame represents the heap of variables local to a particular function call frame,
-// and recursively references other parent StackFrames internally.
-type StackFrame struct {
-	parent *StackFrame
+// Scope represents the heap of variables local to a particular function call frame,
+// and recursively references other parent Scopes internally.
+type Scope struct {
+	parent *Scope
 	vt     ValueTable
 }
 
-// Get a value from the stack frame chain
-func (frame *StackFrame) Get(name string) (Value, bool) {
-	for frame != nil {
-		if val, ok := frame.vt[name]; ok {
+// Get a value from scope chain
+func (s *Scope) Get(name string) (Value, bool) {
+	for s != nil {
+		if val, ok := s.vt[name]; ok {
 			return val, true
 		}
 
-		frame = frame.parent
+		s = s.parent
 	}
 
 	return Null, false
 }
 
-// Set a value to the most recent call stack frame
-func (frame *StackFrame) Set(name string, val Value) {
-	frame.vt[name] = val
+// Set a value to the last scope
+func (s *Scope) Set(name string, val Value) {
+	s.vt[name] = val
 }
 
-// Update updates a value in the stack frame chain
-func (frame *StackFrame) Update(name string, val Value) {
-	for frame != nil {
-		if _, ok := frame.vt[name]; ok {
-			frame.vt[name] = val
+// Update updates a value in the scope chain
+func (s *Scope) Update(name string, val Value) {
+	for s != nil {
+		if _, ok := s.vt[name]; ok {
+			s.vt[name] = val
 			return
 		}
 
-		frame = frame.parent
+		s = s.parent
 	}
 
 	log.Fatal().Stringer("kind", ErrAssert).Msgf("StackFrame.Up expected to find variable '%s' in frame but did not", name)
 }
 
-func (frame *StackFrame) String() string {
-	entries := make([]string, 0, len(frame.vt))
-	for k, v := range frame.vt {
+func (s *Scope) String() string {
+	entries := make([]string, 0, len(s.vt))
+	for k, v := range s.vt {
 		vstr := v.String()
 		if len(vstr) > maxPrintLen {
 			vstr = vstr[:maxPrintLen] + ".."
@@ -872,7 +872,7 @@ func (frame *StackFrame) String() string {
 		entries = append(entries, fmt.Sprintf("%s -> %s", k, vstr))
 	}
 
-	return fmt.Sprintf("{\n\t%s\n} -prnt-> %s", strings.Join(entries, "\n\t"), frame.parent)
+	return fmt.Sprintf("{\n\t%s\n} -prnt-> %s", strings.Join(entries, "\n\t"), s.parent)
 }
 
 // Engine is a single global context of Ink program execution.
@@ -904,7 +904,7 @@ type Engine struct {
 func (eng *Engine) CreateContext() *Context {
 	ctx := &Context{
 		Engine: eng,
-		Frame: &StackFrame{
+		Scope: &Scope{
 			parent: nil,
 			vt:     ValueTable{},
 		},
@@ -930,8 +930,8 @@ type Context struct {
 	// currently executing file's path, if any
 	File   string
 	Engine *Engine
-	// Frame represents the Context's global heap
-	Frame *StackFrame
+	// Scope represents the Context's global heap
+	Scope *Scope
 }
 
 func (ctx *Context) resetWd() {
@@ -950,13 +950,13 @@ func (ctx *Context) Eval(nodes <-chan Node) (val Value, err *Err) {
 	defer ctx.Engine.mu.Unlock()
 
 	for node := range nodes {
-		if val, err = node.Eval(ctx.Frame, false); err != nil {
+		if val, err = node.Eval(ctx.Scope, false); err != nil {
 			LogErr(ctx, err)
 			break
 		}
 	}
 
-	LogFrame(ctx.Frame)
+	LogScope(ctx.Scope)
 
 	return
 }

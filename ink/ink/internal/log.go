@@ -54,9 +54,9 @@ func LogErr(ctx *Context, err *Err) {
 	LogError(&Err{err.reason, msg})
 }
 
-func LogFrame(frame *StackFrame) {
+func LogScope(scope *Scope) {
 	if L.Dump {
-		log.Debug().Stringer("frame", frame).Msg("frame dump")
+		log.Debug().Stringer("scope", scope).Msg("frame dump")
 	}
 }
 

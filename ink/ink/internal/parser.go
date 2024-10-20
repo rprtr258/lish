@@ -9,7 +9,7 @@ import (
 type Node interface {
 	String() string
 	Position() position
-	Eval(*StackFrame, bool) (Value, *Err)
+	Eval(*Scope, bool) (Value, *Err)
 }
 
 type NodeExprUnary struct {

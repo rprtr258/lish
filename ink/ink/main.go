@@ -38,7 +38,7 @@ func repl(ctx *ink.Context) {
 		return ink.Null, nil
 	})
 	ctx.LoadFunc("dump", func(ctx *ink.Context, _ []ink.Value) (ink.Value, *ink.Err) {
-		fmt.Println(ctx.Frame.String())
+		fmt.Println(ctx.Scope.String())
 		return ink.Null, nil
 	})
 

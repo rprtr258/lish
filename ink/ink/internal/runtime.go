@@ -102,7 +102,7 @@ func (ctx *Context) LoadFunc(
 	name string,
 	exec func(*Context, []Value) (Value, *Err),
 ) {
-	ctx.Frame.Set(name, NativeFunctionValue{
+	ctx.Scope.Set(name, NativeFunctionValue{
 		name,
 		exec,
 		ctx,
@@ -229,7 +229,7 @@ func inkLoad(ctx *Context, in []Value) (Value, *Err) {
 		}
 	}
 
-	return ValueComposite(childCtx.Frame.vt), nil
+	return ValueComposite(childCtx.Scope.vt), nil
 }
 
 func inkArgs(*Context, []Value) (Value, *Err) {
