@@ -7,7 +7,7 @@ readFile := (path, cb) => (
       dataLen := len(evt.data)
       dataLen = BufSize :: {
         true -> sub(offset + dataLen, acc.len(acc) := evt.data)
-        false -> cb(acc.len(acc) := evt.data)
+        _ -> cb(acc.len(acc) := evt.data)
       }
     )
   }))(0, '')
