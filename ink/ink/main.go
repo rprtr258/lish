@@ -33,11 +33,11 @@ Run from the command line with -eval.
 
 func repl(ctx *ink.Context) {
 	// add repl-specific builtins
-	ctx.LoadFunc("clear", func(*ink.Context, []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("clear", func(*ink.Context, ink.Pos, []ink.Value) (ink.Value, *ink.Err) {
 		fmt.Printf("\x1b[2J\x1b[H")
 		return ink.Null, nil
 	})
-	ctx.LoadFunc("dump", func(ctx *ink.Context, _ []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("dump", func(ctx *ink.Context, _ ink.Pos, _ []ink.Value) (ink.Value, *ink.Err) {
 		fmt.Println(ctx.Scope.String())
 		return ink.Null, nil
 	})

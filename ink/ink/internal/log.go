@@ -57,7 +57,7 @@ func LogToken(tok Token) {
 	}
 
 	e := log.Debug().
-		Stringer("at", tok.position).
+		Stringer("at", tok.Pos).
 		Stringer("kind", tok.kind)
 	if tok.str != "" {
 		e = e.Str("str", tok.str)

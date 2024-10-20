@@ -34,7 +34,7 @@ type Err struct {
 	parent  *Err
 	reason  ErrorReason
 	message string
-	pos     position
+	pos     Pos
 }
 
 func (e Err) Error() string {

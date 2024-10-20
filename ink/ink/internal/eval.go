@@ -433,7 +433,7 @@ func define(scope *Scope, leftNode Node, rightValue Value) (Value, *Err) {
 		for _, entry := range leftSide.entries {
 			k, err := operandToStringKey(scope, entry.key)
 			if err != nil {
-				return nil, &Err{err, ErrRuntime, "invalid key in dict destructure assignment", entry.position}
+				return nil, &Err{err, ErrRuntime, "invalid key in dict destructure assignment", entry.Pos}
 			}
 
 			rightSide, ok := rightComposite[k]
@@ -840,7 +840,7 @@ func (n NodeFunctionCall) Eval(scope *Scope, allowThunk bool) (Value, *Err) {
 }
 
 // call into an Ink callback function synchronously
-func evalInkFunction(fn Value, allowThunk bool, position position, args ...Value) (Value, *Err) {
+func evalInkFunction(fn Value, allowThunk bool, position Pos, args ...Value) (Value, *Err) {
 	switch fn := fn.(type) {
 	case ValueFunction:
 		argValueTable := ValueTable{}
@@ -865,7 +865,7 @@ func evalInkFunction(fn Value, allowThunk bool, position position, args ...Value
 		}
 		return unwrapThunk(returnThunk)
 	case NativeFunctionValue:
-		return fn.exec(fn.ctx, args)
+		return fn.exec(fn.ctx, position, args)
 	default:
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("attempted to call a non-function value %s", fn), position}
 	}
@@ -1160,7 +1160,7 @@ func (ctx *Context) ExecPath(path string) (Value, *Err) {
 		ctx.WorkingDirectory = path
 		resp, err := http.Get(path)
 		if err != nil {
-			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not GET %s for execution: %s", path, err.Error()), position{}}
+			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not GET %s for execution: %s", path, err.Error()), Pos{}}
 		}
 		defer resp.Body.Close()
 
@@ -1169,7 +1169,7 @@ func (ctx *Context) ExecPath(path string) (Value, *Err) {
 		ctx.WorkingDirectory = filepath.Dir(path)
 		file, err := os.Open(path)
 		if err != nil {
-			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not open %s for execution: %s", path, err.Error()), position{}}
+			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not open %s for execution: %s", path, err.Error()), Pos{}}
 		}
 		defer file.Close()
 

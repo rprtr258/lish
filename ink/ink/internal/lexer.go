@@ -168,13 +168,13 @@ func (kind Kind) String() string {
 	}
 }
 
-type position struct {
+type Pos struct {
 	file      string
 	line, col int
 }
 
-func (p position) String() string {
-	if p == (position{}) {
+func (p Pos) String() string {
+	if p == (Pos{}) {
 		return "??:??:??"
 	}
 
@@ -185,7 +185,7 @@ func (p position) String() string {
 // in the lexer.
 type Token struct {
 	kind Kind
-	position
+	Pos
 
 	// for string/number literals
 	str string
@@ -195,11 +195,11 @@ type Token struct {
 func (tok Token) String() string {
 	switch tok.kind {
 	case Identifier, LiteralString:
-		return fmt.Sprintf("%s '%s' [%s]", tok.kind, tok.str, tok.position)
+		return fmt.Sprintf("%s '%s' [%s]", tok.kind, tok.str, tok.Pos)
 	case LiteralNumber:
-		return fmt.Sprintf("%s '%s' [%s]", tok.kind, nToS(tok.num), tok.position)
+		return fmt.Sprintf("%s '%s' [%s]", tok.kind, nToS(tok.num), tok.Pos)
 	default:
-		return fmt.Sprintf("%s [%s]", tok.kind, tok.position)
+		return fmt.Sprintf("%s [%s]", tok.kind, tok.Pos)
 	}
 }
 
@@ -222,8 +222,8 @@ func tokenize(file string, r io.Reader) <-chan Token {
 		}
 		simpleCommitChar := func(kind Kind) {
 			simpleCommit(Token{
-				kind:     kind,
-				position: position{file, lineNo, colNo},
+				kind: kind,
+				Pos:  Pos{file, lineNo, colNo},
 			})
 		}
 		commitClear := func() {
@@ -242,18 +242,18 @@ func tokenize(file string, r io.Reader) <-chan Token {
 			case unicode.IsDigit(rune(cbuf[0])):
 				f, err := strconv.ParseFloat(string(cbuf), 64)
 				if err != nil {
-					LogError(&Err{nil, ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), position{file, lineNo, colNo - len(cbuf)}})
+					LogError(&Err{nil, ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), Pos{file, lineNo, colNo - len(cbuf)}})
 				}
 				simpleCommit(Token{
-					num:      f,
-					kind:     LiteralNumber,
-					position: position{file, lineNo, colNo - len(cbuf)},
+					num:  f,
+					kind: LiteralNumber,
+					Pos:  Pos{file, lineNo, colNo - len(cbuf)},
 				})
 			default:
 				simpleCommit(Token{
-					str:      string(cbuf),
-					kind:     Identifier,
-					position: position{file, lineNo, colNo - len(cbuf)},
+					str:  string(cbuf),
+					kind: Identifier,
+					Pos:  Pos{file, lineNo, colNo - len(cbuf)},
 				})
 			}
 		}
@@ -263,8 +263,8 @@ func tokenize(file string, r io.Reader) <-chan Token {
 		}
 		commitChar := func(kind Kind) {
 			commit(Token{
-				kind:     kind,
-				position: position{file, lineNo, colNo},
+				kind: kind,
+				Pos:  Pos{file, lineNo, colNo},
 			})
 		}
 		ensureSeparator := func() {
@@ -295,9 +295,9 @@ func tokenize(file string, r io.Reader) <-chan Token {
 				inStringLiteral = true
 			case char == '\'' && inStringLiteral:
 				commit(Token{
-					str:      string(strbuf),
-					kind:     LiteralString,
-					position: position{file, strbufStartLine, strbufStartCol},
+					str:  string(strbuf),
+					kind: LiteralString,
+					Pos:  Pos{file, strbufStartLine, strbufStartCol},
 				})
 				strbuf = strbuf[:0]
 				inStringLiteral = false

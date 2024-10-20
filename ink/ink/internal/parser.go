@@ -8,12 +8,12 @@ import (
 // Node represents an abstract syntax tree (AST) node in an Ink program.
 type Node interface {
 	String() string
-	Position() position
+	Position() Pos
 	Eval(*Scope, bool) (Value, *Err)
 }
 
 type NodeExprUnary struct {
-	position
+	Pos
 	operator Kind
 	operand  Node
 }
@@ -22,12 +22,12 @@ func (n NodeExprUnary) String() string {
 	return fmt.Sprintf("Unary %s (%s)", n.operator, n.operand)
 }
 
-func (n NodeExprUnary) Position() position {
-	return n.position
+func (n NodeExprUnary) Position() Pos {
+	return n.Pos
 }
 
 type NodeExprBinary struct {
-	position
+	Pos
 	operator    Kind
 	left, right Node
 }
@@ -36,8 +36,8 @@ func (n NodeExprBinary) String() string {
 	return fmt.Sprintf("Binary (%s) %s (%s)", n.left, n.operator, n.right)
 }
 
-func (n NodeExprBinary) Position() position {
-	return n.position
+func (n NodeExprBinary) Position() Pos {
+	return n.Pos
 }
 
 type NodeFunctionCall struct {
@@ -60,7 +60,7 @@ func (n NodeFunctionCall) String() string {
 	return sb.String()
 }
 
-func (n NodeFunctionCall) Position() position {
+func (n NodeFunctionCall) Position() Pos {
 	return n.function.Position()
 }
 
@@ -72,12 +72,12 @@ func (n NodeMatchClause) String() string {
 	return fmt.Sprintf("Clause (%s) -> (%s)", n.target, n.expression)
 }
 
-func (n NodeMatchClause) Position() position {
+func (n NodeMatchClause) Position() Pos {
 	return n.target.Position()
 }
 
 type NodeMatchExpr struct {
-	position
+	Pos
 	condition Node
 	clauses   []NodeMatchClause
 }
@@ -97,12 +97,12 @@ func (n NodeMatchExpr) String() string {
 	return sb.String()
 }
 
-func (n NodeMatchExpr) Position() position {
-	return n.position
+func (n NodeMatchExpr) Position() Pos {
+	return n.Pos
 }
 
 type NodeExprList struct {
-	position
+	Pos
 	expressions []Node
 }
 
@@ -119,24 +119,24 @@ func (n NodeExprList) String() string {
 	return sb.String()
 }
 
-func (n NodeExprList) Position() position {
-	return n.position
+func (n NodeExprList) Position() Pos {
+	return n.Pos
 }
 
 type NodeIdentifierEmpty struct {
-	position
+	Pos
 }
 
 func (n NodeIdentifierEmpty) String() string {
 	return "Empty Identifier"
 }
 
-func (n NodeIdentifierEmpty) Position() position {
-	return n.position
+func (n NodeIdentifierEmpty) Position() Pos {
+	return n.Pos
 }
 
 type NodeIdentifier struct {
-	position
+	Pos
 	val string
 }
 
@@ -144,12 +144,12 @@ func (n NodeIdentifier) String() string {
 	return fmt.Sprintf("Identifier '%s'", n.val)
 }
 
-func (n NodeIdentifier) Position() position {
-	return n.position
+func (n NodeIdentifier) Position() Pos {
+	return n.Pos
 }
 
 type NodeLiteralNumber struct {
-	position
+	Pos
 	val float64
 }
 
@@ -157,12 +157,12 @@ func (n NodeLiteralNumber) String() string {
 	return fmt.Sprintf("Number %s", nToS(n.val))
 }
 
-func (n NodeLiteralNumber) Position() position {
-	return n.position
+func (n NodeLiteralNumber) Position() Pos {
+	return n.Pos
 }
 
 type NodeLiteralString struct {
-	position
+	Pos
 	val string
 }
 
@@ -170,12 +170,12 @@ func (n NodeLiteralString) String() string {
 	return fmt.Sprintf("String '%s'", n.val)
 }
 
-func (n NodeLiteralString) Position() position {
-	return n.position
+func (n NodeLiteralString) Position() Pos {
+	return n.Pos
 }
 
 type NodeLiteralBoolean struct {
-	position
+	Pos
 	val bool
 }
 
@@ -183,12 +183,12 @@ func (n NodeLiteralBoolean) String() string {
 	return fmt.Sprintf("Boolean %t", n.val)
 }
 
-func (n NodeLiteralBoolean) Position() position {
-	return n.position
+func (n NodeLiteralBoolean) Position() Pos {
+	return n.Pos
 }
 
 type NodeLiteralObject struct {
-	position
+	Pos
 	entries []NodeObjectEntry
 }
 
@@ -201,12 +201,12 @@ func (n NodeLiteralObject) String() string {
 		strings.Join(entries, ", "))
 }
 
-func (n NodeLiteralObject) Position() position {
-	return n.position
+func (n NodeLiteralObject) Position() Pos {
+	return n.Pos
 }
 
 type NodeObjectEntry struct {
-	position
+	Pos
 	key, val Node
 }
 
@@ -215,7 +215,7 @@ func (n NodeObjectEntry) String() string {
 }
 
 type NodeLiteralList struct {
-	position
+	Pos
 	vals []Node
 }
 
@@ -227,12 +227,12 @@ func (n NodeLiteralList) String() string {
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
 
-func (n NodeLiteralList) Position() position {
-	return n.position
+func (n NodeLiteralList) Position() Pos {
+	return n.Pos
 }
 
 type NodeLiteralFunction struct {
-	position
+	Pos
 	arguments []Node
 	body      Node
 }
@@ -245,8 +245,8 @@ func (n NodeLiteralFunction) String() string {
 	return fmt.Sprintf("Function (%s) => (%s)", strings.Join(args, ", "), n.body)
 }
 
-func (n NodeLiteralFunction) Position() position {
-	return n.position
+func (n NodeLiteralFunction) Position() Pos {
+	return n.Pos
 }
 
 func guardUnexpectedInputEnd(tokens []Token, idx int) *Err {
@@ -255,10 +255,10 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) *Err {
 	}
 
 	if len(tokens) == 0 {
-		return &Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input"), position{}} // TODO: report filename and position
+		return &Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input"), Pos{}} // TODO: report filename and position
 	}
 
-	return &Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].position}
+	return &Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}
 }
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
@@ -404,7 +404,7 @@ LOOP:
 			operator: ops[0].kind,
 			left:     tree,
 			right:    nodes[0],
-			position: ops[0].position,
+			Pos:      ops[0].Pos,
 		}
 		ops = ops[1:]
 		nodes = nodes[1:]
@@ -457,7 +457,7 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 
 		// Binary expressions are often followed by a match
 		if idx < len(tokens) && tokens[idx].kind == MatchColon {
-			colonPos := tokens[idx].position
+			colonPos := tokens[idx].Pos
 			idx++ // MatchColon
 
 			clauses, incr, err := parseMatchBody(tokens[idx:])
@@ -470,7 +470,7 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 			return NodeMatchExpr{
 				condition: binExpr,
 				clauses:   clauses,
-				position:  colonPos,
+				Pos:       colonPos,
 			}, idx, nil
 		}
 
@@ -487,10 +487,10 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 		return NodeMatchExpr{
 			condition: atom,
 			clauses:   clauses,
-			position:  nextTok.position,
+			Pos:       nextTok.Pos,
 		}, idx, nil
 	default:
-		return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.position}
+		return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.Pos}
 	}
 }
 
@@ -509,7 +509,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 		return NodeExprUnary{
 			operator: tok.kind,
 			operand:  atom,
-			position: tok.position,
+			Pos:      tok.Pos,
 		}, idx + 1, nil
 	}
 
@@ -520,13 +520,13 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 	var atom Node
 	switch tok.kind {
 	case LiteralNumber:
-		return NodeLiteralNumber{tok.position, tok.num}, idx, nil
+		return NodeLiteralNumber{tok.Pos, tok.num}, idx, nil
 	case LiteralString:
-		return NodeLiteralString{tok.position, tok.str}, idx, nil
+		return NodeLiteralString{tok.Pos, tok.str}, idx, nil
 	case LiteralTrue:
-		return NodeLiteralBoolean{tok.position, true}, idx, nil
+		return NodeLiteralBoolean{tok.Pos, true}, idx, nil
 	case LiteralFalse:
-		return NodeLiteralBoolean{tok.position, false}, idx, nil
+		return NodeLiteralBoolean{tok.Pos, false}, idx, nil
 	case Identifier:
 		if tokens[idx].kind == FunctionArrow {
 			var err *Err
@@ -540,7 +540,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = NodeIdentifier{tok.position, tok.str}
+			atom = NodeIdentifier{tok.Pos, tok.str}
 		}
 		// may be called as a function, so flows beyond
 		// switch block
@@ -558,7 +558,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			return atom, idx - 1, nil
 		}
 
-		return NodeIdentifierEmpty{tok.position}, idx, nil
+		return NodeIdentifierEmpty{tok.Pos}, idx, nil
 	case ParenLeft:
 		// grouped expression or function literal
 		exprs := make([]Node, 0)
@@ -595,7 +595,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 		} else {
 			atom = NodeExprList{
 				expressions: exprs,
-				position:    tok.position,
+				Pos:         tok.Pos,
 			}
 		}
 		// may be called as a function, so flows beyond
@@ -630,13 +630,13 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			} else if _, ok := keyExpr.(NodeIdentifier); ok { // "key", shorthand for "key: key"
 				valExpr = keyExpr
 			} else {
-				return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.position}
+				return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}
 			}
 
 			entries = append(entries, NodeObjectEntry{
-				key:      keyExpr,
-				val:      valExpr,
-				position: keyExpr.Position(),
+				key: keyExpr,
+				val: valExpr,
+				Pos: keyExpr.Position(),
 			})
 
 			if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
@@ -646,8 +646,8 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 		idx++ // RightBrace
 
 		return NodeLiteralObject{
-			entries:  entries,
-			position: tok.position,
+			entries: entries,
+			Pos:     tok.Pos,
 		}, idx, nil
 	case BracketLeft:
 		vals := make([]Node, 0)
@@ -668,11 +668,11 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 		idx++ // RightBracket
 
 		return NodeLiteralList{
-			vals:     vals,
-			position: tok.position,
+			vals: vals,
+			Pos:  tok.Pos,
 		}, idx, nil
 	default:
-		return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.position}
+		return nil, 0, &Err{nil, ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.Pos}
 	}
 
 	// bounds check here because parseExpression may have
@@ -735,7 +735,7 @@ func parseMatchClause(tokens []Token) (NodeMatchClause, int, *Err) {
 	}
 
 	if tokens[idx].kind != CaseArrow {
-		return NodeMatchClause{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].position}
+		return NodeMatchClause{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].Pos}
 	}
 	idx++ // CaseArrow
 
@@ -771,10 +771,10 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 			tk := tokens[idx]
 			switch tk.kind {
 			case Identifier:
-				idNode := NodeIdentifier{tk.position, tk.str}
+				idNode := NodeIdentifier{tk.Pos, tk.str}
 				arguments = append(arguments, idNode)
 			case IdentifierEmpty:
-				idNode := NodeIdentifierEmpty{tk.position}
+				idNode := NodeIdentifierEmpty{tk.Pos}
 				arguments = append(arguments, idNode)
 			default:
 				break LOOP
@@ -786,7 +786,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 			}
 
 			if tokens[idx].kind != Separator {
-				return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].position}
+				return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].Pos}
 			}
 			idx++ // Separator
 		}
@@ -795,17 +795,17 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 			return NodeLiteralFunction{}, 0, err
 		}
 		if tokens[idx].kind != ParenRight {
-			return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].position}
+			return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].Pos}
 		}
 		idx++ // RightParen
 	case Identifier:
-		idNode := NodeIdentifier{tok.position, tok.str}
+		idNode := NodeIdentifier{tok.Pos, tok.str}
 		arguments = append(arguments, idNode)
 	case IdentifierEmpty:
-		idNode := NodeIdentifierEmpty{tok.position}
+		idNode := NodeIdentifierEmpty{tok.Pos}
 		arguments = append(arguments, idNode)
 	default:
-		return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.position}
+		return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}
 	}
 
 	if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
@@ -813,7 +813,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 	}
 
 	if tokens[idx].kind != FunctionArrow {
-		return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].position}
+		return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].Pos}
 	}
 	idx++ // FunctionArrow
 
@@ -826,7 +826,7 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 	return NodeLiteralFunction{
 		arguments: arguments,
 		body:      body,
-		position:  tokens[0].position,
+		Pos:       tokens[0].Pos,
 	}, idx, nil
 }
 
