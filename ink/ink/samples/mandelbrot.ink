@@ -54,7 +54,7 @@ mcompute := coord => (
       fractional / MAXITER
     )
     # maybe converges?
-    false -> iter :: {
+    _ -> iter :: {
       # give up
       MAXITER -> 1
       # try again
@@ -70,11 +70,11 @@ hsl := (h, s, l) => (
     # wrap to [0, 1)
     t := (t < 1 :: {
       true -> t + 1
-      false -> t
+      _ -> t
     })
     t := (t > 1 :: {
       true -> t - 1
-      false -> t
+      _ -> t
     })
 
     [t < 1 / 6, t < 1 / 2, t < 2 / 3] :: {
@@ -87,7 +87,7 @@ hsl := (h, s, l) => (
 
   q := (l < 0.5 :: {
     true -> l * (1 + s)
-    false -> l + s - l * s
+    _ -> l + s - l * s
   })
   p := 2 * l - q
 
