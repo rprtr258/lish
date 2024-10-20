@@ -70,7 +70,7 @@ reader := s => (
 
 # deserialize string
 deString := r => (
-  next := r.next
+  next := r.next # TODO: remove this and similar
   peek := r.peek
 
   # known to be a '"'
