@@ -71,6 +71,103 @@ const (
 	BraceRight
 )
 
+func (kind Kind) String() string {
+	switch kind {
+	case ExprUnary:
+		return "unary expression"
+	case ExprBinary:
+		return "binary expression"
+	case ExprMatch:
+		return "match expression"
+	case MatchClause:
+		return "match clause"
+
+	case Identifier:
+		return "identifier"
+	case IdentifierEmpty:
+		return "'_'"
+
+	case FunctionCall:
+		return "function call"
+
+	case LiteralNumber:
+		return "number literal"
+	case LiteralString:
+		return "string literal"
+	case LiteralObject:
+		return "composite literal"
+	case LiteralList:
+		return "list composite literal"
+	case LiteralFunction:
+		return "function literal"
+
+	case LiteralTrue:
+		return "'true'"
+	case LiteralFalse:
+		return "'false'"
+
+	case OpAccessor:
+		return "'.'"
+
+	case OpEqual:
+		return "'='"
+	case FunctionArrow:
+		return "'=>'"
+
+	case KeyValueSeparator:
+		return "':'"
+	case OpDefine:
+		return "':='"
+	case MatchColon:
+		return "'::'"
+
+	case CaseArrow:
+		return "'->'"
+	case OpSubtract:
+		return "'-'"
+
+	case OpNegation:
+		return "'~'"
+	case OpAdd:
+		return "'+'"
+	case OpMultiply:
+		return "'*'"
+	case OpDivide:
+		return "'/'"
+	case OpModulus:
+		return "'%'"
+	case OpGreaterThan:
+		return "'>'"
+	case OpLessThan:
+		return "'<'"
+
+	case OpLogicalAnd:
+		return "'&'"
+	case OpLogicalOr:
+		return "'|'"
+	case OpLogicalXor:
+		return "'^'"
+
+	case Separator:
+		return "','"
+	case ParenLeft:
+		return "'('"
+	case ParenRight:
+		return "')'"
+	case BracketLeft:
+		return "'['"
+	case BracketRight:
+		return "']'"
+	case BraceLeft:
+		return "'{'"
+	case BraceRight:
+		return "'}'"
+
+	default:
+		return "unknown token"
+	}
+}
+
 type position struct {
 	file      string
 	line, col int
@@ -381,101 +478,4 @@ func tokenize(file string, r io.Reader) <-chan Token {
 		ensureSeparator()
 	}()
 	return tokens
-}
-
-func (kind Kind) String() string {
-	switch kind {
-	case ExprUnary:
-		return "unary expression"
-	case ExprBinary:
-		return "binary expression"
-	case ExprMatch:
-		return "match expression"
-	case MatchClause:
-		return "match clause"
-
-	case Identifier:
-		return "identifier"
-	case IdentifierEmpty:
-		return "'_'"
-
-	case FunctionCall:
-		return "function call"
-
-	case LiteralNumber:
-		return "number literal"
-	case LiteralString:
-		return "string literal"
-	case LiteralObject:
-		return "composite literal"
-	case LiteralList:
-		return "list composite literal"
-	case LiteralFunction:
-		return "function literal"
-
-	case LiteralTrue:
-		return "'true'"
-	case LiteralFalse:
-		return "'false'"
-
-	case OpAccessor:
-		return "'.'"
-
-	case OpEqual:
-		return "'='"
-	case FunctionArrow:
-		return "'=>'"
-
-	case KeyValueSeparator:
-		return "':'"
-	case OpDefine:
-		return "':='"
-	case MatchColon:
-		return "'::'"
-
-	case CaseArrow:
-		return "'->'"
-	case OpSubtract:
-		return "'-'"
-
-	case OpNegation:
-		return "'~'"
-	case OpAdd:
-		return "'+'"
-	case OpMultiply:
-		return "'*'"
-	case OpDivide:
-		return "'/'"
-	case OpModulus:
-		return "'%'"
-	case OpGreaterThan:
-		return "'>'"
-	case OpLessThan:
-		return "'<'"
-
-	case OpLogicalAnd:
-		return "'&'"
-	case OpLogicalOr:
-		return "'|'"
-	case OpLogicalXor:
-		return "'^'"
-
-	case Separator:
-		return "','"
-	case ParenLeft:
-		return "'('"
-	case ParenRight:
-		return "')'"
-	case BracketLeft:
-		return "'['"
-	case BracketRight:
-		return "']'"
-	case BraceLeft:
-		return "'{'"
-	case BraceRight:
-		return "'}'"
-
-	default:
-		return "unknown token"
-	}
 }

@@ -38,9 +38,12 @@ m('destructure assignment into dict')
 (
   dict := {a: 'A', b: 'B', c: 'C'}
   {a: a, b: bb} := dict
+  {c} := dict
 
   t('a is "A"', a, 'A')
   t('b is "B"', bb, 'B')
+  t('shorthand destructor', c, 'C')
+  t('shorthand constructor', {a, c}, {a: 'A', c: 'C'})
 )
 
 m('value equality')

@@ -607,30 +607,32 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			if err != nil {
 				return nil, 0, err
 			}
-
 			idx += keyIncr
 
 			if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
 				return nil, 0, err
 			}
 
-			if tokens[idx].kind != KeyValueSeparator {
+			var valExpr Node
+			if tokens[idx].kind == KeyValueSeparator { // "key: value" pair
+				idx++
+
+				if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
+					return nil, 0, err
+				}
+
+				expr, valIncr, err := parseExpression(tokens[idx:])
+				if err != nil {
+					return nil, 0, err
+				}
+				valExpr = expr
+				idx += valIncr // Separator consumed by parseExpression
+			} else if _, ok := keyExpr.(NodeIdentifier); ok { // "key", shorthand for "key: key"
+				valExpr = keyExpr
+			} else {
 				return nil, 0, &Err{ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.position}
 			}
 
-			idx++
-
-			if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
-				return nil, 0, err
-			}
-
-			valExpr, valIncr, err := parseExpression(tokens[idx:])
-			if err != nil {
-				return nil, 0, err
-			}
-
-			// Separator consumed by parseExpression
-			idx += valIncr
 			entries = append(entries, NodeObjectEntry{
 				key:      keyExpr,
 				val:      valExpr,
