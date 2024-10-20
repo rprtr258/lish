@@ -15,7 +15,7 @@ tan := x => sin(x) / cos(x)
 
 ternary := (p, x, y) => p :: {
   true -> x
-  false -> y
+  _ -> y
 }
 min := (x, y) => ternary(x < y, x, y)
 max := (x, y) => ternary(x > y, x, y)

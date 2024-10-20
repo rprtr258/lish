@@ -62,13 +62,13 @@ contains? := (s, substring) => index(s, substring) > ~1
 # transforms given string to lowercase
 lower := s => reduce(s, (acc, c, i) => upper?(c) :: {
   true -> acc.(i) := char(point(c) + 32)
-  false -> acc.(i) := c
+  _ -> acc.(i) := c
 }, '')
 
 # transforms given string to uppercase
 upper := s => reduce(s, (acc, c, i) => lower?(c) :: {
   true -> acc.(i) := char(point(c) - 32)
-  false -> acc.(i) := c
+  _ -> acc.(i) := c
 }, '')
 
 # primitive "title-case" transformation, uppercases first letter and lowercases the rest.

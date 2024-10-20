@@ -9,17 +9,16 @@ sortBy := (v, pred) => (
     pivot := pred(v.(lo))
     lsub := i => pred(v.(i)) < pivot :: {
       true -> lsub(i + 1)
-      false -> i
+      _ -> i
     }
     rsub := j => pred(v.(j)) > pivot :: {
       true -> rsub(j - 1)
-      false -> j
+      _ -> j
     }
     (sub := (i, j) => (
       i := lsub(i)
       j := rsub(j)
       i < j :: {
-        false -> j
         true -> (
           # inlined swap!
           tmp := v.(i)
@@ -28,6 +27,7 @@ sortBy := (v, pred) => (
 
           sub(i + 1, j - 1)
         )
+        _ -> j
       }
     ))(lo, hi)
   )

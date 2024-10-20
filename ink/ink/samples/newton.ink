@@ -11,7 +11,7 @@ makeNewtonRoot := threshold => n => (
     offset := guess * guess - n
     offset < threshold :: {
       true -> guess
-      false -> find(guess)
+      _ -> find(guess)
     }
   ))(n / 2) # initial guess is n / 2
 )
