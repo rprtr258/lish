@@ -686,8 +686,7 @@ m('type() builtin function')
 m('std.range/slice/append/join/cat and stringList')
 (
   {stringList: stringList, join: cat} := str
-  range := functional.range
-  reverse := functional.reverse
+  {range: range, reverse: reverse} := functional
   slice := std.slice
 
   # slice returns copies
@@ -745,8 +744,7 @@ m('std.range/slice/append/join/cat and stringList')
 
 m('hexadecimal conversions, hex & xeh')
 (
-  hex := str.hex
-  xeh := str.xeh
+  {hex: hex, xeh: xeh} := str
 
   # base cases
   t('hex(0)', hex(0), '0')
@@ -772,8 +770,7 @@ m('hexadecimal conversions, hex & xeh')
 
 m('ascii <-> char point conversions and string encode/decode')
 (
-  encode := str.encode
-  decode := str.decode
+  {encode: encode, decode: decode} := str
 
   s1 := 'this is a long piece of string
   with weird line
@@ -797,14 +794,10 @@ m('ascii <-> char point conversions and string encode/decode')
 
 m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
 (
-  map := functional.map
-  filter := functional.filter
-  reduce := functional.reduce
-  reduceBack := functional.reduceBack
-  each := functional.each
-  reverse := functional.reverse
-  flatten := functional.flatten
-  append := functional.append
+  {
+    map: map, filter: filter, reduce: reduce, reduceBack: reduceBack,
+    each: each, reverse: reverse, flatten: flatten, append: append,
+  } := functional
 
   list := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
