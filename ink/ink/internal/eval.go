@@ -677,7 +677,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 			return ValueBoolean(right), nil
 		}
 
-		// TODO: do not evaluate `right`` here
+		// TODO: do not evaluate `right` here
 		rightValue, err := n.right.Eval(scope, false)
 		if err != nil {
 			return nil, err
@@ -733,7 +733,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 			return ValueBoolean(right), nil
 		}
 
-		// TODO: do not evaluate `right`` here
+		// TODO: do not evaluate `right` here
 		rightValue, err := n.right.Eval(scope, false)
 		if err != nil {
 			return nil, err
