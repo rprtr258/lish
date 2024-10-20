@@ -90,7 +90,7 @@ each(['.', 'samples', 'README.md', 'fake.txt'], path => stat(path, evt => evt.ty
       mod: evt.data.mod
       sep: evt.data.dir :: {
         true -> '/'
-        false -> ''
+        _ -> ''
       }
     }))
   }
