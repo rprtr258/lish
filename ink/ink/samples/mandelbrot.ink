@@ -8,6 +8,7 @@ map := std.map
 reduce := std.reduce
 range := std.range
 wf := load('io').writeFile
+max := load('math').max
 
 # graph position
 CENTERX := ~0.540015
@@ -20,14 +21,7 @@ SCALE := 50000 # pixels for 1 unit
 MAXITER := 600
 
 # set the correct "escape" threshold for sequence
-ESCAPE := (WIDTH > HEIGHT :: {
-  true -> WIDTH
-  false -> HEIGHT
-}) / SCALE
-ESCAPE := (ESCAPE < 2 :: {
-  true -> 2
-  false -> ESCAPE
-})
+ESCAPE := max(max(WIDTH, HEIGHT) / SCALE, 2)
 
 # complex arithmetic functions
 cpxAbsSq := z => z.0 * z.0 + z.1 * z.1
