@@ -1223,13 +1223,18 @@ m('html')
   p := H.p
   classes := H.classes
 
-  t('point(a)', html(
+  got := html(
     title('Test page')
     d([
       h1({class: classes(['title']), itemprop: 'title'}, 'Hello, World!')
       p({class: classes(['body'])}, 'this is a body paragraph')
     ])
-  ), '<!doctype html><head><title>Test page</title></head><body><div><h1 class="title" itemprop="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>')
+  )
+  # props order in h1 might be different
+  # TODO: parse back and check instead
+  variant1 := '<!doctype html><head><title>Test page</title></head><body><div><h1 class="title" itemprop="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>'
+  variant2 := '<!doctype html><head><title>Test page</title></head><body><div><h1 itemprop="title" class="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>'
+  t('example', got = variant1 | got = variant2, true)
 )
 
 m('sort')
