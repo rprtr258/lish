@@ -16,6 +16,9 @@
   - Potential type annotation: `myVar<type>` (`myVar` is of type `type`), `myFunc<string, boolean => {number}>` (`myFunc` is of type function mapping `string`, `boolean` to type composite of `number`)
   - types are conversion functions, e.g. `string` converts anything to `string` type
 - [ ] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map reduce} := import('functional.ink')`
+- [ ] assignment `<-` without declaration
+- [ ] setting `map[k] := ()` is same as removing `k` completely from map
+- [ ] exception handling
 - [ ] value semantics
 - [ ] make `:: {...}` mean `true :: {...}` as a common case
 - [ ] `<=`, `>=`, `!=` operators
