@@ -6,7 +6,7 @@ each := load('functional').each
 f := load('str').format
 
 # suite constructor
-suite := label => (
+label => (
   # suite data store
   s := {
     all: 0
@@ -54,7 +54,3 @@ suite := label => (
     end: end
   }
 )
-
-{
-  suite: suite
-}

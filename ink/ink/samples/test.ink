@@ -3,7 +3,7 @@ clear := '__cleared'
 # ink language test suite,
 # built on the suite library for testing
 
-s := (load('suite').suite)(
+s := load('suite')(
   'Ink language and standard library'
 )
 
