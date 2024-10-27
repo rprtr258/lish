@@ -5,6 +5,8 @@ import (
 	"iter"
 	"slices"
 	"strings"
+
+	"github.com/rprtr258/fun"
 )
 
 // Node represents an abstract syntax tree (AST) node in an Ink program.
@@ -319,14 +321,11 @@ func getOpPriority(t Token) int {
 }
 
 func isBinaryOp(t Token) bool {
-	switch t.kind {
-	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
+	return fun.Contains(t.kind,
+		OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
-		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
-		return true
-	default:
-		return false
-	}
+		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor,
+	)
 }
 
 func parseBinaryExpression(
