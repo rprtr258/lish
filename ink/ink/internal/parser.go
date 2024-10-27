@@ -341,11 +341,8 @@ func parseBinaryExpression(
 	}
 
 	incr := 0
-	ops := make([]Token, 1)
-	nodes := make([]Node, 2)
-	ops[0] = operator
-	nodes[0] = leftOperand
-	nodes[1] = rightAtom
+	ops := []Token{operator}
+	nodes := []Node{leftOperand, rightAtom}
 	// build up a list of binary operations, with tree nodes
 	// where there are higher-priority binary ops
 LOOP:
