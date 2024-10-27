@@ -117,10 +117,10 @@ func errMsg(message string) ValueComposite {
 	}
 }
 
-func validate(errs ...string) *Err {
+func validate(pos Pos, errs ...string) *Err {
 	for _, err := range errs {
 		if err != "" {
-			return &Err{nil, ErrRuntime, err, Pos{}} // TODO: pass position
+			return &Err{nil, ErrAssert, err, pos}
 		}
 	}
 	return nil
@@ -192,7 +192,7 @@ func validateCustom(condition bool, msg string) string {
 
 func inkImport(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var givenPath ValueString
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &givenPath),
 		validateCustom(len(givenPath) > 0, "arg must be path"),
@@ -250,7 +250,7 @@ func inkArgs(*Context, Pos, []Value) (Value, *Err) {
 }
 
 func inkIn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "in()", pos}
@@ -302,7 +302,7 @@ func inkIn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkOut(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var output ValueString
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &output),
 	); err != nil {
@@ -318,7 +318,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		dirPath ValueString
 		cb      ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &dirPath),
 		validateArgType(in, 1, &cb),
@@ -374,7 +374,7 @@ func inkMake(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		dirPath ValueString
 		cb      ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &dirPath),
 		validateArgType(in, 1, &cb),
@@ -419,7 +419,7 @@ func inkStat(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		statPath ValueString
 		cb       ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &statPath),
 		validateArgType(in, 1, &cb),
@@ -482,7 +482,7 @@ func inkRead(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		length   ValueNumber
 		cb       ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &offset),
@@ -564,7 +564,7 @@ func inkWrite(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		buf      ValueString
 		cb       ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &offset),
@@ -639,7 +639,7 @@ func inkDelete(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		filePath ValueString
 		cb       ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &filePath),
 		validateArgType(in, 1, &cb),
@@ -820,7 +820,7 @@ func inkListen(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		host ValueString
 		cb   ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &host),
 		validateArgType(in, 1, &cb),
@@ -880,7 +880,7 @@ func inkReq(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		data ValueComposite
 		cb   ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &data),
 		validateArgType(in, 1, &cb),
@@ -1020,7 +1020,7 @@ func inkRand(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkUrand(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var bufLength ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &bufLength),
 	); err != nil {
@@ -1042,7 +1042,7 @@ func inkTime(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkWait(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var secs ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &secs),
 	); err != nil {
@@ -1077,7 +1077,7 @@ func inkExec(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		stdin    ValueString
 		stdoutFn ValueFunction
 	)
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 4),
 		validateArgType(in, 0, &path),
 		validateArgListOf(in, 1, &args),
@@ -1197,7 +1197,7 @@ func inkEnv(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkExit(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var code ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &code),
 	); err != nil {
@@ -1212,7 +1212,7 @@ func inkExit(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkSin(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var inNum ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 	); err != nil {
@@ -1224,7 +1224,7 @@ func inkSin(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkCos(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var inNum ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 	); err != nil {
@@ -1236,7 +1236,7 @@ func inkCos(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkAsin(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var inNum ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 		validateCustom(inNum >= -1 && inNum <= 1, fmt.Sprintf("number must be in range [-1, 1], got %v", inNum)),
@@ -1249,7 +1249,7 @@ func inkAsin(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkAcos(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var inNum ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &inNum),
 		validateCustom(inNum >= -1 && inNum <= 1, fmt.Sprintf("number must be in range [-1, 1], got %v", inNum)),
@@ -1262,7 +1262,7 @@ func inkAcos(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkPow(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var base, exp ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 2),
 		validateArgType(in, 0, &base),
 		validateArgType(in, 1, &exp),
@@ -1277,7 +1277,7 @@ func inkPow(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkLn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var n ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &n),
 		validateCustom(n > 0, fmt.Sprintf("cannot take natural logarithm of non-positive number %s", n.String())),
@@ -1290,7 +1290,7 @@ func inkLn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkFloor(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var n ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &n),
 	); err != nil {
@@ -1301,7 +1301,7 @@ func inkFloor(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 }
 
 func inkString(ctx *Context, pos Pos, in []Value) (Value, *Err) {
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "string()", pos}
@@ -1329,7 +1329,7 @@ func inkString(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 }
 
 func inkNumber(ctx *Context, pos Pos, in []Value) (Value, *Err) {
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "number()", pos}
@@ -1353,7 +1353,7 @@ func inkNumber(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkPoint(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var str ValueString
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &str),
 		validateCustom(len(str) >= 1, "argument must be of length at least 1"),
@@ -1366,7 +1366,7 @@ func inkPoint(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkChar(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var cp ValueNumber
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &cp),
 	); err != nil {
@@ -1377,7 +1377,7 @@ func inkChar(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 }
 
 func inkType(ctx *Context, pos Pos, in []Value) (Value, *Err) {
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "type()", pos}
@@ -1402,7 +1402,7 @@ func inkType(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 }
 
 func inkLen(ctx *Context, pos Pos, in []Value) (Value, *Err) {
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "len()", pos}
@@ -1419,7 +1419,7 @@ func inkLen(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkKeys(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var obj ValueComposite
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &obj),
 	); err != nil {
@@ -1437,7 +1437,7 @@ func inkKeys(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 
 func inkPar(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var funcs ValueComposite
-	if err := validate(
+	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &funcs),
 	); err != nil {
