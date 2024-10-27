@@ -1345,8 +1345,7 @@ func inkNumber(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	case ValueNumber:
 		return v, nil
 	case ValueBoolean:
-		res := fun.IF[float64](bool(v), 1, 0)
-		return ValueNumber(res), nil
+		return ValueNumber(fun.IF[float64](bool(v), 1, 0)), nil
 	default:
 		return ValueNumber(0), nil
 	}
