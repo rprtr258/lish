@@ -1432,7 +1432,6 @@ func inkKeys(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		cv[strconv.Itoa(i)] = ValueString(k)
 		i++
 	}
-
 	return cv, nil
 }
 
@@ -1454,7 +1453,6 @@ func inkPar(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var wg sync.WaitGroup
 	wg.Add(len(funcs))
 	for _, f := range funcs {
-		f := f
 		go func() {
 			evalInkFunction(f, false, pos)
 			wg.Done()
