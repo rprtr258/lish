@@ -142,7 +142,7 @@ func validateArgType[T any](in []Value, i int, dest *T) string {
 	res, ok := in[i].(T)
 	if !ok {
 		return fmt.Sprintf(
-			"%d-th argument of must be a %T, but got %T",
+			"%d-th argument must be %T, but got %T",
 			i, *new(T), in[i],
 		)
 	}
