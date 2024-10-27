@@ -1460,5 +1460,6 @@ func inkPar(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	}
 	wg.Wait()
 
+	// TODO: composite of results
 	return Null, nil
 }

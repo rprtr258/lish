@@ -79,46 +79,45 @@ func main() {
 
 	flag.Parse()
 
-	// collect all other non-parsed arguments from the CLI as files to be run
-	args := flag.Args()
-
 	// if asked for version, disregard everything else
-	if *version {
-		fmt.Println(cliVersion)
-		return
-	} else if *help {
-		flag.Usage()
-		return
-	}
-
-	eng := ink.NewEngine()
-	ink.L = ink.Logger{
-		DumpFrame:  *dump,
-		Lex:        *verbose || *debugLexer,
-		Parse:      *verbose || *debugParser,
-		Dump:       *verbose || *dump,
-		FatalError: true,
-	}
-
-	stdin, _ := os.Stdin.Stat()
-	ctx := eng.CreateContext()
 	switch {
-	case *eval != "":
-		ctx.Exec("eval", strings.NewReader(*eval))
-	case len(args) > 0:
-		filePath := args[0]
-		if _, err := ctx.ExecPath(filePath); err != nil {
-			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
-		}
-	case stdin.Mode()&os.ModeCharDevice == 0:
-		if _, err := ctx.Exec("stdin", os.Stdin); err != nil {
-			log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute stdin")
-		}
+	case *version:
+		fmt.Println(cliVersion)
+	case *help:
+		flag.Usage()
 	default:
-		// if no files given and no stdin, default to repl
-		ink.L.FatalError = false
-		repl(ctx)
-	}
+		// collect all other non-parsed arguments from the CLI as files to be run
+		args := flag.Args()
 
-	eng.Listeners.Wait()
+		eng := ink.NewEngine()
+		ink.L = ink.Logger{
+			DumpFrame:  *dump,
+			Lex:        *verbose || *debugLexer,
+			Parse:      *verbose || *debugParser,
+			Dump:       *verbose || *dump,
+			FatalError: true,
+		}
+
+		stdin, _ := os.Stdin.Stat()
+		ctx := eng.CreateContext()
+		switch {
+		case *eval != "":
+			ctx.Exec("eval", strings.NewReader(*eval))
+		case len(args) > 0:
+			filePath := args[0]
+			if _, err := ctx.ExecPath(filePath); err != nil {
+				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
+			}
+		case stdin.Mode()&os.ModeCharDevice == 0:
+			if _, err := ctx.Exec("stdin", os.Stdin); err != nil {
+				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute stdin")
+			}
+		default:
+			// if no files given and no stdin, default to repl
+			ink.L.FatalError = false
+			repl(ctx)
+		}
+
+		eng.Listeners.Wait()
+	}
 }
