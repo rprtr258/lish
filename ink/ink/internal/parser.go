@@ -357,8 +357,7 @@ LOOP:
 			ops = append(ops, tokens[idx])
 			idx++
 
-			err := guardUnexpectedInputEnd(tokens, idx)
-			if err != nil {
+			if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
 				return nil, 0, err
 			}
 
@@ -366,11 +365,11 @@ LOOP:
 			if err != nil {
 				return nil, 0, err
 			}
+
 			nodes = append(nodes, rightAtom)
 			idx += incr
 		default:
-			err := guardUnexpectedInputEnd(tokens, idx+1)
-			if err != nil {
+			if err := guardUnexpectedInputEnd(tokens, idx+1); err != nil {
 				return nil, 0, err
 			}
 
@@ -385,6 +384,7 @@ LOOP:
 			if err != nil {
 				return nil, 0, err
 			}
+
 			nodes[len(nodes)-1] = subtree
 			idx += incr + 1
 		}
@@ -392,18 +392,14 @@ LOOP:
 
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
-	nodes = nodes[1:]
-	for len(ops) > 0 {
+	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
 		tree = NodeExprBinary{
 			operator: ops[0].kind,
 			left:     tree,
 			right:    nodes[0],
 			Pos:      ops[0].Pos,
 		}
-		ops = ops[1:]
-		nodes = nodes[1:]
 	}
-
 	return tree, idx, nil
 }
 
