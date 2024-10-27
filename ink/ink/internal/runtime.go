@@ -1307,22 +1307,25 @@ func inkString(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		return nil, &Err{err, ErrRuntime, "string()", pos}
 	}
 
-	switch v := in[0].(type) {
-	case ValueString:
-		return v, nil
-	case ValueNumber:
-		return ValueString(v.String()), nil
-	case ValueBoolean:
-		return ValueString(fun.IF(bool(v), "true", "false")), nil
-	case ValueNull:
-		return ValueString("()"), nil
-	case ValueComposite:
-		return ValueString(v.String()), nil
-	case ValueFunction, NativeFunctionValue:
-		return ValueString("(function)"), nil
-	default:
-		return ValueString(""), nil
-	}
+	s := func() string {
+		switch v := in[0].(type) {
+		case ValueString:
+			return string(v)
+		case ValueNumber:
+			return v.String()
+		case ValueBoolean:
+			return fun.IF(bool(v), "true", "false")
+		case ValueNull:
+			return "()"
+		case ValueComposite:
+			return v.String()
+		case ValueFunction, NativeFunctionValue:
+			return "(function)"
+		default:
+			return ""
+		}
+	}()
+	return ValueString(s), nil
 }
 
 func inkNumber(ctx *Context, pos Pos, in []Value) (Value, *Err) {
