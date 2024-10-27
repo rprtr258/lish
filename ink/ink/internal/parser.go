@@ -417,6 +417,7 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 	if err != nil {
 		return nil, 0, err
 	}
+
 	idx += incr
 
 	if err = guardUnexpectedInputEnd(tokens, idx); err != nil {
@@ -430,12 +431,10 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 	case Separator:
 		// consuming dangling separator
 		return atom, idx, nil
-
 	case ParenRight, KeyValueSeparator, CaseArrow:
 		// these belong to the parent atom that contains this expression,
 		// so return without consuming token (idx - 1)
 		return atom, idx - 1, nil
-
 	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
@@ -471,6 +470,7 @@ func parseExpression(tokens []Token) (Node, int, *Err) {
 		if err != nil {
 			return nil, 0, err
 		}
+
 		idx += incr
 
 		consumeDanglingSeparator()
@@ -615,6 +615,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 				if err != nil {
 					return nil, 0, err
 				}
+
 				valExpr = expr
 				idx += valIncr // Separator consumed by parseExpression
 			} else if _, ok := keyExpr.(NodeIdentifier); ok { // "key", shorthand for "key: key"
@@ -650,8 +651,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 			idx += incr
 			vals = append(vals, expr)
 
-			err = guardUnexpectedInputEnd(tokens, idx)
-			if err != nil {
+			if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
 				return nil, 0, err
 			}
 		}
@@ -701,8 +701,8 @@ func parseMatchBody(tokens []Token) ([]NodeMatchClause, int, *Err) {
 		if err != nil {
 			return nil, 0, err
 		}
-		idx += incr
 
+		idx += incr
 		clauses = append(clauses, clauseNode)
 
 		if err := guardUnexpectedInputEnd(tokens, idx); err != nil {
@@ -710,7 +710,6 @@ func parseMatchBody(tokens []Token) ([]NodeMatchClause, int, *Err) {
 		}
 	}
 	idx++ // RightBrace
-
 	return clauses, idx, nil
 }
 
@@ -805,12 +804,14 @@ func parseFunctionLiteral(tokens []Token) (NodeLiteralFunction, int, *Err) {
 	if tokens[idx].kind != FunctionArrow {
 		return NodeLiteralFunction{}, 0, &Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].Pos}
 	}
+
 	idx++ // FunctionArrow
 
 	body, incr, err := parseExpression(tokens[idx:])
 	if err != nil {
 		return NodeLiteralFunction{}, 0, err
 	}
+
 	idx += incr
 
 	return NodeLiteralFunction{
@@ -841,6 +842,7 @@ func parseFunctionCall(function Node, tokens []Token) (NodeFunctionCall, int, *E
 			return NodeFunctionCall{}, 0, err
 		}
 	}
+
 	idx++ // RightParen
 
 	return NodeFunctionCall{

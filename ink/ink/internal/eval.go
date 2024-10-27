@@ -47,11 +47,6 @@ func nToS(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-// nToS for NumberValue type
-func nvToS(v ValueNumber) string {
-	return nToS(float64(v))
-}
-
 // zero-extend a slice of bytes to given length
 func zeroExtend(s []byte, max int) []byte {
 	if max <= len(s) {
@@ -100,7 +95,7 @@ func (ValueNull) Equals(other Value) bool {
 type ValueNumber float64
 
 func (v ValueNumber) String() string {
-	return nvToS(v)
+	return nToS(float64(v))
 }
 
 func (v ValueNumber) Equals(other Value) bool {
@@ -334,7 +329,7 @@ func operandToStringKey(scope *Scope, keyOperand Node) (string, *Err) {
 		case ValueString:
 			return string(rv), nil
 		case ValueNumber:
-			return nvToS(rv), nil
+			return rv.String(), nil
 		default:
 			return "", &Err{nil, ErrRuntime, fmt.Sprintf("cannot access invalid property name %s of a composite value", rightEvaluatedValue), keyOperand.Position()}
 		}
@@ -571,6 +566,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				return left - right, nil
 			}
 		}
+
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), n.Position()}
 	case OpMultiply:
 		rightValue, err := n.right.Eval(scope, false)
@@ -624,7 +620,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 					return ValueNumber(int(leftNum) % int(right)), nil
 				}
 
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", nvToS(right)), n.left.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), n.left.Position()}
 			}
 		}
 
@@ -642,7 +638,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 					return ValueNumber(int64(left) & int64(right)), nil
 				}
 
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", nvToS(right), nvToS(left)), n.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), n.Position()}
 			}
 		case ValueString:
 			rightValue, err := n.right.Eval(scope, false)
@@ -695,7 +691,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 
 			if right, ok := rightValue.(ValueNumber); ok {
 				if !isInteger(left) || !isInteger(left) {
-					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", nvToS(right), nvToS(left)), n.Position()}
+					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), n.Position()}
 				}
 
 				return ValueNumber(int64(left) | int64(right)), nil
@@ -754,7 +750,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 					return ValueNumber(int64(left) ^ int64(right)), nil
 				}
 
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", nvToS(right), nvToS(left)), n.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", right.String(), left.String()), n.Position()}
 			}
 		case ValueString:
 			if right, ok := rightValue.(ValueString); ok {

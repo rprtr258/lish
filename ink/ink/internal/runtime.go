@@ -1280,7 +1280,7 @@ func inkLn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	if err := validate(
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &n),
-		validateCustom(n > 0, fmt.Sprintf("cannot take natural logarithm of non-positive number %s", nvToS(n))),
+		validateCustom(n > 0, fmt.Sprintf("cannot take natural logarithm of non-positive number %s", n.String())),
 	); err != nil {
 		return nil, &Err{err, ErrRuntime, "ln()", pos}
 	}
@@ -1311,7 +1311,7 @@ func inkString(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	case ValueString:
 		return v, nil
 	case ValueNumber:
-		return ValueString(nvToS(v)), nil
+		return ValueString(v.String()), nil
 	case ValueBoolean:
 		return ValueString(fun.IF(bool(v), "true", "false")), nil
 	case ValueNull:
