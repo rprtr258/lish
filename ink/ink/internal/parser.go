@@ -2,6 +2,8 @@ package internal
 
 import (
 	"fmt"
+	"iter"
+	"slices"
 	"strings"
 )
 
@@ -263,16 +265,11 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) *Err {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(tokenStream <-chan Token) <-chan Node {
-	tokens := make([]Token, 0)
-	for tok := range tokenStream {
-		tokens = append(tokens, tok)
-	}
+func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
+	// TODO: parse stream if we can, hence making "one-pass" interpreter
+	tokens := slices.Collect(tokenStream)
 
-	nodes := make(chan Node)
-	go func() {
-		defer close(nodes)
-
+	return func(yield func(Node) bool) {
 		for i := 0; i < len(tokens); {
 			if tokens[i].kind == Separator {
 				// this sometimes happens when the repl receives comment inputs
@@ -289,10 +286,11 @@ func parse(tokenStream <-chan Token) <-chan Node {
 			i += incr
 
 			LogNode(expr)
-			nodes <- expr
+			if !yield(expr) {
+				return
+			}
 		}
-	}()
-	return nodes
+	}
 }
 
 var opPriority = map[Kind]int{

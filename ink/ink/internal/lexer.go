@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"iter"
 	"strconv"
 	"unicode"
 )
@@ -204,11 +205,8 @@ func (tok Token) String() string {
 }
 
 // tokenize takes an io.Reader and transforms it into a stream of Tok (tokens).
-func tokenize(file string, r io.Reader) <-chan Token {
-	tokens := make(chan Token)
-	go func() {
-		defer close(tokens)
-
+func tokenize(file string, r io.Reader) iter.Seq[Token] {
+	return func(yield func(Token) bool) {
 		var buf, strbuf []rune
 		var strbufStartLine, strbufStartCol int
 
@@ -218,7 +216,7 @@ func tokenize(file string, r io.Reader) <-chan Token {
 		simpleCommit := func(tok Token) {
 			lastKind = tok.kind
 			LogToken(tok)
-			tokens <- tok
+			yield(tok) // TODO: break on false
 		}
 		simpleCommitChar := func(kind Kind) {
 			simpleCommit(Token{
@@ -476,6 +474,5 @@ func tokenize(file string, r io.Reader) <-chan Token {
 		}
 
 		ensureSeparator()
-	}()
-	return tokens
+	}
 }

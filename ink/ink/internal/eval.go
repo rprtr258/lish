@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
 	"net/url"
 	"os"
@@ -1111,7 +1112,7 @@ func (ctx *Context) resetWd() {
 // Eval takes a channel of Nodes to evaluate, and executes the Ink programs defined
 // in the syntax tree. Eval returns the last value of the last expression in the AST,
 // or an error if there was a runtime error.
-func (ctx *Context) Eval(nodes <-chan Node) (val Value, err *Err) {
+func (ctx *Context) Eval(nodes iter.Seq[Node]) (val Value, err *Err) {
 	ctx.Engine.mu.Lock()
 	defer ctx.Engine.mu.Unlock()
 
