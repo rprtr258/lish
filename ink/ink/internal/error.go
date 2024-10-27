@@ -45,5 +45,5 @@ func (e *Err) Error() string {
 		message = message + ": " + e.parent.Error()
 	}
 
-	return fmt.Sprintf("%s error: %s [%s]", e.reason, e.message, e.pos)
+	return fmt.Sprintf("%s error: %s [%s]", e.reason, message, e.pos)
 }
