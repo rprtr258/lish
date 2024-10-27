@@ -57,7 +57,8 @@ func repl(ctx *ink.Context) {
 
 		// we don't really care if expressions fail to eval
 		// at the top level, user will see regardless, so drop err
-		if val, _ := ctx.Exec("stdin", strings.NewReader(text)); val != nil {
+		if val, err := ctx.Exec("stdin", strings.NewReader(text)); val != nil {
+			ink.LogError(err)
 			fmt.Println(val.String())
 		}
 	}

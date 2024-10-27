@@ -37,12 +37,13 @@ type Logger struct {
 }
 
 func LogError(err *Err) {
-	e := log.Warn()
-	if L.FatalError {
-		e = log.Fatal()
+	level := fun.IF(L.FatalError, zerolog.FatalLevel, zerolog.WarnLevel)
+	for ee := err; ee != nil; ee = ee.parent {
+		defer log.WithLevel(level).
+			Stringer("at", err.pos).
+			Stringer("kind", err.reason).
+			Msg(ee.message)
 	}
-
-	e.Stringer("at", err.pos).Stringer("kind", err.reason).Msg(err.message)
 }
 
 func LogScope(scope *Scope) {

@@ -37,7 +37,7 @@ type Err struct {
 	pos     Pos
 }
 
-func (e Err) Error() string {
+func (e *Err) Error() string {
 	// TODO: print beautiful stack trace
 	// TODO: skip reasons down the stack
 	message := e.message
