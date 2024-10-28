@@ -300,6 +300,7 @@ func inkIn(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	return Null, nil
 }
 
+// TODO: replace with write('/proc/self/fd/1', ~1, output, e => ())
 func inkOut(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	var output ValueString
 	if err := validate(pos,
@@ -610,8 +611,7 @@ func inkWrite(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		// seek
 		if offset != -1 {
 			ofs := int64(offset)
-			_, err := file.Seek(ofs, 0) // 0 means relative to start of file
-			if err != nil {
+			if _, err := file.Seek(ofs, 0); err != nil { // 0 means relative to start of file
 				sendErr(fmt.Sprintf("error seeking requested file in write(), %s", err.Error()))
 				return
 			}
