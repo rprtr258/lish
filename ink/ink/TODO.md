@@ -9,6 +9,7 @@
 - [x] export last expression from file, instead of all declarations
 - [x] `import` from url
 - [x] destructure assignments, e.g. `[a, b] := [1, 2]` or `{map, reduce} := import('functional.ink')`
+  - [ ] check destructuring works in function arguments: `(({key, value}) => out('KEY: '+string(key) + '\nVALUE: ' + string(value) + '\n'))({key: 'KEY', value: 123})`
 - [x] shorthand dict syntax, e.g. `{pos, value}` meaning `{pos: pos, value: value}`, should work both for right side values and for destructure assignments
 - [ ] Type system? I like the way typescript does it, I think Ink’s type checker should be a completely separate layer in the toolchain from the lex/parse/eval layer. But let’s think about the merits of having type annotations and how we can make it simple to lex/parse out while effective at bringing out the forte’s of Ink’s functional style.
   - It seems helpful to think of it as a constraint system on the source code, instead of as something that’s an attribute of the runtime execution itself.
