@@ -54,9 +54,9 @@ pipe := (x, fs) => reduce(fs, (acc, f, _) => f(acc), x)
 # tail recursive reduce
 # ([]T, (R, T, number) => R, R) => R
 reduce := (list, f, acc) => (
-  max := len(list)
+  n := len(list)
   (sub := (i, acc) => i :: {
-    max -> acc
+    n -> acc
     _ -> sub(i + 1, f(acc, list.(i), i))
   })(0, acc)
 )

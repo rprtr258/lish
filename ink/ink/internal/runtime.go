@@ -1380,7 +1380,7 @@ func inkType(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	if err := validate(pos,
 		validateArgsLen(in, 1),
 	); err != nil {
-		return nil, &Err{err, ErrRuntime, "type()", pos}
+		return nil, &Err{err, ErrAssert, "type()", pos}
 	}
 
 	switch in[0].(type) {
@@ -1397,7 +1397,7 @@ func inkType(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 	case ValueFunction, NativeFunctionValue:
 		return ValueString("function"), nil
 	default:
-		return ValueString(""), nil
+		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("unknown type: %T", in[0]), pos}
 	}
 }
 
