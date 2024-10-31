@@ -588,8 +588,7 @@ func parseAtom(tokens []Token) (Node, int, *Err) {
 				Pos:         tok.Pos,
 			}
 		}
-		// may be called as a function, so flows beyond
-		// switch block
+		// may be called as a function, so flows beyond switch block
 	case BraceLeft:
 		entries := make([]NodeObjectEntry, 0)
 		for tokens[idx].kind != BraceRight {
