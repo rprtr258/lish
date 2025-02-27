@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"iter"
 	"os"
 	"strings"
 
@@ -57,7 +58,8 @@ func repl(ctx *ink.Context) {
 
 		// we don't really care if expressions fail to eval
 		// at the top level, user will see regardless, so drop err
-		if val, err := ctx.Exec("stdin", strings.NewReader(text)); val != nil {
+		nodes := ink.ParseReader("stdin", strings.NewReader(text))
+		if val, err := ctx.Eval(nodes); val != nil {
 			ink.LogError(err)
 			fmt.Println(val.String())
 		}
@@ -72,6 +74,7 @@ func main() {
 	debugLexer := flag.Bool("debug-lex", false, "Log lexer output")
 	debugParser := flag.Bool("debug-parse", false, "Log parser output")
 	dump := flag.Bool("dump", false, "Dump global frame after eval")
+	compile := flag.Bool("compile", false, "Compile to WAT and print")
 
 	version := flag.Bool("version", false, "Print version string and exit")
 	help := flag.Bool("help", false, "Print help message and exit")
@@ -90,7 +93,6 @@ func main() {
 		// collect all other non-parsed arguments from the CLI as files to be run
 		args := flag.Args()
 
-		eng := ink.NewEngine()
 		ink.L = ink.Logger{
 			DumpFrame:  *dump,
 			Lex:        *verbose || *debugLexer,
@@ -100,25 +102,36 @@ func main() {
 		}
 
 		stdin, _ := os.Stdin.Stat()
+		eng := ink.NewEngine()
 		ctx := eng.CreateContext()
+		var nodes iter.Seq[ink.Node]
 		switch {
 		case *eval != "":
-			ctx.Exec("eval", strings.NewReader(*eval))
+			nodes = ink.ParseReader("eval", strings.NewReader(*eval))
 		case len(args) > 0:
 			filePath := args[0]
-			if _, err := ctx.ExecPath(filePath); err != nil {
+			var err *ink.Err
+			if nodes, err = ctx.ExecPath(filePath); err != nil {
 				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
 			}
 		case stdin.Mode()&os.ModeCharDevice == 0:
-			if _, err := ctx.Exec("stdin", os.Stdin); err != nil {
-				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute stdin")
-			}
+			nodes = ink.ParseReader("stdin", os.Stdin)
 		default:
 			// if no files given and no stdin, default to repl
 			ink.L.FatalError = false
 			repl(ctx)
+			eng.Listeners.Wait()
+			return
 		}
 
-		eng.Listeners.Wait()
+		if *compile {
+			fmt.Println(ink.Compile(nodes))
+		} else {
+			// just run
+			if _, err := ctx.Eval(nodes); err != nil {
+				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute")
+			}
+			eng.Listeners.Wait()
+		}
 	}
 }

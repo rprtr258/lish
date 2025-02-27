@@ -230,9 +230,13 @@ func inkImport(ctx *Context, pos Pos, in []Value) (Value, *Err) {
 		// Execution here follows updating ctx.Engine.Contexts
 		// to behave correctly in the case where A imports B imports A again,
 		// and still only import one instance of A.
-		value, err := childCtx.ExecPath(importPath)
+		nodes, err := childCtx.ExecPath(importPath)
 		if err != nil {
 			return nil, &Err{err, ErrRuntime, fmt.Sprintf("error importing file %s", importPath), pos}
+		}
+		value, err := childCtx.Eval(nodes)
+		if err != nil {
+			return nil, &Err{err, ErrRuntime, fmt.Sprintf("error evaluating importing file %s", importPath), pos}
 		}
 
 		ctx.Engine.values[importPath] = value

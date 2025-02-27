@@ -1138,17 +1138,17 @@ func (ctx *Context) ExecListener(callback func()) {
 	}()
 }
 
-// Exec runs an Ink program defined by an io.Reader.
+// ParseReader runs an Ink program defined by an io.Reader.
 // This is the main way to invoke Ink programs from Go.
-// Exec blocks until the Ink program exits.
-func (ctx *Context) Exec(filename string, r io.Reader) (Value, *Err) {
+// ParseReader blocks until the Ink program exits.
+func ParseReader(filename string, r io.Reader) iter.Seq[Node] {
 	tokens := tokenize(filename, r)
 	nodes := parse(tokens)
-	return ctx.Eval(nodes)
+	return nodes
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(path string) (Value, *Err) {
+func (ctx *Context) ExecPath(path string) (iter.Seq[Node], *Err) {
 	// update Cwd for any potential import() calls this file will make
 	ctx.File = path
 
@@ -1173,5 +1173,5 @@ func (ctx *Context) ExecPath(path string) (Value, *Err) {
 		r = file
 	}
 
-	return ctx.Exec(path, r)
+	return ParseReader(path, r), nil
 }

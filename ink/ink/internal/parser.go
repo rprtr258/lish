@@ -437,6 +437,7 @@ func parseExpression(tokens []Token) (Node, int) {
 		idx += incr
 
 		// Binary expressions are often followed by a match
+		// TODO: support empty match expression ((true by default) :: {n < 1 -> ...})
 		if idx < len(tokens) && tokens[idx].kind == MatchColon {
 			colonPos := tokens[idx].Pos
 			idx++ // MatchColon
