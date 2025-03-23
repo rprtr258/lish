@@ -412,7 +412,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 		res := make(ValueComposite, len(leftSide.vals))
 		for i, leftSide := range leftSide.vals {
 			k := strconv.Itoa(i)
-			v, err := define(scope, ast, leftSide, rightComposite[k])
+			v, err := define(scope, ast, ast.nodes[leftSide], rightComposite[k])
 			if err != nil {
 				return nil, err
 			}
@@ -959,9 +959,9 @@ func (n NodeObjectEntry) Eval(*Scope, bool) (Value, *Err) {
 
 func (n NodeLiteralList) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 	listVal := make(ValueComposite, len(n.vals))
-	for i, n := range n.vals {
+	for i, val := range n.vals {
 		var err *Err
-		listVal[strconv.Itoa(i)], err = n.Eval(scope, ast, false)
+		listVal[strconv.Itoa(i)], err = ast.nodes[val].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}

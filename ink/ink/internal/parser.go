@@ -314,13 +314,13 @@ func (n NodeObjectEntry) String() string {
 
 type NodeLiteralList struct {
 	Pos
-	vals []Node
+	vals []int
 }
 
 func (n NodeLiteralList) String() string {
 	vals := make([]string, len(n.vals))
 	for i, v := range n.vals {
-		vals[i] = v.String()
+		_, _ = i, v // TODO: // vals[i] = v.String()
 	}
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
@@ -690,7 +690,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 		idx++ // RightBracket
 
 		return s.appendIdx(NodeLiteralList{
-			vals: s.Map(vals),
+			vals: vals,
 			Pos:  tok.Pos,
 		}), idx
 	default:
