@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"iter"
+	"log"
 	"slices"
 	"strings"
 
@@ -13,10 +14,10 @@ type astSlice struct {
 	nodes []Node
 }
 
-func (s *astSlice) append(node Node) (Node, int) {
+func (s *astSlice) append(node Node) Node {
 	n := len(s.nodes)
 	s.nodes = append(s.nodes, node)
-	return s.nodes[n], n
+	return s.nodes[n]
 }
 
 type errParse struct {
@@ -307,6 +308,9 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 
 				s := &astSlice{}
 				expr, incr := parseExpression(tokens[i:], s)
+				for i, n := range s.nodes {
+					log.Println(i, n.String())
+				}
 
 				i += incr
 
@@ -438,13 +442,11 @@ func parseExpression(tokens []Token, s *astSlice) (Node, int) {
 	switch nextTok.kind {
 	case Separator:
 		// consuming dangling separator
-		n, _ := s.append(atom)
-		return n, idx
+		return s.append(atom), idx
 	case ParenRight, KeyValueSeparator, CaseArrow:
 		// these belong to the parent atom that contains this expression,
 		// so return without consuming token (idx - 1)
-		n, _ := s.append(atom)
-		return n, idx - 1
+		return s.append(atom), idx - 1
 	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
@@ -461,29 +463,26 @@ func parseExpression(tokens []Token, s *astSlice) (Node, int) {
 			idx += incr
 
 			consumeDanglingSeparator()
-			n, _ := s.append(NodeMatchExpr{
+			return s.append(NodeMatchExpr{
 				condition: binExpr,
 				clauses:   clauses,
 				Pos:       colonPos,
-			})
-			return n, idx
+			}), idx
 		}
 
 		consumeDanglingSeparator()
-		n, _ := s.append(binExpr)
-		return n, idx
+		return s.append(binExpr), idx
 	case MatchColon:
 		clauses, incr := parseMatchBody(tokens[idx:], s)
 
 		idx += incr
 
 		consumeDanglingSeparator()
-		n, _ := s.append(NodeMatchExpr{
+		return s.append(NodeMatchExpr{
 			condition: atom,
 			clauses:   clauses,
 			Pos:       nextTok.Pos,
-		})
-		return n, idx
+		}), idx
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.Pos}})
 	}
@@ -496,11 +495,11 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 
 	if tok.kind == OpNegation {
 		atom, idx := parseAtom(tokens[idx:], s)
-		return NodeExprUnary{
+		return s.append(NodeExprUnary{
 			operator: tok.kind,
 			operand:  atom,
 			Pos:      tok.Pos,
-		}, idx + 1
+		}), idx + 1
 	}
 
 	guardUnexpectedInputEnd(tokens, idx)
@@ -508,13 +507,13 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 	var atom Node
 	switch tok.kind {
 	case LiteralNumber:
-		return NodeLiteralNumber{tok.Pos, tok.num}, idx
+		return s.append(NodeLiteralNumber{tok.Pos, tok.num}), idx
 	case LiteralString:
-		return NodeLiteralString{tok.Pos, tok.str}, idx
+		return s.append(NodeLiteralString{tok.Pos, tok.str}), idx
 	case LiteralTrue:
-		return NodeLiteralBoolean{tok.Pos, true}, idx
+		return s.append(NodeLiteralBoolean{tok.Pos, true}), idx
 	case LiteralFalse:
-		return NodeLiteralBoolean{tok.Pos, false}, idx
+		return s.append(NodeLiteralBoolean{tok.Pos, false}), idx
 	case Identifier:
 		if tokens[idx].kind == FunctionArrow {
 			atom, idx = parseFunctionLiteral(tokens, s)
