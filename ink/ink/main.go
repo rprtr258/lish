@@ -73,6 +73,7 @@ func main() {
 	debugLexer := flag.Bool("debug-lex", false, "Log lexer output")
 	debugParser := flag.Bool("debug-parse", false, "Log parser output")
 	dump := flag.Bool("dump", false, "Dump global frame after eval")
+	dumpAST := flag.Bool("dumpast", false, "Dump AST")
 	compile := flag.Bool("compile", false, "Compile to WAT and print")
 
 	version := flag.Bool("version", false, "Print version string and exit")
@@ -97,6 +98,7 @@ func main() {
 			Lex:        *verbose || *debugLexer,
 			Parse:      *verbose || *debugParser,
 			Dump:       *verbose || *dump,
+			DumpAST:    *verbose || *dumpAST,
 			FatalError: true,
 		}
 
