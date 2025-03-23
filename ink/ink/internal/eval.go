@@ -902,14 +902,14 @@ func (n NodeExprList) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err
 		vt:     ValueTable{},
 	}
 	for _, expr := range n.expressions[:length-1] {
-		if _, err := expr.Eval(newScope, ast, false); err != nil {
+		if _, err := ast.nodes[expr].Eval(newScope, ast, false); err != nil {
 			return nil, err
 		}
 	}
 
 	// return values of expression lists are tail call optimized,
 	// so return a maybe ThunkValue
-	return n.expressions[length-1].Eval(newScope, ast, allowThunk)
+	return ast.nodes[n.expressions[length-1]].Eval(newScope, ast, allowThunk)
 }
 
 func (n NodeIdentifierEmpty) Eval(*Scope, *AST, bool) (Value, *Err) {

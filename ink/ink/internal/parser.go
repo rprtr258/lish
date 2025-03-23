@@ -201,7 +201,7 @@ func (n NodeMatchExpr) Position() Pos {
 
 type NodeExprList struct {
 	Pos
-	expressions []Node
+	expressions []int
 }
 
 func (n NodeExprList) String() string {
@@ -211,7 +211,7 @@ func (n NodeExprList) String() string {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		sb.WriteString(expr.String())
+		_ = expr // TODO: // sb.WriteString(expr.String())
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -634,7 +634,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			idx--
 		} else {
 			atom = s.appendIdx(NodeExprList{
-				expressions: s.Map(exprs),
+				expressions: exprs,
 				Pos:         tok.Pos,
 			})
 		}
@@ -701,7 +701,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 	// consumed all tokens before this
 	for idx < len(tokens) && tokens[idx].kind == ParenLeft {
 		var incr int
-		atom, incr = parseFunctionCall(atom, tokens[idx:], s)
+		atom, incr = parseFunctionCall(tokens[idx:], s, atom)
 
 		idx += incr
 
@@ -820,7 +820,7 @@ func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
 	}), idx
 }
 
-func parseFunctionCall(function int, tokens []Token, s *AST) (int, int) {
+func parseFunctionCall(tokens []Token, s *AST, function int) (int, int) {
 	idx := 1
 
 	guardUnexpectedInputEnd(tokens, idx)
