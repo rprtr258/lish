@@ -321,7 +321,7 @@ type NodeLiteralList struct {
 func (n NodeLiteralList) String() string {
 	vals := make([]string, len(n.vals))
 	for i, v := range n.vals {
-		_, _ = i, v // TODO: // vals[i] = v.String()
+		vals[i] = strconv.Itoa(v)
 	}
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
