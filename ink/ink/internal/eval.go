@@ -350,12 +350,12 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), leftNode.Position()}
 		}
 
-		leftValue, err := leftSide.left.Eval(scope, ast, false)
+		leftValue, err := ast.nodes[leftSide.left].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
-		leftKey, err := operandToStringKey(scope, ast, leftSide.right)
+		leftKey, err := operandToStringKey(scope, ast, ast.nodes[leftSide.right])
 		if err != nil {
 			return nil, err
 		}
@@ -365,9 +365,9 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 			left[leftKey] = rightValue
 			return left, nil
 		case ValueString:
-			leftIdent, isLeftIdent := leftSide.left.(NodeIdentifier)
+			leftIdent, isLeftIdent := ast.nodes[leftSide.left].(NodeIdentifier)
 			if !isLeftIdent {
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), leftSide.right.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), Pos{} /*TODO: leftSide.right.Position()*/}
 			}
 
 			rightString, isString := rightValue.(ValueString)
@@ -377,7 +377,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 
 			rightNum, errr := strconv.ParseInt(leftKey, 10, 64)
 			if errr != nil {
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), leftSide.right.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), Pos{} /*TODO: leftSide.right.Position()*/}
 			}
 
 			switch rn := int(rightNum); {
@@ -396,10 +396,10 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 				scope.Update(leftIdent.val, left)
 				return left, nil
 			default:
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), leftSide.right.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), Pos{} /*TODO: leftSide.right.Position()*/}
 			}
 		default:
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), leftSide.left.Position()}
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), Pos{} /*TODO: leftSide.left.Position()*/}
 		}
 	case NodeLiteralList: // list destructure: [a, b, c] = list
 		rightComposite, isComposite := rightValue.(ValueComposite)
@@ -452,21 +452,23 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 }
 
 func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
+	left := ast.nodes[n.left]
+	right := ast.nodes[n.right]
 	switch n.operator {
 	case OpDefine:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
-			return nil, &Err{err, ErrRuntime, "cannot evaluate right-side of assignment", n.left.Position()}
+			return nil, &Err{err, ErrRuntime, "cannot evaluate right-side of assignment", Pos{} /*TODO: n.left.Position()*/}
 		}
 
-		return define(scope, ast, n.left, rightValue)
+		return define(scope, ast, left, rightValue)
 	case OpAccessor:
-		leftValue, err := n.left.Eval(scope, ast, false)
+		leftValue, err := left.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
-		rightValueStr, err := operandToStringKey(scope, ast, n.right)
+		rightValueStr, err := operandToStringKey(scope, ast, right)
 		if err != nil {
 			return nil, err
 		}
@@ -481,7 +483,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		case ValueString:
 			rightNum, err := strconv.ParseInt(rightValueStr, 10, 64)
 			if err != nil {
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, rightValueStr), n.right.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, rightValueStr), Pos{} /*TODO: n.right.Position()*/}
 			}
 
 			if rn := int(rightNum); 0 <= rn && rn < len(left) {
@@ -490,18 +492,18 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 			return Null, nil
 		default:
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %s of a non-composite value %s", n.right, left), n.right.Position()}
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %s of a non-composite value %s", n.right, left), Pos{} /*TODO: n.right.Position()*/}
 		}
 	}
 
-	leftValue, err := n.left.Eval(scope, ast, false)
+	leftValue, err := left.Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
 
 	switch n.operator {
 	case OpAdd:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -551,7 +553,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", leftValue, rightValue), n.Position()}
 	case OpSubtract:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -565,7 +567,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), n.Position()}
 	case OpMultiply:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -584,7 +586,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", leftValue, rightValue), n.Position()}
 	case OpDivide:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -592,7 +594,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		if leftNum, isNum := leftValue.(ValueNumber); isNum {
 			if right, ok := rightValue.(ValueNumber); ok {
 				if right == 0 {
-					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("division by zero error"), n.right.Position()}
+					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("division by zero error"), Pos{} /*TODO: n.right.Position()*/}
 				}
 
 				return leftNum / right, nil
@@ -601,7 +603,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", leftValue, rightValue), n.Position()}
 	case OpModulus:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -609,14 +611,14 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		if leftNum, isNum := leftValue.(ValueNumber); isNum {
 			if right, ok := rightValue.(ValueNumber); ok {
 				if right == 0 {
-					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("division by zero error in modulus"), n.right.Position()}
+					return nil, &Err{nil, ErrRuntime, fmt.Sprintf("division by zero error in modulus"), Pos{} /*TODO: n.right.Position()*/}
 				}
 
 				if isInteger(right) {
 					return ValueNumber(int(leftNum) % int(right)), nil
 				}
 
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), n.left.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), Pos{} /*TODO: n.left.Position()*/}
 			}
 		}
 
@@ -624,7 +626,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 	case OpLogicalAnd:
 		switch left := leftValue.(type) {
 		case ValueNumber:
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -637,7 +639,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), n.Position()}
 			}
 		case ValueString:
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -657,7 +659,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 				return ValueBoolean(false), nil
 			}
 
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -671,7 +673,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		}
 
 		// TODO: do not evaluate `right` here
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -680,7 +682,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 	case OpLogicalOr:
 		switch left := leftValue.(type) {
 		case ValueNumber:
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -693,7 +695,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 				return ValueNumber(int64(left) | int64(right)), nil
 			}
 		case ValueString:
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -713,7 +715,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 				return ValueBoolean(true), nil
 			}
 
-			rightValue, err := n.right.Eval(scope, ast, false)
+			rightValue, err := right.Eval(scope, ast, false)
 			if err != nil {
 				return nil, err
 			}
@@ -727,14 +729,14 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		}
 
 		// TODO: do not evaluate `right` here
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", leftValue, rightValue), n.Position()}
 	case OpLogicalXor:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -767,7 +769,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", leftValue, rightValue), n.Position()}
 	case OpGreaterThan:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -785,7 +787,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support comparison", leftValue, rightValue), n.Position()}
 	case OpLessThan:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -803,7 +805,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support comparison", leftValue, rightValue), n.Position()}
 	case OpEqual:
-		rightValue, err := n.right.Eval(scope, ast, false)
+		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -1086,7 +1088,7 @@ func (ctx *Context) ExecListener(callback func()) {
 func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 	tokens := tokenize(filename, r)
 	nodes, ast := parse(ast, tokens)
-	_ = parseExpression2 // TODO: replace old parser
+	// _ = parseExpression2 // TODO: replace old parser
 	return nodes
 }
 

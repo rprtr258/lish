@@ -124,7 +124,7 @@ func main() {
 		}
 
 		if *compile {
-			fmt.Println(ink.Compile(nodes))
+			fmt.Println(ink.Compile(nodes, eng.AST))
 		} else {
 			// just run
 			if _, err := ctx.Eval(nodes); err != nil {

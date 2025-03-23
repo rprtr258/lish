@@ -36,7 +36,7 @@ func (w *watWriter) Result(typ string) {
 	w.WriteString(")")
 }
 
-func compileFunc(name string, fn NodeLiteralFunction, w *watWriter) {
+func compileFunc(w *watWriter, ast *AST, name string, fn NodeLiteralFunction) {
 	w.WriteString("(func $")
 	w.WriteString(name)
 	for _, arg := range fn.arguments {
@@ -48,11 +48,11 @@ func compileFunc(name string, fn NodeLiteralFunction, w *watWriter) {
 		}
 	}
 	w.Result("externref") // TODO: resolve type
-	compile(fn.body, w)
+	compile(fn.body, ast, w)
 	w.WriteString(")")
 }
 
-func compile(n Node, w *watWriter) {
+func compile(n Node, ast *AST, w *watWriter) {
 	switch n := n.(type) {
 	case NodeLiteralNumber:
 		w.WriteString("(f64.const ")
@@ -64,34 +64,34 @@ func compile(n Node, w *watWriter) {
 		switch n.operator {
 		case OpAdd:
 			w.WriteString("(call $ink__plus ")
-			compile(n.left, w)
+			compile(ast.nodes[n.left], ast, w)
 			w.WriteString(" ")
-			compile(n.right, w)
+			compile(ast.nodes[n.right], ast, w)
 			w.WriteString(")")
 		case OpLessThan:
 			w.WriteString("(f64.lt ")
-			compile(n.left, w)
+			compile(ast.nodes[n.left], ast, w)
 			w.WriteString(" ")
-			compile(n.right, w)
+			compile(ast.nodes[n.right], ast, w)
 			w.WriteString(")")
 		case OpMultiply:
 			w.WriteString("(f64.mul ")
-			compile(n.left, w)
+			compile(ast.nodes[n.left], ast, w)
 			w.WriteString(" ")
-			compile(n.right, w)
+			compile(ast.nodes[n.right], ast, w)
 			w.WriteString(")")
 		case OpSubtract:
 			w.WriteString("(f64.sub ")
-			compile(n.left, w)
+			compile(ast.nodes[n.left], ast, w)
 			w.WriteString(" ")
-			compile(n.right, w)
+			compile(ast.nodes[n.right], ast, w)
 			w.WriteString(")")
 		case OpDefine:
-			switch lhs := n.left.(type) {
+			switch lhs := ast.nodes[n.left].(type) {
 			case NodeIdentifier:
-				switch rhs := n.right.(type) {
+				switch rhs := ast.nodes[n.right].(type) {
 				case NodeLiteralFunction:
-					compileFunc(lhs.val, rhs, w)
+					compileFunc(w, ast, lhs.val, rhs)
 				default:
 					panic(fmt.Sprintf("unknown rhs type: %T", rhs))
 				}
@@ -111,7 +111,7 @@ func compile(n Node, w *watWriter) {
 		}
 		for _, arg := range n.arguments {
 			w.WriteString(" ")
-			compile(arg, w)
+			compile(arg, ast, w)
 		}
 		w.WriteString(")")
 	case NodeLiteralObject:
@@ -121,7 +121,7 @@ func compile(n Node, w *watWriter) {
 			case NodeIdentifier:
 				switch v := v.(type) {
 				case NodeLiteralFunction:
-					compileFunc(k.val, v, w)
+					compileFunc(w, ast, k.val, v)
 					w.WriteString("(export ")
 					w.WriteString(strconv.Quote(k.val))
 					w.WriteString(" (func $")
@@ -158,14 +158,14 @@ func compile(n Node, w *watWriter) {
 						panic("empty clause must be last")
 					}
 				default:
-					compile(target, w)
+					compile(target, ast, w)
 					if i == 0 {
 						w.WriteString("(if (result externref) (then ")
 					} else {
 						panic("not implemented")
 					}
 				}
-				compile(clause.expression, w)
+				compile(clause.expression, ast, w)
 			}
 			w.WriteString("))")
 		default:
@@ -176,12 +176,12 @@ func compile(n Node, w *watWriter) {
 	}
 }
 
-func Compile(nodes []Node) string {
+func Compile(nodes []Node, ast *AST) string {
 	var w watWriter
 	w.WriteString("(module")
 	for _, n := range nodes {
 		fmt.Println(n.String())
-		compile(n, &w)
+		compile(n, ast, &w)
 	}
 	w.WriteString(")")
 	return w.String()

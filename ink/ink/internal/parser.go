@@ -127,11 +127,11 @@ func (n NodeExprUnary) Position() Pos {
 type NodeExprBinary struct {
 	Pos
 	operator    Kind
-	left, right Node
+	left, right int
 }
 
 func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary (%s) %s (%s)", n.left, n.operator, n.right)
+	return fmt.Sprintf("Binary (#%d) %s (#%d)", n.left, n.operator, n.right)
 }
 
 func (n NodeExprBinary) Position() Pos {
@@ -484,8 +484,8 @@ LOOP:
 	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
 		tree = s.appendIdx(NodeExprBinary{
 			operator: ops[0].kind,
-			left:     s.nodes[tree],
-			right:    s.nodes[nodes[0]],
+			left:     tree,
+			right:    nodes[0],
 			Pos:      ops[0].Pos,
 		})
 	}
