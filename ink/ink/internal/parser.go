@@ -117,7 +117,7 @@ type NodeExprUnary struct {
 }
 
 func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s (#%d)", n.operator, n.operand)
+	return fmt.Sprintf("Unary %s #%d", n.operator, n.operand)
 }
 
 func (n NodeExprUnary) Position() Pos {
@@ -131,7 +131,7 @@ type NodeExprBinary struct {
 }
 
 func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary (#%d) %s (#%d)", n.left, n.operator, n.right)
+	return fmt.Sprintf("Binary #%d %s #%d", n.left, n.operator, n.right)
 }
 
 func (n NodeExprBinary) Position() Pos {
@@ -163,15 +163,15 @@ func (n NodeFunctionCall) Position() Pos {
 }
 
 type NodeMatchClause struct {
-	target, expression Node
+	target, expression int
 }
 
 func (n NodeMatchClause) String() string {
-	return fmt.Sprintf("Clause (%s) -> (%s)", n.target, n.expression)
+	return fmt.Sprintf("Clause #%d -> #%d", n.target, n.expression)
 }
 
 func (n NodeMatchClause) Position() Pos {
-	return n.target.Position()
+	return Pos{} // TODO: return n.target.Position()
 }
 
 type NodeMatchExpr struct {
@@ -749,8 +749,8 @@ func parseMatchClause(tokens []Token, s *AST) (NodeMatchClause, int) {
 	idx += incr
 
 	return s.append(NodeMatchClause{
-		target:     s.nodes[atom],
-		expression: s.nodes[expr],
+		target:     atom,
+		expression: expr,
 	}).(NodeMatchClause), idx
 }
 

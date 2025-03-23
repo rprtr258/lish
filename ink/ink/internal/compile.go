@@ -151,7 +151,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 			}
 
 			for i, clause := range n.clauses {
-				switch target := clause.target.(type) {
+				switch target := ast.nodes[clause.target].(type) {
 				case NodeIdentifierEmpty:
 					w.WriteString(") (else")
 					if i != len(n.clauses)-1 {
@@ -165,7 +165,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 						panic("not implemented")
 					}
 				}
-				compile(clause.expression, ast, w)
+				compile(ast.nodes[clause.expression], ast, w)
 			}
 			w.WriteString("))")
 		default:
