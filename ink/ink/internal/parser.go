@@ -11,10 +11,19 @@ import (
 )
 
 type astSlice struct {
-	empty       NodeIdentifierEmpty
-	numbers     map[float64]NodeLiteralNumber
-	identifiers map[string]NodeIdentifier
+	numbers     map[float64]int
+	identifiers map[string]int
 	nodes       []Node
+}
+
+func newAstSlice() *astSlice {
+	return &astSlice{
+		numbers:     map[float64]int{},
+		identifiers: map[string]int{},
+		nodes: []Node{
+			NodeIdentifierEmpty{},
+		},
+	}
 }
 
 func (s *astSlice) append(node Node) Node {
@@ -22,17 +31,21 @@ func (s *astSlice) append(node Node) Node {
 	switch node := node.(type) {
 	case NodeIdentifierEmpty:
 		// one empty identifier for all
-		return s.empty
+		return s.nodes[0]
 	case NodeLiteralNumber:
 		if _, ok := s.numbers[node.val]; !ok {
-			s.numbers[node.val] = node
+			n := len(s.nodes)
+			s.nodes = append(s.nodes, node)
+			s.numbers[node.val] = n
 		}
-		return s.numbers[node.val]
+		return s.nodes[s.numbers[node.val]]
 	case NodeIdentifier:
 		if _, ok := s.identifiers[node.val]; !ok {
-			s.identifiers[node.val] = node
+			n := len(s.nodes)
+			s.nodes = append(s.nodes, node)
+			s.identifiers[node.val] = n
 		}
-		return s.identifiers[node.val]
+		return s.nodes[s.identifiers[node.val]]
 	default:
 		n := len(s.nodes)
 		s.nodes = append(s.nodes, node)
@@ -44,14 +57,14 @@ func (s astSlice) String() string {
 	var sb strings.Builder
 	if len(s.numbers) > 0 {
 		fmt.Fprintln(&sb, "Numbers:")
-		for x, n := range s.numbers {
-			fmt.Fprintln(&sb, "\t", x, n.String())
+		for x, i := range s.numbers {
+			fmt.Fprintln(&sb, "\t", x, i)
 		}
 	}
 	if len(s.identifiers) > 0 {
 		fmt.Fprintln(&sb, "Identifiers:")
-		for id, n := range s.identifiers {
-			fmt.Fprintln(&sb, "\t", id, n.String())
+		for id, i := range s.identifiers {
+			fmt.Fprintln(&sb, "\t", id, i)
 		}
 	}
 	if len(s.nodes) > 0 {
@@ -349,10 +362,7 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 					}
 				}()
 
-				s := &astSlice{
-					numbers:     map[float64]NodeLiteralNumber{},
-					identifiers: map[string]NodeIdentifier{},
-				}
+				s := newAstSlice()
 				expr, incr := parseExpression(tokens[i:], s)
 				log.Println(s.String())
 
