@@ -102,6 +102,8 @@ func (s AST) String() string {
 		case NodeExprBinary:
 			props["fillcolor"] = "#a1c5ff"
 			val = n.operator.String()
+		case NodeFunctionCall:
+			props["fillcolor"] = "#a1c5ff"
 		case NodeMatchClause, NodeMatchExpr:
 			props["fillcolor"] = "#ffa1a1"
 		}
