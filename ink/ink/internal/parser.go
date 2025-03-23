@@ -331,14 +331,14 @@ func (n NodeLiteralList) Position() Pos {
 
 type NodeLiteralFunction struct {
 	Pos
-	arguments []Node
-	body      Node
+	arguments []int
+	body      int
 }
 
 func (n NodeLiteralFunction) String() string {
 	args := make([]string, len(n.arguments))
 	for i, a := range n.arguments {
-		args[i] = a.String()
+		_, _ = i, a // TODO: // args[i] = a.String()
 	}
 	return fmt.Sprintf("Function (%s) => (%s)", strings.Join(args, ", "), n.body)
 }
@@ -814,8 +814,8 @@ func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
 	idx += incr
 
 	return s.appendIdx(NodeLiteralFunction{
-		arguments: s.Map(arguments),
-		body:      s.nodes[body],
+		arguments: arguments,
+		body:      body,
 		Pos:       tokens[0].Pos,
 	}), idx
 }

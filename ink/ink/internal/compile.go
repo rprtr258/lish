@@ -40,7 +40,7 @@ func compileFunc(w *watWriter, ast *AST, name string, fn NodeLiteralFunction) {
 	w.WriteString("(func $")
 	w.WriteString(name)
 	for _, arg := range fn.arguments {
-		switch arg := arg.(type) {
+		switch arg := ast.nodes[arg].(type) {
 		case NodeIdentifier:
 			w.Param(arg.val, "externref") // TODO: resolve type
 		default:
@@ -48,7 +48,7 @@ func compileFunc(w *watWriter, ast *AST, name string, fn NodeLiteralFunction) {
 		}
 	}
 	w.Result("externref") // TODO: resolve type
-	compile(fn.body, ast, w)
+	compile(ast.nodes[fn.body], ast, w)
 	w.WriteString(")")
 }
 

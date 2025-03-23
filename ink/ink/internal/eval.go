@@ -277,7 +277,7 @@ func (v ValueFunctionCallThunk) Equals(other Value) bool {
 // unwrapThunk expands out a recursive structure of thunks into a flat for loop control structure
 func unwrapThunk(ast *AST, thunk ValueFunctionCallThunk) (Value, *Err) {
 	for {
-		v, err := thunk.function.defn.body.Eval(&Scope{
+		v, err := ast.nodes[thunk.function.defn.body].Eval(&Scope{
 			parent: thunk.function.scope,
 			vt:     thunk.vt,
 		}, ast, true)
@@ -841,7 +841,7 @@ func evalInkFunction(ast *AST, fn Value, allowThunk bool, position Pos, args ...
 		argValueTable := ValueTable{}
 		for i, argNode := range fn.defn.arguments {
 			if i < len(args) {
-				if identNode, isIdent := argNode.(NodeIdentifier); isIdent {
+				if identNode, isIdent := ast.nodes[argNode].(NodeIdentifier); isIdent {
 					argValueTable[identNode.val] = args[i]
 				}
 			}
