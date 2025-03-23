@@ -38,16 +38,16 @@ func (s *Scope) Set(name string, val Value) {
 
 // Update updates a value in the scope chain
 func (s *Scope) Update(name string, val Value) {
-	for s != nil {
+	for ; s != nil; s = s.parent {
 		if _, ok := s.vt[name]; ok {
 			s.vt[name] = val
 			return
 		}
-
-		s = s.parent
 	}
 
-	log.Fatal().Stringer("kind", ErrAssert).Msgf("StackFrame.Up expected to find variable '%s' in frame but did not", name)
+	log.Fatal().
+		Stringer("kind", ErrAssert).
+		Msgf("StackFrame.Up expected to find variable '%s' in frame but did not", name)
 }
 
 func (s *Scope) String() string {
