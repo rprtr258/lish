@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"iter"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/rprtr258/fun"
@@ -338,9 +339,9 @@ type NodeLiteralFunction struct {
 func (n NodeLiteralFunction) String() string {
 	args := make([]string, len(n.arguments))
 	for i, a := range n.arguments {
-		_, _ = i, a // TODO: // args[i] = a.String()
+		args[i] = strconv.Itoa(a)
 	}
-	return fmt.Sprintf("Function (%s) => (%s)", strings.Join(args, ", "), n.body)
+	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.body)
 }
 
 func (n NodeLiteralFunction) Position() Pos {
