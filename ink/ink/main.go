@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"iter"
-	stdlog "log"
 	"os"
 	"strings"
 
@@ -68,7 +67,6 @@ func repl(ctx *ink.Context) {
 }
 
 func main() {
-	stdlog.SetFlags(0)
 	flag.Usage = usage
 
 	// cli arguments

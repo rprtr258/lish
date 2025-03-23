@@ -215,7 +215,7 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 
 		simpleCommit := func(tok Token) {
 			lastKind = tok.kind
-			LogToken(tok)
+			logToken(tok)
 			yield(tok) // TODO: break on false
 		}
 		simpleCommitChar := func(kind Kind) {

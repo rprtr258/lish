@@ -1119,7 +1119,7 @@ func (ctx *Context) Eval(nodes iter.Seq[Node]) (val Value, err *Err) {
 		}
 	}
 
-	LogScope(ctx.Scope)
+	logScope(ctx.Scope)
 
 	return
 }

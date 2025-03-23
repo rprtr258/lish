@@ -30,8 +30,8 @@ func init() {
 }
 
 type Logger struct {
-	DumpFrame        bool
-	Lex, Parse, Dump bool
+	DumpFrame                 bool
+	Lex, Parse, Dump, DumpAST bool
 	// If FatalError is true, an error will halt the interpreter
 	FatalError bool
 }
@@ -46,13 +46,15 @@ func LogError(err *Err) {
 	}
 }
 
-func LogScope(scope *Scope) {
-	if L.Dump {
-		log.Debug().Stringer("scope", scope).Msg("frame dump")
+func logScope(scope *Scope) {
+	if !L.Dump {
+		return
 	}
+
+	log.Debug().Stringer("scope", scope).Msg("frame dump")
 }
 
-func LogToken(tok Token) {
+func logToken(tok Token) {
 	if !L.Lex {
 		return
 	}
@@ -69,7 +71,7 @@ func LogToken(tok Token) {
 	e.Send()
 }
 
-func LogNode(node Node) {
+func logNode(node Node) {
 	if !L.Parse {
 		return
 	}
@@ -78,4 +80,12 @@ func LogNode(node Node) {
 		Stringer("at", node.Position()).
 		Stringer("node", node).
 		Send()
+}
+
+func logAST(s *astSlice) {
+	if !L.DumpAST {
+		return
+	}
+
+	log.Print(s.String())
 }

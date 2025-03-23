@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"iter"
-	"log"
 	"slices"
 	"strings"
 
@@ -382,13 +381,13 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 
 				i += incr
 
-				LogNode(expr)
+				logNode(expr)
 				if !yield(expr) {
 					return
 				}
 			}()
 		}
-		log.Println(s.String())
+		logAST(s)
 	}
 }
 
