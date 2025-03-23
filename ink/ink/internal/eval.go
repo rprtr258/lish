@@ -154,7 +154,7 @@ func (v ValueBoolean) Equals(other Value) bool {
 }
 
 // ValueComposite includes all objects and list values
-type ValueComposite ValueTable
+type ValueComposite map[string]Value
 
 func (v ValueComposite) isList() bool {
 	for i := 0; i < len(v); i++ {
@@ -531,7 +531,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				leftIsList := left.isList()
 				rightIsList := right.isList()
 				if leftIsList && rightIsList { // list + list
-					res := make(ValueTable, len(left)+len(right))
+					res := make(ValueComposite, len(left)+len(right))
 					for i := 0; i < len(left); i++ {
 						k := strconv.Itoa(i)
 						res[k] = left[k]
@@ -541,7 +541,7 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 					}
 					return ValueComposite(res), nil
 				} else if !leftIsList && !rightIsList { // dict + dict
-					res := make(ValueTable, len(left)+len(right))
+					res := make(ValueComposite, len(left)+len(right))
 					for k, v := range left {
 						res[k] = v
 					}
