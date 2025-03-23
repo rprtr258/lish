@@ -360,42 +360,34 @@ func parse(tokenStream iter.Seq[Token]) []Node {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
+	s := newAstSlice()
 	nodes := []Node{}
-	for n := range func(yield func(Node) bool) {
-		s := newAstSlice()
-		for i := 0; i < len(tokens); {
-			if tokens[i].kind == Separator {
-				// this sometimes happens when the repl receives comment inputs
-				i++
-				continue
-			}
-
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						err, ok := r.(errParse)
-						if !ok {
-							panic(r)
-						}
-
-						LogError(err.err)
-					}
-				}()
-
-				expr, incr := parseExpression(tokens[i:], s)
-
-				i += incr
-
-				logNode(expr)
-				if !yield(expr) {
-					return
-				}
-			}()
+	for i := 0; i < len(tokens); {
+		if tokens[i].kind == Separator {
+			// this sometimes happens when the repl receives comment inputs
+			i++
+			continue
 		}
-		logAST(s)
-	} {
-		nodes = append(nodes, n)
+
+		defer func() {
+			if r := recover(); r != nil {
+				err, ok := r.(errParse)
+				if !ok {
+					panic(r)
+				}
+
+				LogError(err.err)
+			}
+		}()
+
+		expr, incr := parseExpression(tokens[i:], s)
+
+		i += incr
+
+		logNode(expr)
+		nodes = append(nodes, expr)
 	}
+	logAST(s)
 	return nodes
 }
 
