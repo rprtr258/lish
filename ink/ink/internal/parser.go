@@ -67,10 +67,6 @@ func (s *AST) appendIdx(node Node) int {
 	}
 }
 
-func (s AST) Map(exprs []int) []Node {
-	return fun.Map[Node](func(i int) Node { return s.nodes[i] }, exprs...)
-}
-
 func (s AST) String() string {
 	var sb strings.Builder
 	if len(s.numbers) > 0 {
@@ -310,7 +306,7 @@ type NodeObjectEntry struct {
 }
 
 func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("#d: #d", n.key, n.val)
+	return fmt.Sprintf("#%d: #%d", n.key, n.val)
 }
 
 type NodeLiteralList struct {
