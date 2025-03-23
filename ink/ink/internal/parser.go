@@ -11,13 +11,56 @@ import (
 )
 
 type astSlice struct {
-	nodes []Node
+	empty       NodeIdentifierEmpty
+	numbers     map[float64]NodeLiteralNumber
+	identifiers map[string]NodeIdentifier
+	nodes       []Node
 }
 
 func (s *astSlice) append(node Node) Node {
-	n := len(s.nodes)
-	s.nodes = append(s.nodes, node)
-	return s.nodes[n]
+	// TODO: position is lost
+	switch node := node.(type) {
+	case NodeIdentifierEmpty:
+		// one empty identifier for all
+		return s.empty
+	case NodeLiteralNumber:
+		if _, ok := s.numbers[node.val]; !ok {
+			s.numbers[node.val] = node
+		}
+		return s.numbers[node.val]
+	case NodeIdentifier:
+		if _, ok := s.identifiers[node.val]; !ok {
+			s.identifiers[node.val] = node
+		}
+		return s.identifiers[node.val]
+	default:
+		n := len(s.nodes)
+		s.nodes = append(s.nodes, node)
+		return s.nodes[n]
+	}
+}
+
+func (s astSlice) String() string {
+	var sb strings.Builder
+	if len(s.numbers) > 0 {
+		fmt.Fprintln(&sb, "Numbers:")
+		for x, n := range s.numbers {
+			fmt.Fprintln(&sb, "\t", x, n.String())
+		}
+	}
+	if len(s.identifiers) > 0 {
+		fmt.Fprintln(&sb, "Identifiers:")
+		for id, n := range s.identifiers {
+			fmt.Fprintln(&sb, "\t", id, n.String())
+		}
+	}
+	if len(s.nodes) > 0 {
+		fmt.Fprintln(&sb, "AST:")
+		for i, n := range s.nodes {
+			fmt.Fprintln(&sb, "\t", i, n.String())
+		}
+	}
+	return sb.String()
 }
 
 type errParse struct {
@@ -306,11 +349,12 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 					}
 				}()
 
-				s := &astSlice{}
-				expr, incr := parseExpression(tokens[i:], s)
-				for i, n := range s.nodes {
-					log.Println(i, n.String())
+				s := &astSlice{
+					numbers:     map[float64]NodeLiteralNumber{},
+					identifiers: map[string]NodeIdentifier{},
 				}
+				expr, incr := parseExpression(tokens[i:], s)
+				log.Println(s.String())
 
 				i += incr
 
