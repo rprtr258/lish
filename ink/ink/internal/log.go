@@ -82,7 +82,7 @@ func logNode(node Node) {
 		Send()
 }
 
-func logAST(s *astSlice) {
+func logAST(s *AST) {
 	if !L.DumpAST {
 		return
 	}

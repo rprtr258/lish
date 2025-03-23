@@ -9,15 +9,15 @@ import (
 	"github.com/rprtr258/fun"
 )
 
-type astSlice struct {
+type AST struct {
 	numbers     map[float64]int
 	identifiers map[string]int
 	strings     map[string]int
 	nodes       []Node
 }
 
-func newAstSlice() *astSlice {
-	return &astSlice{
+func newAstSlice() *AST {
+	return &AST{
 		numbers:     map[float64]int{},
 		identifiers: map[string]int{},
 		strings:     map[string]int{},
@@ -27,16 +27,17 @@ func newAstSlice() *astSlice {
 	}
 }
 
-func (s *astSlice) append(node Node) Node {
+func (s *AST) append(node Node) Node {
 	return s.nodes[s.appendIdx(node)]
 }
 
-func (s *astSlice) appendIdx(node Node) int {
+func (s *AST) appendIdx(node Node) int {
 	// TODO: position is lost
 	switch node := node.(type) {
 	case NodeIdentifierEmpty:
 		// one empty identifier for all
 		return 0
+	// TODO: bool literal
 	case NodeLiteralNumber:
 		if _, ok := s.numbers[node.val]; !ok {
 			n := len(s.nodes)
@@ -65,7 +66,7 @@ func (s *astSlice) appendIdx(node Node) int {
 	}
 }
 
-func (s astSlice) String() string {
+func (s AST) String() string {
 	var sb strings.Builder
 	if len(s.numbers) > 0 {
 		fmt.Fprintln(&sb, "Numbers:")
@@ -102,7 +103,7 @@ type errParse struct {
 type Node interface {
 	String() string
 	Position() Pos
-	Eval(*Scope, bool) (Value, *Err)
+	Eval(*Scope, *AST, bool) (Value, *Err)
 }
 
 type NodeExprUnary struct {
@@ -356,7 +357,7 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(s *astSlice, tokenStream iter.Seq[Token]) ([]Node, *astSlice) {
+func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
@@ -428,7 +429,7 @@ func parseBinaryExpression(
 	operator Token,
 	tokens []Token,
 	previousPriority int,
-	s *astSlice,
+	s *AST,
 ) (Node, int) {
 	rightAtom, idx := parseAtom(tokens, s)
 
@@ -487,7 +488,7 @@ LOOP:
 	return tree, idx
 }
 
-func parseExpression(tokens []Token, s *astSlice) (Node, int) {
+func parseExpression(tokens []Token, s *AST) (Node, int) {
 	idx := 0
 	consumeDanglingSeparator := func() {
 		// bounds check in case parseExpress() called at some point
@@ -555,7 +556,7 @@ func parseExpression(tokens []Token, s *astSlice) (Node, int) {
 	}
 }
 
-func parseAtom(tokens []Token, s *astSlice) (Node, int) {
+func parseAtom(tokens []Token, s *AST) (Node, int) {
 	guardUnexpectedInputEnd(tokens, 0)
 
 	tok, idx := tokens[0], 1
@@ -709,7 +710,7 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 // parses everything that follows MatchColon
 //
 //	does not consume dangling separator -- that's for parseExpression
-func parseMatchBody(tokens []Token, s *astSlice) ([]NodeMatchClause, int) {
+func parseMatchBody(tokens []Token, s *AST) ([]NodeMatchClause, int) {
 	idx := 1 // LeftBrace
 
 	guardUnexpectedInputEnd(tokens, idx)
@@ -727,7 +728,7 @@ func parseMatchBody(tokens []Token, s *astSlice) ([]NodeMatchClause, int) {
 	return clauses, idx
 }
 
-func parseMatchClause(tokens []Token, s *astSlice) (NodeMatchClause, int) {
+func parseMatchClause(tokens []Token, s *AST) (NodeMatchClause, int) {
 	atom, idx := parseExpression(tokens, s)
 
 	guardUnexpectedInputEnd(tokens, idx)
@@ -749,7 +750,7 @@ func parseMatchClause(tokens []Token, s *astSlice) (NodeMatchClause, int) {
 	}).(NodeMatchClause), idx
 }
 
-func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int) {
+func parseFunctionLiteral(tokens []Token, s *AST) (NodeLiteralFunction, int) {
 	tok, idx := tokens[0], 1
 
 	guardUnexpectedInputEnd(tokens, idx)
@@ -815,7 +816,7 @@ func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int
 	}).(NodeLiteralFunction), idx
 }
 
-func parseFunctionCall(function Node, tokens []Token, s *astSlice) (NodeFunctionCall, int) {
+func parseFunctionCall(function Node, tokens []Token, s *AST) (NodeFunctionCall, int) {
 	idx := 1
 
 	guardUnexpectedInputEnd(tokens, idx)
