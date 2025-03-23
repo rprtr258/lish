@@ -293,7 +293,7 @@ func unwrapThunk(ast *AST, thunk ValueFunctionCallThunk) (Value, *Err) {
 func (n NodeExprUnary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 	switch n.operator {
 	case OpNegation:
-		operand, err := n.operand.Eval(scope, ast, false)
+		operand, err := ast.nodes[n.operand].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +304,7 @@ func (n NodeExprUnary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		case ValueBoolean:
 			return ValueBoolean(!o), nil
 		default:
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), n.operand.Position()}
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), Pos{} /*TODO: restore n.operand.Position()*/}
 		}
 	default:
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("unrecognized unary operator %s", n), n.Position()}

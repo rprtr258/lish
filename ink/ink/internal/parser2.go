@@ -422,7 +422,7 @@ func parseExpression2(b []byte) ([]byte, Node, errParse) {
 		parseAnd2(
 			parseByte('-'),
 			parseExpression2,
-			func(_ byte, n Node) (Node, errParse) { return NodeExprUnary{Pos{}, OpNegation, n}, errParse{} },
+			(func(_ byte, n Node) (Node, errParse))(nil), // TODO: func(_ byte, n int) (Node, errParse) { return NodeExprUnary{Pos{}, OpNegation, n}, errParse{} },
 		),
 		// binary expression
 		parseAnd3(

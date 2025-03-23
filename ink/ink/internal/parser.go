@@ -113,11 +113,11 @@ type Node interface {
 type NodeExprUnary struct {
 	Pos
 	operator Kind
-	operand  Node
+	operand  int
 }
 
 func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s (%s)", n.operator, n.operand)
+	return fmt.Sprintf("Unary %s (#%d)", n.operator, n.operand)
 }
 
 func (n NodeExprUnary) Position() Pos {
@@ -569,7 +569,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 		atom, idx := parseAtom(tokens[idx:], s)
 		return s.appendIdx(NodeExprUnary{
 			operator: tok.kind,
-			operand:  s.nodes[atom],
+			operand:  atom,
 			Pos:      tok.Pos,
 		}), idx + 1
 	}
