@@ -13,6 +13,7 @@ import (
 type astSlice struct {
 	numbers     map[float64]int
 	identifiers map[string]int
+	strings     map[string]int
 	nodes       []Node
 }
 
@@ -20,6 +21,7 @@ func newAstSlice() *astSlice {
 	return &astSlice{
 		numbers:     map[float64]int{},
 		identifiers: map[string]int{},
+		strings:     map[string]int{},
 		nodes: []Node{
 			NodeIdentifierEmpty{},
 		},
@@ -39,6 +41,13 @@ func (s *astSlice) append(node Node) Node {
 			s.numbers[node.val] = n
 		}
 		return s.nodes[s.numbers[node.val]]
+	case NodeLiteralString:
+		if _, ok := s.strings[node.val]; !ok {
+			n := len(s.nodes)
+			s.nodes = append(s.nodes, node)
+			s.strings[node.val] = n
+		}
+		return s.nodes[s.strings[node.val]]
 	case NodeIdentifier:
 		if _, ok := s.identifiers[node.val]; !ok {
 			n := len(s.nodes)
@@ -59,6 +68,12 @@ func (s astSlice) String() string {
 		fmt.Fprintln(&sb, "Numbers:")
 		for x, i := range s.numbers {
 			fmt.Fprintln(&sb, "\t", x, i)
+		}
+	}
+	if len(s.strings) > 0 {
+		fmt.Fprintln(&sb, "Strings:")
+		for s, i := range s.strings {
+			fmt.Fprintln(&sb, "\t", s, i)
 		}
 	}
 	if len(s.identifiers) > 0 {
@@ -343,6 +358,7 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 	tokens := slices.Collect(tokenStream)
 
 	return func(yield func(Node) bool) {
+		s := newAstSlice()
 		for i := 0; i < len(tokens); {
 			if tokens[i].kind == Separator {
 				// this sometimes happens when the repl receives comment inputs
@@ -362,9 +378,7 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 					}
 				}()
 
-				s := newAstSlice()
 				expr, incr := parseExpression(tokens[i:], s)
-				log.Println(s.String())
 
 				i += incr
 
@@ -374,6 +388,7 @@ func parse(tokenStream iter.Seq[Token]) iter.Seq[Node] {
 				}
 			}()
 		}
+		log.Println(s.String())
 	}
 }
 
