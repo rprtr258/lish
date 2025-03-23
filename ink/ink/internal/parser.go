@@ -410,12 +410,12 @@ LOOP:
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
 	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = NodeExprBinary{
+		tree = s.append(NodeExprBinary{
 			operator: ops[0].kind,
 			left:     tree,
 			right:    nodes[0],
 			Pos:      ops[0].Pos,
-		}
+		})
 	}
 	return tree, idx
 }
@@ -442,11 +442,11 @@ func parseExpression(tokens []Token, s *astSlice) (Node, int) {
 	switch nextTok.kind {
 	case Separator:
 		// consuming dangling separator
-		return s.append(atom), idx
+		return atom, idx
 	case ParenRight, KeyValueSeparator, CaseArrow:
 		// these belong to the parent atom that contains this expression,
 		// so return without consuming token (idx - 1)
-		return s.append(atom), idx - 1
+		return atom, idx - 1
 	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
@@ -471,7 +471,7 @@ func parseExpression(tokens []Token, s *astSlice) (Node, int) {
 		}
 
 		consumeDanglingSeparator()
-		return s.append(binExpr), idx
+		return binExpr, idx
 	case MatchColon:
 		clauses, incr := parseMatchBody(tokens[idx:], s)
 
@@ -523,7 +523,7 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = NodeIdentifier{tok.Pos, tok.str}
+			atom = s.append(NodeIdentifier{tok.Pos, tok.str})
 		}
 		// may be called as a function, so flows beyond
 		// switch block
@@ -537,7 +537,7 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 			return atom, idx - 1
 		}
 
-		return NodeIdentifierEmpty{tok.Pos}, idx
+		return s.append(NodeIdentifierEmpty{tok.Pos}), idx
 	case ParenLeft:
 		// grouped expression or function literal
 		exprs := make([]Node, 0)
@@ -561,10 +561,10 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = NodeExprList{
+			atom = s.append(NodeExprList{
 				expressions: exprs,
 				Pos:         tok.Pos,
-			}
+			})
 		}
 		// may be called as a function, so flows beyond switch block
 	case BraceLeft:
@@ -601,10 +601,10 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 		}
 		idx++ // RightBrace
 
-		return NodeLiteralObject{
+		return s.append(NodeLiteralObject{
 			entries: entries,
 			Pos:     tok.Pos,
-		}, idx
+		}), idx
 	case BracketLeft:
 		vals := make([]Node, 0)
 		for tokens[idx].kind != BracketRight {
@@ -617,10 +617,10 @@ func parseAtom(tokens []Token, s *astSlice) (Node, int) {
 		}
 		idx++ // RightBracket
 
-		return NodeLiteralList{
+		return s.append(NodeLiteralList{
 			vals: vals,
 			Pos:  tok.Pos,
-		}, idx
+		}), idx
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.Pos}})
 	}
@@ -676,10 +676,10 @@ func parseMatchClause(tokens []Token, s *astSlice) (NodeMatchClause, int) {
 
 	idx += incr
 
-	return NodeMatchClause{
+	return s.append(NodeMatchClause{
 		target:     atom,
 		expression: expr,
-	}, idx
+	}).(NodeMatchClause), idx
 }
 
 func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int) {
@@ -695,10 +695,10 @@ func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int
 			tk := tokens[idx]
 			switch tk.kind {
 			case Identifier:
-				idNode := NodeIdentifier{tk.Pos, tk.str}
+				idNode := s.append(NodeIdentifier{tk.Pos, tk.str})
 				arguments = append(arguments, idNode)
 			case IdentifierEmpty:
-				idNode := NodeIdentifierEmpty{tk.Pos}
+				idNode := s.append(NodeIdentifierEmpty{tk.Pos})
 				arguments = append(arguments, idNode)
 			default:
 				break LOOP
@@ -720,10 +720,10 @@ func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int
 		}
 		idx++ // RightParen
 	case Identifier:
-		idNode := NodeIdentifier{tok.Pos, tok.str}
+		idNode := s.append(NodeIdentifier{tok.Pos, tok.str})
 		arguments = append(arguments, idNode)
 	case IdentifierEmpty:
-		idNode := NodeIdentifierEmpty{tok.Pos}
+		idNode := s.append(NodeIdentifierEmpty{tok.Pos})
 		arguments = append(arguments, idNode)
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}})
@@ -741,11 +741,11 @@ func parseFunctionLiteral(tokens []Token, s *astSlice) (NodeLiteralFunction, int
 
 	idx += incr
 
-	return NodeLiteralFunction{
+	return s.append(NodeLiteralFunction{
 		arguments: arguments,
 		body:      body,
 		Pos:       tokens[0].Pos,
-	}, idx
+	}).(NodeLiteralFunction), idx
 }
 
 func parseFunctionCall(function Node, tokens []Token, s *astSlice) (NodeFunctionCall, int) {
@@ -765,8 +765,8 @@ func parseFunctionCall(function Node, tokens []Token, s *astSlice) (NodeFunction
 
 	idx++ // RightParen
 
-	return NodeFunctionCall{
+	return s.append(NodeFunctionCall{
 		function:  function,
 		arguments: arguments,
-	}, idx
+	}).(NodeFunctionCall), idx
 }
