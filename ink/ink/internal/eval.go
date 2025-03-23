@@ -818,14 +818,14 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 }
 
 func (n NodeFunctionCall) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
-	fn, err := n.function.Eval(scope, ast, false)
+	fn, err := ast.nodes[n.function].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
 
 	argResults := make([]Value, len(n.arguments))
 	for i, arg := range n.arguments {
-		argResults[i], err = arg.Eval(scope, ast, false)
+		argResults[i], err = ast.nodes[arg].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}

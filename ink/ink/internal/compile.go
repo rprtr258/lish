@@ -103,7 +103,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 		}
 	case NodeFunctionCall:
 		w.WriteString("(call $")
-		switch fn := n.function.(type) {
+		switch fn := ast.nodes[n.function].(type) {
 		case NodeIdentifier:
 			w.WriteString(fn.val)
 		default:
@@ -111,7 +111,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 		}
 		for _, arg := range n.arguments {
 			w.WriteString(" ")
-			compile(arg, ast, w)
+			compile(ast.nodes[arg], ast, w)
 		}
 		w.WriteString(")")
 	case NodeLiteralObject:

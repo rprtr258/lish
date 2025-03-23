@@ -139,27 +139,27 @@ func (n NodeExprBinary) Position() Pos {
 }
 
 type NodeFunctionCall struct {
-	function  Node
-	arguments []Node
+	function  int
+	arguments []int
 }
 
 func (n NodeFunctionCall) String() string {
 	var sb strings.Builder
 	sb.WriteString("Call (")
-	sb.WriteString(n.function.String())
+	// TODO: // sb.WriteString(n.function.String())
 	sb.WriteString(") on (")
 	for i, a := range n.arguments {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		sb.WriteString(a.String())
+		_ = a // TODO: // sb.WriteString(a.String())
 	}
 	sb.WriteString(")")
 	return sb.String()
 }
 
 func (n NodeFunctionCall) Position() Pos {
-	return n.function.Position()
+	return Pos{} // TODO: n.function.Position()
 }
 
 type NodeMatchClause struct {
@@ -838,7 +838,7 @@ func parseFunctionCall(function int, tokens []Token, s *AST) (int, int) {
 	idx++ // RightParen
 
 	return s.appendIdx(NodeFunctionCall{
-		function:  s.nodes[function],
-		arguments: s.Map(arguments),
+		function:  function,
+		arguments: arguments,
 	}), idx
 }
