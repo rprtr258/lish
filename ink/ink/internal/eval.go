@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -542,12 +543,8 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 					return ValueComposite(res), nil
 				} else if !leftIsList && !rightIsList { // dict + dict
 					res := make(ValueComposite, len(left)+len(right))
-					for k, v := range left {
-						res[k] = v
-					}
-					for k, v := range right {
-						res[k] = v
-					}
+					maps.Copy(res, left)
+					maps.Copy(res, right)
 					return ValueComposite(res), nil
 				}
 			}
