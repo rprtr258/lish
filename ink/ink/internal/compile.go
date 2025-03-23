@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"iter"
 	"strconv"
 	"strings"
 )
@@ -177,10 +176,10 @@ func compile(n Node, w *watWriter) {
 	}
 }
 
-func Compile(nodes iter.Seq[Node]) string {
+func Compile(nodes []Node) string {
 	var w watWriter
 	w.WriteString("(module")
-	for n := range nodes {
+	for _, n := range nodes {
 		fmt.Println(n.String())
 		compile(n, &w)
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"iter"
 	"maps"
 	"net/http"
 	"net/url"
@@ -1049,11 +1048,11 @@ func (ctx *Context) resetWd() {
 // Eval takes a channel of Nodes to evaluate, and executes the Ink programs defined
 // in the syntax tree. Eval returns the last value of the last expression in the AST,
 // or an error if there was a runtime error.
-func (ctx *Context) Eval(nodes iter.Seq[Node]) (val Value, err *Err) {
+func (ctx *Context) Eval(nodes []Node) (val Value, err *Err) {
 	ctx.Engine.mu.Lock()
 	defer ctx.Engine.mu.Unlock()
 
-	for node := range nodes {
+	for _, node := range nodes {
 		if val, err = node.Eval(ctx.Scope, false); err != nil {
 			LogError(err)
 			break
@@ -1082,7 +1081,7 @@ func (ctx *Context) ExecListener(callback func()) {
 // ParseReader runs an Ink program defined by an io.Reader.
 // This is the main way to invoke Ink programs from Go.
 // ParseReader blocks until the Ink program exits.
-func ParseReader(filename string, r io.Reader) iter.Seq[Node] {
+func ParseReader(filename string, r io.Reader) []Node {
 	tokens := tokenize(filename, r)
 	nodes := parse(tokens)
 	_ = parseExpression2 // TODO: replace old parser
@@ -1090,7 +1089,7 @@ func ParseReader(filename string, r io.Reader) iter.Seq[Node] {
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(path string) (iter.Seq[Node], *Err) {
+func (ctx *Context) ExecPath(path string) ([]Node, *Err) {
 	// update Cwd for any potential import() calls this file will make
 	ctx.File = path
 

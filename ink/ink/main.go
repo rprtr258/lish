@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"iter"
 	"os"
 	"strings"
 
@@ -104,7 +103,7 @@ func main() {
 		stdin, _ := os.Stdin.Stat()
 		eng := ink.NewEngine()
 		ctx := eng.CreateContext()
-		var nodes iter.Seq[ink.Node]
+		var nodes []ink.Node
 		switch {
 		case *eval != "":
 			nodes = ink.ParseReader("eval", strings.NewReader(*eval))
