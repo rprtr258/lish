@@ -533,11 +533,11 @@ func (n NodeExprBinary) Eval(scope *Scope, _ bool) (Value, *Err) {
 				rightIsList := right.isList()
 				if leftIsList && rightIsList { // list + list
 					res := make(ValueComposite, len(left)+len(right))
-					for i := 0; i < len(left); i++ {
+					for i := range len(left) {
 						k := strconv.Itoa(i)
 						res[k] = left[k]
 					}
-					for i := 0; i < len(right); i++ {
+					for i := range len(right) {
 						res[strconv.Itoa(i+len(left))] = right[strconv.Itoa(i)]
 					}
 					return ValueComposite(res), nil
