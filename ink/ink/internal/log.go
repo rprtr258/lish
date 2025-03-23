@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -87,5 +88,5 @@ func logAST(s *AST) {
 		return
 	}
 
-	log.Print(s.String())
+	fmt.Print(s.String())
 }

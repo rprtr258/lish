@@ -75,11 +75,50 @@ func (s *AST) appendIdx(node Node) int {
 func (s AST) String() string {
 	var sb strings.Builder
 	sb.WriteString("digraph G {\n")
+	sb.WriteString(`node [
+	style=filled
+	shape=rect
+	fillcolor=white
+	fontname="Helvetica,Arial,sans-serif"
+]`)
 	for i, n := range s.nodes {
-		fmt.Fprintf(&sb, "n%d [\n  label=\"%s\"\n]\n", i, strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node"))
+		typ := strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node")
+		var val string
+		props := map[string]string{}
+		switch n := n.(type) {
+		case NodeLiteralBoolean:
+			val = fun.IF(n.val, "true", "false")
+		case NodeLiteralNumber:
+			val = fmt.Sprint(n.val)
+			props["fillcolor"] = "#fffd87"
+		case NodeLiteralString:
+			val = "'" + strings.Trim(fmt.Sprintf("%q", n.val), "\"") + "'"
+		case NodeIdentifier:
+			props["fillcolor"] = "#88ff00"
+			val = n.val
+		case NodeExprUnary:
+			props["fillcolor"] = "#a1c5ff"
+			val = n.operator.String()
+		case NodeExprBinary:
+			props["fillcolor"] = "#a1c5ff"
+			val = n.operator.String()
+		case NodeMatchClause, NodeMatchExpr:
+			props["fillcolor"] = "#ffa1a1"
+		}
+		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
+
+		fmt.Fprintf(&sb, "n%d [\n", i)
+		for k, v := range props {
+			fmt.Fprintf(&sb, "  %s=\"%s\"\n", k, v)
+		}
+		fmt.Fprint(&sb, "]\n")
 	}
 	for i, n := range s.nodes {
 		switch n := n.(type) {
+		case NodeExprList:
+			for _, j := range n.expressions {
+				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			}
 		case NodeExprUnary:
 			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.operand)
 		case NodeExprBinary:
@@ -91,6 +130,11 @@ func (s AST) String() string {
 		case NodeMatchExpr:
 			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.condition)
 			for _, j := range n.clauses {
+				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			}
+		case NodeLiteralFunction:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.body)
+			for _, j := range n.arguments {
 				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
 			}
 		case NodeFunctionCall:
