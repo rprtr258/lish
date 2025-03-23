@@ -994,6 +994,7 @@ type Engine struct {
 	// nice functionality.
 	Contexts map[string]*Context
 	values   map[string]Value
+	AST      *astSlice
 
 	// Only a single function may write to the stack frames at any moment.
 	mu sync.Mutex
@@ -1005,6 +1006,7 @@ func NewEngine() *Engine {
 		values:    map[string]Value{},
 		mu:        sync.Mutex{},
 		Listeners: sync.WaitGroup{},
+		AST:       newAstSlice(),
 	}
 }
 
@@ -1081,9 +1083,9 @@ func (ctx *Context) ExecListener(callback func()) {
 // ParseReader runs an Ink program defined by an io.Reader.
 // This is the main way to invoke Ink programs from Go.
 // ParseReader blocks until the Ink program exits.
-func ParseReader(filename string, r io.Reader) []Node {
+func ParseReader(ast *astSlice, filename string, r io.Reader) []Node {
 	tokens := tokenize(filename, r)
-	nodes := parse(tokens)
+	nodes, ast := parse(ast, tokens)
 	_ = parseExpression2 // TODO: replace old parser
 	return nodes
 }
@@ -1114,5 +1116,5 @@ func (ctx *Context) ExecPath(path string) ([]Node, *Err) {
 		r = file
 	}
 
-	return ParseReader(path, r), nil
+	return ParseReader(ctx.Engine.AST, path, r), nil
 }

@@ -356,11 +356,10 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(tokenStream iter.Seq[Token]) []Node {
+func parse(s *astSlice, tokenStream iter.Seq[Token]) ([]Node, *astSlice) {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
-	s := newAstSlice()
 	nodes := []Node{}
 	for i := 0; i < len(tokens); {
 		if tokens[i].kind == Separator {
@@ -388,7 +387,7 @@ func parse(tokenStream iter.Seq[Token]) []Node {
 		nodes = append(nodes, expr)
 	}
 	logAST(s)
-	return nodes
+	return nodes, s
 }
 
 var opPriority = map[Kind]int{
