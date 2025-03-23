@@ -3,8 +3,8 @@
 log := import('logging.ink').log
 f := import('str.ink').format
 {range, each, map} := import('functional.ink')
-wf := import('io').writeFile
-bmp := import('bmp').bmp
+wf := import('io.ink').writeFile
+bmp := import('bmp.ink').bmp
 
 # some basic configuration
 WIDTH := 600

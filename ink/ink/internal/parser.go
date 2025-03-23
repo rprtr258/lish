@@ -73,6 +73,13 @@ func (s *AST) appendIdx(node Node) int {
 }
 
 func (s AST) String() string {
+	const (
+		_colorLiteral = "#fffd87"
+		_colorIdent   = "#88ff00"
+		_colorExpr    = "#a1c5ff"
+		_colorControl = "#ffa1a1"
+	)
+
 	var sb strings.Builder
 	sb.WriteString("digraph G {\n")
 	sb.WriteString(`node [
@@ -80,32 +87,39 @@ func (s AST) String() string {
 	shape=rect
 	fillcolor=white
 	fontname="Helvetica,Arial,sans-serif"
-]`)
+]
+`)
 	for i, n := range s.nodes {
 		typ := strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node")
 		var val string
 		props := map[string]string{}
 		switch n := n.(type) {
 		case NodeLiteralBoolean:
+			props["fillcolor"] = _colorLiteral
 			val = fun.IF(n.val, "true", "false")
 		case NodeLiteralNumber:
+			props["fillcolor"] = _colorLiteral
 			val = fmt.Sprint(n.val)
-			props["fillcolor"] = "#fffd87"
 		case NodeLiteralString:
-			val = "'" + strings.Trim(fmt.Sprintf("%q", n.val), "\"") + "'"
+			props["fillcolor"] = _colorLiteral
+			val = "'" + strings.Trim(strconv.Quote(strings.Trim(strconv.Quote(n.val), "\"")), "\"") + "'"
+		case NodeLiteralList, NodeLiteralFunction:
+			props["fillcolor"] = _colorLiteral
+		case NodeIdentifierEmpty:
+			props["fillcolor"] = _colorIdent
 		case NodeIdentifier:
-			props["fillcolor"] = "#88ff00"
+			props["fillcolor"] = _colorIdent
 			val = n.val
 		case NodeExprUnary:
-			props["fillcolor"] = "#a1c5ff"
+			props["fillcolor"] = _colorExpr
 			val = n.operator.String()
 		case NodeExprBinary:
-			props["fillcolor"] = "#a1c5ff"
+			props["fillcolor"] = _colorExpr
 			val = n.operator.String()
 		case NodeFunctionCall:
-			props["fillcolor"] = "#a1c5ff"
-		case NodeMatchClause, NodeMatchExpr:
-			props["fillcolor"] = "#ffa1a1"
+			props["fillcolor"] = _colorExpr
+		case NodeMatchClause, NodeMatchExpr, NodeExprList:
+			props["fillcolor"] = _colorControl
 		}
 		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
 
@@ -118,31 +132,31 @@ func (s AST) String() string {
 	for i, n := range s.nodes {
 		switch n := n.(type) {
 		case NodeExprList:
-			for _, j := range n.expressions {
-				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			for k, j := range n.expressions {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
 			}
 		case NodeExprUnary:
 			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.operand)
 		case NodeExprBinary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.left)
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.right)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.left)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.right)
 		case NodeMatchClause:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.target)
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.expression)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, n.target)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, n.expression)
 		case NodeMatchExpr:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.condition)
-			for _, j := range n.clauses {
-				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.condition)
+			for k, j := range n.clauses {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
 			}
 		case NodeLiteralFunction:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.body)
-			for _, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.body)
+			for k, j := range n.arguments {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"arg/%d\"]\n", i, j, k)
 			}
 		case NodeFunctionCall:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.function)
-			for _, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"func\"]\n", i, n.function)
+			for k, j := range n.arguments {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
 			}
 		}
 	}
