@@ -360,7 +360,8 @@ func parse(tokenStream iter.Seq[Token]) []Node {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
-	return slices.Collect(func(yield func(Node) bool) {
+	nodes := []Node{}
+	for n := range func(yield func(Node) bool) {
 		s := newAstSlice()
 		for i := 0; i < len(tokens); {
 			if tokens[i].kind == Separator {
@@ -392,7 +393,10 @@ func parse(tokenStream iter.Seq[Token]) []Node {
 			}()
 		}
 		logAST(s)
-	})
+	} {
+		nodes = append(nodes, n)
+	}
+	return nodes
 }
 
 var opPriority = map[Kind]int{
