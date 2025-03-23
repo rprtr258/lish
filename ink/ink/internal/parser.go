@@ -10,6 +10,12 @@ import (
 	"github.com/rprtr258/fun"
 )
 
+const (
+	_astEmptyIdentifierIdx = 0
+	_astFalseLiteralIdx    = 1
+	_astTrueLiteralIdx     = 2
+)
+
 type AST struct {
 	numbers     map[float64]int
 	identifiers map[string]int
@@ -24,6 +30,8 @@ func newAstSlice() *AST {
 		strings:     map[string]int{},
 		nodes: []Node{
 			NodeIdentifierEmpty{},
+			NodeLiteralBoolean{val: false},
+			NodeLiteralBoolean{val: true},
 		},
 	}
 }
@@ -37,8 +45,9 @@ func (s *AST) appendIdx(node Node) int {
 	switch node := node.(type) {
 	case NodeIdentifierEmpty:
 		// one empty identifier for all
-		return 0
-	// TODO: bool literal
+		return _astEmptyIdentifierIdx
+	case NodeLiteralBoolean:
+		return fun.IF(node.val, _astTrueLiteralIdx, _astFalseLiteralIdx)
 	case NodeLiteralNumber:
 		if _, ok := s.numbers[node.val]; !ok {
 			n := len(s.nodes)
@@ -78,7 +87,7 @@ func (s AST) String() string {
 	if len(s.strings) > 0 {
 		fmt.Fprintln(&sb, "Strings:")
 		for s, i := range s.strings {
-			fmt.Fprintln(&sb, "\t", s, i)
+			fmt.Fprintf(&sb, "\t%q %d\n", s, i)
 		}
 	}
 	if len(s.identifiers) > 0 {
@@ -142,14 +151,15 @@ type NodeFunctionCall struct {
 
 func (n NodeFunctionCall) String() string {
 	var sb strings.Builder
-	sb.WriteString("Call (")
-	// TODO: // sb.WriteString(n.function.String())
+	sb.WriteString("Call (#")
+	sb.WriteString(strconv.Itoa(n.function))
 	sb.WriteString(") on (")
 	for i, a := range n.arguments {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		_ = a // TODO: // sb.WriteString(a.String())
+		sb.WriteString("#")
+		sb.WriteString(strconv.Itoa(a))
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -179,13 +189,14 @@ type NodeMatchExpr struct {
 
 func (n NodeMatchExpr) String() string {
 	var sb strings.Builder
-	sb.WriteString("Match on (")
-	// TODO: // sb.WriteString(n.condition.String())
+	sb.WriteString("Match on (#")
+	sb.WriteString(strconv.Itoa(n.condition))
 	sb.WriteString(") to {")
 	for i, a := range n.clauses {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
+		sb.WriteString("#")
 		sb.WriteString(a.String())
 	}
 	sb.WriteString("}")
@@ -208,7 +219,8 @@ func (n NodeExprList) String() string {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		_ = expr // TODO: // sb.WriteString(expr.String())
+		sb.WriteString("#")
+		sb.WriteString(strconv.Itoa(expr))
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -317,7 +329,7 @@ type NodeLiteralList struct {
 func (n NodeLiteralList) String() string {
 	vals := make([]string, len(n.vals))
 	for i, v := range n.vals {
-		vals[i] = strconv.Itoa(v)
+		vals[i] = "#" + strconv.Itoa(v)
 	}
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
@@ -335,7 +347,7 @@ type NodeLiteralFunction struct {
 func (n NodeLiteralFunction) String() string {
 	args := make([]string, len(n.arguments))
 	for i, a := range n.arguments {
-		args[i] = strconv.Itoa(a)
+		args[i] = "#" + strconv.Itoa(a)
 	}
 	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.body)
 }
