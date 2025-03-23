@@ -176,14 +176,14 @@ func (n NodeMatchClause) Position() Pos {
 
 type NodeMatchExpr struct {
 	Pos
-	condition Node
+	condition int
 	clauses   []NodeMatchClause
 }
 
 func (n NodeMatchExpr) String() string {
 	var sb strings.Builder
 	sb.WriteString("Match on (")
-	sb.WriteString(n.condition.String())
+	// TODO: // sb.WriteString(n.condition.String())
 	sb.WriteString(") to {")
 	for i, a := range n.clauses {
 		if i > 0 {
@@ -536,7 +536,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 
 			consumeDanglingSeparator()
 			return s.appendIdx(NodeMatchExpr{
-				condition: s.nodes[binExpr],
+				condition: binExpr,
 				clauses:   clauses,
 				Pos:       colonPos,
 			}), idx
@@ -551,7 +551,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 
 		consumeDanglingSeparator()
 		return s.appendIdx(NodeMatchExpr{
-			condition: s.nodes[atom],
+			condition: atom,
 			clauses:   clauses,
 			Pos:       nextTok.Pos,
 		}), idx

@@ -141,7 +141,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 			}
 		}
 	case NodeMatchExpr:
-		switch condition := n.condition.(type) {
+		switch condition := ast.nodes[n.condition].(type) {
 		case NodeLiteralBoolean:
 			if !condition.val {
 				panic("cant match on false")

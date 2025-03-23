@@ -872,7 +872,7 @@ func (n NodeMatchClause) Eval(*Scope, *AST, bool) (Value, *Err) {
 }
 
 func (n NodeMatchExpr) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
-	conditionVal, err := n.condition.Eval(scope, ast, false)
+	conditionVal, err := ast.nodes[n.condition].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
