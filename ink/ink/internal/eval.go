@@ -878,13 +878,14 @@ func (n NodeMatchExpr) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Er
 	}
 
 	for _, cl := range n.clauses {
-		targetVal, err := ast.nodes[cl.target].Eval(scope, ast, false)
+		clNode := ast.nodes[cl].(NodeMatchClause)
+		targetVal, err := ast.nodes[clNode.target].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
 		if conditionVal.Equals(targetVal) {
-			return ast.nodes[cl.expression].Eval(scope, ast, allowThunk)
+			return ast.nodes[clNode.expression].Eval(scope, ast, allowThunk)
 		}
 	}
 

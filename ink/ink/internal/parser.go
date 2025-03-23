@@ -36,10 +36,6 @@ func newAstSlice() *AST {
 	}
 }
 
-func (s *AST) append(node Node) Node {
-	return s.nodes[s.appendIdx(node)]
-}
-
 func (s *AST) appendIdx(node Node) int {
 	// TODO: position is lost
 	switch node := node.(type) {
@@ -78,30 +74,33 @@ func (s *AST) appendIdx(node Node) int {
 
 func (s AST) String() string {
 	var sb strings.Builder
-	if len(s.numbers) > 0 {
-		fmt.Fprintln(&sb, "Numbers:")
-		for x, i := range s.numbers {
-			fmt.Fprintln(&sb, "\t", x, i)
+	sb.WriteString("digraph G {\n")
+	for i, n := range s.nodes {
+		fmt.Fprintf(&sb, "n%d [\n  label=\"%s\"\n]\n", i, strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node"))
+	}
+	for i, n := range s.nodes {
+		switch n := n.(type) {
+		case NodeExprUnary:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.operand)
+		case NodeExprBinary:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.left)
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.right)
+		case NodeMatchClause:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.target)
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.expression)
+		case NodeMatchExpr:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.condition)
+			for _, j := range n.clauses {
+				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			}
+		case NodeFunctionCall:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.function)
+			for _, j := range n.arguments {
+				fmt.Fprintf(&sb, "n%d -> n%d\n", i, j)
+			}
 		}
 	}
-	if len(s.strings) > 0 {
-		fmt.Fprintln(&sb, "Strings:")
-		for s, i := range s.strings {
-			fmt.Fprintf(&sb, "\t%q %d\n", s, i)
-		}
-	}
-	if len(s.identifiers) > 0 {
-		fmt.Fprintln(&sb, "Identifiers:")
-		for id, i := range s.identifiers {
-			fmt.Fprintln(&sb, "\t", id, i)
-		}
-	}
-	if len(s.nodes) > 0 {
-		fmt.Fprintln(&sb, "AST:")
-		for i, n := range s.nodes {
-			fmt.Fprintln(&sb, "\t", i, n.String())
-		}
-	}
+	sb.WriteString("}")
 	return sb.String()
 }
 
@@ -184,7 +183,7 @@ func (n NodeMatchClause) Position() Pos {
 type NodeMatchExpr struct {
 	Pos
 	condition int
-	clauses   []NodeMatchClause
+	clauses   []int // TODO: inline clauses
 }
 
 func (n NodeMatchExpr) String() string {
@@ -197,7 +196,7 @@ func (n NodeMatchExpr) String() string {
 			sb.WriteString(", ")
 		}
 		sb.WriteString("#")
-		sb.WriteString(a.String())
+		sb.WriteString(strconv.Itoa(a))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -723,12 +722,12 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 // parses everything that follows MatchColon
 //
 //	does not consume dangling separator -- that's for parseExpression
-func parseMatchBody(tokens []Token, s *AST) ([]NodeMatchClause, int) {
+func parseMatchBody(tokens []Token, s *AST) ([]int, int) {
 	idx := 1 // LeftBrace
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	clauses := make([]NodeMatchClause, 0)
+	clauses := make([]int, 0)
 	for tokens[idx].kind != BraceRight {
 		clauseNode, incr := parseMatchClause(tokens[idx:], s)
 
@@ -741,7 +740,7 @@ func parseMatchBody(tokens []Token, s *AST) ([]NodeMatchClause, int) {
 	return clauses, idx
 }
 
-func parseMatchClause(tokens []Token, s *AST) (NodeMatchClause, int) {
+func parseMatchClause(tokens []Token, s *AST) (int, int) {
 	atom, idx := parseExpression(tokens, s)
 
 	guardUnexpectedInputEnd(tokens, idx)
@@ -757,10 +756,10 @@ func parseMatchClause(tokens []Token, s *AST) (NodeMatchClause, int) {
 
 	idx += incr
 
-	return s.append(NodeMatchClause{
+	return s.appendIdx(NodeMatchClause{
 		target:     atom,
 		expression: expr,
-	}).(NodeMatchClause), idx
+	}), idx
 }
 
 func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
