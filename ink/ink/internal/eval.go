@@ -492,7 +492,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 			return Null, nil
 		default:
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %s of a non-composite value %s", n.right, left), Pos{} /*TODO: n.right.Position()*/}
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %d of a non-composite value %d", n.right, left), Pos{} /*TODO: n.right.Position()*/}
 		}
 	}
 
