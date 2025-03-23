@@ -28,36 +28,40 @@ func newAstSlice() *astSlice {
 }
 
 func (s *astSlice) append(node Node) Node {
+	return s.nodes[s.appendIdx(node)]
+}
+
+func (s *astSlice) appendIdx(node Node) int {
 	// TODO: position is lost
 	switch node := node.(type) {
 	case NodeIdentifierEmpty:
 		// one empty identifier for all
-		return s.nodes[0]
+		return 0
 	case NodeLiteralNumber:
 		if _, ok := s.numbers[node.val]; !ok {
 			n := len(s.nodes)
 			s.nodes = append(s.nodes, node)
 			s.numbers[node.val] = n
 		}
-		return s.nodes[s.numbers[node.val]]
+		return s.numbers[node.val]
 	case NodeLiteralString:
 		if _, ok := s.strings[node.val]; !ok {
 			n := len(s.nodes)
 			s.nodes = append(s.nodes, node)
 			s.strings[node.val] = n
 		}
-		return s.nodes[s.strings[node.val]]
+		return s.strings[node.val]
 	case NodeIdentifier:
 		if _, ok := s.identifiers[node.val]; !ok {
 			n := len(s.nodes)
 			s.nodes = append(s.nodes, node)
 			s.identifiers[node.val] = n
 		}
-		return s.nodes[s.identifiers[node.val]]
+		return s.identifiers[node.val]
 	default:
 		n := len(s.nodes)
 		s.nodes = append(s.nodes, node)
-		return s.nodes[n]
+		return n
 	}
 }
 
