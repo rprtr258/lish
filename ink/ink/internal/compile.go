@@ -117,9 +117,9 @@ func compile(n Node, ast *AST, w *watWriter) {
 	case NodeLiteralObject:
 		for _, entry := range n.entries {
 			k, v := entry.key, entry.val
-			switch k := k.(type) {
+			switch k := ast.nodes[k].(type) {
 			case NodeIdentifier:
-				switch v := v.(type) {
+				switch v := ast.nodes[v].(type) {
 				case NodeLiteralFunction:
 					compileFunc(w, ast, k.val, v)
 					w.WriteString("(export ")

@@ -306,11 +306,11 @@ func (n NodeLiteralObject) Position() Pos {
 
 type NodeObjectEntry struct {
 	Pos
-	key, val Node
+	key, val int
 }
 
 func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("(%s): (%s)", n.key, n.val)
+	return fmt.Sprintf("#d: #d", n.key, n.val)
 }
 
 type NodeLiteralList struct {
@@ -665,8 +665,8 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			}
 
 			entries = append(entries, NodeObjectEntry{
-				key: s.nodes[keyExpr],
-				val: s.nodes[valExpr],
+				key: keyExpr,
+				val: valExpr,
 				Pos: s.nodes[keyExpr].Position(),
 			})
 

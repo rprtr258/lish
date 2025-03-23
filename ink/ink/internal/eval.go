@@ -427,7 +427,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 
 		res := make(ValueComposite, len(leftSide.entries))
 		for _, entry := range leftSide.entries {
-			k, err := operandToStringKey(scope, ast, entry.key)
+			k, err := operandToStringKey(scope, ast, ast.nodes[entry.key])
 			if err != nil {
 				return nil, &Err{err, ErrRuntime, "invalid key in dict destructure assignment", entry.Pos}
 			}
@@ -435,10 +435,10 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 			rightSide, ok := rightComposite[k]
 			if !ok {
 				knownKeys := fun.Keys(rightComposite)
-				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", k, knownKeys), entry.key.Position()}
+				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", k, knownKeys), Pos{} /*TODO: entry.key.Position()*/}
 			}
 
-			v, err := define(scope, ast, entry.val, rightSide)
+			v, err := define(scope, ast, ast.nodes[entry.val], rightSide)
 			if err != nil {
 				return nil, err
 			}
@@ -939,12 +939,12 @@ func (n NodeLiteralBoolean) Eval(*Scope, *AST, bool) (Value, *Err) {
 func (n NodeLiteralObject) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 	obj := make(ValueComposite, len(n.entries))
 	for _, entry := range n.entries {
-		keyStr, err := operandToStringKey(scope, ast, entry.key)
+		keyStr, err := operandToStringKey(scope, ast, ast.nodes[entry.key])
 		if err != nil {
 			return nil, err
 		}
 
-		obj[keyStr], err = entry.val.Eval(scope, ast, false)
+		obj[keyStr], err = ast.nodes[entry.val].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
