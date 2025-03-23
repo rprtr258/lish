@@ -1085,6 +1085,7 @@ func (ctx *Context) ExecListener(callback func()) {
 func ParseReader(filename string, r io.Reader) iter.Seq[Node] {
 	tokens := tokenize(filename, r)
 	nodes := parse(tokens)
+	_ = parseExpression2 // TODO: replace old parser
 	return nodes
 }
 
