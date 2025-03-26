@@ -23,5 +23,8 @@
             "scopeName": "source.ink",
             "path": "./syntaxes/ink.tmLanguage.json"
         }]
+    },
+    "devDependencies": {
+        "@vscode/vsce": "^3.3.0"
     }
 }
