@@ -185,22 +185,22 @@ func (p Pos) String() string {
 // Token is the monomorphic struct representing all Ink program tokens
 // in the lexer.
 type Token struct {
-	kind Kind
+	Kind Kind
 	Pos
 
 	// for string/number literals
-	str string
-	num float64
+	Str string
+	Num float64
 }
 
 func (tok Token) String() string {
-	switch tok.kind {
+	switch tok.Kind {
 	case Identifier, LiteralString:
-		return fmt.Sprintf("%s '%s' [%s]", tok.kind, tok.str, tok.Pos)
+		return fmt.Sprintf("%s '%s' [%s]", tok.Kind, tok.Str, tok.Pos)
 	case LiteralNumber:
-		return fmt.Sprintf("%s '%s' [%s]", tok.kind, nToS(tok.num), tok.Pos)
+		return fmt.Sprintf("%s '%s' [%s]", tok.Kind, nToS(tok.Num), tok.Pos)
 	default:
-		return fmt.Sprintf("%s [%s]", tok.kind, tok.Pos)
+		return fmt.Sprintf("%s [%s]", tok.Kind, tok.Pos)
 	}
 }
 
@@ -214,13 +214,13 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 		lineNo, colNo := 1, 1
 
 		simpleCommit := func(tok Token) {
-			lastKind = tok.kind
+			lastKind = tok.Kind
 			logToken(tok)
 			yield(tok) // TODO: break on false
 		}
 		simpleCommitChar := func(kind Kind) {
 			simpleCommit(Token{
-				kind: kind,
+				Kind: kind,
 				Pos:  Pos{file, lineNo, colNo},
 			})
 		}
@@ -243,14 +243,14 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 					LogError(&Err{nil, ErrSyntax, fmt.Sprintf("can't parse number: %s", err.Error()), Pos{file, lineNo, colNo - len(cbuf)}})
 				}
 				simpleCommit(Token{
-					num:  f,
-					kind: LiteralNumber,
+					Num:  f,
+					Kind: LiteralNumber,
 					Pos:  Pos{file, lineNo, colNo - len(cbuf)},
 				})
 			default:
 				simpleCommit(Token{
-					str:  string(cbuf),
-					kind: Identifier,
+					Str:  string(cbuf),
+					Kind: Identifier,
 					Pos:  Pos{file, lineNo, colNo - len(cbuf)},
 				})
 			}
@@ -261,7 +261,7 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 		}
 		commitChar := func(kind Kind) {
 			commit(Token{
-				kind: kind,
+				Kind: kind,
 				Pos:  Pos{file, lineNo, colNo},
 			})
 		}
@@ -293,8 +293,8 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 				inStringLiteral = true
 			case char == '\'' && inStringLiteral:
 				commit(Token{
-					str:  string(strbuf),
-					kind: LiteralString,
+					Str:  string(strbuf),
+					Kind: LiteralString,
 					Pos:  Pos{file, strbufStartLine, strbufStartCol},
 				})
 				strbuf = strbuf[:0]

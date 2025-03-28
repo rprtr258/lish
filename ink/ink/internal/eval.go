@@ -277,7 +277,7 @@ func (v ValueFunctionCallThunk) Equals(other Value) bool {
 // unwrapThunk expands out a recursive structure of thunks into a flat for loop control structure
 func unwrapThunk(ast *AST, thunk ValueFunctionCallThunk) (Value, *Err) {
 	for {
-		v, err := ast.nodes[thunk.function.defn.body].Eval(&Scope{
+		v, err := ast.Nodes[thunk.function.defn.Body].Eval(&Scope{
 			parent: thunk.function.scope,
 			vt:     thunk.vt,
 		}, ast, true)
@@ -291,9 +291,9 @@ func unwrapThunk(ast *AST, thunk ValueFunctionCallThunk) (Value, *Err) {
 }
 
 func (n NodeExprUnary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
-	switch n.operator {
+	switch n.Operator {
 	case OpNegation:
-		operand, err := ast.nodes[n.operand].Eval(scope, ast, false)
+		operand, err := ast.Nodes[n.Operand].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -314,11 +314,11 @@ func (n NodeExprUnary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 func operandToStringKey(scope *Scope, ast *AST, keyOperand Node) (string, *Err) {
 	switch keyNode := keyOperand.(type) {
 	case NodeIdentifier:
-		return keyNode.val, nil
+		return keyNode.Val, nil
 	case NodeLiteralString:
-		return keyNode.val, nil
+		return keyNode.Val, nil
 	case NodeLiteralNumber:
-		return nToS(keyNode.val), nil
+		return nToS(keyNode.Val), nil
 	default:
 		rightEvaluatedValue, err := keyOperand.Eval(scope, ast, false)
 		if err != nil {
@@ -343,19 +343,19 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 
 	switch leftSide := leftNode.(type) {
 	case NodeIdentifier:
-		scope.Set(leftSide.val, rightValue)
+		scope.Set(leftSide.Val, rightValue)
 		return rightValue, nil
 	case NodeExprBinary:
-		if leftSide.operator != OpAccessor {
+		if leftSide.Operator != OpAccessor {
 			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), leftNode.Position()}
 		}
 
-		leftValue, err := ast.nodes[leftSide.left].Eval(scope, ast, false)
+		leftValue, err := ast.Nodes[leftSide.Left].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
-		leftKey, err := operandToStringKey(scope, ast, ast.nodes[leftSide.right])
+		leftKey, err := operandToStringKey(scope, ast, ast.Nodes[leftSide.Right])
 		if err != nil {
 			return nil, err
 		}
@@ -365,7 +365,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 			left[leftKey] = rightValue
 			return left, nil
 		case ValueString:
-			leftIdent, isLeftIdent := ast.nodes[leftSide.left].(NodeIdentifier)
+			leftIdent, isLeftIdent := ast.Nodes[leftSide.Left].(NodeIdentifier)
 			if !isLeftIdent {
 				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), Pos{} /*TODO: leftSide.right.Position()*/}
 			}
@@ -389,11 +389,11 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 						left = append(left, r)
 					}
 				}
-				scope.Update(leftIdent.val, left)
+				scope.Update(leftIdent.Val, left)
 				return left, nil
 			case rn == len(left):
 				left = append(left, rightString...)
-				scope.Update(leftIdent.val, left)
+				scope.Update(leftIdent.Val, left)
 				return left, nil
 			default:
 				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), Pos{} /*TODO: leftSide.right.Position()*/}
@@ -405,14 +405,14 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 		rightComposite, isComposite := rightValue.(ValueComposite)
 		if !isComposite || !rightComposite.isList() {
 			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure non-list value %s into list", rightValue), leftNode.Position()}
-		} else if len(leftSide.vals) != len(rightComposite) {
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure list into different length: %d value into %d", len(rightComposite), len(leftSide.vals)), leftNode.Position()}
+		} else if len(leftSide.Vals) != len(rightComposite) {
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure list into different length: %d value into %d", len(rightComposite), len(leftSide.Vals)), leftNode.Position()}
 		}
 
-		res := make(ValueComposite, len(leftSide.vals))
-		for i, leftSide := range leftSide.vals {
+		res := make(ValueComposite, len(leftSide.Vals))
+		for i, leftSide := range leftSide.Vals {
 			k := strconv.Itoa(i)
-			v, err := define(scope, ast, ast.nodes[leftSide], rightComposite[k])
+			v, err := define(scope, ast, ast.Nodes[leftSide], rightComposite[k])
 			if err != nil {
 				return nil, err
 			}
@@ -425,9 +425,9 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure non-list value %s into list", rightValue), leftNode.Position()}
 		}
 
-		res := make(ValueComposite, len(leftSide.entries))
-		for _, entry := range leftSide.entries {
-			k, err := operandToStringKey(scope, ast, ast.nodes[entry.key])
+		res := make(ValueComposite, len(leftSide.Entries))
+		for _, entry := range leftSide.Entries {
+			k, err := operandToStringKey(scope, ast, ast.Nodes[entry.Key])
 			if err != nil {
 				return nil, &Err{err, ErrRuntime, "invalid key in dict destructure assignment", entry.Pos}
 			}
@@ -438,7 +438,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 				return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", k, knownKeys), Pos{} /*TODO: entry.key.Position()*/}
 			}
 
-			v, err := define(scope, ast, ast.nodes[entry.val], rightSide)
+			v, err := define(scope, ast, ast.Nodes[entry.Val], rightSide)
 			if err != nil {
 				return nil, err
 			}
@@ -452,9 +452,9 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) (Value, *Er
 }
 
 func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
-	left := ast.nodes[n.left]
-	right := ast.nodes[n.right]
-	switch n.operator {
+	left := ast.Nodes[n.Left]
+	right := ast.Nodes[n.Right]
+	switch n.Operator {
 	case OpDefine:
 		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
@@ -492,7 +492,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 
 			return Null, nil
 		default:
-			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %d of a non-composite value %d", n.right, left), Pos{} /*TODO: n.right.Position()*/}
+			return nil, &Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %d of a non-composite value %d", n.Right, left), Pos{} /*TODO: n.right.Position()*/}
 		}
 	}
 
@@ -501,7 +501,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		return nil, err
 	}
 
-	switch n.operator {
+	switch n.Operator {
 	case OpAdd:
 		rightValue, err := right.Eval(scope, ast, false)
 		if err != nil {
@@ -818,14 +818,14 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 }
 
 func (n NodeFunctionCall) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
-	fn, err := ast.nodes[n.function].Eval(scope, ast, false)
+	fn, err := ast.Nodes[n.Function].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
 
-	argResults := make([]Value, len(n.arguments))
-	for i, arg := range n.arguments {
-		argResults[i], err = ast.nodes[arg].Eval(scope, ast, false)
+	argResults := make([]Value, len(n.Arguments))
+	for i, arg := range n.Arguments {
+		argResults[i], err = ast.Nodes[arg].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -839,10 +839,10 @@ func evalInkFunction(ast *AST, fn Value, allowThunk bool, position Pos, args ...
 	switch fn := fn.(type) {
 	case ValueFunction:
 		argValueTable := ValueTable{}
-		for i, argNode := range fn.defn.arguments {
+		for i, argNode := range fn.defn.Arguments {
 			if i < len(args) {
-				if identNode, isIdent := ast.nodes[argNode].(NodeIdentifier); isIdent {
-					argValueTable[identNode.val] = args[i]
+				if identNode, isIdent := ast.Nodes[argNode].(NodeIdentifier); isIdent {
+					argValueTable[identNode.Val] = args[i]
 				}
 			}
 		}
@@ -872,20 +872,20 @@ func (n NodeMatchClause) Eval(*Scope, *AST, bool) (Value, *Err) {
 }
 
 func (n NodeMatchExpr) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
-	conditionVal, err := ast.nodes[n.condition].Eval(scope, ast, false)
+	conditionVal, err := ast.Nodes[n.Condition].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, cl := range n.clauses {
-		clNode := ast.nodes[cl].(NodeMatchClause)
-		targetVal, err := ast.nodes[clNode.target].Eval(scope, ast, false)
+	for _, cl := range n.Clauses {
+		clNode := ast.Nodes[cl].(NodeMatchClause)
+		targetVal, err := ast.Nodes[clNode.Target].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
 		if conditionVal.Equals(targetVal) {
-			return ast.nodes[clNode.expression].Eval(scope, ast, allowThunk)
+			return ast.Nodes[clNode.Expression].Eval(scope, ast, allowThunk)
 		}
 	}
 
@@ -893,7 +893,7 @@ func (n NodeMatchExpr) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Er
 }
 
 func (n NodeExprList) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
-	length := len(n.expressions)
+	length := len(n.Expressions)
 	if length == 0 {
 		return Null, nil
 	}
@@ -902,15 +902,15 @@ func (n NodeExprList) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err
 		parent: scope,
 		vt:     ValueTable{},
 	}
-	for _, expr := range n.expressions[:length-1] {
-		if _, err := ast.nodes[expr].Eval(newScope, ast, false); err != nil {
+	for _, expr := range n.Expressions[:length-1] {
+		if _, err := ast.Nodes[expr].Eval(newScope, ast, false); err != nil {
 			return nil, err
 		}
 	}
 
 	// return values of expression lists are tail call optimized,
 	// so return a maybe ThunkValue
-	return ast.nodes[n.expressions[length-1]].Eval(newScope, ast, allowThunk)
+	return ast.Nodes[n.Expressions[length-1]].Eval(newScope, ast, allowThunk)
 }
 
 func (n NodeIdentifierEmpty) Eval(*Scope, *AST, bool) (Value, *Err) {
@@ -918,34 +918,34 @@ func (n NodeIdentifierEmpty) Eval(*Scope, *AST, bool) (Value, *Err) {
 }
 
 func (n NodeIdentifier) Eval(scope *Scope, _ *AST, _ bool) (Value, *Err) {
-	val, ok := scope.Get(n.val)
+	val, ok := scope.Get(n.Val)
 	if !ok {
-		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.val), n.Position()}
+		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Val), n.Position()}
 	}
 	return val, nil
 }
 
 func (n NodeLiteralNumber) Eval(*Scope, *AST, bool) (Value, *Err) {
-	return ValueNumber(n.val), nil
+	return ValueNumber(n.Val), nil
 }
 
 func (n NodeLiteralString) Eval(*Scope, *AST, bool) (Value, *Err) {
-	return ValueString(n.val), nil
+	return ValueString(n.Val), nil
 }
 
 func (n NodeLiteralBoolean) Eval(*Scope, *AST, bool) (Value, *Err) {
-	return ValueBoolean(n.val), nil
+	return ValueBoolean(n.Val), nil
 }
 
 func (n NodeLiteralObject) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
-	obj := make(ValueComposite, len(n.entries))
-	for _, entry := range n.entries {
-		keyStr, err := operandToStringKey(scope, ast, ast.nodes[entry.key])
+	obj := make(ValueComposite, len(n.Entries))
+	for _, entry := range n.Entries {
+		keyStr, err := operandToStringKey(scope, ast, ast.Nodes[entry.Key])
 		if err != nil {
 			return nil, err
 		}
 
-		obj[keyStr], err = ast.nodes[entry.val].Eval(scope, ast, false)
+		obj[keyStr], err = ast.Nodes[entry.Val].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -959,10 +959,10 @@ func (n NodeObjectEntry) Eval(*Scope, bool) (Value, *Err) {
 }
 
 func (n NodeLiteralList) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
-	listVal := make(ValueComposite, len(n.vals))
-	for i, val := range n.vals {
+	listVal := make(ValueComposite, len(n.Vals))
+	for i, val := range n.Vals {
 		var err *Err
-		listVal[strconv.Itoa(i)], err = ast.nodes[val].Eval(scope, ast, false)
+		listVal[strconv.Itoa(i)], err = ast.Nodes[val].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
@@ -1009,7 +1009,7 @@ func NewEngine() *Engine {
 		values:    map[string]Value{},
 		mu:        sync.Mutex{},
 		Listeners: sync.WaitGroup{},
-		AST:       newAstSlice(),
+		AST:       NewAstSlice(),
 	}
 }
 
@@ -1087,9 +1087,20 @@ func (ctx *Context) ExecListener(callback func()) {
 // This is the main way to invoke Ink programs from Go.
 // ParseReader blocks until the Ink program exits.
 func ParseReader(ast *AST, filename string, r io.Reader) []Node {
-	tokens := tokenize(filename, r)
-	nodes, ast := parse(ast, tokens)
-	// _ = parseExpression2 // TODO: replace old parser
+	b, errRead := io.ReadAll(r)
+	if errRead != nil {
+		panic(errRead.Error())
+	}
+	// tokens := tokenize(filename, r) // TODO: delete
+	nodes := []Node{}
+	for len(b) > 0 {
+		var err errParse
+		var node int
+		b, node, err = parseExpression(ast, b)
+		LogError(err.Err)
+		// _ = parseExpression2 // TODO: replace old parser
+		nodes = append(nodes, ast.Nodes[node])
+	}
 	return nodes
 }
 

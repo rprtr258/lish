@@ -39,16 +39,16 @@ func (w *watWriter) Result(typ string) {
 func compileFunc(w *watWriter, ast *AST, name string, fn NodeLiteralFunction) {
 	w.WriteString("(func $")
 	w.WriteString(name)
-	for _, arg := range fn.arguments {
-		switch arg := ast.nodes[arg].(type) {
+	for _, arg := range fn.Arguments {
+		switch arg := ast.Nodes[arg].(type) {
 		case NodeIdentifier:
-			w.Param(arg.val, "externref") // TODO: resolve type
+			w.Param(arg.Val, "externref") // TODO: resolve type
 		default:
 			panic(fmt.Sprintf("unknown argument type: %T", arg))
 		}
 	}
 	w.Result("externref") // TODO: resolve type
-	compile(ast.nodes[fn.body], ast, w)
+	compile(ast.Nodes[fn.Body], ast, w)
 	w.WriteString(")")
 }
 
@@ -56,42 +56,42 @@ func compile(n Node, ast *AST, w *watWriter) {
 	switch n := n.(type) {
 	case NodeLiteralNumber:
 		w.WriteString("(f64.const ")
-		w.WriteString(strconv.FormatFloat(n.val, 'f', -1, 64))
+		w.WriteString(strconv.FormatFloat(n.Val, 'f', -1, 64))
 		w.WriteString(")")
 	case NodeIdentifier:
-		w.LocalGet(n.val)
+		w.LocalGet(n.Val)
 	case NodeExprBinary:
-		switch n.operator {
+		switch n.Operator {
 		case OpAdd:
 			w.WriteString("(call $ink__plus ")
-			compile(ast.nodes[n.left], ast, w)
+			compile(ast.Nodes[n.Left], ast, w)
 			w.WriteString(" ")
-			compile(ast.nodes[n.right], ast, w)
+			compile(ast.Nodes[n.Right], ast, w)
 			w.WriteString(")")
 		case OpLessThan:
 			w.WriteString("(f64.lt ")
-			compile(ast.nodes[n.left], ast, w)
+			compile(ast.Nodes[n.Left], ast, w)
 			w.WriteString(" ")
-			compile(ast.nodes[n.right], ast, w)
+			compile(ast.Nodes[n.Right], ast, w)
 			w.WriteString(")")
 		case OpMultiply:
 			w.WriteString("(f64.mul ")
-			compile(ast.nodes[n.left], ast, w)
+			compile(ast.Nodes[n.Left], ast, w)
 			w.WriteString(" ")
-			compile(ast.nodes[n.right], ast, w)
+			compile(ast.Nodes[n.Right], ast, w)
 			w.WriteString(")")
 		case OpSubtract:
 			w.WriteString("(f64.sub ")
-			compile(ast.nodes[n.left], ast, w)
+			compile(ast.Nodes[n.Left], ast, w)
 			w.WriteString(" ")
-			compile(ast.nodes[n.right], ast, w)
+			compile(ast.Nodes[n.Right], ast, w)
 			w.WriteString(")")
 		case OpDefine:
-			switch lhs := ast.nodes[n.left].(type) {
+			switch lhs := ast.Nodes[n.Left].(type) {
 			case NodeIdentifier:
-				switch rhs := ast.nodes[n.right].(type) {
+				switch rhs := ast.Nodes[n.Right].(type) {
 				case NodeLiteralFunction:
-					compileFunc(w, ast, lhs.val, rhs)
+					compileFunc(w, ast, lhs.Val, rhs)
 				default:
 					panic(fmt.Sprintf("unknown rhs type: %T", rhs))
 				}
@@ -99,39 +99,39 @@ func compile(n Node, ast *AST, w *watWriter) {
 				panic(fmt.Sprintf("unknown lhs type: %T", lhs))
 			}
 		default:
-			panic(fmt.Sprintf("unknown binary operator: %s", n.operator))
+			panic(fmt.Sprintf("unknown binary operator: %s", n.Operator))
 		}
 	case NodeFunctionCall:
 		w.WriteString("(call $")
-		switch fn := ast.nodes[n.function].(type) {
+		switch fn := ast.Nodes[n.Function].(type) {
 		case NodeIdentifier:
-			w.WriteString(fn.val)
+			w.WriteString(fn.Val)
 		default:
 			panic(fmt.Sprintf("unknown function type: %T", fn))
 		}
-		for _, arg := range n.arguments {
+		for _, arg := range n.Arguments {
 			w.WriteString(" ")
-			compile(ast.nodes[arg], ast, w)
+			compile(ast.Nodes[arg], ast, w)
 		}
 		w.WriteString(")")
 	case NodeLiteralObject:
-		for _, entry := range n.entries {
-			k, v := entry.key, entry.val
-			switch k := ast.nodes[k].(type) {
+		for _, entry := range n.Entries {
+			k, v := entry.Key, entry.Val
+			switch k := ast.Nodes[k].(type) {
 			case NodeIdentifier:
-				switch v := ast.nodes[v].(type) {
+				switch v := ast.Nodes[v].(type) {
 				case NodeLiteralFunction:
-					compileFunc(w, ast, k.val, v)
+					compileFunc(w, ast, k.Val, v)
 					w.WriteString("(export ")
-					w.WriteString(strconv.Quote(k.val))
+					w.WriteString(strconv.Quote(k.Val))
 					w.WriteString(" (func $")
-					w.WriteString(k.val)
+					w.WriteString(k.Val)
 					w.WriteString("))")
 				case NodeIdentifier:
 					w.WriteString("(export ")
-					w.WriteString(strconv.Quote(k.val))
+					w.WriteString(strconv.Quote(k.Val))
 					w.WriteString(" (func $")
-					w.WriteString(k.val)
+					w.WriteString(k.Val)
 					w.WriteString("))")
 				default:
 					panic(fmt.Sprintf("unknown value type: %T", v))
@@ -141,21 +141,21 @@ func compile(n Node, ast *AST, w *watWriter) {
 			}
 		}
 	case NodeMatchExpr:
-		switch condition := ast.nodes[n.condition].(type) {
+		switch condition := ast.Nodes[n.Condition].(type) {
 		case NodeLiteralBoolean:
-			if !condition.val {
+			if !condition.Val {
 				panic("cant match on false")
 			}
-			if len(n.clauses) == 0 {
+			if len(n.Clauses) == 0 {
 				panic("match on must have at least one clause")
 			}
 
-			for i, clause := range n.clauses {
-				clauseNode := ast.nodes[clause].(NodeMatchClause)
-				switch target := ast.nodes[clauseNode.target].(type) {
+			for i, clause := range n.Clauses {
+				clauseNode := ast.Nodes[clause].(NodeMatchClause)
+				switch target := ast.Nodes[clauseNode.Target].(type) {
 				case NodeIdentifierEmpty:
 					w.WriteString(") (else")
-					if i != len(n.clauses)-1 {
+					if i != len(n.Clauses)-1 {
 						panic("empty clause must be last")
 					}
 				default:
@@ -166,11 +166,11 @@ func compile(n Node, ast *AST, w *watWriter) {
 						panic("not implemented")
 					}
 				}
-				compile(ast.nodes[clauseNode.expression], ast, w)
+				compile(ast.Nodes[clauseNode.Expression], ast, w)
 			}
 			w.WriteString("))")
 		default:
-			panic(fmt.Sprintf("unknown match condition type: %T", n.condition))
+			panic(fmt.Sprintf("unknown match condition type: %T", n.Condition))
 		}
 	default:
 		panic(fmt.Sprintf("unknown node type: %T", n))

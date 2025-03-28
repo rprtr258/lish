@@ -2,911 +2,479 @@ package internal
 
 import (
 	"fmt"
-	"iter"
-	"slices"
 	"strconv"
-	"strings"
-
-	"github.com/rprtr258/fun"
 )
 
-const (
-	_astEmptyIdentifierIdx = 0
-	_astFalseLiteralIdx    = 1
-	_astTrueLiteralIdx     = 2
-)
+type Unit struct{}
 
-type AST struct {
-	numbers     map[float64]int
-	identifiers map[string]int
-	strings     map[string]int
-	nodes       []Node
-}
+var unit = Unit{}
 
-func newAstSlice() *AST {
-	return &AST{
-		numbers:     map[float64]int{},
-		identifiers: map[string]int{},
-		strings:     map[string]int{},
-		nodes: []Node{
-			NodeIdentifierEmpty{},
-			NodeLiteralBoolean{val: false},
-			NodeLiteralBoolean{val: true},
-		},
+// TODO: pass and use pos
+type Parser[T any] func(*AST, []byte) ([]byte, T, errParse)
+
+var parseByteAny Parser[byte] = func(_ *AST, in []byte) ([]byte, byte, errParse) {
+	if len(in) < 1 {
+		return nil, 0, errParse{&Err{nil, ErrSyntax, "unexpected EOF", Pos{}}}
 	}
+	return in[1:], in[0], errParse{}
 }
 
-func (s *AST) appendIdx(node Node) int {
-	// TODO: position is lost
-	switch node := node.(type) {
-	case NodeIdentifierEmpty:
-		// one empty identifier for all
-		return _astEmptyIdentifierIdx
-	case NodeLiteralBoolean:
-		return fun.IF(node.val, _astTrueLiteralIdx, _astFalseLiteralIdx)
-	case NodeLiteralNumber:
-		if _, ok := s.numbers[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.numbers[node.val] = n
-		}
-		return s.numbers[node.val]
-	case NodeLiteralString:
-		if _, ok := s.strings[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.strings[node.val] = n
-		}
-		return s.strings[node.val]
-	case NodeIdentifier:
-		if _, ok := s.identifiers[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.identifiers[node.val] = n
-		}
-		return s.identifiers[node.val]
-	default:
-		n := len(s.nodes)
-		s.nodes = append(s.nodes, node)
-		return n
-	}
-}
-
-func (s AST) String() string {
-	const (
-		_colorLiteral = "#fffd87"
-		_colorIdent   = "#88ff00"
-		_colorExpr    = "#a1c5ff"
-		_colorControl = "#ffa1a1"
-	)
-
-	var sb strings.Builder
-	sb.WriteString("digraph G {\n")
-	sb.WriteString(`node [
-	style=filled
-	shape=rect
-	fillcolor=white
-	fontname="Helvetica,Arial,sans-serif"
-]
-`)
-	for i, n := range s.nodes {
-		typ := strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node")
-		var val string
-		props := map[string]string{}
-		switch n := n.(type) {
-		case NodeLiteralBoolean:
-			props["fillcolor"] = _colorLiteral
-			val = fun.IF(n.val, "true", "false")
-		case NodeLiteralNumber:
-			props["fillcolor"] = _colorLiteral
-			val = fmt.Sprint(n.val)
-		case NodeLiteralString:
-			props["fillcolor"] = _colorLiteral
-			val = "'" + strings.Trim(strconv.Quote(strings.Trim(strconv.Quote(n.val), "\"")), "\"") + "'"
-		case NodeLiteralList, NodeLiteralFunction:
-			props["fillcolor"] = _colorLiteral
-		case NodeIdentifierEmpty:
-			props["fillcolor"] = _colorIdent
-		case NodeIdentifier:
-			props["fillcolor"] = _colorIdent
-			val = n.val
-		case NodeExprUnary:
-			props["fillcolor"] = _colorExpr
-			val = n.operator.String()
-		case NodeExprBinary:
-			props["fillcolor"] = _colorExpr
-			val = n.operator.String()
-		case NodeFunctionCall:
-			props["fillcolor"] = _colorExpr
-		case NodeMatchClause, NodeMatchExpr, NodeExprList:
-			props["fillcolor"] = _colorControl
-		}
-		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
-
-		fmt.Fprintf(&sb, "n%d [\n", i)
-		for k, v := range props {
-			fmt.Fprintf(&sb, "  %s=\"%s\"\n", k, v)
-		}
-		fmt.Fprint(&sb, "]\n")
-	}
-	for i, n := range s.nodes {
-		switch n := n.(type) {
-		case NodeExprList:
-			for k, j := range n.expressions {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
-			}
-		case NodeExprUnary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.operand)
-		case NodeExprBinary:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.left)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.right)
-		case NodeMatchClause:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, n.target)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, n.expression)
-		case NodeMatchExpr:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.condition)
-			for k, j := range n.clauses {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
-			}
-		case NodeLiteralFunction:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.body)
-			for k, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"arg/%d\"]\n", i, j, k)
-			}
-		case NodeFunctionCall:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"func\"]\n", i, n.function)
-			for k, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
-			}
-		}
-	}
-	sb.WriteString("}")
-	return sb.String()
-}
-
-type errParse struct {
-	err *Err
-}
-
-// Node represents an abstract syntax tree (AST) node in an Ink program.
-type Node interface {
-	String() string
-	Position() Pos
-	Eval(*Scope, *AST, bool) (Value, *Err)
-}
-
-type NodeExprUnary struct {
-	Pos
-	operator Kind
-	operand  int
-}
-
-func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s #%d", n.operator, n.operand)
-}
-
-func (n NodeExprUnary) Position() Pos {
-	return n.Pos
-}
-
-type NodeExprBinary struct {
-	Pos
-	operator    Kind
-	left, right int
-}
-
-func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary #%d %s #%d", n.left, n.operator, n.right)
-}
-
-func (n NodeExprBinary) Position() Pos {
-	return n.Pos
-}
-
-type NodeFunctionCall struct {
-	function  int
-	arguments []int
-}
-
-func (n NodeFunctionCall) String() string {
-	var sb strings.Builder
-	sb.WriteString("Call (#")
-	sb.WriteString(strconv.Itoa(n.function))
-	sb.WriteString(") on (")
-	for i, a := range n.arguments {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
-	}
-	sb.WriteString(")")
-	return sb.String()
-}
-
-func (n NodeFunctionCall) Position() Pos {
-	return Pos{} // TODO: n.function.Position()
-}
-
-type NodeMatchClause struct {
-	target, expression int
-}
-
-func (n NodeMatchClause) String() string {
-	return fmt.Sprintf("Clause #%d -> #%d", n.target, n.expression)
-}
-
-func (n NodeMatchClause) Position() Pos {
-	return Pos{} // TODO: return n.target.Position()
-}
-
-type NodeMatchExpr struct {
-	Pos
-	condition int
-	clauses   []int // TODO: inline clauses
-}
-
-func (n NodeMatchExpr) String() string {
-	var sb strings.Builder
-	sb.WriteString("Match on (#")
-	sb.WriteString(strconv.Itoa(n.condition))
-	sb.WriteString(") to {")
-	for i, a := range n.clauses {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
-	}
-	sb.WriteString("}")
-	return sb.String()
-}
-
-func (n NodeMatchExpr) Position() Pos {
-	return n.Pos
-}
-
-type NodeExprList struct {
-	Pos
-	expressions []int
-}
-
-func (n NodeExprList) String() string {
-	var sb strings.Builder
-	sb.WriteString("Expression list (")
-	for i, expr := range n.expressions {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(expr))
-	}
-	sb.WriteString(")")
-	return sb.String()
-}
-
-func (n NodeExprList) Position() Pos {
-	return n.Pos
-}
-
-type NodeIdentifierEmpty struct {
-	Pos
-}
-
-func (n NodeIdentifierEmpty) String() string {
-	return "Empty Identifier"
-}
-
-func (n NodeIdentifierEmpty) Position() Pos {
-	return n.Pos
-}
-
-type NodeIdentifier struct {
-	Pos
-	val string
-}
-
-func (n NodeIdentifier) String() string {
-	return fmt.Sprintf("Identifier '%s'", n.val)
-}
-
-func (n NodeIdentifier) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralNumber struct {
-	Pos
-	val float64
-}
-
-func (n NodeLiteralNumber) String() string {
-	return fmt.Sprintf("Number %s", nToS(n.val))
-}
-
-func (n NodeLiteralNumber) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralString struct {
-	Pos
-	val string
-}
-
-func (n NodeLiteralString) String() string {
-	return fmt.Sprintf("String '%s'", n.val)
-}
-
-func (n NodeLiteralString) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralBoolean struct {
-	Pos
-	val bool
-}
-
-func (n NodeLiteralBoolean) String() string {
-	return fmt.Sprintf("Boolean %t", n.val)
-}
-
-func (n NodeLiteralBoolean) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralObject struct {
-	Pos
-	entries []NodeObjectEntry
-}
-
-func (n NodeLiteralObject) String() string {
-	entries := make([]string, len(n.entries))
-	for i, e := range n.entries {
-		entries[i] = e.String()
-	}
-	return fmt.Sprintf("Object {%s}",
-		strings.Join(entries, ", "))
-}
-
-func (n NodeLiteralObject) Position() Pos {
-	return n.Pos
-}
-
-type NodeObjectEntry struct {
-	Pos
-	key, val int
-}
-
-func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("#%d: #%d", n.key, n.val)
-}
-
-type NodeLiteralList struct {
-	Pos
-	vals []int
-}
-
-func (n NodeLiteralList) String() string {
-	vals := make([]string, len(n.vals))
-	for i, v := range n.vals {
-		vals[i] = "#" + strconv.Itoa(v)
-	}
-	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
-}
-
-func (n NodeLiteralList) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralFunction struct {
-	Pos
-	arguments []int
-	body      int
-}
-
-func (n NodeLiteralFunction) String() string {
-	args := make([]string, len(n.arguments))
-	for i, a := range n.arguments {
-		args[i] = "#" + strconv.Itoa(a)
-	}
-	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.body)
-}
-
-func (n NodeLiteralFunction) Position() Pos {
-	return n.Pos
-}
-
-func guardUnexpectedInputEnd(tokens []Token, idx int) {
-	if idx < len(tokens) {
-		return
-	}
-
-	if len(tokens) == 0 {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input"), Pos{}}}) // TODO: report filename and position
-	}
-
-	panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}})
-}
-
-// parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
-// This implementation uses recursive descent parsing.
-func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
-	// TODO: parse stream if we can, hence making "one-pass" interpreter
-	tokens := slices.Collect(tokenStream)
-
-	nodes := []Node{}
-	for i := 0; i < len(tokens); {
-		if tokens[i].kind == Separator {
-			// this sometimes happens when the repl receives comment inputs
-			i++
-			continue
-		}
-
-		defer func() {
-			if r := recover(); r != nil {
-				err, ok := r.(errParse)
-				if !ok {
-					panic(r)
-				}
-
-				LogError(err.err)
-			}
-		}()
-
-		expr, incr := parseExpression(tokens[i:], s)
-
-		i += incr
-
-		logNode(s.nodes[expr])
-		nodes = append(nodes, s.nodes[expr])
-	}
-	logAST(s)
-	return nodes, s
-}
-
-var opPriority = map[Kind]int{
-	OpAccessor: 100,
-	OpModulus:  80,
-
-	OpMultiply: 50, OpDivide: 50,
-	OpAdd: 40, OpSubtract: 40,
-
-	OpGreaterThan: 30, OpLessThan: 30, OpEqual: 30,
-
-	OpLogicalAnd: 20,
-	OpLogicalXor: 15,
-	OpLogicalOr:  10,
-
-	OpDefine: 0,
-}
-
-func getOpPriority(t Token) int {
-	// higher == greater priority
-	priority, ok := opPriority[t.kind]
-	if !ok {
-		return -1
-	}
-	return priority
-}
-
-func isBinaryOp(t Token) bool {
-	return fun.Contains(t.kind,
-		OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
-		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
-		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor,
-	)
-}
-
-func parseBinaryExpression(
-	leftOperand int,
-	operator Token,
-	tokens []Token,
-	previousPriority int,
-	s *AST,
-) (int, int) {
-	rightAtom, idx := parseAtom(tokens, s)
-
-	incr := 0
-	ops := []Token{operator}
-	nodes := []int{leftOperand, rightAtom}
-	// build up a list of binary operations, with tree nodes
-	// where there are higher-priority binary ops
-LOOP:
-	for len(tokens) > idx && isBinaryOp(tokens[idx]) {
-		switch {
-		case previousPriority >= getOpPriority(tokens[idx]):
-			// Priority is lower than the calling function's last op,
-			//  so return control to the parent binary op
-			break LOOP
-		case getOpPriority(ops[len(ops)-1]) >= getOpPriority(tokens[idx]):
-			// Priority is lower than the previous op (but higher than parent),
-			// so it's ok to be left-heavy in this tree
-			ops = append(ops, tokens[idx])
-			idx++
-
-			guardUnexpectedInputEnd(tokens, idx)
-
-			rightAtom, incr = parseAtom(tokens[idx:], s)
-
-			nodes = append(nodes, rightAtom)
-			idx += incr
-		default:
-			guardUnexpectedInputEnd(tokens, idx+1)
-
-			// Priority is higher than previous ops,
-			// so make it a right-heavy tree
-			subtree, incr := parseBinaryExpression(
-				nodes[len(nodes)-1],
-				tokens[idx],
-				tokens[idx+1:],
-				getOpPriority(ops[len(ops)-1]),
-				s,
-			)
-
-			nodes[len(nodes)-1] = subtree
-			idx += incr + 1
-		}
-	}
-
-	// ops, nodes -> left-biased binary expression tree
-	tree := nodes[0]
-	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = s.appendIdx(NodeExprBinary{
-			operator: ops[0].kind,
-			left:     tree,
-			right:    nodes[0],
-			Pos:      ops[0].Pos,
-		})
-	}
-	return tree, idx
-}
-
-func parseExpression(tokens []Token, s *AST) (int, int) {
-	idx := 0
-	consumeDanglingSeparator := func() {
-		// bounds check in case parseExpress() called at some point
-		// consumed end token
-		if idx < len(tokens) && tokens[idx].kind == Separator {
-			idx++
-		}
-	}
-
-	atom, incr := parseAtom(tokens[idx:], s)
-
-	idx += incr
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	nextTok := tokens[idx]
-	idx++
-
-	switch nextTok.kind {
-	case Separator:
-		// consuming dangling separator
-		return atom, idx
-	case ParenRight, KeyValueSeparator, CaseArrow:
-		// these belong to the parent atom that contains this expression,
-		// so return without consuming token (idx - 1)
-		return atom, idx - 1
-	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
-		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
-		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
-		binExpr, incr := parseBinaryExpression(atom, nextTok, tokens[idx:], -1, s)
-		idx += incr
-
-		// Binary expressions are often followed by a match
-		// TODO: support empty match expression ((true by default) :: {n < 1 -> ...})
-		if idx < len(tokens) && tokens[idx].kind == MatchColon {
-			colonPos := tokens[idx].Pos
-			idx++ // MatchColon
-
-			clauses, incr := parseMatchBody(tokens[idx:], s)
-			idx += incr
-
-			consumeDanglingSeparator()
-			return s.appendIdx(NodeMatchExpr{
-				condition: binExpr,
-				clauses:   clauses,
-				Pos:       colonPos,
-			}), idx
-		}
-
-		consumeDanglingSeparator()
-		return binExpr, idx
-	case MatchColon:
-		clauses, incr := parseMatchBody(tokens[idx:], s)
-
-		idx += incr
-
-		consumeDanglingSeparator()
-		return s.appendIdx(NodeMatchExpr{
-			condition: atom,
-			clauses:   clauses,
-			Pos:       nextTok.Pos,
-		}), idx
-	default:
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.Pos}})
-	}
-}
-
-func parseAtom(tokens []Token, s *AST) (int, int) {
-	guardUnexpectedInputEnd(tokens, 0)
-
-	tok, idx := tokens[0], 1
-
-	if tok.kind == OpNegation {
-		atom, idx := parseAtom(tokens[idx:], s)
-		return s.appendIdx(NodeExprUnary{
-			operator: tok.kind,
-			operand:  atom,
-			Pos:      tok.Pos,
-		}), idx + 1
-	}
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	var atom int
-	switch tok.kind {
-	case LiteralNumber:
-		return s.appendIdx(NodeLiteralNumber{tok.Pos, tok.num}), idx
-	case LiteralString:
-		return s.appendIdx(NodeLiteralString{tok.Pos, tok.str}), idx
-	case LiteralTrue:
-		return s.appendIdx(NodeLiteralBoolean{tok.Pos, true}), idx
-	case LiteralFalse:
-		return s.appendIdx(NodeLiteralBoolean{tok.Pos, false}), idx
-	case Identifier:
-		if tokens[idx].kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
-
-			// parseAtom should not consume trailing Separators, but
-			// 	parseFunctionLiteral does because it ends with expressions.
-			// 	so we backtrack one token.
-			idx--
-		} else {
-			atom = s.appendIdx(NodeIdentifier{tok.Pos, tok.str})
-		}
-		// may be called as a function, so flows beyond
-		// switch block
-	case IdentifierEmpty:
-		if tokens[idx].kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
-
-			// parseAtom should not consume trailing Separators, but
-			// 	parseFunctionLiteral does because it ends with expressions.
-			// 	so we backtrack one token.
-			return atom, idx - 1
-		}
-
-		return s.appendIdx(NodeIdentifierEmpty{tok.Pos}), idx
-	case ParenLeft:
-		// grouped expression or function literal
-		exprs := make([]int, 0)
-		for tokens[idx].kind != ParenRight {
-			expr, incr := parseExpression(tokens[idx:], s)
-
-			idx += incr
-			exprs = append(exprs, expr)
-
-			guardUnexpectedInputEnd(tokens, idx)
-		}
-		idx++ // RightParen
-
-		guardUnexpectedInputEnd(tokens, idx)
-
-		if tokens[idx].kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
-
-			// parseAtom should not consume trailing Separators, but
-			// 	parseFunctionLiteral does because it ends with expressions.
-			// 	so we backtrack one token.
-			idx--
-		} else {
-			atom = s.appendIdx(NodeExprList{
-				expressions: exprs,
-				Pos:         tok.Pos,
-			})
-		}
-		// may be called as a function, so flows beyond switch block
-	case BraceLeft:
-		entries := make([]NodeObjectEntry, 0)
-		for tokens[idx].kind != BraceRight {
-			keyExpr, keyIncr := parseExpression(tokens[idx:], s)
-			idx += keyIncr
-
-			guardUnexpectedInputEnd(tokens, idx)
-
-			var valExpr int
-			if tokens[idx].kind == KeyValueSeparator { // "key: value" pair
-				idx++
-
-				guardUnexpectedInputEnd(tokens, idx)
-
-				expr, valIncr := parseExpression(tokens[idx:], s)
-
-				valExpr = expr
-				idx += valIncr // Separator consumed by parseExpression
-			} else if _, ok := s.nodes[keyExpr].(NodeIdentifier); ok { // "key", shorthand for "key: key"
-				valExpr = keyExpr
+func parseBytes(s string) Parser[string] {
+	return func(_ *AST, in []byte) ([]byte, string, errParse) {
+		if len(in) < len(s) || string(in[:len(s)]) != s {
+			var msg string
+			if len(in) == 0 {
+				msg = fmt.Sprintf("unexpected EOF, expected %q", s)
 			} else {
-				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}})
+				msg = fmt.Sprintf("unexpected bytes %q, expected %q", in[:min(len(in), len(s))], s)
 			}
-
-			entries = append(entries, NodeObjectEntry{
-				key: keyExpr,
-				val: valExpr,
-				Pos: s.nodes[keyExpr].Position(),
-			})
-
-			guardUnexpectedInputEnd(tokens, idx)
+			return nil, "", errParse{&Err{nil, ErrSyntax, msg, Pos{}}}
 		}
-		idx++ // RightBrace
+		return in[len(s):], s, errParse{}
+	}
+}
 
-		return s.appendIdx(NodeLiteralObject{
-			entries: entries,
-			Pos:     tok.Pos,
-		}), idx
-	case BracketLeft:
-		vals := make([]int, 0)
-		for tokens[idx].kind != BracketRight {
-			expr, incr := parseExpression(tokens[idx:], s)
-
-			idx += incr
-			vals = append(vals, expr)
-
-			guardUnexpectedInputEnd(tokens, idx)
+func parseOr[T any](parsers ...Parser[T]) Parser[T] {
+	return func(ast *AST, in []byte) ([]byte, T, errParse) {
+		errs := ""
+		for _, p := range parsers {
+			out, v, err := p(ast, in)
+			if err.Err == nil {
+				return out, v, err
+			}
+			errs += err.Err.Error() + ", "
 		}
-		idx++ // RightBracket
-
-		return s.appendIdx(NodeLiteralList{
-			vals: vals,
-			Pos:  tok.Pos,
-		}), idx
-	default:
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.Pos}})
+		return nil, *new(T), errParse{&Err{nil, ErrSyntax, "none matched: " + errs, Pos{}}}
 	}
-
-	// bounds check here because parseExpression may have
-	// consumed all tokens before this
-	for idx < len(tokens) && tokens[idx].kind == ParenLeft {
-		var incr int
-		atom, incr = parseFunctionCall(tokens[idx:], s, atom)
-
-		idx += incr
-
-		guardUnexpectedInputEnd(tokens, idx)
-	}
-
-	return atom, idx
 }
 
-// parses everything that follows MatchColon
-//
-//	does not consume dangling separator -- that's for parseExpression
-func parseMatchBody(tokens []Token, s *AST) ([]int, int) {
-	idx := 1 // LeftBrace
+var (
+	parseDigit = parseOr(
+		parseByte('0'),
+		parseByte('1'),
+		parseByte('2'),
+		parseByte('3'),
+		parseByte('4'),
+		parseByte('5'),
+		parseByte('6'),
+		parseByte('7'),
+		parseByte('8'),
+		parseByte('9'),
+	)
+	parseQuote         = parseByte('\'')
+	parseDot           = parseByte('.')
+	parseEqual         = parseByte('=')
+	parseFunctionArrow = parseBytes("=>")
+	parseColon         = parseByte(':')
+	parseDefine        = parseBytes(":=")
+	parseMatch         = parseBytes("::")
+	parseArrow         = parseBytes("->")
+	parseMinus         = parseByte('-')
+	parseNegation      = parseByte('~')
+	parseAdd           = parseByte('+')
+	parseMultiply      = parseByte('*')
+	parseDivide        = parseByte('/')
+	parseModulus       = parseByte('%')
+	parseGreaterThan   = parseByte('>')
+	parseLessThan      = parseByte('<')
+	parseLogicalAnd    = parseByte('&')
+	parseLogicalOr     = parseByte('|')
+	parseLogicalXor    = parseByte('^')
 
-	guardUnexpectedInputEnd(tokens, idx)
+	parseParenLeft, parseParenRight     = parseByte('('), parseByte(')')
+	parseBracketLeft, parseBracketRight = parseByte('['), parseByte(']')
+	parseBraceLeft, parseBraceRight     = parseByte('{'), parseByte('}')
+)
 
-	clauses := make([]int, 0)
-	for tokens[idx].kind != BraceRight {
-		clauseNode, incr := parseMatchClause(tokens[idx:], s)
-
-		idx += incr
-		clauses = append(clauses, clauseNode)
-
-		guardUnexpectedInputEnd(tokens, idx)
+func parseAnd2[A, B, R any](
+	p1 Parser[A],
+	p2 Parser[B],
+	f func(A, B) (R, errParse),
+) Parser[R] {
+	return func(ast *AST, in []byte) ([]byte, R, errParse) {
+		ain, a, err := p1(ast, in)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		bin, b, err := p2(ast, ain)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		r, err := f(a, b)
+		return bin, r, err
 	}
-	idx++ // RightBrace
-	return clauses, idx
 }
 
-func parseMatchClause(tokens []Token, s *AST) (int, int) {
-	atom, idx := parseExpression(tokens, s)
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	if tokens[idx].kind != CaseArrow {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].Pos}})
+func parseAnd3[A, B, C, R any](
+	p1 Parser[A],
+	p2 Parser[B],
+	p3 Parser[C],
+	f func(A, B, C) (R, errParse),
+) Parser[R] {
+	return func(ast *AST, in []byte) ([]byte, R, errParse) {
+		ain, a, err := p1(ast, in)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		bin, b, err := p2(ast, ain)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		cin, c, err := p3(ast, bin)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		r, err := f(a, b, c)
+		return cin, r, err
 	}
-	idx++ // CaseArrow
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	expr, incr := parseExpression(tokens[idx:], s)
-
-	idx += incr
-
-	return s.appendIdx(NodeMatchClause{
-		target:     atom,
-		expression: expr,
-	}), idx
 }
 
-func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
-	tok, idx := tokens[0], 1
+func parseAnd4[A, B, C, D, R any](
+	p1 Parser[A],
+	p2 Parser[B],
+	p3 Parser[C],
+	p4 Parser[D],
+	f func(A, B, C, D) (R, errParse),
+) Parser[R] {
+	return func(ast *AST, in []byte) ([]byte, R, errParse) {
+		ain, a, err := p1(ast, in)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		bin, b, err := p2(ast, ain)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		cin, c, err := p3(ast, bin)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		din, d, err := p4(ast, cin)
+		if err.Err != nil {
+			return nil, *new(R), err
+		}
+		r, err := f(a, b, c, d)
+		return din, r, err
+	}
+}
 
-	guardUnexpectedInputEnd(tokens, idx)
+type Option[T any] struct {
+	Value T
+	Valid bool
+}
 
-	arguments := make([]int, 0)
-	switch tok.kind {
-	case ParenLeft:
-	LOOP:
+func parseOptional[T any](p Parser[T]) Parser[Option[T]] {
+	return func(ast *AST, in []byte) ([]byte, Option[T], errParse) {
+		out, v, err := p(ast, in)
+		if err.Err != nil {
+			return in, Option[T]{}, errParse{}
+		}
+		return out, Option[T]{v, true}, errParse{}
+	}
+}
+
+func parseMany[T any](p Parser[T]) Parser[[]T] {
+	return func(ast *AST, in []byte) ([]byte, []T, errParse) {
+		var res []T
 		for {
-			tk := tokens[idx]
-			switch tk.kind {
-			case Identifier:
-				idNode := s.appendIdx(NodeIdentifier{tk.Pos, tk.str})
-				arguments = append(arguments, idNode)
-			case IdentifierEmpty:
-				idNode := s.appendIdx(NodeIdentifierEmpty{tk.Pos})
-				arguments = append(arguments, idNode)
-			default:
-				break LOOP
+			out, v, err := p(ast, in)
+			if err.Err != nil {
+				return in, res, errParse{}
 			}
-			idx++
-
-			guardUnexpectedInputEnd(tokens, idx)
-
-			if tokens[idx].kind != Separator {
-				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].Pos}})
-			}
-			idx++ // Separator
+			res = append(res, v)
+			in = out
 		}
-
-		guardUnexpectedInputEnd(tokens, idx)
-
-		if tokens[idx].kind != ParenRight {
-			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].Pos}})
-		}
-		idx++ // RightParen
-	case Identifier:
-		idNode := s.appendIdx(NodeIdentifier{tok.Pos, tok.str})
-		arguments = append(arguments, idNode)
-	case IdentifierEmpty:
-		idNode := s.appendIdx(NodeIdentifierEmpty{tok.Pos})
-		arguments = append(arguments, idNode)
-	default:
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}})
 	}
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	if tokens[idx].kind != FunctionArrow {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].Pos}})
-	}
-
-	idx++ // FunctionArrow
-
-	body, incr := parseExpression(tokens[idx:], s)
-
-	idx += incr
-
-	return s.appendIdx(NodeLiteralFunction{
-		arguments: arguments,
-		body:      body,
-		Pos:       tokens[0].Pos,
-	}), idx
 }
 
-func parseFunctionCall(tokens []Token, s *AST, function int) (int, int) {
-	idx := 1
+func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
+	return func(ast *AST, in []byte) ([]byte, R, errParse) {
+		out, v, err := p(ast, in)
+		if err.Err != nil {
+			return in, *new(R), errParse{}
+		}
 
-	guardUnexpectedInputEnd(tokens, idx)
-
-	arguments := make([]int, 0)
-	for tokens[idx].kind != ParenRight {
-		expr, incr := parseExpression(tokens[idx:], s)
-
-		idx += incr
-		arguments = append(arguments, expr)
-
-		guardUnexpectedInputEnd(tokens, idx)
+		vv, err := f(v)
+		return out, vv, err
 	}
+}
 
-	idx++ // RightParen
+func parseByte(b byte) Parser[byte] {
+	return parseMap(parseByteAny, func(v byte) (byte, errParse) {
+		if v != b {
+			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected byte %c, expected %c", v, b), Pos{}}}
+		}
+		return v, errParse{}
+	})
+}
 
-	return s.appendIdx(NodeFunctionCall{
-		function:  function,
-		arguments: arguments,
-	}), idx
+func parseIgnore[T any](p Parser[T]) Parser[struct{}] {
+	return func(ast *AST, in []byte) ([]byte, struct{}, errParse) {
+		out, _, err := p(ast, in)
+		return out, struct{}{}, err
+	}
+}
+
+// 123 | 123. | 123.456 | .456 | -123.456
+func parseNumber(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd4(
+		parseOptional(parseIgnore(parseMinus)),
+		parseMany(parseDigit),
+		parseOptional(parseDot),
+		parseMany(parseDigit),
+		func(
+			isNegative Option[struct{}],
+			integerPart []byte,
+			dot Option[byte],
+			fractionalPart []byte,
+		) (int, errParse) {
+			if len(integerPart) == 0 && len(fractionalPart) == 0 || len(integerPart) != 0 && dot.Valid && len(fractionalPart) != 0 {
+				return -1, errParse{&Err{nil, ErrSyntax, "invalid number", Pos{}}}
+			}
+
+			s := string(integerPart)
+			if dot.Valid {
+				s += "." + string(dot.Value)
+			}
+			if isNegative.Valid {
+				s = "-" + s
+			}
+
+			f, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return -1, errParse{&Err{nil, ErrSyntax, err.Error(), Pos{}}}
+			}
+
+			return ast.Append(NodeLiteralNumber{
+				Val: f,
+				Pos: Pos{},
+			}), errParse{}
+		})(ast, b)
+}
+
+var _charsEscaped = map[byte]byte{
+	'n':  '\n',
+	'r':  '\r',
+	't':  '\t',
+	'\\': '\\',
+	'\'': '\'',
+}
+
+// ” | 'abc' | 'abc\'def\n\\\r\tghi'
+func parseString(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseQuote,
+		parseMany(parseMap(parseOr(
+			parseAnd2(
+				parseByte('\\'),
+				parseByteAny,
+				func(_ byte, b byte) (byte, errParse) {
+					if _, ok := _charsEscaped[b]; !ok {
+						return 0, errParse{
+							&Err{nil, ErrSyntax, fmt.Sprintf("invalid escape sequence \\%c", b), Pos{}},
+						}
+					}
+					return _charsEscaped[b], errParse{}
+				},
+			),
+			parseByteAny,
+		), func(b byte) (byte, errParse) {
+			return b, errParse{}
+		},
+		)),
+		parseQuote,
+		func(
+			_ byte,
+			inside []byte,
+			_ byte,
+		) (int, errParse) {
+			return ast.Append(NodeLiteralString{
+				Val: string(inside),
+				Pos: Pos{},
+			}), errParse{}
+		})(ast, b)
+}
+
+func parseBoolean(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseMap(parseOr(
+		parseBytes("true"),
+		parseBytes("false"),
+	), func(s string) (int, errParse) {
+		switch s {
+		case "true":
+			return _astTrueLiteralIdx, errParse{}
+		case "false":
+			return _astFalseLiteralIdx, errParse{}
+		default:
+			return -1, errParse{&Err{nil, ErrSyntax, "invalid boolean literal: " + s, Pos{}}}
+		}
+	})(ast, b)
+}
+
+var parseIdentifierEmpty = parseMap(
+	parseByte('_'),
+	func(byte) (int, errParse) {
+		return _astEmptyIdentifierIdx, errParse{}
+	})
+
+func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseMap(
+		parseMany(parseMap(parseByteAny, func(b byte) (byte, errParse) {
+			// TODO: other symbols
+			if '0' <= b && b <= '9' || 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z' || b == '_' {
+				return b, errParse{}
+			}
+			return 0, errParse{
+				&Err{nil, ErrSyntax, fmt.Sprintf("invalid identifier character %c", b), Pos{}},
+			}
+		})),
+		func(ident []byte) (int, errParse) {
+			switch {
+			case len(ident) == 0:
+				return -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
+			case '0' <= ident[0] && ident[0] <= '9':
+				return -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", Pos{}}}
+			default:
+				return ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
+			}
+		})(ast, b)
+}
+
+// TODO: remove
+func parseNode(p Parser[int]) Parser[int] {
+	return parseMap(p, func(n int) (int, errParse) { return n, errParse{} })
+}
+
+func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
+	parseList := parseAnd3(
+		parseParenLeft,
+		parseMany(parseExpression), // TODO: separated by commas?
+		parseParenRight,
+		func(_ byte, exprs []int, _ byte) (int, errParse) {
+			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
+		},
+	)
+
+	return parseOr(
+		// literals
+		parseNode(parseNumber),
+		parseNode(parseString),
+		parseNode(parseBoolean),
+		// identifier
+		parseNode(parseIdentifier),
+		// assignment
+		parseAnd3(
+			parseExpression,
+			parseDefine,
+			parseExpression,
+			func(lvalue int, _ string, rvalue int) (int, errParse) {
+				return ast.Append(NodeExprBinary{Pos{}, OpDefine, lvalue, rvalue}), errParse{}
+			},
+		),
+		// block
+		parseAnd3(
+			parseParenLeft,
+			parseMany(parseExpression), // TODO: separated by commas?
+			parseParenRight,
+			func(_ byte, exprs []int, _ byte) (int, errParse) {
+				if len(exprs) == 0 {
+					return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
+				}
+				res := exprs[0]
+				for i := 1; i < len(exprs); i++ {
+					// TODO: sequencing operator
+					res = ast.Append(NodeExprBinary{Pos{}, OpSubtract, res, exprs[i]})
+				}
+				return res, errParse{}
+			},
+		),
+		// list
+		parseNode(parseList),
+		// dict
+		parseAnd3(
+			parseBraceLeft,
+			parseMany(parseAnd3(
+				parseExpression,
+				parseColon,
+				parseExpression,
+				func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
+					return NodeObjectEntry{Pos{}, k, v}, errParse{}
+				},
+			)), // TODO: separated by commas?
+			parseBraceRight,
+			func(_ byte, kvs []NodeObjectEntry, _ byte) (int, errParse) {
+				return ast.Append(NodeLiteralObject{Pos{}, kvs}), errParse{}
+			},
+		),
+		// lambda
+		parseNode(parseAnd3(
+			parseOr(
+				parseMap(parseIdentifier, func(ident int) ([]int, errParse) { return []int{ident}, errParse{} }),
+				parseMap(parseList, func(list int) ([]int, errParse) { return ast.Nodes[list].(NodeExprList).Expressions, errParse{} }),
+			),
+			parseFunctionArrow,
+			parseExpression,
+			func(args []int, _ string, body int) (int, errParse) {
+				return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
+			},
+		)),
+		// function call
+		parseAnd3(
+			parseExpression,
+			parseParenLeft,
+			parseMany(parseExpression), // TODO: separated by commas?
+			func(fn int, _ byte, args []int) (int, errParse) {
+				return ast.Append(NodeFunctionCall{fn, args}), errParse{}
+			},
+		),
+		// unary expression
+		parseAnd2(
+			parseByte('-'),
+			parseExpression,
+			func(_ byte, n int) (int, errParse) {
+				return ast.Append(NodeExprUnary{Pos{}, OpNegation, n}), errParse{}
+			},
+		),
+		// binary expression
+		parseAnd3(
+			parseExpression,
+			parseOr(
+				// NOTE: ordered by priority, higher is higher priority
+				parseByte('%'),
+				parseByte('*'),
+				parseByte('/'),
+				parseByte('>'),
+				parseByte('<'),
+				parseByte('='),
+				parseByte('&'),
+				parseByte('^'),
+				parseByte('|'),
+				parseByte('+'),
+				parseByte('-'),
+			),
+			parseExpression,
+			func(m int, op byte, n int) (int, errParse) {
+				mp := map[byte]Kind{
+					'+': OpAdd,
+					'-': OpSubtract,
+					'*': OpMultiply,
+					'/': OpDivide,
+					'%': OpModulus,
+					'&': OpLogicalAnd,
+					'|': OpLogicalOr,
+					'^': OpLogicalXor,
+					'>': OpGreaterThan,
+					'<': OpLessThan,
+					'=': OpEqual,
+				}
+				opKind, ok := mp[op]
+				if !ok {
+					return -1, errParse{
+						&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}},
+					}
+				}
+				return ast.Append(NodeExprBinary{Pos{}, opKind, n, m}), errParse{}
+			},
+		),
+	)(ast, b)
 }

@@ -39,11 +39,11 @@ type Logger struct {
 
 func LogError(err *Err) {
 	level := fun.IF(L.FatalError, zerolog.FatalLevel, zerolog.WarnLevel)
-	for ee := err; ee != nil; ee = ee.parent {
+	for ee := err; ee != nil; ee = ee.Parent {
 		defer log.WithLevel(level).
-			Stringer("at", err.pos).
-			Stringer("kind", err.reason).
-			Msg(ee.message)
+			Stringer("at", err.Pos).
+			Stringer("kind", err.Reason).
+			Msg(ee.Message)
 	}
 }
 
@@ -62,12 +62,12 @@ func logToken(tok Token) {
 
 	e := log.Debug().
 		Stringer("at", tok.Pos).
-		Stringer("kind", tok.kind)
-	if tok.str != "" {
-		e = e.Str("str", tok.str)
+		Stringer("kind", tok.Kind)
+	if tok.Str != "" {
+		e = e.Str("str", tok.Str)
 	}
-	if tok.num != 0 {
-		e = e.Float64("f64", tok.num)
+	if tok.Num != 0 {
+		e = e.Float64("f64", tok.Num)
 	}
 	e.Send()
 }
