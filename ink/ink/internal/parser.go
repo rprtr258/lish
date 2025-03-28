@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 )
@@ -86,17 +87,24 @@ var (
 	parseBraceLeft, parseBraceRight     = parseByte('{'), parseByte('}')
 )
 
+func skipSpaces(b []byte) []byte {
+	for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
+		b = b[1:]
+	}
+	return b
+}
+
 func parseAnd2[A, B, R any](
 	p1 Parser[A],
 	p2 Parser[B],
 	f func(A, B) (R, errParse),
 ) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		ain, a, err := p1(ast, in)
+		ain, a, err := p1(ast, skipSpaces(in))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		bin, b, err := p2(ast, ain)
+		bin, b, err := p2(ast, skipSpaces(ain))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
@@ -112,15 +120,15 @@ func parseAnd3[A, B, C, R any](
 	f func(A, B, C) (R, errParse),
 ) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		ain, a, err := p1(ast, in)
+		ain, a, err := p1(ast, skipSpaces(in))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		bin, b, err := p2(ast, ain)
+		bin, b, err := p2(ast, skipSpaces(ain))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		cin, c, err := p3(ast, bin)
+		cin, c, err := p3(ast, skipSpaces(bin))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
@@ -137,19 +145,19 @@ func parseAnd4[A, B, C, D, R any](
 	f func(A, B, C, D) (R, errParse),
 ) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		ain, a, err := p1(ast, in)
+		ain, a, err := p1(ast, skipSpaces(in))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		bin, b, err := p2(ast, ain)
+		bin, b, err := p2(ast, skipSpaces(ain))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		cin, c, err := p3(ast, bin)
+		cin, c, err := p3(ast, skipSpaces(bin))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		din, d, err := p4(ast, cin)
+		din, d, err := p4(ast, skipSpaces(cin))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
@@ -340,9 +348,42 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 		})(ast, b)
 }
 
-// TODO: remove
-func parseNode(p Parser[int]) Parser[int] {
-	return parseMap(p, func(n int) (int, errParse) { return n, errParse{} })
+func parseComment(_ *AST, b []byte) ([]byte, Unit, errParse) {
+	for {
+		for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
+			b = b[1:]
+		}
+
+		if len(b) == 0 {
+			return b, unit, errParse{}
+		}
+
+		switch b[0] {
+		case '#':
+			if i := bytes.IndexByte(b, '\n'); i == -1 {
+				// no newline, comment till end of file
+				return []byte(nil), unit, errParse{}
+			} else {
+				return b[i+1:], unit, errParse{}
+			}
+		case '\n':
+			// empty line, skip
+			continue
+		default:
+			return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
+		}
+	}
+}
+
+func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseExpression,
+		parseDefine,
+		parseExpression,
+		func(lvalue int, _ string, rvalue int) (int, errParse) {
+			return ast.Append(NodeExprBinary{Pos{}, OpDefine, lvalue, rvalue}), errParse{}
+		},
+	)(ast, b)
 }
 
 func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
@@ -354,23 +395,20 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
 		},
 	)
+	parseComment := parseMap(parseComment, func(_ Unit) (int, errParse) {
+		return _astEmptyIdentifierIdx, errParse{} // NOTE: since we have to return some node, return empty
+	})
+	parseLiteral := parseOr(
+		parseNumber,
+		parseString,
+		parseBoolean,
+	)
 
 	return parseOr(
-		// literals
-		parseNode(parseNumber),
-		parseNode(parseString),
-		parseNode(parseBoolean),
-		// identifier
-		parseNode(parseIdentifier),
-		// assignment
-		parseAnd3(
-			parseExpression,
-			parseDefine,
-			parseExpression,
-			func(lvalue int, _ string, rvalue int) (int, errParse) {
-				return ast.Append(NodeExprBinary{Pos{}, OpDefine, lvalue, rvalue}), errParse{}
-			},
-		),
+		parseComment,
+		parseLiteral,
+		parseIdentifier,
+		parseAssignment,
 		// block
 		parseAnd3(
 			parseParenLeft,
@@ -389,7 +427,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			},
 		),
 		// list
-		parseNode(parseList),
+		parseList,
 		// dict
 		parseAnd3(
 			parseBraceLeft,
@@ -407,7 +445,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			},
 		),
 		// lambda
-		parseNode(parseAnd3(
+		parseAnd3(
 			parseOr(
 				parseMap(parseIdentifier, func(ident int) ([]int, errParse) { return []int{ident}, errParse{} }),
 				parseMap(parseList, func(list int) ([]int, errParse) { return ast.Nodes[list].(NodeExprList).Expressions, errParse{} }),
@@ -417,7 +455,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			func(args []int, _ string, body int) (int, errParse) {
 				return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
 			},
-		)),
+		),
 		// function call
 		parseAnd3(
 			parseExpression,

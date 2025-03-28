@@ -1093,13 +1093,21 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 	}
 	// tokens := tokenize(filename, r) // TODO: delete
 	nodes := []Node{}
+	oldBLen := len(b)
 	for len(b) > 0 {
+		fmt.Println(string(b[:min(len(b), 20)]))
 		var err errParse
 		var expr int
 		b, expr, err = parseExpression(ast, b)
 		LogError(err.Err)
 		LogNode(ast.Nodes[expr])
-		nodes = append(nodes, ast.Nodes[expr])
+		if expr != _astEmptyIdentifierIdx { // NOTE: skip comments
+			nodes = append(nodes, ast.Nodes[expr])
+		}
+		if len(b) == oldBLen {
+			panic("nothing parsed")
+		}
+		oldBLen = len(b)
 	}
 	return nodes
 }
