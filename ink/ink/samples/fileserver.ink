@@ -3,11 +3,11 @@
 # an http static file server
 # with support for directory indexes
 
-log := import('logging.ink').log
-slice := import('std.ink').slice
+{log} := import('logging.ink')
+{slice} := import('std.ink')
 {format: f, join: cat} := import('str.ink')
 {map, each} := import('functional.ink')
-readFile := import('io.ink').readFile
+{readFile} := import('io.ink')
 
 DIR := '.'
 PORT := 7800
@@ -38,8 +38,26 @@ TYPES := {
   json: 'application/json'
 }
 
+# given a path, get the file extension
+getPathEnding := path => (
+  (sub := (idx, acc) => true :: {
+    idx == 0 -> path
+    path.(idx) == '.' -> acc
+    _ -> sub(idx - 1, path.(idx) + acc)
+  })(len(path) - 1, '')
+)
+
+# given a path, get the MIME type
+getType := path => (
+  guess := TYPES.(getPathEnding(path))
+  guess :: {
+    () -> 'application/octet-stream'
+    _ -> guess
+  }
+)
+
 # prepare standard header
-hdr := attrs => (
+hdr := attrs => ( # TODO: just base + attrs ?
   base := {
     'X-Served-By': 'ink-serve'
     'Content-Type': 'text/plain'
@@ -49,129 +67,80 @@ hdr := attrs => (
 )
 
 # is this path a path to a directory?
-dirPath? := path => path.(len(path) - 1) :: {
-  '/' -> true
-  _ -> false
-}
-
-# main server handler
-close := listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
-  'error' -> log('server error: ' + evt.message)
-  'req' -> (
-    log(f('{{ method }}: {{ url }}', evt.data))
-
-    # set up timer
-    start := time()
-    # trim the elapsed-time millisecond count at 2-3 decimal digits
-    getElapsed := () => slice(string(floor((time() - start) * 1000000) / 1000), 0, 5)
-
-    # normalize path
-    url := trimQP(evt.data.url)
-
-    # respond to file request
-    evt.data.method :: {
-      'GET' -> handlePath(url, DIR + url, evt.end, getElapsed)
-      _ -> (
-        # if other methods, just drop the request
-        log('  -> ' + evt.data.url + ' dropped')
-        (evt.end)({
-          status: 405
-          headers: hdr({})
-          body: 'method not allowed'
-        })
-      )
-    }
-  )
-})
-
-# handles requests to path with given parameters
-handlePath := (url, path, end, getElapsed) => stat(path, evt => evt.type :: {
-  'error' -> (
-    log(f('  -> {{ url }} led to error in {{ ms }}ms: {{ error }}', {
-      url
-      ms: getElapsed()
-      error: evt.message
-    }))
-    end({
-      status: 500
-      headers: hdr({})
-      body: 'server error'
-    })
-  )
-  'data' -> handleStat(url, path, evt.data, end, getElapsed)
-})
+dirPath? := path => path.(len(path) - 1) == '/'
 
 # handles requests to validated paths
-handleStat := (url, path, data, end, getElapsed) => data :: {
+handleStat := (url, path, data, getElapsed) => data :: {
   # means file didn't exist
   () -> (
     # what if the path omits the .html extension?
     hpath := path + '.html'
-    stat(hpath, evt => evt.type :: {
+    evt := stat(hpath)
+    evt.type :: {
       'error' -> (
         log(f('  -> {{ url }} (.html) led to error in {{ ms }}ms: {{ error }}', {
           url
           ms: getElapsed()
           error: evt.message
         }))
-        end({
+        {
           status: 500
           headers: hdr({})
           body: 'server error'
-        })
+        }
       )
       'data' -> evt.data :: {
-        {dir: false, name: _, len: _} -> handlePath(url, hpath, end, getElapsed)
+        {dir: false, name: _, len: _} -> handlePath(url, hpath, getElapsed)
         _ -> (
           log(f('  -> {{ url }} not found in {{ ms }}ms', {
             url
             ms: getElapsed()
           }))
-          end({
+          {
             status: 404
             headers: hdr({})
             body: 'not found'
-          })
+          }
         )
       }
-    })
+    }
   )
-  {dir: true, name: _, len: _, mod: _} -> dirPath?(path) :: {
-    true -> handleDir(url, path, data, end, getElapsed)
+  {dir: true, name: _, len: _, mod: _} -> true :: {
+    dirPath?(path) -> handleDir(url, path, data, getElapsed)
     _ -> (
       log(f('  -> {{ url }} returned redirect to {{ url }}/ in {{ ms }}ms', {
         url
         ms: getElapsed()
       }))
-      end({
+      {
         status: 301
         headers: hdr({
           'Location': url + '/'
         })
         body: ''
-      })
+      }
     )
   }
-  {dir: false, name: _, len: _, mod: _} -> readFile(path, data => handleFileRead(url, path, data, end, getElapsed))
-  _ -> end({
+  {dir: false, name: _, len: _, mod: _} -> readFile(path, data => handleFileRead(url, path, data, getElapsed))
+  _ -> {
     status: 500
     headers: hdr({})
-    body: 'server invariant violation'
-  })
+    body: 'server invariant violation 1'
+  }
 }
 
 # handles requests to readFile()
-handleFileRead := (url, path, data, end, getElapsed) => data :: {
+handleFileRead := (url, path, data, getElapsed) => data :: {
   () -> (
     log(f('  -> {{ url }} failed read in {{ ms }}ms', {
       url
       ms: getElapsed()
     }))
-    end({
+    {
       status: 500
       headers: hdr({})
       body: 'server error'
-    })
+    }
   )
   _ -> (
     fileType := getType(path)
@@ -180,61 +149,62 @@ handleFileRead := (url, path, data, end, getElapsed) => data :: {
       type: fileType
       ms: getElapsed()
     }))
-    end({
+    {
       status: 200
       headers: hdr({
         'Content-Type': getType(path)
       })
       body: data
-    })
+    }
+  )
+}
+
+# handle a directory we stat() confirmed to exist
+handleExistingDir := (url, path, getElapsed) => true :: {
+  ALLOWINDEX -> handleNoIndexDir(url, path, getElapsed)
+  _ -> (
+    log(f('  -> {{ url }} not allowed in {{ ms }}ms', {
+      url
+      ms: getElapsed()
+    }))
+    {
+      status: 403
+      headers: hdr({})
+      body: 'permission denied'
+    }
   )
 }
 
 # handles requests to directories '/'
-handleDir := (url, path, data, end, getElapsed) => (
+handleDir := (url, path, data, getElapsed) => (
   ipath := path + 'index.html'
-  stat(ipath, evt => evt.type :: {
+  evt := stat(ipath)
+  evt.type :: {
     'error' -> (
       log(f('  -> {{ url }} (index) led to error in {{ ms }}ms: {{ error }}', {
         url
         ms: getElapsed()
         error: evt.message
       }))
-      end({
+      {
         status: 500
         headers: hdr({})
         body: 'server error'
-      })
+      }
     )
     'data' -> evt.data :: {
-      () -> handleExistingDir(url, path, end, getElapsed)
+      () -> handleExistingDir(url, path, getElapsed)
       # in the off chance that /index.html is a dir, just render index
-      {dir: true, name: _, len: _, mod: _} -> handleExistingDir(url, path, end, getElapsed)
-      {dir: false, name: _, len: _, mod: _} -> handlePath(url, ipath, end, getElapsed)
-      _ -> end({
+      {dir: true, name: _, len: _, mod: _} -> handleExistingDir(url, path, getElapsed)
+      {dir: false, name: _, len: _, mod: _} -> handlePath(url, ipath, getElapsed)
+      _ -> {
         status: 500
         headers: hdr({})
-        body: 'server invariant violation'
-      })
+        body: 'server invariant violation 2'
+      }
     }
-  })
+  }
 )
-
-# handle a directory we stat() confirmed to exist
-handleExistingDir := (url, path, end, getElapsed) => ALLOWINDEX :: {
-  true -> handleNoIndexDir(url, path, end, getElapsed)
-  _ -> (
-    log(f('  -> {{ url }} not allowed in {{ ms }}ms', {
-      url
-      ms: getElapsed()
-    }))
-    end({
-      status: 403
-      headers: hdr({})
-      body: 'permission denied'
-    })
-  )
-}
 
 # helpers for rendering the directory index page
 makeIndex := (path, items) => '<title>' + path +
@@ -244,40 +214,40 @@ makeIndexLi := (fileStat, separator) => '<li><a href="' + fileStat.name + '" tit
   fileStat.name + separator + ' (' + string(fileStat.len) + ' B)</a></li>'
 
 # handles requests to dir() without /index.html
-handleNoIndexDir := (url, path, end, getElapsed) => dir(path, evt => evt.type :: {
+handleNoIndexDir := (url, path, getElapsed) => dir(path, evt => evt.type :: {
   'error' -> (
     log(f('  -> {{ url }} dir() led to error in {{ ms }}ms: {{ error }}', {
       url
       ms: getElapsed()
       error: evt.message
     }))
-    end({
+    {
       status: 500
       headers: hdr({})
       body: 'server error'
-    })
+    }
   )
   'data' -> (
     log(f('  -> {{ url }} (index) served in {{ ms }}ms', {
       url
       ms: getElapsed()
     }))
-    end({
+    {
       status: 200
       headers: hdr({
         'Content-Type': 'text/html'
       })
       body: makeIndex(
         slice(path, 2, len(path))
-        cat(map(evt.data, (fileStat, _) => makeIndexLi(
+        cat(map(evt.data, fileStat => makeIndexLi(
           fileStat
-          fileStat.dir :: {
-            true -> '/'
+          true :: {
+            fileStat.dir -> '/'
             _ -> ''
           }
         )), '')
       )
-    })
+    }
   )
 })
 
@@ -293,20 +263,52 @@ trimQP := path => (
   })(0, '')
 )
 
-# given a path, get the MIME type
-getType := path => (
-  guess := TYPES.(getPathEnding(path))
-  guess :: {
-    () -> 'application/octet-stream'
-    _ -> guess
+# handles requests to path with given parameters
+handlePath := (url, path, getElapsed) => (
+  evt := stat(path)
+  evt.type :: {
+    'error' -> (
+      log(f('  -> {{ url }} led to error in {{ ms }}ms: {{ error }}', {
+        url
+        ms: getElapsed()
+        error: evt.message
+      }))
+      {
+        status: 500
+        headers: hdr({})
+        body: 'server error'
+      }
+    )
+    'data' -> handleStat(url, path, evt.data, getElapsed)
   }
 )
 
-# given a path, get the file extension
-getPathEnding := path => (
-  (sub := (idx, acc) => true :: {
-    idx = 0 -> path
-    path.(idx) = '.' -> acc
-    _ -> sub(idx - 1, path.(idx) + acc)
-  })(len(path) - 1, '')
-)
+# main server handler
+listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
+  'error' -> log('server error: ' + evt.message)
+  'req' -> (
+    log(f('{{ method }}: {{ url }}', evt.data))
+
+    # set up timer
+    start := time()
+    # trim the elapsed-time millisecond count at 2-3 decimal digits
+    getElapsed := () => slice(string(floor((time() - start) * 1000000) / 1000), 0, 5)
+
+    # normalize path
+    url := trimQP(evt.data.url)
+
+    # respond to file request
+    evt.data.method :: {
+      'GET' -> handlePath(url, DIR + url, getElapsed)
+      _ -> (
+        # if other methods, just drop the request
+        log('  -> ' + evt.data.url + ' dropped')
+        {
+          status: 405
+          headers: hdr({})
+          body: 'method not allowed'
+        }
+      )
+    }
+  )
+})

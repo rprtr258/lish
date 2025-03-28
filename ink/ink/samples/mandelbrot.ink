@@ -1,10 +1,10 @@
 # generate a rendering of the Mandelbrot set
 
-bmp := import('bmp').bmp
-log := import('logging.ink').log
-f := import('str.ink').format
+{bmp} := import('bmp')
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
 {map, reduce, range} := import('functional.ink')
-wf := import('io').writeFile
+{writeFile: wf} := import('io')
 {max, iverson} := import('math.ink')
 
 # graph position
@@ -43,9 +43,9 @@ lb := 1 / ln(ESCAPE) # log base
 lhb := ln(0.5) * lb # log half-base
 mcompute := coord => (
   thresholdSq := ESCAPE * ESCAPE
-  (sub := (last, iter) => cpxAbsSq(last) > thresholdSq :: {
+  (sub := (last, iter) => true :: {
     # provably diverges
-    true -> (
+    cpxAbsSq(last) > thresholdSq -> (
       # smoothed rendering from https://csl.name/post/mandelbrot-rendering/
       fractional := 5 + iter - lhb - ln(ln(cpxAbsSq(last))) * lb
       fractional / MAXITER
@@ -76,8 +76,8 @@ hsl := (h, s, l) => (
     }
   )
 
-  q := (l < 0.5 :: {
-    true -> l * (1 + s)
+  q := (true :: {
+    l < 0.5 -> l * (1 + s)
     _ -> l + s - l * s
   })
   p := 2 * l - q
@@ -110,7 +110,7 @@ file := bmp(WIDTH, HEIGHT, map(range(0, WIDTH * HEIGHT, 1), x => (
 )))
 
 # save file
-wf('mandelbrot.bmp', file, result => result :: {
-  true -> log('done!')
+wf('mandelbrot.bmp', file, result => true :: {
+  result -> log('done!')
   () -> log('error writing file!')
 })

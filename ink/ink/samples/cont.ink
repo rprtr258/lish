@@ -1,7 +1,7 @@
 print := (t, v) => out(t+': '+string(v)+'\n')
 print('print 1', 1)
 
-sqrt := import('math.ink').sqrt
+{sqrt} := import('math.ink')
 print('sqrt 36', sqrt(36))
 
 pyth := (x, y) => sqrt(x*x + y*y)
@@ -32,13 +32,13 @@ state := loaded(42)
 print('state loaded', state(_ => 'loading', _ => 'loaded', _ => 'error'))
 print('state loaded param', state(_ => 'loading', n => 'loaded '+string(n), _=>'error'))
 
-keq := (x, y, k) => k(x = y)
+keq := (x, y, k) => k(x == y)
 kminus := (x, y, k) => k(x - y)
 
 kfactorial := (n, k) =>
   keq(n, 0,
-    b => b :: {
-      true -> k(1)
+    b => true :: {
+      b -> k(1)
       _ -> kminus(n, 1,
       n1 => kfactorial(n1,
         fn1 => kmul(n, fn1, k)))

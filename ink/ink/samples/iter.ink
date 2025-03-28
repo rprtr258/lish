@@ -1,4 +1,4 @@
-# Iter(T) = () => T | ()
+# Iter(T) :: () => T | ()
 
 # Iter(T)
 empty := () => ()
@@ -6,7 +6,7 @@ empty := () => ()
 # (number, number, number) => Iter(number)
 range := (start, end, step) => (
   true :: {
-    step = 0 -> empty
+    step == 0 -> empty
     step < 0 -> takeWhile(generate(start, x => x + step), x => x > end)
     step > 0 -> takeWhile(generate(start, x => x + step), x => x < end)
   }
@@ -16,7 +16,7 @@ generate := (x0, f) => (
   x := {value: x0}
   () => (
     res := x.value
-    x.value := f(x.value)
+    x.value = f(x.value)
     res
   )
 )
@@ -24,10 +24,10 @@ generate := (x0, f) => (
 # TODO: make methods of iterator
 list := list => (
   i := {value: 0}
-  () => i.value < len(list) :: {
-    true -> (
+  () => true :: {
+    i.value < len(list) -> (
       res := list.(i.value)
-      i.value := i.value + 1
+      i.value = i.value + 1
       res
     )
     _ -> ()
@@ -44,7 +44,7 @@ map := (it, f) => () => (
 filter := (it, f) => () => (
   x := it()
   true :: {
-    x = () -> ()
+    x == () -> ()
     f(x) -> x
     _ -> filter(it, f)
   }
@@ -52,12 +52,12 @@ filter := (it, f) => () => (
 
 takeWhile := (it, f) => (
   stopped := {value: false}
-  () => stopped.value :: {
-    true -> ()
+  () => true :: {
+    stopped.value -> ()
     _ -> (
       x := it()
-      ~(x = ()) & f(x) :: {
-        true -> x
+      true :: {
+        ~(x == ()) & f(x) -> x
         _ -> (
           stopped.value := true
           ()

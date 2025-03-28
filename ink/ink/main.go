@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -33,20 +34,20 @@ Run from the command line with -eval.
 
 func repl(ctx *ink.Context) {
 	// add repl-specific builtins
-	ctx.LoadFunc("clear", func(*ink.Context, *ink.AST, ink.Pos, []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("clear", func(_ *ink.Context, _ ink.Pos, _ []ink.Value) ink.Value {
 		fmt.Printf("\x1b[2J\x1b[H")
-		return ink.Null, nil
+		return ink.Null
 	})
-	ctx.LoadFunc("dump", func(ctx *ink.Context, _ *ink.AST, _ ink.Pos, _ []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("dump", func(ctx *ink.Context, _ ink.Pos, _ []ink.Value) ink.Value {
 		fmt.Println(ctx.Scope.String())
-		return ink.Null, nil
+		return ink.Null
 	})
 
 	// run interactively in a repl
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		const greenArrow = "\x1b[32;1m>\x1b[0m "
-		fmt.Printf(greenArrow)
+		fmt.Print(greenArrow)
 
 		text, err := reader.ReadString('\n')
 		if err == io.EOF {
@@ -57,15 +58,30 @@ func repl(ctx *ink.Context) {
 
 		// we don't really care if expressions fail to eval
 		// at the top level, user will see regardless, so drop err
-		nodes := ink.ParseReader(ctx.Engine.AST, "stdin", strings.NewReader(text))
-		if val, err := ctx.Eval(nodes); val != nil {
-			ink.LogError(err)
+		nodes, errP := ink.ParseReader(ctx.Engine.Cmplr.AST, "stdin", strings.NewReader(text))
+		if errP != nil {
+			ink.LogError(errP)
+			continue
+		}
+		val := ctx.Eval(nodes) // TODO: fix not saving scope
+		if err, ok := val.(ink.ValueError); ok {
+			ink.LogError(err.Err)
+		} else {
 			fmt.Println(val.String())
 		}
 	}
 }
 
+const _pprof = false
+
 func main() {
+	if _pprof {
+		f, _ := os.OpenFile("cpu.pprof", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+		defer f.Close()
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	flag.Usage = usage
 
 	// cli arguments
@@ -74,7 +90,6 @@ func main() {
 	debugParser := flag.Bool("debug-parse", false, "Log parser output")
 	dump := flag.Bool("dump", false, "Dump global frame after eval")
 	dumpAST := flag.Bool("dumpast", false, "Dump AST")
-	compile := flag.Bool("compile", false, "Compile to WAT and print")
 
 	version := flag.Bool("version", false, "Print version string and exit")
 	help := flag.Bool("help", false, "Print help message and exit")
@@ -105,18 +120,32 @@ func main() {
 		stdin, _ := os.Stdin.Stat()
 		eng := ink.NewEngine()
 		ctx := eng.CreateContext()
-		var nodes []ink.Node
+		var node ink.NodeID
 		switch {
 		case *eval != "":
-			nodes = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
+			var errP *ink.Err
+			node, errP = ink.ParseReader(eng.Cmplr.AST, "eval", strings.NewReader(*eval))
+			if errP != nil {
+				ink.LogError(errP)
+				return
+			}
 		case len(args) > 0:
 			filePath := args[0]
 			var err *ink.Err
-			if nodes, err = ctx.ExecPath(filePath); err != nil {
-				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
+			if node, err = ctx.ExecPath(filePath); err != nil {
+				ink.LogError(err)
+				log.Fatal().
+					Stringer("kind", ink.ErrRuntime).
+					Str("filepath", filePath).
+					Msg("failed to execute file")
 			}
 		case stdin.Mode()&os.ModeCharDevice == 0:
-			nodes = ink.ParseReader(eng.AST, "stdin", os.Stdin)
+			var errP *ink.Err
+			node, errP = ink.ParseReader(eng.Cmplr.AST, "stdin", os.Stdin)
+			if errP != nil {
+				ink.LogError(errP)
+				return
+			}
 		default:
 			// if no files given and no stdin, default to repl
 			ink.L.FatalError = false
@@ -125,14 +154,10 @@ func main() {
 			return
 		}
 
-		if *compile {
-			fmt.Println(ink.Compile(nodes, eng.AST))
-		} else {
-			// just run
-			if _, err := ctx.Eval(nodes); err != nil {
-				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute")
-			}
-			eng.Listeners.Wait()
+		// just run
+		if err, ok := ctx.Eval(node).(ink.ValueError); ok {
+			log.Fatal().Err(err.Err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute")
 		}
+		eng.Listeners.Wait()
 	}
 }

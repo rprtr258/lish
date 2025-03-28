@@ -39,51 +39,59 @@ type Logger struct {
 
 func LogError(err *Err) {
 	level := fun.IF(L.FatalError, zerolog.FatalLevel, zerolog.WarnLevel)
-	for ee := err; ee != nil; ee = ee.parent {
-		defer log.WithLevel(level).
-			Stringer("at", err.pos).
-			Stringer("kind", err.reason).
-			Msg(ee.message)
+	for ee := err; ee != nil; ee = ee.Parent {
+		log.WithLevel(level).
+			Stringer("at", err.Pos).
+			Stringer("kind", err.Reason).
+			Msg(ee.Message)
 	}
 }
 
-func logScope(scope *Scope) {
+func LogScope(scope *Scope) {
 	if !L.Dump {
 		return
 	}
 
-	log.Debug().Stringer("scope", scope).Msg("frame dump")
+	fmt.Fprintf(os.Stdout, "frame dump:\n%s\n", scope.String())
 }
 
-func logToken(tok Token) {
+func LogToken2(parserStr string, format string, args ...any) {
+	if !L.Lex {
+		return
+	}
+
+	fmt.Printf("["+parserStr+"] "+format+"\n", args...)
+}
+
+func LogToken(tok Token) {
 	if !L.Lex {
 		return
 	}
 
 	e := log.Debug().
 		Stringer("at", tok.Pos).
-		Stringer("kind", tok.kind)
-	if tok.str != "" {
-		e = e.Str("str", tok.str)
+		Stringer("kind", tok.Kind)
+	if tok.Str != "" {
+		e = e.Str("str", tok.Str)
 	}
-	if tok.num != 0 {
-		e = e.Float64("f64", tok.num)
+	if tok.Num != 0 {
+		e = e.Float64("f64", tok.Num)
 	}
 	e.Send()
 }
 
-func logNode(node Node) {
+func LogNode(node Node) {
 	if !L.Parse {
 		return
 	}
 
 	log.Debug().
-		Stringer("at", node.Position()).
+		// Stringer("at", node.Position()).
 		Stringer("node", node).
 		Send()
 }
 
-func logAST(s *AST) {
+func LogAST(s *AST) {
 	if !L.DumpAST {
 		return
 	}

@@ -1,38 +1,39 @@
 # let's graph the sine / cosine functions in Ink!
+{join} := import('str.ink')
 
 log := s => out(s + '\n')
 
-# repeat a string n times
-repeat := (s, n) => n :: {
-  0 -> ''
-  _ -> s + repeat(s, n - 1)
-}
-
 # loop a function F, N times
-loop := (f, n) => n > 0 :: {
-  true -> (
-    f()
-    loop(f, n - 1)
+loop := (n, f) => true :: {
+  n > 0 -> (
+    f(n)
+    loop(n - 1, f)
   )
 }
 
+# repeat a string n times
+repeat := (s, n) => (
+  res := []
+  loop(n, _ => res.len(res) := s)
+  join(res, '')
+)
+
 # graph a single point
-draw := (x, func, symbol) => (
-  n := func(x / 2) + 1
+draw := (row, x, func, symbol) => (
+  n := func(x / 4) + 1
   # some fuzzy math here to make spacing look decent
-  log(repeat(' ', floor(20 * n)) + symbol)
+  row.(floor(20 * n)) := symbol
 )
 
 # recursively draw from a single value
-drawRec := max => max :: {
-  0 -> ()
-  _ -> (
-    draw(max, sin, '+')
-    draw(max, x => cos(x) + 0.7, 'o')
-
-    drawRec(max - 1)
-  )
-}
+drawRec := max => (
+  loop(max, (n) => (
+    row := repeat(' ', 60)
+    draw(row, n, sin, '+')
+    draw(row, n, x => cos(x) + 0.7, 'o')
+    log(row)
+  ))
+)
 
 # actually draw
-drawRec(20)
+drawRec(40)

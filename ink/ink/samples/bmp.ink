@@ -1,6 +1,6 @@
 # a basic image encoder for bitmap files
 
-decode := import('str.ink').decode
+{decode} := import('str.ink')
 
 # utility function for splitting a large number > 16^2 into 4-byte list
 hexsplit := n => (
@@ -8,8 +8,8 @@ hexsplit := n => (
   acc := [0, 0, 0, 0]
 
   # max 4 bytes
-  decode((sub := (p, i) => p < 256 | i > 3 :: {
-    true -> (
+  decode((sub := (p, i) => true :: {
+    p < 256 | i > 3 -> (
       acc.(i) := p
       acc
     )
@@ -21,7 +21,7 @@ hexsplit := n => (
 )
 
 # core bitmap image encoder function
-bmp := (width, height, pixels) => (
+(width, height, pixels) => (
   # file buffer in which we build the image data
   buf := ''
 

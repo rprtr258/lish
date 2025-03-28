@@ -3,10 +3,9 @@
 log := s => out(s + '\n')
 
 # naive implementation
-fib := n => n :: {
-  0 -> 0
-  1 -> 1
-  _ -> fib(n - 1) + fib(n - 2)
+fib := n => true :: {
+  n < 2 -> n
+  _     -> fib(n - 1) + fib(n - 2)
 }
 
 # memoized / dynamic programming implementation
@@ -18,6 +17,7 @@ fibMemo := n => (
   memo.(n)
 )
 
-log('fib(20) is 6765:')
-log('Naive solution: ' + string(fib(20)))
-log('Dynamic solution: ' + string(fibMemo(20)))
+N := 35
+log('fib('+string(N)+') is:')
+log('Naive solution: ' + string(fib(N)))
+log('Dynamic solution: ' + string(fibMemo(N)))

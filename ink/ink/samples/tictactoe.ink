@@ -1,15 +1,16 @@
 # interactive terminal tic tac toe in Ink
 
+{mod, styled} := import('styled.ink')
 {scan, slice} := import('std.ink')
-f := import('str.ink').format
-{map, reduce, filter} := import('functional.ink')
+{format: f} := import('str.ink')
+{map, mapi, filter} := import('functional.ink')
 
 log := s => out(s + '\n')
 
 # async version of a while(... condition, ... predicate)
 # that takes a callback
-asyncWhile := (cond, do) => (sub := () => cond() :: {
-  true -> do(sub)
+asyncWhile := (cond, do) => (sub := () => true :: {
+  cond() -> do(sub)
   _ -> ()
 })()
 
@@ -17,8 +18,8 @@ asyncWhile := (cond, do) => (sub := () => cond() :: {
 Player := {x: 1, o: 2}
 Label := [' ', 'x', 'o']
 # make letters appear bolder / fainter on the board
-bold := c => '[0;1m' + c + '[0;0m'
-grey := c => '[33;2m' + c + '[0;0m'
+bold := c => styled(c, [mod.bold])
+grey := c => styled(c, [mod.fg.yellow, mod.faint])
 
 # create a new game board + state
 newBoard := () => [
@@ -38,7 +39,7 @@ BoardFormat := '{{ 1 }} │ {{ 2 }} │ {{ 3 }}
 # format-print board state
 stringBoard := bd => f(
   BoardFormat
-  map(bd, (player, idx) => Label.(player) :: {
+  mapi(bd, (player, idx) => Label.(player) :: {
     ' ' -> grey(string(idx))
     _ -> bold(Label.(player))
   })
@@ -69,10 +70,9 @@ Result := {
 }
 checkBoard := bd => (
   checkIfPlayerWon := player => (
-    isPlayer := row => row = [player, player, player]
-    combinationToValues := combo => map(combo, idx => bd.(idx))
-    possibleRows := map(Combinations, combinationToValues)
-    didWin := len(filter(possibleRows, isPlayer)) > 0
+    isPlayer := row => row == [player, player, player]
+    possibleRows := map(Combinations, combo => map(combo, idx => bd.(idx)))
+    didWin := len(filter(possibleRows, (row, _) => isPlayer(row))) > 0
 
     didWin
   )
@@ -82,7 +82,7 @@ checkBoard := bd => (
     checkIfPlayerWon(Player.o) -> Result.O
     _ -> (
       # check if game ended in a tie
-      takenCells := filter(slice(bd, 1, 10), val => ~(val = 0))
+      takenCells := filter(slice(bd, 1, 10), (val, _) => ~(val == 0))
       len(takenCells) :: {
         9 -> Result.Tie
         _ -> Result.None
@@ -95,9 +95,9 @@ checkBoard := bd => (
 stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
   # not a number, try again
   () -> stepBoard!(bd, cb)
-  _ -> idx > 0 & idx < 10 :: {
+  _ -> true :: {
     # number in range, make a move
-    true -> bd.(idx) :: {
+    idx > 0 & idx < 10 -> bd.(idx) :: {
       # the given cell is empty, make a move
       0 -> (
         bd.(number(s)) := getPlayer(bd)

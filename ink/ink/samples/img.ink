@@ -1,9 +1,9 @@
 # bitmap image test: generate an RGB rainbow gradient
 
-log := import('logging.ink').log
+{log} := import('logging.ink')
 {range, map, reduce} := import('functional.ink')
-f := import('str.ink').format
-bmp := import('bmp').bmp
+{format: f} := import('str.ink')
+bmp := import('bmp.ink')
 
 # modified version of std.append that's faster when we know the length of the base and child arrays
 fastappend := (base, child, baseLength, childLength) => (
@@ -34,10 +34,10 @@ radius := (x, y) => (
   yoff := (H / 2) - y
   pow((xoff * xoff) + (yoff * yoff), 0.5)
 )
-pixels := reduce(range(0, H, 1), (acc, y) => (
+pixels := reduce(range(0, H, 1), (acc, y, _) => (
   row := map(range(0, W, 1), x => (
-    radius(x, y) < R :: {
-      true -> [200, 255 * (x / W), 255 * (y / H)]
+    true :: {
+      radius(x, y) < R -> [200, 255 * (x / W), 255 * (y / H)]
       _ -> [80, 255 * (y / H), 255 * (x / W)]
     }
   ))
@@ -48,7 +48,7 @@ mk('generated pixel array')
 file := bmp(W, H, pixels)
 mk('generated bmp file')
 
-(import('io').writeFile)('img.bmp', file, result => result :: {
+(import('io.ink').writeFile)('img.bmp', file, result => result :: {
   () -> log(f('file write error: {{ message }}', evt))
 })
 mk('saved file')

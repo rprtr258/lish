@@ -27,7 +27,7 @@ slice := (s, start, end) => (
 
   # bounds checks
   x := clamp(start, end, 0, len(s))
-  start := x.start
+  {start} := x
   max := x.end - start
 
   (sub := (i, acc) => i :: {
@@ -35,17 +35,18 @@ slice := (s, start, end) => (
     _ -> sub(i + 1, acc.(i) := s.(start + i))
   })(0, type(s) :: {
     'string' -> ''
-    'composite' -> []
+    'list' -> []
   })
 )
 
 # clone a composite value
 clone := x => (
-  reduce := import('functional.ink').reduce
+  {reduce} := import('functional.ink')
 
   type(x) :: {
     'string' -> '' + x
-    'composite' -> reduce(keys(x), (acc, k) => acc.(k) := x.(k), {})
+    'composite' -> reduce(keys(x), (acc, k, _) => acc.(k) := x.(k), {})
+    'list' -> reduce(keys(x), (acc, i, _) => acc.(i) := x.(i), [])
     _ -> x
   }
 )

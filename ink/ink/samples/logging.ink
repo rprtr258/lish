@@ -1,5 +1,5 @@
-format := import('str.ink').format
-each := import('functional.ink').each
+{format} := import('str.ink')
+{each} := import('functional.ink')
 
 Level := {
     DEBUG:    0
@@ -73,16 +73,16 @@ Logger := (name) => (
       fields: this.fields
     }))
   }
-  this.setName := name => this.name := name
-  this.setLevel := level => this.logLevel := level
-  this.setFormat := format => this.format := format
-  this.with := (key, value) => this.fields.(key) := value
-  this.withFields := fields => each(keys(fields), (key) => this.fields.(key) := dict.(value))
-  this.debug    := message => lg(Level.DEBUG, message)
-  this.info     := message => lg(Level.INFO, message)
-  this.warn     := message => lg(Level.WARNING, message)
-  this.error    := message => lg(Level.ERROR, message)
-  this.critical := message => (
+  this.setName    = name => this.name := name
+  this.setLevel   = level => this.logLevel := level
+  this.setFormat  = format => this.format := format
+  this.with       = (key, value) => this.fields.(key) := value
+  this.withFields = fields => each(keys(fields), (key) => this.fields.(key) := dict.(value))
+  this.debug      = message => lg(Level.DEBUG, message)
+  this.info       = message => lg(Level.INFO, message)
+  this.warn       = message => lg(Level.WARNING, message)
+  this.error      = message => lg(Level.ERROR, message)
+  this.critical   = message => (
     lg(Level.CRITICAL, message)
     exit(1)
   )
