@@ -55,7 +55,7 @@ func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
 
 		i += incr
 
-		// logNode(s.nodes[expr])
+		LogNode(s.Nodes[expr])
 		nodes = append(nodes, s.Nodes[expr])
 	}
 	// logAST(s)

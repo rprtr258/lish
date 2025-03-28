@@ -47,7 +47,7 @@ func LogError(err *Err) {
 	}
 }
 
-func logScope(scope *Scope) {
+func LogScope(scope *Scope) {
 	if !L.Dump {
 		return
 	}
@@ -55,7 +55,7 @@ func logScope(scope *Scope) {
 	log.Debug().Stringer("scope", scope).Msg("frame dump")
 }
 
-func logToken(tok Token) {
+func LogToken(tok Token) {
 	if !L.Lex {
 		return
 	}
@@ -72,7 +72,7 @@ func logToken(tok Token) {
 	e.Send()
 }
 
-func logNode(node Node) {
+func LogNode(node Node) {
 	if !L.Parse {
 		return
 	}
@@ -83,7 +83,7 @@ func logNode(node Node) {
 		Send()
 }
 
-func logAST(s *AST) {
+func LogAST(s *AST) {
 	if !L.DumpAST {
 		return
 	}

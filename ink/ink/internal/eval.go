@@ -1064,7 +1064,7 @@ func (ctx *Context) Eval(nodes []Node) (val Value, err *Err) {
 		}
 	}
 
-	logScope(ctx.Scope)
+	LogScope(ctx.Scope)
 
 	return
 }
@@ -1095,11 +1095,11 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 	nodes := []Node{}
 	for len(b) > 0 {
 		var err errParse
-		var node int
-		b, node, err = parseExpression(ast, b)
+		var expr int
+		b, expr, err = parseExpression(ast, b)
 		LogError(err.Err)
-		// _ = parseExpression2 // TODO: replace old parser
-		nodes = append(nodes, ast.Nodes[node])
+		LogNode(ast.Nodes[expr])
+		nodes = append(nodes, ast.Nodes[expr])
 	}
 	return nodes
 }
