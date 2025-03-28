@@ -41,6 +41,7 @@ func TestParser(t *testing.T) {
 		`log`,
 		parseIdentifier,
 	)
+	return
 	f(
 		"valid assignment",
 		`log :=

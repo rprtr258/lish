@@ -332,9 +332,7 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 			if '0' <= b && b <= '9' || 'a' <= b && b <= 'z' || 'A' <= b && b <= 'Z' || b == '_' {
 				return b, errParse{}
 			}
-			return 0, errParse{
-				&Err{nil, ErrSyntax, fmt.Sprintf("invalid identifier character %c", b), Pos{}},
-			}
+			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid identifier character %c", b), Pos{}}}
 		})),
 		func(ident []byte) (int, errParse) {
 			switch {
