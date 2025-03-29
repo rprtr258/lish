@@ -427,9 +427,6 @@ func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseMany0(parseExpression), // TODO: separated by commas?
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
-			if len(exprs) == 0 {
-				return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
-			}
 			exprs = fun.Filter(func(n int) bool { return n != _astEmptyIdentifierIdx }, exprs...)
 			return ast.Append(NodeExprList{Expressions: exprs}), errParse{}
 		},

@@ -77,16 +77,20 @@ func TestParser(t *testing.T) {
 	f(
 		`valid block`,
 		`(
-  f(str)
-
-  g('
-')
-)`,
+			f(str)
+			g('\n')
+		)`,
 		parseBlock,
 		NodeExprList{},
 	)
 	f(
-		`valid lambda`,
+		"valid block, empty",
+		`()`,
+		parseExpression,
+		NodeExprList{},
+	)
+	f(
+		`valid lambda, single inlined arg`,
 		`str => (
   out(str)
 
@@ -97,22 +101,25 @@ func TestParser(t *testing.T) {
 		NodeLiteralFunction{},
 	)
 	f(
+		"valid lambda, zero args",
+		`() => ()`,
+		parseExpression,
+		NodeLiteralFunction{},
+	)
+	f(
 		"valid assignment",
-		`log :=
-(str => (
-  out(str)
-
-  out('
-')
-))`,
+		`log := (str => (out(str)
+			out('\n')
+		))`,
 		parseAssignment,
 		NodeExprBinary{},
 	)
 	f(
 		"valid match",
-		`1 :: # line break after match
-{1 -> 'hi', 2 ->
-  'thing'}`,
+		`1 :: {
+			1 -> 'hi',
+			2 -> 'thing'
+		}`,
 		parseExpression,
 		NodeExprMatch{},
 	)
