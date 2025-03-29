@@ -50,7 +50,6 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeIdentifier{Val: "log"},
 	)
-	return
 	f(
 		"valid assignment",
 		`log :=

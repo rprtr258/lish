@@ -1095,7 +1095,6 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 	nodes := []Node{}
 	oldBLen := len(b)
 	for len(b) > 0 {
-		fmt.Println(string(b[:min(len(b), 20)]))
 		var err errParse
 		var expr int
 		b, expr, err = parseExpression(ast, b)

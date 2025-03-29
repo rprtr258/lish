@@ -55,6 +55,14 @@ func LogScope(scope *Scope) {
 	log.Debug().Stringer("scope", scope).Msg("frame dump")
 }
 
+func LogToken2(parserStr string, format string, args ...any) {
+	if !L.Lex {
+		return
+	}
+
+	fmt.Printf("["+parserStr+"] "+format+"\n", args...)
+}
+
 func LogToken(tok Token) {
 	if !L.Lex {
 		return

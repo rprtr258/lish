@@ -37,11 +37,11 @@ func parseBytes(s string) Parser[string] {
 
 func parseOr[T any](parsers ...Parser[T]) Parser[T] {
 	return func(ast *AST, b []byte) ([]byte, T, errParse) {
-		fmt.Printf("[>OR] %d\n", len(parsers))
+		LogToken2(">OR", "%d", len(parsers))
 		errs := ""
 		for i, p := range parsers {
 			out, v, err := p(ast, b)
-			fmt.Printf("[OR] %d/%d %q %+v\n", i, len(parsers), string(out), err.Err)
+			LogToken2("OR", "%d/%d %q %+v", i, len(parsers), string(out), err.Err)
 			if err.Err == nil {
 				return out, v, err
 			}
@@ -122,22 +122,22 @@ func parseAnd3[A, B, C, R any](
 	f func(A, B, C) (R, errParse),
 ) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		fmt.Printf("[IN] %q\n", string(in))
+		LogToken2("IN", "%q", string(in))
 		ain, a, err := p1(ast, skipSpaces(in))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		fmt.Printf("[AIN] %q\n", string(ain))
+		LogToken2("AIN", "%q", string(ain))
 		bin, b, err := p2(ast, skipSpaces(ain))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		fmt.Printf("[BIN] %q\n", string(bin))
+		LogToken2("BIN", "%q", string(bin))
 		cin, c, err := p3(ast, skipSpaces(bin))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
-		fmt.Printf("[CIN] %q\n", string(cin))
+		LogToken2("CIN", "%q", string(cin))
 		r, err := f(a, b, c)
 		return cin, r, err
 	}
@@ -190,10 +190,10 @@ func parseOptional[T any](p Parser[T]) Parser[Option[T]] {
 func parseMany0[T any](p Parser[T]) Parser[[]T] {
 	return func(ast *AST, in []byte) ([]byte, []T, errParse) {
 		var res []T
-		fmt.Printf("[>MANY] %q\n", string(in))
+		LogToken2(">MANY", "%q", string(in))
 		for {
 			out, v, err := p(ast, in)
-			fmt.Printf("[MANY] %q %q\n", string(in), string(out))
+			LogToken2("MANY", "%q %q", string(in), string(out))
 			if err.Err != nil {
 				return in, res, errParse{}
 			}
@@ -358,7 +358,7 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 }
 
 func parseComment(_ *AST, b []byte) ([]byte, Unit, errParse) {
-	fmt.Printf("[COMMENT] %q\n", string(b))
+	LogToken2("COMMENT", "%q", string(b))
 	if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
 		return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
 	}
