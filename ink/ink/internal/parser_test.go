@@ -37,7 +37,7 @@ func TestParser(t *testing.T) {
 		source string,
 		parser Parser[int],
 		node Node,
-		check ...func(Node) bool,
+		check ...func(*AST, Node) bool,
 	) {
 		t.Run(name, func(t *testing.T) {
 			ast := NewAstSlice()
@@ -47,7 +47,7 @@ func TestParser(t *testing.T) {
 			assert.Equal(t, []byte{}, b)
 			assert.IsType(t, node, ast.Nodes[expr])
 			if len(check) > 0 {
-				assert.True(t, check[0](ast.Nodes[expr]))
+				assert.True(t, check[0](ast, ast.Nodes[expr]))
 			}
 		})
 	}
@@ -107,7 +107,7 @@ func TestParser(t *testing.T) {
 		)`,
 		parseExpression,
 		NodeLiteralFunction{},
-		func(n Node) bool {
+		func(_ *AST, n Node) bool {
 			f := n.(NodeLiteralFunction)
 			return len(f.Arguments) == 1
 		},
@@ -123,9 +123,39 @@ func TestParser(t *testing.T) {
 		`(a,b) => (a+b)`,
 		parseExpression,
 		NodeLiteralFunction{},
-		func(n Node) bool {
+		func(_ *AST, n Node) bool {
 			f := n.(NodeLiteralFunction)
 			return len(f.Arguments) == 2
+		},
+	)
+	f(
+		`valid iife after function definition`,
+		`f:=(n,m)=>(n)
+		(m=>f(1,m))(25)`,
+		parseExpression,
+		NodeFunctionCall{},
+		func(ast *AST, n Node) bool {
+			f := n.(NodeFunctionCall)
+			assert.Equal(t, []Node{
+				/*  0 */ NodeIdentifierEmpty{},
+				/*  1 */ NodeLiteralBoolean{Val: false},
+				/*  2 */ NodeLiteralBoolean{Val: true},
+				/*  3 */ NodeIdentifier{Val: "f"},
+				/*  4 */ NodeIdentifier{Val: "n"},
+				/*  5 */ NodeIdentifier{Val: "m"},
+				/*  6 */ NodeExprList{Expressions: []int{4, 5}},
+				/*  7 */ NodeExprList{Expressions: []int{4}},
+				/*  8 */ NodeLiteralNumber{Val: 1},
+				/*  9 */ NodeFunctionCall{3, []int{8, 5}},
+				/* 10 */ NodeLiteralFunction{Arguments: []int{5}, Body: 9},
+				/* 11 */ NodeFunctionCall{7, []int{10}},
+				/* 12 */ NodeLiteralFunction{Arguments: []int{4, 5}, Body: 11},
+				/* 13 */ NodeExprBinary{Operator: 19, Left: 3, Right: 12},
+				/* 14 */ NodeLiteralNumber{Val: 25},
+				/* 15 */ NodeFunctionCall{13, []int{14}},
+			}, ast.Nodes)
+			assert.Equal(t, NodeFunctionCall{7, []int{10}}, f)
+			return len(f.Arguments) == 1
 		},
 	)
 

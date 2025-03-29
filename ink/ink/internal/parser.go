@@ -508,6 +508,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			parseMany0(parseExpression),
 			parseParenRight,
 			func(_ byte, args []int, _ byte) (int, errParse) {
+				LogAST(ast)
 				return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
 			},
 		)(ast, b)
