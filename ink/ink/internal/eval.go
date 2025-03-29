@@ -1108,6 +1108,11 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 			LogAST(ast)
 			nodes = append(nodes, ast.Nodes[expr])
 		}
+		{ // TODO: remove
+			if b2, _, err := parseComma(ast, b); err.Err == nil {
+				b = b2
+			}
+		}
 		if len(b) == oldBLen {
 			panic("nothing parsed")
 		}

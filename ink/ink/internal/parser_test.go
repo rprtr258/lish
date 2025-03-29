@@ -128,36 +128,6 @@ func TestParser(t *testing.T) {
 			return len(f.Arguments) == 2
 		},
 	)
-	f(
-		`valid iife after function definition`,
-		`f:=(n,m)=>(n)
-		(m=>f(1,m))(25)`,
-		parseExpression,
-		NodeFunctionCall{},
-		func(ast *AST, n Node) bool {
-			f := n.(NodeFunctionCall)
-			assert.Equal(t, []Node{
-				/*  0 */ NodeIdentifierEmpty{},
-				/*  1 */ NodeLiteralBoolean{Val: false},
-				/*  2 */ NodeLiteralBoolean{Val: true},
-				/*  3 */ NodeIdentifier{Val: "f"},
-				/*  4 */ NodeIdentifier{Val: "n"},
-				/*  5 */ NodeIdentifier{Val: "m"},
-				/*  6 */ NodeExprList{Expressions: []int{4, 5}},
-				/*  7 */ NodeExprList{Expressions: []int{4}},
-				/*  8 */ NodeLiteralNumber{Val: 1},
-				/*  9 */ NodeFunctionCall{3, []int{8, 5}},
-				/* 10 */ NodeLiteralFunction{Arguments: []int{5}, Body: 9},
-				/* 11 */ NodeFunctionCall{7, []int{10}},
-				/* 12 */ NodeLiteralFunction{Arguments: []int{4, 5}, Body: 11},
-				/* 13 */ NodeExprBinary{Operator: 19, Left: 3, Right: 12},
-				/* 14 */ NodeLiteralNumber{Val: 25},
-				/* 15 */ NodeFunctionCall{13, []int{14}},
-			}, ast.Nodes)
-			assert.Equal(t, NodeFunctionCall{7, []int{10}}, f)
-			return len(f.Arguments) == 1
-		},
-	)
 
 	f(
 		"valid assignment",
@@ -191,22 +161,51 @@ func TestParser(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	ast := NewAstSlice()
-	nodes := ParseReader(ast, "testdata/mangled.ink", strings.NewReader(mangled))
-	t.Log(ast.String())
-	require.Equal(t, []Node{
-		NodeExprBinary{Operator: 19, Left: 3, Right: 11},
-		NodeExprMatch{Condition: 13, Clauses: []int{15, 18}},
-		NodeLiteralFunction{Arguments: []int{}, Body: 21},
-		NodeExprBinary{Operator: 19, Left: 23, Right: 31},
-		NodeFunctionCall{Function: 3, Arguments: []int{23}},
-		NodeExprBinary{Operator: 19, Left: 34, Right: 39},
-		NodeExprBinary{Operator: 19, Left: 41, Right: 53},
-		NodeFunctionCall{Function: 3, Arguments: []int{56}},
-		NodeFunctionCall{Function: 3, Arguments: []int{61}},
-		NodeExprBinary{Operator: 19, Left: 3, Right: 68},
-		NodeExprBinary{Operator: 19, Left: 70, Right: 99},
-		NodeFunctionCall{Function: 117, Arguments: []int{118}},
-		NodeFunctionCall{Function: 5, Arguments: []int{7}},
-	}, nodes)
+	t.Run("mangled.ink", func(t *testing.T) {
+		ast := NewAstSlice()
+		nodes := ParseReader(ast, "testdata/mangled.ink", strings.NewReader(mangled))
+		t.Log(ast.String())
+		require.Equal(t, []Node{
+			NodeExprBinary{Operator: 19, Left: 3, Right: 11},
+			NodeExprMatch{Condition: 13, Clauses: []int{15, 18}},
+			NodeLiteralFunction{Arguments: []int{}, Body: 21},
+			NodeExprBinary{Operator: 19, Left: 23, Right: 31},
+			NodeFunctionCall{Function: 3, Arguments: []int{23}},
+			NodeExprBinary{Operator: 19, Left: 34, Right: 39},
+			NodeExprBinary{Operator: 19, Left: 41, Right: 53},
+			NodeFunctionCall{Function: 3, Arguments: []int{56}},
+			NodeFunctionCall{Function: 3, Arguments: []int{61}},
+			NodeExprBinary{Operator: 19, Left: 3, Right: 68},
+			NodeExprBinary{Operator: 19, Left: 70, Right: 99},
+			NodeExprBinary{Operator: 19, Left: 101, Right: 113},
+			NodeFunctionCall{Function: 117, Arguments: []int{118}},
+			NodeFunctionCall{Function: 5, Arguments: []int{7}},
+		}, nodes)
+	})
+
+	t.Run("iife", func(t *testing.T) {
+		ast := NewAstSlice()
+		nodes := ParseReader(ast, "iife", strings.NewReader(`f:=(n,m)=>(n),(m=>f(1,m))(25)`))
+		t.Log(ast.String())
+		require.Equal(t, []Node{
+			NodeExprBinary{Operator: 19, Left: 3, Right: 8},
+			NodeFunctionCall{13, []int{14}},
+			// /*  0 */ NodeIdentifierEmpty{},
+			// /*  1 */ NodeLiteralBoolean{Val: false},
+			// /*  2 */ NodeLiteralBoolean{Val: true},
+			// /*  3 */ NodeIdentifier{Val: "f"},
+			// /*  4 */ NodeIdentifier{Val: "n"},
+			// /*  5 */ NodeIdentifier{Val: "m"},
+			// /*  6 */ NodeExprList{Expressions: []int{4, 5}},
+			// /*  7 */ NodeExprList{Expressions: []int{4}},
+			// /*  8 */ NodeLiteralNumber{Val: 1},
+			// /*  9 */ NodeFunctionCall{3, []int{8, 5}},
+			// /* 10 */ NodeLiteralFunction{Arguments: []int{5}, Body: 9},
+			// /* 11 */ NodeFunctionCall{7, []int{10}},
+			// /* 12 */ NodeLiteralFunction{Arguments: []int{4, 5}, Body: 11},
+			// /* 13 */ NodeExprBinary{Operator: 19, Left: 3, Right: 12},
+			// /* 14 */ NodeLiteralNumber{Val: 25},
+			// /* 15 */ NodeFunctionCall{13, []int{14}},
+		}, nodes)
+	})
 }
