@@ -350,7 +350,6 @@ func skipSpaces(b []byte) []byte {
 			b = b[1:]
 		}
 	}
-	return b
 }
 
 func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
