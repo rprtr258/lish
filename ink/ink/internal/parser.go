@@ -70,6 +70,7 @@ var (
 	parseDot           = parseByte('.')
 	parseEqual         = parseByte('=')
 	parseFunctionArrow = parseBytes("=>")
+	parseComma         = parseByte(',')
 	parseColon         = parseByte(':')
 	parseDefine        = parseBytes(":=")
 	parseMatch         = parseBytes("::")
@@ -195,6 +196,12 @@ func parseMany0[T any](p Parser[T]) Parser[[]T] {
 			res = append(res, v)
 			if len(b2) == 0 {
 				return b2, res, errParse{}
+			}
+			{ // TODO: remove
+				b3, _, err := parseComma(ast, b2)
+				if err.Err == nil {
+					b2 = b3
+				}
 			}
 			b = b2
 		}

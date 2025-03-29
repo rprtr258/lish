@@ -111,7 +111,7 @@ func TestParser(t *testing.T) {
 	f(
 		"valid match",
 		`1 :: # line break after match
-{1 -> 'hi' 2 ->
+{1 -> 'hi', 2 ->
   'thing'}`,
 		parseExpression,
 		NodeExprMatch{},
