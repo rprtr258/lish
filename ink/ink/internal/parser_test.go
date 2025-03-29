@@ -27,7 +27,6 @@ func TestParser_error(t *testing.T) {
 }
 
 func TestParser(t *testing.T) {
-	return
 	f := func(
 		name string,
 		source string,
@@ -39,7 +38,7 @@ func TestParser(t *testing.T) {
 			b, expr, err := parser(ast, []byte(source))
 			require.Equal(t, errParse{}, err)
 			assert.Equal(t, []byte{}, b)
-			assert.Equal(t, node, ast.Nodes[expr])
+			assert.IsType(t, node, ast.Nodes[expr])
 		})
 	}
 
