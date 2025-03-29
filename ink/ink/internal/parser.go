@@ -404,20 +404,6 @@ func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
 	)(ast, b)
 }
 
-func parseLambda(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseAnd3(
-		parseOr(
-			parseMap(parseIdentifier, func(ident int) ([]int, errParse) { return []int{ident}, errParse{} }),
-			parseMap(parseList, func(list int) ([]int, errParse) { return ast.Nodes[list].(NodeExprList).Expressions, errParse{} }),
-		),
-		parseFunctionArrow,
-		parseExpression,
-		func(args []int, _ string, body int) (int, errParse) {
-			return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
-		},
-	)(ast, b)
-}
-
 func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
 		parseParenLeft,
@@ -478,11 +464,31 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseBlock,
 		parseList,
 		parseDict,
-		parseLambda,
 		parseUnary,
 	)(ast, b)
 	if err.Err != nil {
 		return nil, -1, err
+	}
+
+	switch ast.Nodes[lhs].(type) {
+	case NodeIdentifier, NodeExprList:
+		b, lambda, err := parseAnd2(
+			parseFunctionArrow,
+			parseExpression,
+			func(_ string, body int) (int, errParse) {
+				var args []int
+				switch n := ast.Nodes[lhs].(type) {
+				case NodeIdentifier:
+					args = []int{lhs}
+				case NodeExprList:
+					args = n.Expressions
+				}
+				return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
+			},
+		)(ast, b)
+		if err.Err == nil {
+			return b, lambda, errParse{}
+		}
 	}
 
 	{

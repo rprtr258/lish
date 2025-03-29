@@ -79,7 +79,6 @@ func TestParser(t *testing.T) {
 		parseBlock,
 		NodeExprList{},
 	)
-	return
 	f(
 		`valid lambda`,
 		`str => (
@@ -88,7 +87,7 @@ func TestParser(t *testing.T) {
   out('
 ')
 )`,
-		parseLambda,
+		parseExpression,
 		NodeLiteralFunction{},
 	)
 	f(
