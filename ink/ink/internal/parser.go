@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bytes"
-	"cmp"
 	"fmt"
 	"strconv"
 )
@@ -42,7 +41,7 @@ func parseOr[T any](parsers ...Parser[T]) Parser[T] {
 		errs := ""
 		for i, p := range parsers {
 			out, v, err := p(ast, b)
-			fmt.Printf("[OR] %d/%d %q %+v\n", i, len(parsers), string(out), cmp.Or(err.Err, &Err{}).Error())
+			fmt.Printf("[OR] %d/%d %q %+v\n", i, len(parsers), string(out), err.Err)
 			if err.Err == nil {
 				return out, v, err
 			}
@@ -211,7 +210,7 @@ func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
 		out, v, err := p(ast, in)
 		if err.Err != nil {
-			return in, *new(R), errParse{}
+			return in, *new(R), err
 		}
 
 		vv, err := f(v)
@@ -359,6 +358,7 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 }
 
 func parseComment(_ *AST, b []byte) ([]byte, Unit, errParse) {
+	fmt.Printf("[COMMENT] %q\n", string(b))
 	if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
 		return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
 	}
