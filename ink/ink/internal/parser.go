@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"strconv"
 )
@@ -21,25 +22,27 @@ var parseByteAny Parser[byte] = func(_ *AST, in []byte) ([]byte, byte, errParse)
 }
 
 func parseBytes(s string) Parser[string] {
-	return func(_ *AST, in []byte) ([]byte, string, errParse) {
-		if len(in) < len(s) || string(in[:len(s)]) != s {
+	return func(_ *AST, b []byte) ([]byte, string, errParse) {
+		if len(b) < len(s) || string(b[:len(s)]) != s {
 			var msg string
-			if len(in) == 0 {
+			if len(b) == 0 {
 				msg = fmt.Sprintf("unexpected EOF, expected %q", s)
 			} else {
-				msg = fmt.Sprintf("unexpected bytes %q, expected %q", in[:min(len(in), len(s))], s)
+				msg = fmt.Sprintf("unexpected bytes %q, expected %q", b[:min(len(b), len(s))], s)
 			}
 			return nil, "", errParse{&Err{nil, ErrSyntax, msg, Pos{}}}
 		}
-		return in[len(s):], s, errParse{}
+		return b[len(s):], s, errParse{}
 	}
 }
 
 func parseOr[T any](parsers ...Parser[T]) Parser[T] {
-	return func(ast *AST, in []byte) ([]byte, T, errParse) {
+	return func(ast *AST, b []byte) ([]byte, T, errParse) {
+		fmt.Printf("[>OR] %d\n", len(parsers))
 		errs := ""
-		for _, p := range parsers {
-			out, v, err := p(ast, in)
+		for i, p := range parsers {
+			out, v, err := p(ast, b)
+			fmt.Printf("[OR] %d/%d %q %+v\n", i, len(parsers), string(out), cmp.Or(err.Err, &Err{}).Error())
 			if err.Err == nil {
 				return out, v, err
 			}
@@ -120,18 +123,22 @@ func parseAnd3[A, B, C, R any](
 	f func(A, B, C) (R, errParse),
 ) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
+		fmt.Printf("[IN] %q\n", string(in))
 		ain, a, err := p1(ast, skipSpaces(in))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
+		fmt.Printf("[AIN] %q\n", string(ain))
 		bin, b, err := p2(ast, skipSpaces(ain))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
+		fmt.Printf("[BIN] %q\n", string(bin))
 		cin, c, err := p3(ast, skipSpaces(bin))
 		if err.Err != nil {
 			return nil, *new(R), err
 		}
+		fmt.Printf("[CIN] %q\n", string(cin))
 		r, err := f(a, b, c)
 		return cin, r, err
 	}
@@ -181,17 +188,19 @@ func parseOptional[T any](p Parser[T]) Parser[Option[T]] {
 	}
 }
 
-func parseMany[T any](p Parser[T]) Parser[[]T] {
+func parseMany0[T any](p Parser[T]) Parser[[]T] {
 	return func(ast *AST, in []byte) ([]byte, []T, errParse) {
 		var res []T
+		fmt.Printf("[>MANY] %q\n", string(in))
 		for {
 			out, v, err := p(ast, in)
+			fmt.Printf("[MANY] %q %q\n", string(in), string(out))
 			if err.Err != nil {
 				return in, res, errParse{}
 			}
 			res = append(res, v)
 			if len(out) == 0 {
-				return out, res, err
+				return out, res, errParse{}
 			}
 			in = out
 		}
@@ -230,9 +239,9 @@ func parseIgnore[T any](p Parser[T]) Parser[struct{}] {
 func parseNumber(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd4(
 		parseOptional(parseIgnore(parseMinus)),
-		parseMany(parseDigit),
+		parseMany0(parseDigit),
 		parseOptional(parseDot),
-		parseMany(parseDigit),
+		parseMany0(parseDigit),
 		func(
 			isNegative Option[struct{}],
 			integerPart []byte,
@@ -275,7 +284,7 @@ var _charsEscaped = map[byte]byte{
 func parseString(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
 		parseQuote,
-		parseMany(parseMap(parseOr(
+		parseMany0(parseMap(parseOr(
 			parseAnd2(
 				parseByte('\\'),
 				parseByteAny,
@@ -330,7 +339,7 @@ var parseIdentifierEmpty = parseMap(
 
 func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseMap(
-		parseMany(parseMap(parseByteAny, func(c byte) (byte, errParse) {
+		parseMany0(parseMap(parseByteAny, func(c byte) (byte, errParse) {
 			// TODO: other symbols
 			if '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_' {
 				return c, errParse{}
@@ -350,6 +359,10 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 }
 
 func parseComment(_ *AST, b []byte) ([]byte, Unit, errParse) {
+	if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
+		return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
+	}
+
 	for {
 		for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
 			b = b[1:]
@@ -390,7 +403,7 @@ func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
 func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 	parseList := parseAnd3(
 		parseParenLeft,
-		parseMany(parseExpression), // TODO: separated by commas?
+		parseMany0(parseExpression), // TODO: separated by commas?
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
 			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
@@ -413,7 +426,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		// block
 		parseAnd3(
 			parseParenLeft,
-			parseMany(parseExpression), // TODO: separated by commas?
+			parseMany0(parseExpression), // TODO: separated by commas?
 			parseParenRight,
 			func(_ byte, exprs []int, _ byte) (int, errParse) {
 				if len(exprs) == 0 {
@@ -432,7 +445,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		// dict
 		parseAnd3(
 			parseBraceLeft,
-			parseMany(parseAnd3(
+			parseMany0(parseAnd3(
 				parseExpression,
 				parseColon,
 				parseExpression,
@@ -461,7 +474,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseAnd3(
 			parseExpression,
 			parseParenLeft,
-			parseMany(parseExpression), // TODO: separated by commas?
+			parseMany0(parseExpression), // TODO: separated by commas?
 			func(fn int, _ byte, args []int) (int, errParse) {
 				return ast.Append(NodeFunctionCall{fn, args}), errParse{}
 			},

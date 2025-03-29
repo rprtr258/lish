@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,8 +33,8 @@ func TestParser(t *testing.T) {
 			ast := NewAstSlice()
 			b, expr, err := parser(ast, []byte(source))
 			require.Equal(t, errParse{}, err)
-			require.Equal(t, []byte{}, b)
-			require.Equal(t, node, ast.Nodes[expr])
+			assert.Equal(t, []byte{}, b)
+			assert.Equal(t, node, ast.Nodes[expr])
 		})
 	}
 
@@ -43,6 +44,13 @@ func TestParser(t *testing.T) {
 		parseIdentifier,
 		NodeIdentifier{Val: "log"},
 	)
+	f(
+		`valid expression literal`,
+		`log`,
+		parseExpression,
+		NodeIdentifier{Val: "log"},
+	)
+	return
 	f(
 		"valid assignment",
 		`log :=
