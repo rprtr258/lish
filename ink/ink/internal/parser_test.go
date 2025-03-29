@@ -39,39 +39,47 @@ func TestParser(t *testing.T) {
 			require.Equal(t, errParse{}, err)
 			assert.Equal(t, []byte{}, b)
 			assert.IsType(t, node, ast.Nodes[expr])
+			t.Log(ast.String())
 		})
 	}
 
 	f(
-		`valid literal "log"`,
+		`valid identifier`,
 		`log`,
 		parseIdentifier,
 		NodeIdentifier{},
 	)
 	f(
-		`valid expression literal`,
+		`valid expression identifier`,
 		`log`,
 		parseExpression,
 		NodeIdentifier{},
 	)
 	f(
-		`valid block/list`,
+		`valid function-call`,
 		`out(str)`,
-		parseFunctionCall,
+		parseExpression,
 		NodeFunctionCall{},
 	)
-	return
 	f(
-		`valid block/list`,
+		`valid literal-string`,
+		`'
+'`,
+		parseString,
+		NodeLiteralString{},
+	)
+	f(
+		`valid block`,
 		`(
-  out(str)
+  f(str)
 
-  out('
+  g('
 ')
 )`,
 		parseBlock,
 		NodeExprList{},
 	)
+	return
 	f(
 		`valid lambda`,
 		`str => (

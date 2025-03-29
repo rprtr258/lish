@@ -74,6 +74,14 @@ func (s *AST) Append(node Node) int {
 }
 
 func (s AST) String() string {
+	var sb strings.Builder
+	for i, n := range s.Nodes {
+		fmt.Fprintf(&sb, "%d: %s\n", i, n.String())
+	}
+	return sb.String()
+}
+
+func (s AST) Graph() string {
 	const (
 		_colorLiteral = "#fffd87"
 		_colorIdent   = "#88ff00"
@@ -211,9 +219,9 @@ type NodeFunctionCall struct {
 
 func (n NodeFunctionCall) String() string {
 	var sb strings.Builder
-	sb.WriteString("Call (#")
+	sb.WriteString("Call #")
 	sb.WriteString(strconv.Itoa(n.Function))
-	sb.WriteString(") on (")
+	sb.WriteString(" on (")
 	for i, a := range n.Arguments {
 		if i > 0 {
 			sb.WriteString(", ")

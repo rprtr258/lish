@@ -218,10 +218,10 @@ func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
 	}
 }
 
-func parseByte(b byte) Parser[byte] {
+func parseByte(c byte) Parser[byte] {
 	return parseMap(parseByteAny, func(v byte) (byte, errParse) {
-		if v != b {
-			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected byte %c, expected %c", v, b), Pos{}}}
+		if v != c {
+			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %c, found %c", c, v), Pos{}}}
 		}
 		return v, errParse{}
 	})
@@ -279,39 +279,22 @@ var _charsEscaped = map[byte]byte{
 	'\'': '\'',
 }
 
+// TODO: PIDARAS NA VSCODE ZAMENYAET MNE two ' to ”
 // ” | 'abc' | 'abc\'def\n\\\r\tghi'
 func parseString(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseAnd3(
-		parseQuote,
-		parseMany0(parseMap(parseOr(
-			parseAnd2(
-				parseByte('\\'),
-				parseByteAny,
-				func(_ byte, b byte) (byte, errParse) {
-					if _, ok := _charsEscaped[b]; !ok {
-						return 0, errParse{
-							&Err{nil, ErrSyntax, fmt.Sprintf("invalid escape sequence \\%c", b), Pos{}},
-						}
-					}
-					return _charsEscaped[b], errParse{}
-				},
-			),
-			parseByteAny,
-		), func(b byte) (byte, errParse) {
-			return b, errParse{}
-		},
-		)),
-		parseQuote,
-		func(
-			_ byte,
-			inside []byte,
-			_ byte,
-		) (int, errParse) {
-			return ast.Append(NodeLiteralString{
-				Val: string(inside),
-				Pos: Pos{},
-			}), errParse{}
-		})(ast, b)
+	if len(b) == 0 || b[0] != '\'' {
+		return nil, -1, errParse{&Err{nil, ErrSyntax, "expected string", Pos{}}}
+	}
+
+	end := bytes.IndexByte(b[1:], '\'')
+	if end == -1 {
+		return nil, -1, errParse{&Err{nil, ErrSyntax, "expected string, but found EOF", Pos{}}}
+	}
+
+	return b[end+2:], ast.Append(NodeLiteralString{
+		Val: string(b[1 : end+1]),
+		Pos: Pos{},
+	}), errParse{}
 }
 
 func parseBoolean(ast *AST, b []byte) ([]byte, int, errParse) {
@@ -361,7 +344,7 @@ func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseMap(func(_ *AST, b []byte) ([]byte, Unit, errParse) {
 		LogToken2("COMMENT", "%q", string(b))
 		if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-			return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
+			return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment(1)", Pos{}}}
 		}
 
 		for {
@@ -385,7 +368,7 @@ func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
 				// empty line, skip
 				continue
 			default:
-				return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
+				return b, unit, errParse{}
 			}
 		}
 	}, func(_ Unit) (int, errParse) {
@@ -452,18 +435,6 @@ func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 	)(ast, b)
 }
 
-func parseFunctionCall(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseAnd4(
-		parseExpression,
-		parseParenLeft,
-		parseMany0(parseExpression), // TODO: separated by commas?
-		parseParenRight,
-		func(fn int, _ byte, args []int, _ byte) (int, errParse) {
-			return ast.Append(NodeFunctionCall{fn, args}), errParse{}
-		},
-	)(ast, b)
-}
-
 func parseLiteral(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseOr(
 		parseNumber,
@@ -500,56 +471,8 @@ func parseUnary(ast *AST, b []byte) ([]byte, int, errParse) {
 	)(ast, b)
 }
 
-func parseBinary(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseAnd3(
-		parseExpression,
-		parseOr(
-			// NOTE: ordered by priority, higher is higher priority
-			parseByte('%'),
-			parseByte('*'),
-			parseByte('/'),
-			parseByte('>'),
-			parseByte('<'),
-			parseByte('='),
-			parseByte('&'),
-			parseByte('^'),
-			parseByte('|'),
-			parseByte('+'),
-			parseByte('-'),
-		),
-		parseExpression,
-		func(m int, op byte, n int) (int, errParse) {
-			mp := map[byte]Kind{
-				'+': OpAdd,
-				'-': OpSubtract,
-				'*': OpMultiply,
-				'/': OpDivide,
-				'%': OpModulus,
-				'&': OpLogicalAnd,
-				'|': OpLogicalOr,
-				'^': OpLogicalXor,
-				'>': OpGreaterThan,
-				'<': OpLessThan,
-				'=': OpEqual,
-			}
-			opKind, ok := mp[op]
-			if !ok {
-				return -1, errParse{
-					&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}},
-				}
-			}
-			return ast.Append(NodeExprBinary{Pos{}, opKind, n, m}), errParse{}
-		},
-	)(ast, b)
-}
-
 func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
-	if len(b) > 0 && bytes.Contains([]byte(")]}"), b[:1]) {
-		// kostyle, shtobi ne rekursirovatsa
-		return b, -1, errParse{&Err{nil, ErrSyntax, "expected expression", Pos{}}}
-	}
-
-	return parseOr(
+	b, lhs, err := parseOr(
 		parseComment,
 		parseLiteral,
 		parseIdentifier,
@@ -558,8 +481,68 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseList,
 		parseDict,
 		parseLambda,
-		parseFunctionCall,
 		parseUnary,
-		parseBinary,
 	)(ast, b)
+	if err.Err != nil {
+		return nil, -1, err
+	}
+
+	{
+		b, call, err := parseAnd3(
+			parseParenLeft,
+			parseMany0(parseExpression), // TODO: separated by commas?
+			parseParenRight,
+			func(_ byte, args []int, _ byte) (int, errParse) {
+				return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
+			},
+		)(ast, b)
+		if err.Err == nil {
+			return b, call, errParse{}
+		}
+	}
+
+	{
+		b, opRhs, err := parseAnd2(
+			parseOr(
+				// NOTE: ordered by priority, higher is higher priority
+				parseByte('%'),
+				parseByte('*'),
+				parseByte('/'),
+				parseByte('>'),
+				parseByte('<'),
+				parseByte('='),
+				parseByte('&'),
+				parseByte('^'),
+				parseByte('|'),
+				parseByte('+'),
+				parseByte('-'),
+			),
+			parseExpression,
+			func(op byte, rhs int) (int, errParse) {
+				mp := map[byte]Kind{
+					'+': OpAdd,
+					'-': OpSubtract,
+					'*': OpMultiply,
+					'/': OpDivide,
+					'%': OpModulus,
+					'&': OpLogicalAnd,
+					'|': OpLogicalOr,
+					'^': OpLogicalXor,
+					'>': OpGreaterThan,
+					'<': OpLessThan,
+					'=': OpEqual,
+				}
+				opKind, ok := mp[op]
+				if !ok {
+					return -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}}}
+				}
+				return ast.Append(NodeExprBinary{Pos{}, opKind, lhs, rhs}), errParse{}
+			},
+		)(ast, b)
+		if err.Err == nil {
+			return b, opRhs, errParse{}
+		}
+	}
+
+	return b, lhs, errParse{}
 }
