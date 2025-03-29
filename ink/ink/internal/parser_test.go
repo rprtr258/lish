@@ -37,12 +37,12 @@ func TestParser(t *testing.T) {
 		})
 	}
 
-	// f(
-	// 	`valid literal "log"`,
-	// 	`log`,
-	// 	parseIdentifier,
-	// 	NodeIdentifier{Val: "log"},
-	// )
+	f(
+		`valid literal "log"`,
+		`log`,
+		parseIdentifier,
+		NodeIdentifier{Val: "log"},
+	)
 	f(
 		"valid assignment",
 		`log :=
