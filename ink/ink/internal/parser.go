@@ -321,6 +321,7 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 		ident = append(ident, b[0])
 		b = b[1:]
 	}
+
 	switch {
 	case len(ident) == 0:
 		return nil, -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
@@ -469,7 +470,6 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseList,
 		parseDict,
 		parseUnary,
-		parseComment,
 		parseLiteral,
 		parseIdentifier,
 	)(ast, b)
@@ -477,108 +477,122 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		return nil, -1, err
 	}
 
-	switch ast.Nodes[lhs].(type) {
-	case NodeIdentifier, NodeExprList:
-		b, lambda, err := parseAnd2(
-			parseFunctionArrow,
-			parseExpression,
-			func(_ string, body int) (int, errParse) {
-				var args []int
-				switch n := ast.Nodes[lhs].(type) {
-				case NodeIdentifier:
-					args = []int{lhs}
-				case NodeExprList:
-					args = n.Expressions
-				}
-				return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
-			},
-		)(ast, b)
-		if err.Err == nil {
-			return b, lambda, errParse{}
-		}
+	if lhs == _astEmptyIdentifierIdx {
+		return b, lhs, err
 	}
 
-	{
-		b, call, err := parseAnd3(
-			parseParenLeft,
-			parseMany0(parseExpression),
-			parseParenRight,
-			func(_ byte, args []int, _ byte) (int, errParse) {
-				LogAST(ast)
-				return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
-			},
-		)(ast, b)
-		if err.Err == nil {
-			return b, call, errParse{}
-		}
-	}
-
-	{
-		b, opRhs, err := parseAnd2(
-			parseOr(
-				// NOTE: ordered by priority, higher is higher priority
-				parseByte('.'),
-				parseByte('%'),
-				parseByte('*'),
-				parseByte('/'),
-				parseByte('>'),
-				parseByte('<'),
-				parseByte('='),
-				parseByte('&'),
-				parseByte('^'),
-				parseByte('|'),
-				parseByte('+'),
-				parseByte('-'),
-			),
-			parseExpression,
-			func(op byte, rhs int) (int, errParse) {
-				mp := map[byte]Kind{
-					'.': OpAccessor,
-					'+': OpAdd,
-					'-': OpSubtract,
-					'*': OpMultiply,
-					'/': OpDivide,
-					'%': OpModulus,
-					'&': OpLogicalAnd,
-					'|': OpLogicalOr,
-					'^': OpLogicalXor,
-					'>': OpGreaterThan,
-					'<': OpLessThan,
-					'=': OpEqual,
-				}
-				opKind, ok := mp[op]
-				if !ok {
-					return -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}}}
-				}
-				return ast.Append(NodeExprBinary{Pos{}, opKind, lhs, rhs}), errParse{}
-			},
-		)(ast, b)
-		if err.Err == nil {
-			return b, opRhs, errParse{}
-		}
-	}
-
-	{
-		b, match, err := parseAnd4(
-			parseMatch,
-			parseBraceLeft,
-			parseMany0(parseAnd3(
+	for {
+		switch ast.Nodes[lhs].(type) {
+		case NodeIdentifier, NodeExprList:
+			b2, lambda, err := parseAnd2(
+				parseFunctionArrow,
 				parseExpression,
-				parseArrow,
-				parseExpression,
-				func(target int, _ string, expression int) (int, errParse) {
-					return ast.Append(NodeMatchClause{target, expression}), errParse{}
+				func(_ string, body int) (int, errParse) {
+					var args []int
+					switch n := ast.Nodes[lhs].(type) {
+					case NodeIdentifier:
+						args = []int{lhs}
+					case NodeExprList:
+						args = n.Expressions
+					}
+					return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
 				},
-			)),
-			parseBraceRight,
-			func(_ string, _ byte, clauses []int, _ byte) (int, errParse) {
-				return ast.Append(NodeExprMatch{Condition: lhs, Clauses: clauses}), errParse{}
-			},
-		)(ast, b)
-		if err.Err == nil {
-			return b, match, errParse{}
+			)(ast, b)
+			if err.Err == nil {
+				lhs = lambda
+				b = b2
+				continue
+			}
 		}
-	}
 
-	return b, lhs, errParse{}
+		{
+			b2, call, err := parseAnd3(
+				parseParenLeft,
+				parseMany0(parseExpression),
+				parseParenRight,
+				func(_ byte, args []int, _ byte) (int, errParse) {
+					LogAST(ast)
+					return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
+				},
+			)(ast, b)
+			if err.Err == nil {
+				lhs = call
+				b = b2
+				continue
+			}
+		}
+
+		{
+			b2, bin, err := parseAnd2(
+				parseOr(
+					// NOTE: ordered by priority, higher is higher priority
+					parseByte('.'),
+					parseByte('%'),
+					parseByte('*'),
+					parseByte('/'),
+					parseByte('>'),
+					parseByte('<'),
+					parseByte('='),
+					parseByte('&'),
+					parseByte('^'),
+					parseByte('|'),
+					parseByte('+'),
+					parseByte('-'),
+				),
+				parseExpression,
+				func(op byte, rhs int) (int, errParse) {
+					mp := map[byte]Kind{
+						'.': OpAccessor,
+						'+': OpAdd,
+						'-': OpSubtract,
+						'*': OpMultiply,
+						'/': OpDivide,
+						'%': OpModulus,
+						'&': OpLogicalAnd,
+						'|': OpLogicalOr,
+						'^': OpLogicalXor,
+						'>': OpGreaterThan,
+						'<': OpLessThan,
+						'=': OpEqual,
+					}
+					opKind, ok := mp[op]
+					if !ok {
+						return -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}}}
+					}
+					return ast.Append(NodeExprBinary{Pos{}, opKind, lhs, rhs}), errParse{}
+				},
+			)(ast, b)
+			if err.Err == nil {
+				lhs = bin
+				b = b2
+				continue
+			}
+		}
+
+		{
+			b2, match, err := parseAnd4(
+				parseMatch,
+				parseBraceLeft,
+				parseMany0(parseAnd3(
+					parseExpression,
+					parseArrow,
+					parseExpression,
+					func(target int, _ string, expression int) (int, errParse) {
+						return ast.Append(NodeMatchClause{target, expression}), errParse{}
+					},
+				)),
+				parseBraceRight,
+				func(_ string, _ byte, clauses []int, _ byte) (int, errParse) {
+					return ast.Append(NodeExprMatch{Condition: lhs, Clauses: clauses}), errParse{}
+				},
+			)(ast, b)
+			if err.Err == nil {
+				lhs = match
+				b = b2
+				continue
+			}
+		}
+
+		return b, lhs, errParse{}
+	}
 }

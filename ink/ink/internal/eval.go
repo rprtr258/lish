@@ -1092,6 +1092,7 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 	if errRead != nil {
 		panic(errRead.Error())
 	}
+
 	// tokens := tokenize(filename, r) // TODO: delete
 	nodes := []Node{}
 	oldBLen := len(b)
@@ -1100,6 +1101,7 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 		var expr int
 		b, expr, err = parseExpression(ast, b)
 		if err.Err != nil {
+			fmt.Println("AT", len(b))
 			LogError(err.Err)
 			return nil
 		}

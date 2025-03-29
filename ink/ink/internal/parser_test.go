@@ -84,6 +84,12 @@ func TestParser(t *testing.T) {
 		NodeLiteralString{},
 	)
 	f(
+		`valid addition`,
+		`string(s) + ' '`,
+		parseExpression,
+		NodeExprBinary{},
+	)
+	f(
 		`valid block`,
 		`(
 			f(str)
