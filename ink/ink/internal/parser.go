@@ -395,7 +395,11 @@ func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
 
 func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
-		parseExpression,
+		parseOr(
+			parseIdentifier,
+			parseDict,
+			parseList,
+		),
 		parseDefine,
 		parseExpression,
 		func(lvalue int, _ string, rvalue int) (int, errParse) {
@@ -406,9 +410,9 @@ func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
 
 func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
-		parseParenLeft,
+		parseBracketLeft,
 		parseMany0(parseExpression), // TODO: separated by commas?
-		parseParenRight,
+		parseBracketRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
 			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
 		},
@@ -540,6 +544,11 @@ func parseBinary(ast *AST, b []byte) ([]byte, int, errParse) {
 }
 
 func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
+	if len(b) > 0 && bytes.Contains([]byte(")]}"), b[:1]) {
+		// kostyle, shtobi ne rekursirovatsa
+		return b, -1, errParse{&Err{nil, ErrSyntax, "expected expression", Pos{}}}
+	}
+
 	return parseOr(
 		parseComment,
 		parseLiteral,
