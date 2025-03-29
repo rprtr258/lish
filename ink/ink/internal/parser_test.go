@@ -1,6 +1,8 @@
 package internal
 
 import (
+	_ "embed"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +27,9 @@ func TestParser_error(t *testing.T) {
 	_, _, err := parseExpression(ast, []byte(`)`))
 	require.NotEqual(t, errParse{}, err)
 }
+
+//go:embed testdata/mangled.ink
+var mangled string
 
 func TestParser(t *testing.T) {
 	f := func(
@@ -123,11 +128,17 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeExprMatch{},
 	)
-
 	f(
 		"valid binary-op, accessor",
 		`[5 4 3 2 1].2`,
 		parseExpression,
 		NodeExprBinary{},
 	)
+}
+
+func TestParse(t *testing.T) {
+	ast := NewAstSlice()
+	nodes := ParseReader(ast, "testdata/mangled.ink", strings.NewReader(mangled))
+	t.Log(ast.String())
+	require.Equal(t, nil, nodes)
 }

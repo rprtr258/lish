@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -36,7 +35,6 @@ func NewAstSlice() *AST {
 }
 
 func (s *AST) Append(node Node) int {
-	fmt.Fprint(os.Stderr, len(s.Nodes), " ")
 	LogNode(node)
 	// TODO: position is lost
 	switch node := node.(type) {
