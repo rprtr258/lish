@@ -127,7 +127,7 @@ func (s AST) Graph() string {
 			val = n.Operator.String()
 		case NodeFunctionCall:
 			props["fillcolor"] = _colorExpr
-		case NodeMatchClause, NodeMatchExpr, NodeExprList:
+		case NodeMatchClause, NodeExprMatch, NodeExprList:
 			props["fillcolor"] = _colorControl
 		}
 		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
@@ -152,7 +152,7 @@ func (s AST) Graph() string {
 		case NodeMatchClause:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, n.Target)
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, n.Expression)
-		case NodeMatchExpr:
+		case NodeExprMatch:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.Condition)
 			for k, j := range n.Clauses {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
@@ -249,13 +249,13 @@ func (n NodeMatchClause) Position() Pos {
 	return Pos{} // TODO: return n.target.Position()
 }
 
-type NodeMatchExpr struct {
+type NodeExprMatch struct {
 	Pos
 	Condition int
 	Clauses   []int // TODO: inline clauses
 }
 
-func (n NodeMatchExpr) String() string {
+func (n NodeExprMatch) String() string {
 	var sb strings.Builder
 	sb.WriteString("Match on (#")
 	sb.WriteString(strconv.Itoa(n.Condition))
@@ -271,7 +271,7 @@ func (n NodeMatchExpr) String() string {
 	return sb.String()
 }
 
-func (n NodeMatchExpr) Position() Pos {
+func (n NodeExprMatch) Position() Pos {
 	return n.Pos
 }
 

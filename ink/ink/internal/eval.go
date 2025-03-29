@@ -871,7 +871,7 @@ func (n NodeMatchClause) Eval(*Scope, *AST, bool) (Value, *Err) {
 	return nil, nil
 }
 
-func (n NodeMatchExpr) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
+func (n NodeExprMatch) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
 	conditionVal, err := ast.Nodes[n.Condition].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
@@ -1098,7 +1098,10 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 		var err errParse
 		var expr int
 		b, expr, err = parseExpression(ast, b)
-		LogError(err.Err)
+		if err.Err != nil {
+			LogError(err.Err)
+			return nil
+		}
 		LogNode(ast.Nodes[expr])
 		if expr != _astEmptyIdentifierIdx { // NOTE: skip comments
 			nodes = append(nodes, ast.Nodes[expr])

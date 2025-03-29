@@ -14,8 +14,8 @@ func TestMain(m *testing.M) {
 	// 	fmt.Println("timeout")
 	// 	os.Exit(1)
 	// }()
-	L.Parse = true
-	L.Lex = true
+	// L.Parse = true
+	// L.Lex = true
 
 	m.Run()
 }
@@ -36,10 +36,10 @@ func TestParser(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ast := NewAstSlice()
 			b, expr, err := parser(ast, []byte(source))
+			t.Log(ast.String())
 			require.Equal(t, errParse{}, err)
 			assert.Equal(t, []byte{}, b)
 			assert.IsType(t, node, ast.Nodes[expr])
-			t.Log(ast.String())
 		})
 	}
 
@@ -60,6 +60,12 @@ func TestParser(t *testing.T) {
 		`out(str)`,
 		parseExpression,
 		NodeFunctionCall{},
+	)
+	f(
+		`valid literal-number`,
+		`1`,
+		parseExpression,
+		NodeLiteralNumber{},
 	)
 	f(
 		`valid literal-string`,
@@ -101,5 +107,13 @@ func TestParser(t *testing.T) {
 ))`,
 		parseAssignment,
 		NodeExprBinary{},
+	)
+	f(
+		"valid match",
+		`1 :: # line break after match
+{1 -> 'hi' 2 ->
+  'thing'}`,
+		parseExpression,
+		NodeExprMatch{},
 	)
 }

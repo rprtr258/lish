@@ -548,5 +548,27 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		}
 	}
 
+	{
+		b, match, err := parseAnd4(
+			parseMatch,
+			parseBraceLeft,
+			parseMany0(parseAnd3(
+				parseExpression,
+				parseArrow,
+				parseExpression,
+				func(target int, _ string, expression int) (int, errParse) {
+					return ast.Append(NodeMatchClause{target, expression}), errParse{}
+				},
+			)),
+			parseBraceRight,
+			func(_ string, _ byte, clauses []int, _ byte) (int, errParse) {
+				return ast.Append(NodeExprMatch{Condition: lhs, Clauses: clauses}), errParse{}
+			},
+		)(ast, b)
+		if err.Err == nil {
+			return b, match, errParse{}
+		}
+	}
+
 	return b, lhs, errParse{}
 }

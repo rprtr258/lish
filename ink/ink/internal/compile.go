@@ -140,7 +140,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 				panic(fmt.Sprintf("unknown key type: %T", k))
 			}
 		}
-	case NodeMatchExpr:
+	case NodeExprMatch:
 		switch condition := ast.Nodes[n.Condition].(type) {
 		case NodeLiteralBoolean:
 			if !condition.Val {

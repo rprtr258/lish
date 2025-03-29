@@ -202,7 +202,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 			idx += incr
 
 			consumeDanglingSeparator()
-			return s.Append(NodeMatchExpr{
+			return s.Append(NodeExprMatch{
 				Condition: binExpr,
 				Clauses:   clauses,
 				Pos:       colonPos,
@@ -217,7 +217,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 		idx += incr
 
 		consumeDanglingSeparator()
-		return s.Append(NodeMatchExpr{
+		return s.Append(NodeExprMatch{
 			Condition: atom,
 			Clauses:   clauses,
 			Pos:       nextTok.Pos,
