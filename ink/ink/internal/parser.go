@@ -91,13 +91,6 @@ var (
 	parseBraceLeft, parseBraceRight     = parseByte('{'), parseByte('}')
 )
 
-func skipSpaces(b []byte) []byte {
-	for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-		b = b[1:]
-	}
-	return b
-}
-
 func parseAnd2[A, B, R any](
 	p1 Parser[A],
 	p2 Parser[B],
@@ -340,6 +333,24 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 				return ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
 			}
 		})(ast, b)
+}
+
+// TODO: replace with comments skip
+func skipSpaces(b []byte) []byte {
+	for {
+		for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
+			b = b[1:]
+		}
+
+		if len(b) == 0 || b[0] != '#' {
+			return b
+		}
+
+		for len(b) > 0 && b[0] != '\n' {
+			b = b[1:]
+		}
+	}
+	return b
 }
 
 func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
