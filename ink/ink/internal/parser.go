@@ -315,12 +315,6 @@ func parseBoolean(ast *AST, b []byte) ([]byte, int, errParse) {
 	})(ast, b)
 }
 
-var parseIdentifierEmpty = parseMap(
-	parseByte('_'),
-	func(byte) (int, errParse) {
-		return _astEmptyIdentifierIdx, errParse{}
-	})
-
 func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 	ident := []byte{}
 	for len(b) > 0 && ('0' <= b[0] && b[0] <= '9' || 'a' <= b[0] && b[0] <= 'z' || 'A' <= b[0] && b[0] <= 'Z' || b[0] == '_') {
@@ -332,6 +326,8 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 		return nil, -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
 	case '0' <= ident[0] && ident[0] <= '9':
 		return nil, -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", Pos{}}}
+	case string(ident) == "_":
+		return b, _astEmptyIdentifierIdx, errParse{}
 	default:
 		return b, ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
 	}
