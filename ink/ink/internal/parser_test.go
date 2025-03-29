@@ -25,14 +25,14 @@ func TestParser(t *testing.T) {
 		name string,
 		source string,
 		parser Parser[int],
+		node Node,
 	) {
 		t.Run(name, func(t *testing.T) {
 			ast := NewAstSlice()
 			b, expr, err := parser(ast, []byte(source))
 			require.Equal(t, errParse{}, err)
-			require.Equal(t, 3, expr)
 			require.Equal(t, []byte{}, b)
-			require.Equal(t, []Node{}, ast.Nodes)
+			require.Equal(t, node, ast.Nodes[expr])
 		})
 	}
 
@@ -40,6 +40,7 @@ func TestParser(t *testing.T) {
 		`valid literal "log"`,
 		`log`,
 		parseIdentifier,
+		NodeIdentifier{Val: "log"},
 	)
 	return
 	f(
@@ -52,5 +53,6 @@ func TestParser(t *testing.T) {
 ')
 ))`,
 		parseAssignment,
+		NodeExprBinary{},
 	)
 }
