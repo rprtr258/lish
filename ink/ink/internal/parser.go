@@ -180,30 +180,30 @@ type Option[T any] struct {
 }
 
 func parseOptional[T any](p Parser[T]) Parser[Option[T]] {
-	return func(ast *AST, in []byte) ([]byte, Option[T], errParse) {
-		out, v, err := p(ast, in)
+	return func(ast *AST, b []byte) ([]byte, Option[T], errParse) {
+		out, v, err := p(ast, b)
 		if err.Err != nil {
-			return in, Option[T]{}, errParse{}
+			return b, Option[T]{}, errParse{}
 		}
 		return out, Option[T]{v, true}, errParse{}
 	}
 }
 
 func parseMany0[T any](p Parser[T]) Parser[[]T] {
-	return func(ast *AST, in []byte) ([]byte, []T, errParse) {
+	return func(ast *AST, b []byte) ([]byte, []T, errParse) {
 		var res []T
-		LogToken2(">MANY", "%q", string(in))
+		LogToken2(">MANY", "%q", string(b))
 		for {
-			out, v, err := p(ast, in)
-			LogToken2("MANY", "%q %q", string(in), string(out))
+			b2, v, err := p(ast, b)
+			LogToken2("MANY", "%q %q", string(b), string(b2))
 			if err.Err != nil {
-				return in, res, errParse{}
+				return b, res, errParse{}
 			}
 			res = append(res, v)
-			if len(out) == 0 {
-				return out, res, errParse{}
+			if len(b2) == 0 {
+				return b2, res, errParse{}
 			}
-			in = out
+			b = b2
 		}
 	}
 }
@@ -212,7 +212,7 @@ func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
 	return func(ast *AST, in []byte) ([]byte, R, errParse) {
 		out, v, err := p(ast, in)
 		if err.Err != nil {
-			return in, *new(R), err
+			return nil, *new(R), err
 		}
 
 		vv, err := f(v)
