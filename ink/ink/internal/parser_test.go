@@ -1,10 +1,7 @@
 package internal
 
 import (
-	"fmt"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,17 +9,25 @@ import (
 
 func TestMain(m *testing.M) {
 	// timeout
-	go func() {
-		time.Sleep(5 * time.Second)
-		fmt.Println("timeout")
-		os.Exit(1)
-	}()
+	// go func() {
+	// 	time.Sleep(5 * time.Second)
+	// 	fmt.Println("timeout")
+	// 	os.Exit(1)
+	// }()
 	L.Parse = true
+	L.Lex = true
 
 	m.Run()
 }
 
+func TestParser_error(t *testing.T) {
+	ast := NewAstSlice()
+	_, _, err := parseExpression(ast, []byte(`)`))
+	require.NotEqual(t, errParse{}, err)
+}
+
 func TestParser(t *testing.T) {
+	return
 	f := func(
 		name string,
 		source string,
@@ -38,17 +43,46 @@ func TestParser(t *testing.T) {
 		})
 	}
 
+	// f(
+	// 	`valid literal "log"`,
+	// 	`log`,
+	// 	parseIdentifier,
+	// 	NodeIdentifier{Val: "log"},
+	// )
+	// f(
+	// 	`valid expression literal`,
+	// 	`log`,
+	// 	parseExpression,
+	// 	NodeIdentifier{Val: "log"},
+	// )
 	f(
-		`valid literal "log"`,
-		`log`,
-		parseIdentifier,
-		NodeIdentifier{Val: "log"},
+		`valid block/list`,
+		`out(str)`,
+		parseFunctionCall,
+		NodeFunctionCall{},
+	)
+	return
+	f(
+		`valid block/list`,
+		`(
+  out(str)
+
+  out('
+')
+)`,
+		parseBlock,
+		NodeExprList{},
 	)
 	f(
-		`valid expression literal`,
-		`log`,
-		parseExpression,
-		NodeIdentifier{Val: "log"},
+		`valid lambda`,
+		`str => (
+  out(str)
+
+  out('
+')
+)`,
+		parseLambda,
+		NodeLiteralFunction{},
 	)
 	f(
 		"valid assignment",

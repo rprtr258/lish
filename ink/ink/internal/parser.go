@@ -357,36 +357,40 @@ func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 		})(ast, b)
 }
 
-func parseComment(_ *AST, b []byte) ([]byte, Unit, errParse) {
-	LogToken2("COMMENT", "%q", string(b))
-	if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-		return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
-	}
-
-	for {
-		for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-			b = b[1:]
-		}
-
-		if len(b) == 0 {
-			return b, unit, errParse{}
-		}
-
-		switch b[0] {
-		case '#':
-			if i := bytes.IndexByte(b, '\n'); i == -1 {
-				// no newline, comment till end of file
-				return []byte(nil), unit, errParse{}
-			} else {
-				return b[i+1:], unit, errParse{}
-			}
-		case '\n':
-			// empty line, skip
-			continue
-		default:
+func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseMap(func(_ *AST, b []byte) ([]byte, Unit, errParse) {
+		LogToken2("COMMENT", "%q", string(b))
+		if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
 			return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
 		}
-	}
+
+		for {
+			for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
+				b = b[1:]
+			}
+
+			if len(b) == 0 {
+				return b, unit, errParse{}
+			}
+
+			switch b[0] {
+			case '#':
+				if i := bytes.IndexByte(b, '\n'); i == -1 {
+					// no newline, comment till end of file
+					return []byte(nil), unit, errParse{}
+				} else {
+					return b[i+1:], unit, errParse{}
+				}
+			case '\n':
+				// empty line, skip
+				continue
+			default:
+				return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment", Pos{}}}
+			}
+		}
+	}, func(_ Unit) (int, errParse) {
+		return _astEmptyIdentifierIdx, errParse{} // NOTE: since we have to return some node, return empty
+	})(ast, b)
 }
 
 func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
@@ -400,133 +404,153 @@ func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
 	)(ast, b)
 }
 
-func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
-	parseList := parseAnd3(
+func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
 		parseParenLeft,
 		parseMany0(parseExpression), // TODO: separated by commas?
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
 			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
 		},
-	)
-	parseComment := parseMap(parseComment, func(_ Unit) (int, errParse) {
-		return _astEmptyIdentifierIdx, errParse{} // NOTE: since we have to return some node, return empty
-	})
-	parseLiteral := parseOr(
+	)(ast, b)
+}
+
+func parseLambda(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseOr(
+			parseMap(parseIdentifier, func(ident int) ([]int, errParse) { return []int{ident}, errParse{} }),
+			parseMap(parseList, func(list int) ([]int, errParse) { return ast.Nodes[list].(NodeExprList).Expressions, errParse{} }),
+		),
+		parseFunctionArrow,
+		parseExpression,
+		func(args []int, _ string, body int) (int, errParse) {
+			return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
+		},
+	)(ast, b)
+}
+
+func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseParenLeft,
+		parseMany0(parseExpression), // TODO: separated by commas?
+		parseParenRight,
+		func(_ byte, exprs []int, _ byte) (int, errParse) {
+			if len(exprs) == 0 {
+				return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
+			}
+			res := exprs[0]
+			for i := 1; i < len(exprs); i++ {
+				// TODO: sequencing operator
+				res = ast.Append(NodeExprBinary{Pos{}, OpSubtract, res, exprs[i]})
+			}
+			return res, errParse{}
+		},
+	)(ast, b)
+}
+
+func parseFunctionCall(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd4(
+		parseExpression,
+		parseParenLeft,
+		parseMany0(parseExpression), // TODO: separated by commas?
+		parseParenRight,
+		func(fn int, _ byte, args []int, _ byte) (int, errParse) {
+			return ast.Append(NodeFunctionCall{fn, args}), errParse{}
+		},
+	)(ast, b)
+}
+
+func parseLiteral(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseOr(
 		parseNumber,
 		parseString,
 		parseBoolean,
-	)
+	)(ast, b)
+}
 
+func parseDict(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseBraceLeft,
+		parseMany0(parseAnd3(
+			parseExpression,
+			parseColon,
+			parseExpression,
+			func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
+				return NodeObjectEntry{Pos{}, k, v}, errParse{}
+			},
+		)), // TODO: separated by commas?
+		parseBraceRight,
+		func(_ byte, kvs []NodeObjectEntry, _ byte) (int, errParse) {
+			return ast.Append(NodeLiteralObject{Pos{}, kvs}), errParse{}
+		},
+	)(ast, b)
+}
+
+func parseUnary(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd2(
+		parseByte('-'),
+		parseExpression,
+		func(_ byte, n int) (int, errParse) {
+			return ast.Append(NodeExprUnary{Pos{}, OpNegation, n}), errParse{}
+		},
+	)(ast, b)
+}
+
+func parseBinary(ast *AST, b []byte) ([]byte, int, errParse) {
+	return parseAnd3(
+		parseExpression,
+		parseOr(
+			// NOTE: ordered by priority, higher is higher priority
+			parseByte('%'),
+			parseByte('*'),
+			parseByte('/'),
+			parseByte('>'),
+			parseByte('<'),
+			parseByte('='),
+			parseByte('&'),
+			parseByte('^'),
+			parseByte('|'),
+			parseByte('+'),
+			parseByte('-'),
+		),
+		parseExpression,
+		func(m int, op byte, n int) (int, errParse) {
+			mp := map[byte]Kind{
+				'+': OpAdd,
+				'-': OpSubtract,
+				'*': OpMultiply,
+				'/': OpDivide,
+				'%': OpModulus,
+				'&': OpLogicalAnd,
+				'|': OpLogicalOr,
+				'^': OpLogicalXor,
+				'>': OpGreaterThan,
+				'<': OpLessThan,
+				'=': OpEqual,
+			}
+			opKind, ok := mp[op]
+			if !ok {
+				return -1, errParse{
+					&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}},
+				}
+			}
+			return ast.Append(NodeExprBinary{Pos{}, opKind, n, m}), errParse{}
+		},
+	)(ast, b)
+}
+
+func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseOr(
 		parseComment,
 		parseLiteral,
 		parseIdentifier,
 		parseAssignment,
-		// block
-		parseAnd3(
-			parseParenLeft,
-			parseMany0(parseExpression), // TODO: separated by commas?
-			parseParenRight,
-			func(_ byte, exprs []int, _ byte) (int, errParse) {
-				if len(exprs) == 0 {
-					return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
-				}
-				res := exprs[0]
-				for i := 1; i < len(exprs); i++ {
-					// TODO: sequencing operator
-					res = ast.Append(NodeExprBinary{Pos{}, OpSubtract, res, exprs[i]})
-				}
-				return res, errParse{}
-			},
-		),
-		// list
+		parseBlock,
 		parseList,
-		// dict
-		parseAnd3(
-			parseBraceLeft,
-			parseMany0(parseAnd3(
-				parseExpression,
-				parseColon,
-				parseExpression,
-				func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
-					return NodeObjectEntry{Pos{}, k, v}, errParse{}
-				},
-			)), // TODO: separated by commas?
-			parseBraceRight,
-			func(_ byte, kvs []NodeObjectEntry, _ byte) (int, errParse) {
-				return ast.Append(NodeLiteralObject{Pos{}, kvs}), errParse{}
-			},
-		),
-		// lambda
-		parseAnd3(
-			parseOr(
-				parseMap(parseIdentifier, func(ident int) ([]int, errParse) { return []int{ident}, errParse{} }),
-				parseMap(parseList, func(list int) ([]int, errParse) { return ast.Nodes[list].(NodeExprList).Expressions, errParse{} }),
-			),
-			parseFunctionArrow,
-			parseExpression,
-			func(args []int, _ string, body int) (int, errParse) {
-				return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
-			},
-		),
-		// function call
-		parseAnd3(
-			parseExpression,
-			parseParenLeft,
-			parseMany0(parseExpression), // TODO: separated by commas?
-			func(fn int, _ byte, args []int) (int, errParse) {
-				return ast.Append(NodeFunctionCall{fn, args}), errParse{}
-			},
-		),
-		// unary expression
-		parseAnd2(
-			parseByte('-'),
-			parseExpression,
-			func(_ byte, n int) (int, errParse) {
-				return ast.Append(NodeExprUnary{Pos{}, OpNegation, n}), errParse{}
-			},
-		),
-		// binary expression
-		parseAnd3(
-			parseExpression,
-			parseOr(
-				// NOTE: ordered by priority, higher is higher priority
-				parseByte('%'),
-				parseByte('*'),
-				parseByte('/'),
-				parseByte('>'),
-				parseByte('<'),
-				parseByte('='),
-				parseByte('&'),
-				parseByte('^'),
-				parseByte('|'),
-				parseByte('+'),
-				parseByte('-'),
-			),
-			parseExpression,
-			func(m int, op byte, n int) (int, errParse) {
-				mp := map[byte]Kind{
-					'+': OpAdd,
-					'-': OpSubtract,
-					'*': OpMultiply,
-					'/': OpDivide,
-					'%': OpModulus,
-					'&': OpLogicalAnd,
-					'|': OpLogicalOr,
-					'^': OpLogicalXor,
-					'>': OpGreaterThan,
-					'<': OpLessThan,
-					'=': OpEqual,
-				}
-				opKind, ok := mp[op]
-				if !ok {
-					return -1, errParse{
-						&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}},
-					}
-				}
-				return ast.Append(NodeExprBinary{Pos{}, opKind, n, m}), errParse{}
-			},
-		),
+		parseDict,
+		parseLambda,
+		parseFunctionCall,
+		parseUnary,
+		parseBinary,
 	)(ast, b)
 }
