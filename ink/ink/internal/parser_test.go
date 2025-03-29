@@ -129,6 +129,12 @@ func TestParser(t *testing.T) {
 		NodeExprMatch{},
 	)
 	f(
+		"valid list",
+		`[5 4 3 2 1]`,
+		parseExpression,
+		NodeLiteralList{},
+	)
+	f(
 		"valid binary-op, accessor",
 		`[5 4 3 2 1].2`,
 		parseExpression,

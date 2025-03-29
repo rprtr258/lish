@@ -413,10 +413,10 @@ func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
 func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
 		parseBracketLeft,
-		parseMany0(parseExpression), // TODO: separated by commas?
+		parseMany0(parseExpression),
 		parseBracketRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
-			return ast.Append(NodeExprList{Pos{}, exprs}), errParse{}
+			return ast.Append(NodeLiteralList{Pos{}, exprs}), errParse{}
 		},
 	)(ast, b)
 }
@@ -424,7 +424,7 @@ func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
 func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseAnd3(
 		parseParenLeft,
-		parseMany0(parseExpression), // TODO: separated by commas?
+		parseMany0(parseExpression),
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
 			exprs = fun.Filter(func(n int) bool { return n != _astEmptyIdentifierIdx }, exprs...)
@@ -451,7 +451,7 @@ func parseDict(ast *AST, b []byte) ([]byte, int, errParse) {
 			func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
 				return NodeObjectEntry{Pos{}, k, v}, errParse{}
 			},
-		)), // TODO: separated by commas?
+		)),
 		parseBraceRight,
 		func(_ byte, kvs []NodeObjectEntry, _ byte) (int, errParse) {
 			return ast.Append(NodeLiteralObject{Pos{}, kvs}), errParse{}
@@ -508,7 +508,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 	{
 		b, call, err := parseAnd3(
 			parseParenLeft,
-			parseMany0(parseExpression), // TODO: separated by commas?
+			parseMany0(parseExpression),
 			parseParenRight,
 			func(_ byte, args []int, _ byte) (int, errParse) {
 				return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
