@@ -52,7 +52,7 @@ func LogScope(scope *Scope) {
 		return
 	}
 
-	log.Debug().Stringer("scope", scope).Msg("frame dump")
+	fmt.Fprintf(os.Stdout, "frame dump:\n%s\n", scope.String())
 }
 
 func LogToken2(parserStr string, format string, args ...any) {

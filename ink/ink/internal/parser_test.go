@@ -37,6 +37,7 @@ func TestParser(t *testing.T) {
 		source string,
 		parser Parser[int],
 		node Node,
+		check ...func(Node) bool,
 	) {
 		t.Run(name, func(t *testing.T) {
 			ast := NewAstSlice()
@@ -45,6 +46,9 @@ func TestParser(t *testing.T) {
 			require.Equal(t, errParse{}, err)
 			assert.Equal(t, []byte{}, b)
 			assert.IsType(t, node, ast.Nodes[expr])
+			if len(check) > 0 {
+				assert.True(t, check[0](ast.Nodes[expr]))
+			}
 		})
 	}
 
@@ -94,14 +98,13 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeExprList{},
 	)
+
 	f(
 		`valid lambda, single inlined arg`,
 		`str => (
-  out(str)
-
-  out('
-')
-)`,
+			out(str)
+			out('\n')
+		)`,
 		parseExpression,
 		NodeLiteralFunction{},
 	)
@@ -111,6 +114,17 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeLiteralFunction{},
 	)
+	f(
+		`valid lambda, two args`,
+		`(a,b) => (a+b)`,
+		parseExpression,
+		NodeLiteralFunction{},
+		func(n Node) bool {
+			f := n.(NodeLiteralFunction)
+			return len(f.Arguments) == 2
+		},
+	)
+
 	f(
 		"valid assignment",
 		`log := (str => (out(str)

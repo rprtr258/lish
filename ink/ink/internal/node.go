@@ -35,7 +35,6 @@ func NewAstSlice() *AST {
 }
 
 func (s *AST) Append(node Node) int {
-	LogNode(node)
 	// TODO: position is lost
 	switch node := node.(type) {
 	case NodeIdentifierEmpty:

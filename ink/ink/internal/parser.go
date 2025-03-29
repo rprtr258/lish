@@ -322,24 +322,19 @@ var parseIdentifierEmpty = parseMap(
 	})
 
 func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseMap(
-		parseMany0(parseMap(parseByteAny, func(c byte) (byte, errParse) {
-			// TODO: other symbols
-			if '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_' {
-				return c, errParse{}
-			}
-			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid identifier character %c", c), Pos{}}}
-		})),
-		func(ident []byte) (int, errParse) {
-			switch {
-			case len(ident) == 0:
-				return -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
-			case '0' <= ident[0] && ident[0] <= '9':
-				return -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", Pos{}}}
-			default:
-				return ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
-			}
-		})(ast, b)
+	ident := []byte{}
+	for len(b) > 0 && ('0' <= b[0] && b[0] <= '9' || 'a' <= b[0] && b[0] <= 'z' || 'A' <= b[0] && b[0] <= 'Z' || b[0] == '_') {
+		ident = append(ident, b[0])
+		b = b[1:]
+	}
+	switch {
+	case len(ident) == 0:
+		return nil, -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
+	case '0' <= ident[0] && ident[0] <= '9':
+		return nil, -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", Pos{}}}
+	default:
+		return b, ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
+	}
 }
 
 // TODO: replace with comments skip
@@ -428,6 +423,8 @@ func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
 			exprs = fun.Filter(func(n int) bool { return n != _astEmptyIdentifierIdx }, exprs...)
+			// NOTE: optimize (x) to x
+			// TODO: if len(exprs) == 0 return exprs[0]
 			return ast.Append(NodeExprList{Expressions: exprs}), errParse{}
 		},
 	)(ast, b)

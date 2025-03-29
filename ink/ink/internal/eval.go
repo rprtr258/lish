@@ -918,6 +918,7 @@ func (n NodeIdentifierEmpty) Eval(*Scope, *AST, bool) (Value, *Err) {
 }
 
 func (n NodeIdentifier) Eval(scope *Scope, _ *AST, _ bool) (Value, *Err) {
+	LogScope(scope)
 	val, ok := scope.Get(n.Val)
 	if !ok {
 		return nil, &Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Val), n.Position()}
@@ -1102,8 +1103,9 @@ func ParseReader(ast *AST, filename string, r io.Reader) []Node {
 			LogError(err.Err)
 			return nil
 		}
-		LogNode(ast.Nodes[expr])
 		if expr != _astEmptyIdentifierIdx { // NOTE: skip comments
+			LogNode(ast.Nodes[expr])
+			LogAST(ast)
 			nodes = append(nodes, ast.Nodes[expr])
 		}
 		if len(b) == oldBLen {
