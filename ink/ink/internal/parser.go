@@ -471,14 +471,14 @@ func parseUnary(ast *AST, b []byte) ([]byte, int, errParse) {
 
 func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 	b, lhs, err := parseOr(
-		parseComment,
-		parseLiteral,
-		parseIdentifier,
 		parseAssignment,
 		parseBlock,
 		parseList,
 		parseDict,
 		parseUnary,
+		parseComment,
+		parseLiteral,
+		parseIdentifier,
 	)(ast, b)
 	if err.Err != nil {
 		return nil, -1, err
@@ -523,6 +523,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		b, opRhs, err := parseAnd2(
 			parseOr(
 				// NOTE: ordered by priority, higher is higher priority
+				parseByte('.'),
 				parseByte('%'),
 				parseByte('*'),
 				parseByte('/'),
@@ -538,6 +539,7 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			parseExpression,
 			func(op byte, rhs int) (int, errParse) {
 				mp := map[byte]Kind{
+					'.': OpAccessor,
 					'+': OpAdd,
 					'-': OpSubtract,
 					'*': OpMultiply,

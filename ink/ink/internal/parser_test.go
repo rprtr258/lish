@@ -123,4 +123,11 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeExprMatch{},
 	)
+
+	f(
+		"valid binary-op, accessor",
+		`[5 4 3 2 1].2`,
+		parseExpression,
+		NodeExprBinary{},
+	)
 }
