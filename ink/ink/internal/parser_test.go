@@ -42,18 +42,18 @@ func TestParser(t *testing.T) {
 		})
 	}
 
-	// f(
-	// 	`valid literal "log"`,
-	// 	`log`,
-	// 	parseIdentifier,
-	// 	NodeIdentifier{Val: "log"},
-	// )
-	// f(
-	// 	`valid expression literal`,
-	// 	`log`,
-	// 	parseExpression,
-	// 	NodeIdentifier{Val: "log"},
-	// )
+	f(
+		`valid literal "log"`,
+		`log`,
+		parseIdentifier,
+		NodeIdentifier{},
+	)
+	f(
+		`valid expression literal`,
+		`log`,
+		parseExpression,
+		NodeIdentifier{},
+	)
 	f(
 		`valid block/list`,
 		`out(str)`,
