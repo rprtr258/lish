@@ -16,6 +16,7 @@ func TestMain(m *testing.M) {
 		fmt.Println("timeout")
 		os.Exit(1)
 	}()
+	L.Parse = true
 
 	m.Run()
 }
@@ -42,7 +43,6 @@ func TestParser(t *testing.T) {
 		parseIdentifier,
 		NodeIdentifier{Val: "log"},
 	)
-	return
 	f(
 		"valid assignment",
 		`log :=

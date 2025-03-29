@@ -331,7 +331,6 @@ var parseIdentifierEmpty = parseMap(
 func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
 	return parseMap(
 		parseMany(parseMap(parseByteAny, func(c byte) (byte, errParse) {
-			fmt.Println("[IDENT]", string(b[:min(len(b), 10)]))
 			// TODO: other symbols
 			if '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_' {
 				return c, errParse{}
