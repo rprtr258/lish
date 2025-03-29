@@ -164,5 +164,19 @@ func TestParse(t *testing.T) {
 	ast := NewAstSlice()
 	nodes := ParseReader(ast, "testdata/mangled.ink", strings.NewReader(mangled))
 	t.Log(ast.String())
-	require.Equal(t, []Node{NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 3, Right: 11}, NodeExprMatch{Pos: Pos{file: "", line: 0, col: 0}, Condition: 13, Clauses: []int{15, 18}}, NodeLiteralFunction{Pos: Pos{file: "", line: 0, col: 0}, Arguments: []int{}, Body: 21}, NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 23, Right: 31}, NodeFunctionCall{Function: 3, Arguments: []int{23}}, NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 34, Right: 39}, NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 41, Right: 53}, NodeFunctionCall{Function: 3, Arguments: []int{56}}, NodeFunctionCall{Function: 3, Arguments: []int{61}}, NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 3, Right: 68}, NodeExprBinary{Pos: Pos{file: "", line: 0, col: 0}, Operator: 19, Left: 70, Right: 99}, NodeFunctionCall{Function: 117, Arguments: []int{118}}, NodeFunctionCall{Function: 5, Arguments: []int{7}}}, nodes)
+	require.Equal(t, []Node{
+		NodeExprBinary{Operator: 19, Left: 3, Right: 11},
+		NodeExprMatch{Condition: 13, Clauses: []int{15, 18}},
+		NodeLiteralFunction{Arguments: []int{}, Body: 21},
+		NodeExprBinary{Operator: 19, Left: 23, Right: 31},
+		NodeFunctionCall{Function: 3, Arguments: []int{23}},
+		NodeExprBinary{Operator: 19, Left: 34, Right: 39},
+		NodeExprBinary{Operator: 19, Left: 41, Right: 53},
+		NodeFunctionCall{Function: 3, Arguments: []int{56}},
+		NodeFunctionCall{Function: 3, Arguments: []int{61}},
+		NodeExprBinary{Operator: 19, Left: 3, Right: 68},
+		NodeExprBinary{Operator: 19, Left: 70, Right: 99},
+		NodeFunctionCall{Function: 117, Arguments: []int{118}},
+		NodeFunctionCall{Function: 5, Arguments: []int{7}},
+	}, nodes)
 }
