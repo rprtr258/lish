@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+
+	"github.com/rprtr258/fun"
 )
 
 type Unit struct{}
@@ -425,7 +427,7 @@ func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 			if len(exprs) == 0 {
 				return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
 			}
-			// TODO: remove empty identifiers
+			exprs = fun.Filter(func(n int) bool { return n != _astEmptyIdentifierIdx }, exprs...)
 			return ast.Append(NodeExprList{Expressions: exprs}), errParse{}
 		},
 	)(ast, b)
