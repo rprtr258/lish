@@ -425,12 +425,8 @@ func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
 			if len(exprs) == 0 {
 				return _astEmptyIdentifierIdx, errParse{} // TODO: () is "nil"
 			}
-			res := exprs[0]
-			for i := 1; i < len(exprs); i++ {
-				// TODO: sequencing operator
-				res = ast.Append(NodeExprBinary{Pos{}, OpSubtract, res, exprs[i]})
-			}
-			return res, errParse{}
+			// TODO: remove empty identifiers
+			return ast.Append(NodeExprList{Expressions: exprs}), errParse{}
 		},
 	)(ast, b)
 }
