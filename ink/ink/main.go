@@ -57,7 +57,11 @@ func repl(ctx *ink.Context) {
 
 		// we don't really care if expressions fail to eval
 		// at the top level, user will see regardless, so drop err
-		nodes := ink.ParseReader(ctx.Engine.AST, "stdin", strings.NewReader(text))
+		nodes, errP := ink.ParseReader(ctx.Engine.AST, "stdin", strings.NewReader(text))
+		if errP != nil {
+			ink.LogError(errP)
+			continue
+		}
 		if val, err := ctx.Eval(nodes); val != nil {
 			ink.LogError(err)
 			fmt.Println(val.String())
@@ -108,15 +112,29 @@ func main() {
 		var nodes []ink.Node
 		switch {
 		case *eval != "":
-			nodes = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
+			var errP *ink.Err
+			nodes, errP = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
+			if errP != nil {
+				ink.LogError(errP)
+				return
+			}
 		case len(args) > 0:
 			filePath := args[0]
 			var err *ink.Err
 			if nodes, err = ctx.ExecPath(filePath); err != nil {
-				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute file")
+				log.Fatal().
+					Err(err).
+					Stringer("kind", ink.ErrRuntime).
+					Str("filepath", filePath).
+					Msg("failed to execute file")
 			}
 		case stdin.Mode()&os.ModeCharDevice == 0:
-			nodes = ink.ParseReader(eng.AST, "stdin", os.Stdin)
+			var errP *ink.Err
+			nodes, errP = ink.ParseReader(eng.AST, "stdin", os.Stdin)
+			if errP != nil {
+				ink.LogError(errP)
+				return
+			}
 		default:
 			// if no files given and no stdin, default to repl
 			ink.L.FatalError = false

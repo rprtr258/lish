@@ -333,7 +333,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			entries = append(entries, NodeObjectEntry{
 				Key: keyExpr,
 				Val: valExpr,
-				Pos: s.Nodes[keyExpr].Position(),
+				Pos: s.Nodes[keyExpr].Position(s),
 			})
 
 			guardUnexpectedInputEnd(tokens, idx)

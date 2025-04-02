@@ -8,72 +8,34 @@ import (
 	"github.com/rprtr258/fun"
 )
 
-const (
-	_astEmptyIdentifierIdx = 0
-	_astFalseLiteralIdx    = 1
-	_astTrueLiteralIdx     = 2
-)
-
 type AST struct {
-	Numbers     map[float64]int
-	Identifiers map[string]int
-	Strings     map[string]int
-	Nodes       []Node
+	cache map[string]int
+	Nodes []Node
 }
 
 func NewAstSlice() *AST {
 	return &AST{
-		Numbers:     map[float64]int{},
-		Identifiers: map[string]int{},
-		Strings:     map[string]int{},
-		Nodes: []Node{
-			NodeIdentifierEmpty{},
-			NodeLiteralBoolean{Val: false},
-			NodeLiteralBoolean{Val: true},
-		},
+		cache: map[string]int{},
+		Nodes: []Node{},
 	}
 }
 
 func (s *AST) Append(node Node) int {
-	// TODO: position is lost
-	switch node := node.(type) {
-	case NodeIdentifierEmpty:
-		// one empty identifier for all
-		return _astEmptyIdentifierIdx
-	case NodeLiteralBoolean:
-		return fun.IF(node.Val, _astTrueLiteralIdx, _astFalseLiteralIdx)
-	case NodeLiteralNumber:
-		if _, ok := s.Numbers[node.Val]; !ok {
-			n := len(s.Nodes)
-			s.Nodes = append(s.Nodes, node)
-			s.Numbers[node.Val] = n
-		}
-		return s.Numbers[node.Val]
-	case NodeLiteralString:
-		if _, ok := s.Strings[node.Val]; !ok {
-			n := len(s.Nodes)
-			s.Nodes = append(s.Nodes, node)
-			s.Strings[node.Val] = n
-		}
-		return s.Strings[node.Val]
-	case NodeIdentifier:
-		if _, ok := s.Identifiers[node.Val]; !ok {
-			n := len(s.Nodes)
-			s.Nodes = append(s.Nodes, node)
-			s.Identifiers[node.Val] = n
-		}
-		return s.Identifiers[node.Val]
-	default:
-		n := len(s.Nodes)
-		s.Nodes = append(s.Nodes, node)
-		return n
+	ss := node.String()
+	if _, ok := s.cache[ss]; ok {
+		return s.cache[ss]
 	}
+
+	n := len(s.Nodes)
+	s.Nodes = append(s.Nodes, node)
+	s.cache[ss] = n
+	return n
 }
 
 func (s AST) String() string {
 	var sb strings.Builder
 	for i, n := range s.Nodes {
-		fmt.Fprintf(&sb, "%d: %s\n", i, n.String())
+		fmt.Fprintf(&sb, "%3d(%s): %s\n", i, n.Position(&s).String(), n.String())
 	}
 	return sb.String()
 }
@@ -176,9 +138,9 @@ type errParse struct {
 
 // Node represents an abstract syntax tree (AST) node in an Ink program.
 type Node interface {
-	String() string
-	Position() Pos
 	Eval(*Scope, *AST, bool) (Value, *Err)
+	String() string
+	Position(*AST) Pos
 }
 
 type NodeExprUnary struct {
@@ -191,7 +153,7 @@ func (n NodeExprUnary) String() string {
 	return fmt.Sprintf("Unary %s #%d", n.Operator, n.Operand)
 }
 
-func (n NodeExprUnary) Position() Pos {
+func (n NodeExprUnary) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -205,7 +167,7 @@ func (n NodeExprBinary) String() string {
 	return fmt.Sprintf("Binary #%d %s #%d", n.Left, n.Operator, n.Right)
 }
 
-func (n NodeExprBinary) Position() Pos {
+func (n NodeExprBinary) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -230,8 +192,8 @@ func (n NodeFunctionCall) String() string {
 	return sb.String()
 }
 
-func (n NodeFunctionCall) Position() Pos {
-	return Pos{} // TODO: n.function.Position()
+func (n NodeFunctionCall) Position(s *AST) Pos {
+	return s.Nodes[n.Function].Position(s)
 }
 
 type NodeMatchClause struct {
@@ -242,8 +204,8 @@ func (n NodeMatchClause) String() string {
 	return fmt.Sprintf("Clause #%d -> #%d", n.Target, n.Expression)
 }
 
-func (n NodeMatchClause) Position() Pos {
-	return Pos{} // TODO: return n.target.Position()
+func (n NodeMatchClause) Position(s *AST) Pos {
+	return s.Nodes[n.Target].Position(s)
 }
 
 type NodeExprMatch struct {
@@ -268,7 +230,7 @@ func (n NodeExprMatch) String() string {
 	return sb.String()
 }
 
-func (n NodeExprMatch) Position() Pos {
+func (n NodeExprMatch) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -291,7 +253,7 @@ func (n NodeExprList) String() string {
 	return sb.String()
 }
 
-func (n NodeExprList) Position() Pos {
+func (n NodeExprList) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -303,7 +265,7 @@ func (n NodeIdentifierEmpty) String() string {
 	return "Empty Identifier"
 }
 
-func (n NodeIdentifierEmpty) Position() Pos {
+func (n NodeIdentifierEmpty) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -316,7 +278,7 @@ func (n NodeIdentifier) String() string {
 	return fmt.Sprintf("Identifier '%s'", n.Val)
 }
 
-func (n NodeIdentifier) Position() Pos {
+func (n NodeIdentifier) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -329,7 +291,7 @@ func (n NodeLiteralNumber) String() string {
 	return fmt.Sprintf("Number %s", nToS(n.Val))
 }
 
-func (n NodeLiteralNumber) Position() Pos {
+func (n NodeLiteralNumber) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -342,7 +304,7 @@ func (n NodeLiteralString) String() string {
 	return fmt.Sprintf("String '%s'", n.Val)
 }
 
-func (n NodeLiteralString) Position() Pos {
+func (n NodeLiteralString) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -355,7 +317,7 @@ func (n NodeLiteralBoolean) String() string {
 	return fmt.Sprintf("Boolean %t", n.Val)
 }
 
-func (n NodeLiteralBoolean) Position() Pos {
+func (n NodeLiteralBoolean) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -373,7 +335,7 @@ func (n NodeLiteralObject) String() string {
 		strings.Join(entries, ", "))
 }
 
-func (n NodeLiteralObject) Position() Pos {
+func (n NodeLiteralObject) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -399,7 +361,7 @@ func (n NodeLiteralList) String() string {
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
 
-func (n NodeLiteralList) Position() Pos {
+func (n NodeLiteralList) Position(*AST) Pos {
 	return n.Pos
 }
 
@@ -417,6 +379,6 @@ func (n NodeLiteralFunction) String() string {
 	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.Body)
 }
 
-func (n NodeLiteralFunction) Position() Pos {
+func (n NodeLiteralFunction) Position(*AST) Pos {
 	return n.Pos
 }

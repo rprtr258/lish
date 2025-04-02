@@ -170,8 +170,8 @@ func (kind Kind) String() string {
 }
 
 type Pos struct {
-	file      string
-	line, col int
+	File      string
+	Line, Col int
 }
 
 func (p Pos) String() string {
@@ -179,7 +179,7 @@ func (p Pos) String() string {
 		return "??:??:??"
 	}
 
-	return fmt.Sprintf("%s:%d:%d", p.file, p.line, p.col)
+	return fmt.Sprintf("%s:%d:%2d", p.File, p.Line, p.Col)
 }
 
 // Token is the monomorphic struct representing all Ink program tokens

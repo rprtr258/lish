@@ -119,7 +119,7 @@ m('composite value access')
   t('out of bounds string index access (negative)'
     ('hi').(~1), ())
   t('out of bounds string index access (too large)'
-    ('hello, world!').len('hello, world!'), ())
+    ('hello, world!').(len('hello, world!')), ())
 
   # nested composites
   comp := {list: ['hi', 'hello', {what: 'thing'}]}
@@ -306,7 +306,7 @@ m('calling functions with mismatched argument length')
 m('argument order of evaluation')
 (
   acc := []
-  fn := (x, y) => (acc.len(acc) := x, y)
+  fn := (x, y) => (acc.(len(acc)) := x, y)
 
   t('function arguments are evaluated in order, I'
     fn(fn(fn(fn('i', '?'), 'h'), 'g'), 'k'), 'k')
@@ -514,7 +514,7 @@ m('object keys / list, mutable strings, std.clone')
   cobj := clone(obj)
   obj.fourth := 4
   clist := clone(list)
-  list.len(list) := 'alpha'
+  list.(len(list)) := 'alpha'
 
   t('std.clone does not affect original composite', len(keys(obj)), 4)
   t('std.clone creates a new copy of composite', len(keys(cobj)), 3)
@@ -565,9 +565,9 @@ m('string/composite pass by reference / mutation check')
   twin := obj # by reference
   clone := clone(obj) # cloned (by value)
 
-  obj.len(obj) := 4
-  obj.len(obj) := 5
-  obj.len(obj) := 6
+  obj.(len(obj)) := 4
+  obj.(len(obj)) := 5
+  obj.(len(obj)) := 6
 
   t('std.clone does not affect original composite', len(obj), 6)
   t('define op does not create a copy of composite', len(twin), 6)
@@ -586,7 +586,7 @@ m('string/composite pass by reference / mutation check')
   str.8 := 'lx'
   str.2 := ''
   str.3 := ''
-  str.len(str) := 'x?'
+  str.(len(str)) := 'x?'
 
   t('assigning to string indexes mutates original string', str, 'hello! wlxldx?')
   t('concatenating to string with + creates a copy of string', str2, 'hello, world')
@@ -833,7 +833,7 @@ m('std list: map/filter/reduce[Back]/each/reverse/flatten, append')
     reduceBack(list, (acc, _, i) => acc + string(i), ''), '9876543210')
   (
     eachAcc := []
-    each(list, (_, i) => eachAcc.len(eachAcc) := i)
+    each(list, (_, i) => eachAcc.(len(eachAcc)) := i)
     t('std.each passes index to callback', eachAcc
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   )

@@ -8,48 +8,84 @@ import (
 	"github.com/rprtr258/fun"
 )
 
-type Unit struct{}
+type Unit = struct{}
 
 var unit = Unit{}
 
-// TODO: pass and use pos
-type Parser[T any] func(*AST, []byte) ([]byte, T, errParse)
+type ctx struct {
+	ast      *AST
+	b        []byte
+	offset   int
+	filename string
+}
 
-var parseByteAny Parser[byte] = func(_ *AST, in []byte) ([]byte, byte, errParse) {
-	if len(in) < 1 {
-		return nil, 0, errParse{&Err{nil, ErrSyntax, "unexpected EOF", Pos{}}}
+func newCtx(b []byte, filename string) *ctx {
+	return &ctx{NewAstSlice(), b, 0, filename}
+}
+
+// TODO: remove?
+func (c *ctx) to(offset int) *ctx {
+	return &ctx{c.ast, c.b, offset, c.filename}
+}
+
+func (c *ctx) skipSpaces(skipNewlines bool) *ctx {
+	return c.to(c.offset + skipSpaces(c.bb(), skipNewlines))
+}
+
+func (c ctx) bb() []byte {
+	return c.b[c.offset:]
+}
+
+func (c ctx) len() int {
+	return len(c.bb())
+}
+
+func (c ctx) at(i int) byte {
+	return c.bb()[i]
+}
+
+func (c ctx) pos() Pos {
+	line := bytes.Count(c.b[:c.offset], []byte{'\n'})
+	precol := bytes.LastIndexByte(c.b[:c.offset], '\n')
+	return Pos{c.filename, line + 1, c.offset - precol - 1} // TODO: move +1s to Pos.String ?
+}
+
+// TODO: pass and use pos
+type Parser[T any] func(*ctx) (int, T, errParse)
+
+var parseByteAny Parser[byte] = func(c *ctx) (int, byte, errParse) {
+	if c.len() < 1 {
+		return 0, 0, errParse{&Err{nil, ErrSyntax, "unexpected EOF", c.pos()}}
 	}
-	return in[1:], in[0], errParse{}
+	return c.offset + 1, c.b[c.offset], errParse{}
 }
 
 func parseBytes(s string) Parser[string] {
-	return func(_ *AST, b []byte) ([]byte, string, errParse) {
-		if len(b) < len(s) || string(b[:len(s)]) != s {
+	return func(c *ctx) (int, string, errParse) {
+		if c.len() < len(s) || string(c.bb()[:len(s)]) != s {
 			var msg string
-			if len(b) == 0 {
+			if c.len() == 0 {
 				msg = fmt.Sprintf("unexpected EOF, expected %q", s)
 			} else {
-				msg = fmt.Sprintf("unexpected bytes %q, expected %q", b[:min(len(b), len(s))], s)
+				msg = fmt.Sprintf("unexpected bytes %q, expected %q", c.bb()[:min(len(c.bb()), len(s))], s)
 			}
-			return nil, "", errParse{&Err{nil, ErrSyntax, msg, Pos{}}}
+			return 0, "", errParse{&Err{nil, ErrSyntax, msg, c.pos()}}
 		}
-		return b[len(s):], s, errParse{}
+		return c.offset + len(s), s, errParse{}
 	}
 }
 
 func parseOr[T any](parsers ...Parser[T]) Parser[T] {
-	return func(ast *AST, b []byte) ([]byte, T, errParse) {
-		LogToken2(">OR", "%d", len(parsers))
+	return func(c *ctx) (int, T, errParse) {
 		errs := ""
-		for i, p := range parsers {
-			out, v, err := p(ast, b)
-			LogToken2("OR", "%d/%d %q %+v", i, len(parsers), string(out), err.Err)
+		for _, p := range parsers {
+			out, v, err := p(c)
 			if err.Err == nil {
 				return out, v, err
 			}
 			errs += err.Err.Error() + ", "
 		}
-		return nil, *new(T), errParse{&Err{nil, ErrSyntax, "none matched: " + errs, Pos{}}}
+		return 0, *new(T), errParse{&Err{nil, ErrSyntax, "none matched: " + errs, c.pos()}}
 	}
 }
 
@@ -97,17 +133,43 @@ func parseAnd2[A, B, R any](
 	p2 Parser[B],
 	f func(A, B) (R, errParse),
 ) Parser[R] {
-	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		ain, a, err := p1(ast, skipSpaces(in))
+	return func(c *ctx) (int, R, errParse) {
+		cc := c.to(c.offset + skipSpaces(c.bb(), true))
+		aoffset, a, err := p1(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		bin, b, err := p2(ast, skipSpaces(ain))
+		cc = cc.to(aoffset).skipSpaces(true) // TODO: copy in or, not and
+		boffset, b2, err := p2(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		r, err := f(a, b)
-		return bin, r, err
+		r, err := f(a, b2)
+		return boffset, r, err
+	}
+}
+
+func parseAnd3_[A, B, C, R any](
+	p1 Parser[A],
+	p2 Parser[B],
+	p3 Parser[C],
+	f func(A, B, C) (R, errParse),
+) Parser[R] {
+	return func(cc *ctx) (int, R, errParse) {
+		ain, a, err := p1(cc)
+		if err.Err != nil {
+			return 0, *new(R), err
+		}
+		bin, b, err := p2(cc.to(ain))
+		if err.Err != nil {
+			return 0, *new(R), err
+		}
+		cin, c, err := p3(cc.to(bin))
+		if err.Err != nil {
+			return 0, *new(R), err
+		}
+		r, err := f(a, b, c)
+		return cin, r, err
 	}
 }
 
@@ -117,23 +179,22 @@ func parseAnd3[A, B, C, R any](
 	p3 Parser[C],
 	f func(A, B, C) (R, errParse),
 ) Parser[R] {
-	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		LogToken2("IN", "%q", string(in))
-		ain, a, err := p1(ast, skipSpaces(in))
+	return func(cc *ctx) (int, R, errParse) {
+		cc = cc.skipSpaces(true)
+		ain, a, err := p1(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		LogToken2("AIN", "%q", string(ain))
-		bin, b, err := p2(ast, skipSpaces(ain))
+		cc = cc.to(ain).skipSpaces(true)
+		bin, b, err := p2(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		LogToken2("BIN", "%q", string(bin))
-		cin, c, err := p3(ast, skipSpaces(bin))
+		cc = cc.to(bin).skipSpaces(true)
+		cin, c, err := p3(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		LogToken2("CIN", "%q", string(cin))
 		r, err := f(a, b, c)
 		return cin, r, err
 	}
@@ -146,62 +207,65 @@ func parseAnd4[A, B, C, D, R any](
 	p4 Parser[D],
 	f func(A, B, C, D) (R, errParse),
 ) Parser[R] {
-	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		ain, a, err := p1(ast, skipSpaces(in))
+	return func(cc *ctx) (int, R, errParse) {
+		cc = cc.skipSpaces(true) // TODO: copy in or, not and
+		ain, a, err := p1(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		bin, b, err := p2(ast, skipSpaces(ain))
+		cc = cc.to(ain).skipSpaces(true) // TODO: copy in or, not and
+		bin, b, err := p2(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		cin, c, err := p3(ast, skipSpaces(bin))
+		cc = cc.to(bin).skipSpaces(true) // TODO: copy in or, not and
+		cin, c, err := p3(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
-		din, d, err := p4(ast, skipSpaces(cin))
+		cc = cc.to(cin).skipSpaces(true) // TODO: copy in or, not and
+		din, d, err := p4(cc)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
 		r, err := f(a, b, c, d)
 		return din, r, err
 	}
 }
 
-type Option[T any] struct {
-	Value T
-	Valid bool
-}
-
-func parseOptional[T any](p Parser[T]) Parser[Option[T]] {
-	return func(ast *AST, b []byte) ([]byte, Option[T], errParse) {
-		out, v, err := p(ast, b)
+func parseOptional[T any](p Parser[T]) Parser[fun.Option[T]] {
+	return func(c *ctx) (int, fun.Option[T], errParse) {
+		out, v, err := p(c.to(c.offset))
 		if err.Err != nil {
-			return b, Option[T]{}, errParse{}
+			return c.offset, fun.Option[T]{}, errParse{}
 		}
-		return out, Option[T]{v, true}, errParse{}
+		return out, fun.Option[T]{v, true}, errParse{}
 	}
 }
 
-func parseMany0[T any](p Parser[T]) Parser[[]T] {
-	return func(ast *AST, b []byte) ([]byte, []T, errParse) {
+// a,b,c, -> [a,b,c]
+// a,b,c  -> [a,b,c]
+func parseMany[T any](p Parser[T]) Parser[[]T] {
+	return func(c *ctx) (int, []T, errParse) {
 		var res []T
-		LogToken2(">MANY", "%q", string(b))
+		b := c.offset
 		for {
-			b2, v, err := p(ast, b)
-			LogToken2("MANY", "%q %q", string(b), string(b2))
+			b2, v, err := p(c.to(b))
 			if err.Err != nil {
 				return b, res, errParse{}
 			}
 			res = append(res, v)
-			if len(b2) == 0 {
+			if b2 == len(c.b) {
 				return b2, res, errParse{}
 			}
-			{ // TODO: remove
-				b3, _, err := parseComma(ast, b2)
-				if err.Err == nil {
-					b2 = b3
+			{ // TODO: consider ';' in block instead of ','
+				b2 += skipSpaces(c.b[b2:], false)
+				delim := parseOr(parseComma, parseByte('\n'))
+				b3, _, err := delim(c.to(b2))
+				if err.Err != nil {
+					return b2, res, errParse{}
 				}
+				b2 = b3 + skipSpaces(c.b[b3:], true)
 			}
 			b = b2
 		}
@@ -209,10 +273,10 @@ func parseMany0[T any](p Parser[T]) Parser[[]T] {
 }
 
 func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
-	return func(ast *AST, in []byte) ([]byte, R, errParse) {
-		out, v, err := p(ast, in)
+	return func(c *ctx) (int, R, errParse) {
+		out, v, err := p(c)
 		if err.Err != nil {
-			return nil, *new(R), err
+			return 0, *new(R), err
 		}
 
 		vv, err := f(v)
@@ -221,41 +285,63 @@ func parseMap[T, R any](p Parser[T], f func(T) (R, errParse)) Parser[R] {
 }
 
 func parseByte(c byte) Parser[byte] {
-	return parseMap(parseByteAny, func(v byte) (byte, errParse) {
-		if v != c {
-			return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %c, found %c", c, v), Pos{}}}
-		}
-		return v, errParse{}
-	})
+	return func(cc *ctx) (int, byte, errParse) {
+		return parseMap(parseByteAny, func(v byte) (byte, errParse) {
+			if v != c {
+				return 0, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %c, found %c", c, v), cc.pos()}}
+			}
+			return v, errParse{}
+		})(cc)
+	}
 }
 
 func parseIgnore[T any](p Parser[T]) Parser[struct{}] {
-	return func(ast *AST, in []byte) ([]byte, struct{}, errParse) {
-		out, _, err := p(ast, in)
+	return func(c *ctx) (int, struct{}, errParse) {
+		out, _, err := p(c)
 		return out, struct{}{}, err
 	}
 }
 
-// 123 | 123. | 123.456 | .456 | -123.456
-func parseNumber(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseAnd4(
-		parseOptional(parseIgnore(parseMinus)),
-		parseMany0(parseDigit),
-		parseOptional(parseDot),
-		parseMany0(parseDigit),
-		func(
-			isNegative Option[struct{}],
-			integerPart []byte,
-			dot Option[byte],
-			fractionalPart []byte,
-		) (int, errParse) {
-			if len(integerPart) == 0 && len(fractionalPart) == 0 || len(integerPart) != 0 && dot.Valid && len(fractionalPart) != 0 {
-				return -1, errParse{&Err{nil, ErrSyntax, "invalid number", Pos{}}}
-			}
+// 123 | 456
+// NOTE: RETURNS INT, NOT NODE INDEX
+func parseInt(c *ctx) (int, int, errParse) {
+	if c.len() == 0 || c.at(0) < '0' || c.at(0) > '9' {
+		return 0, 0, errParse{&Err{nil, ErrSyntax, "EOF", c.pos()}}
+	}
 
-			s := string(integerPart)
-			if dot.Valid {
-				s += "." + string(dot.Value)
+	res := 0
+	offset := c.offset
+	for offset < len(c.b) && '0' <= c.b[offset] && c.b[offset] <= '9' {
+		d := int(c.b[offset] - '0')
+		res = res*10 + d
+		offset++
+	}
+	return offset, res, errParse{}
+}
+
+// 123 | 123. | 123.456 | .456 | ~123.456
+func parseNumber(c *ctx) (int, int, errParse) {
+	return parseAnd3_(
+		parseOptional(parseIgnore(parseNegation)),
+		parseInt,
+		parseOptional(parseAnd2(
+			parseIgnore(parseDot),
+			parseInt,
+			func(
+				dot struct{},
+				fractionalPart int,
+			) (int, errParse) {
+				return fractionalPart, errParse{}
+			},
+		)),
+		func(
+			isNegative fun.Option[struct{}],
+			integerPart int,
+			fractionalPart fun.Option[int],
+		) (int, errParse) {
+			s := strconv.Itoa(integerPart)
+			if fractionalPart.Valid {
+				s += "." + strconv.Itoa(fractionalPart.Value)
 			}
 			if isNegative.Valid {
 				s = "-" + s
@@ -263,14 +349,14 @@ func parseNumber(ast *AST, b []byte) ([]byte, int, errParse) {
 
 			f, err := strconv.ParseFloat(s, 64)
 			if err != nil {
-				return -1, errParse{&Err{nil, ErrSyntax, err.Error(), Pos{}}}
+				return -1, errParse{&Err{nil, ErrSyntax, err.Error(), c.pos()}}
 			}
 
-			return ast.Append(NodeLiteralNumber{
+			return c.ast.Append(NodeLiteralNumber{
 				Val: f,
-				Pos: Pos{},
+				Pos: c.pos(),
 			}), errParse{}
-		})(ast, b)
+		})(c)
 }
 
 var _charsEscaped = map[byte]byte{
@@ -281,189 +367,236 @@ var _charsEscaped = map[byte]byte{
 	'\'': '\'',
 }
 
-// TODO: PIDARAS NA VSCODE ZAMENYAET MNE two ' to ”
-// ” | 'abc' | 'abc\'def\n\\\r\tghi'
-func parseString(ast *AST, b []byte) ([]byte, int, errParse) {
-	if len(b) == 0 || b[0] != '\'' {
-		return nil, -1, errParse{&Err{nil, ErrSyntax, "expected string", Pos{}}}
-	}
-
-	end := bytes.IndexByte(b[1:], '\'')
+func parseStringIn(c *ctx, quote byte) (int, int, errParse) {
+	end := bytes.IndexByte(c.bb()[1:], quote)
 	if end == -1 {
-		return nil, -1, errParse{&Err{nil, ErrSyntax, "expected string, but found EOF", Pos{}}}
+		return 0, -1, errParse{&Err{nil, ErrSyntax, "expected string, but found EOF", c.pos()}}
 	}
 
-	return b[end+2:], ast.Append(NodeLiteralString{
-		Val: string(b[1 : end+1]),
-		Pos: Pos{},
+	return c.offset + 1 + end + 1, c.ast.Append(NodeLiteralString{
+		Val: string(c.bb()[1 : end+1]),
+		Pos: c.pos(),
 	}), errParse{}
 }
 
-func parseBoolean(ast *AST, b []byte) ([]byte, int, errParse) {
+// TODO: PIDARAS NA VSCODE ZAMENYAET MNE two ' to ”
+// ” | 'abc' | 'abc\'def\n\\\r\tghi' | `aaaa`
+func parseString(c *ctx) (int, int, errParse) {
+	switch {
+	case c.len() == 0:
+		return 0, -1, errParse{&Err{nil, ErrSyntax, "string: unexpected EOF", c.pos()}}
+	case c.at(0) == '\'':
+		return parseStringIn(c, '\'')
+	case c.at(0) == '`':
+		return parseStringIn(c, '`')
+	default:
+		return 0, -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected string, found %c", c.at(0)), c.pos()}}
+	}
+}
+
+func parseBoolean(c *ctx) (int, int, errParse) {
 	return parseMap(parseOr(
 		parseBytes("true"),
 		parseBytes("false"),
 	), func(s string) (int, errParse) {
 		switch s {
 		case "true":
-			return _astTrueLiteralIdx, errParse{}
+			return c.ast.Append(NodeLiteralBoolean{c.pos(), true}), errParse{}
 		case "false":
-			return _astFalseLiteralIdx, errParse{}
+			return c.ast.Append(NodeLiteralBoolean{c.pos(), false}), errParse{}
 		default:
-			return -1, errParse{&Err{nil, ErrSyntax, "invalid boolean literal: " + s, Pos{}}}
+			return -1, errParse{&Err{nil, ErrSyntax, "invalid boolean literal: " + s, c.pos()}}
 		}
-	})(ast, b)
+	})(c)
 }
 
-func parseIdentifier(ast *AST, b []byte) ([]byte, int, errParse) {
-	ident := []byte{}
-	for len(b) > 0 && ('0' <= b[0] && b[0] <= '9' || 'a' <= b[0] && b[0] <= 'z' || 'A' <= b[0] && b[0] <= 'Z' || b[0] == '_') {
-		ident = append(ident, b[0])
-		b = b[1:]
+func isValidIdentifierByte(c byte) bool {
+	return '0' <= c && c <= '9' ||
+		'a' <= c && c <= 'z' ||
+		'A' <= c && c <= 'Z' ||
+		c == '_' || c == '?'
+}
+
+func parseIdentifier(c *ctx) (int, int, errParse) {
+	i := c.offset
+	for i < len(c.b) && isValidIdentifierByte(c.b[i]) {
+		i++
 	}
 
+	ident := c.b[c.offset:i]
 	switch {
 	case len(ident) == 0:
-		return nil, -1, errParse{&Err{nil, ErrSyntax, "empty identifier", Pos{}}}
+		return 0, -1, errParse{&Err{nil, ErrSyntax, "empty identifier", c.pos()}}
 	case '0' <= ident[0] && ident[0] <= '9':
-		return nil, -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", Pos{}}}
+		return 0, -1, errParse{&Err{nil, ErrSyntax, "identifier cannot start with digit", c.pos()}}
 	case string(ident) == "_":
-		return b, _astEmptyIdentifierIdx, errParse{}
+		return i, c.ast.Append(NodeIdentifierEmpty{c.pos()}), errParse{}
 	default:
-		return b, ast.Append(NodeIdentifier{Pos{}, string(ident)}), errParse{}
+		return i, c.ast.Append(NodeIdentifier{c.pos(), string(ident)}), errParse{}
 	}
 }
 
 // TODO: replace with comments skip
-func skipSpaces(b []byte) []byte {
+func skipSpaces(b []byte, skipNewlines bool) int {
+	i := 0
 	for {
-		for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-			b = b[1:]
+		for i < len(b) && (bytes.Contains([]byte(" \t\r"), b[i:][:1]) || skipNewlines && b[i] == '\n') {
+			i++
 		}
 
-		if len(b) == 0 || b[0] != '#' {
-			return b
+		if i == len(b) || b[i] != '#' {
+			return i
 		}
 
-		for len(b) > 0 && b[0] != '\n' {
-			b = b[1:]
+		for i < len(b) && b[i] != '\n' {
+			i++
+		}
+		if !skipNewlines {
+			return i
 		}
 	}
 }
 
-func parseComment(ast *AST, b []byte) ([]byte, int, errParse) {
-	return parseMap(func(_ *AST, b []byte) ([]byte, Unit, errParse) {
-		LogToken2("COMMENT", "%q", string(b))
-		if len(b) > 0 && !bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-			return b, unit, errParse{&Err{nil, ErrSyntax, "not a comment(1)", Pos{}}}
+func parseLhs(c *ctx) (int, int, errParse) {
+	i, res, err := parseOr(
+		parseIdentifier,
+		parseDict,
+		parseList,
+	)(c)
+	if err.Err != nil {
+		return 0, -1, errParse{&Err{err.Err, ErrSyntax, "assignment start", c.pos()}}
+	}
+
+	if _, ok := c.ast.Nodes[res].(NodeIdentifierEmpty); ok {
+		return i, res, errParse{}
+	}
+
+	for i < len(c.b) && c.b[i] == '.' {
+		b2, rhs, err := parseAnd2(
+			parseIgnore(parseDot),
+			parseOr(
+				parseLiteral,
+				parseMap(
+					parseIdentifier,
+					func(k int) (int, errParse) {
+						if _, ok := c.ast.Nodes[k].(NodeIdentifierEmpty); ok {
+							return k, errParse{}
+						}
+						return c.ast.Append(NodeLiteralString{c.pos(), c.ast.Nodes[k].(NodeIdentifier).Val}), errParse{}
+					},
+				),
+				parseMap(
+					parseBlock,
+					func(b int) (int, errParse) {
+						if exprs := c.ast.Nodes[b].(NodeExprList).Expressions; len(exprs) == 1 {
+							return exprs[0], errParse{}
+						}
+						return -1, errParse{&Err{nil, ErrSyntax, "too many indices", c.pos()}}
+					},
+				),
+			),
+			func(_ Unit, k int) (int, errParse) {
+				return k, errParse{}
+			},
+		)(c.to(i))
+		if err.Err != nil {
+			return i, res, errParse{}
 		}
+		i = b2
+		res = c.ast.Append(NodeExprBinary{c.pos(), OpAccessor, res, rhs})
+	}
 
-		for {
-			for len(b) > 0 && bytes.Contains([]byte(" \t\r\n"), b[:1]) {
-				b = b[1:]
-			}
-
-			if len(b) == 0 {
-				return b, unit, errParse{}
-			}
-
-			switch b[0] {
-			case '#':
-				if i := bytes.IndexByte(b, '\n'); i == -1 {
-					// no newline, comment till end of file
-					return []byte(nil), unit, errParse{}
-				} else {
-					return b[i+1:], unit, errParse{}
-				}
-			case '\n':
-				// empty line, skip
-				continue
-			default:
-				return b, unit, errParse{}
-			}
-		}
-	}, func(_ Unit) (int, errParse) {
-		return _astEmptyIdentifierIdx, errParse{} // NOTE: since we have to return some node, return empty
-	})(ast, b)
+	return i, res, errParse{}
 }
 
-func parseAssignment(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseAssignment(c *ctx) (int, int, errParse) {
 	return parseAnd3(
-		parseOr(
-			parseIdentifier,
-			parseDict,
-			parseList,
-		),
+		parseLhs,
 		parseDefine,
 		parseExpression,
 		func(lvalue int, _ string, rvalue int) (int, errParse) {
-			return ast.Append(NodeExprBinary{Pos{}, OpDefine, lvalue, rvalue}), errParse{}
+			return c.ast.Append(NodeExprBinary{c.pos(), OpDefine, lvalue, rvalue}), errParse{}
 		},
-	)(ast, b)
+	)(c)
 }
 
-func parseList(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseList(c *ctx) (int, int, errParse) {
 	return parseAnd3(
 		parseBracketLeft,
-		parseMany0(parseExpression),
+		parseMany(parseExpression),
 		parseBracketRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
-			return ast.Append(NodeLiteralList{Pos{}, exprs}), errParse{}
+			return c.ast.Append(NodeLiteralList{c.pos(), exprs}), errParse{}
 		},
-	)(ast, b)
+	)(c)
 }
 
-func parseBlock(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseBlock(c *ctx) (int, int, errParse) {
 	return parseAnd3(
 		parseParenLeft,
-		parseMany0(parseExpression),
+		parseMany(parseExpression),
 		parseParenRight,
 		func(_ byte, exprs []int, _ byte) (int, errParse) {
-			exprs = fun.Filter(func(n int) bool { return n != _astEmptyIdentifierIdx }, exprs...)
-			// NOTE: optimize (x) to x
-			// TODO: if len(exprs) == 0 return exprs[0]
-			return ast.Append(NodeExprList{Expressions: exprs}), errParse{}
+			exprs = fun.Filter(func(n int) bool {
+				_, ok := c.ast.Nodes[n].(NodeIdentifierEmpty)
+				return !ok
+			}, exprs...)
+			// TODO: optimization, now can't be commented back because used to parse lambda args
+			// if len(exprs) == 1 {
+			// 	return exprs[0], errParse{}
+			// }
+			// TODO: if len(exprs) == 0 return Nil/Unit
+			return c.ast.Append(NodeExprList{c.pos(), exprs}), errParse{}
 		},
-	)(ast, b)
+	)(c)
 }
 
-func parseLiteral(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseLiteral(c *ctx) (int, int, errParse) {
 	return parseOr(
 		parseNumber,
 		parseString,
 		parseBoolean,
-	)(ast, b)
+	)(c)
 }
 
-func parseDict(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseDict(c *ctx) (int, int, errParse) {
 	return parseAnd3(
 		parseBraceLeft,
-		parseMany0(parseAnd3(
-			parseExpression,
-			parseColon,
-			parseExpression,
-			func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
-				return NodeObjectEntry{Pos{}, k, v}, errParse{}
-			},
+		parseMany(parseOr(
+			parseAnd3( // "key: value" pair
+				parseExpression,
+				parseColon,
+				parseExpression,
+				func(k int, _ byte, v int) (NodeObjectEntry, errParse) {
+					return NodeObjectEntry{c.pos(), k, v}, errParse{}
+				},
+			),
+			parseMap( // "key" meaning "key: key"
+				parseIdentifier,
+				func(k int) (NodeObjectEntry, errParse) {
+					return NodeObjectEntry{c.pos(), k, k}, errParse{}
+				},
+			),
 		)),
 		parseBraceRight,
 		func(_ byte, kvs []NodeObjectEntry, _ byte) (int, errParse) {
-			return ast.Append(NodeLiteralObject{Pos{}, kvs}), errParse{}
+			return c.ast.Append(NodeLiteralObject{c.pos(), kvs}), errParse{}
 		},
-	)(ast, b)
+	)(c)
 }
 
-func parseUnary(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseUnary(c *ctx) (int, int, errParse) {
 	return parseAnd2(
 		parseByte('-'),
 		parseExpression,
 		func(_ byte, n int) (int, errParse) {
-			return ast.Append(NodeExprUnary{Pos{}, OpNegation, n}), errParse{}
+			return c.ast.Append(NodeExprUnary{c.pos(), OpNegation, n}), errParse{}
 		},
-	)(ast, b)
+	)(c)
 }
 
-func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
+func parseExpression(c *ctx) (int, int, errParse) {
+	cc := c.skipSpaces(true)
 	b, lhs, err := parseOr(
 		parseAssignment,
 		parseBlock,
@@ -472,32 +605,36 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 		parseUnary,
 		parseLiteral,
 		parseIdentifier,
-	)(ast, b)
+	)(cc)
 	if err.Err != nil {
-		return nil, -1, err
+		return 0, -1, err
 	}
 
-	if lhs == _astEmptyIdentifierIdx {
+	if _, ok := c.ast.Nodes[lhs].(NodeIdentifierEmpty); ok {
 		return b, lhs, err
 	}
 
 	for {
-		switch ast.Nodes[lhs].(type) {
+		if b == len(cc.b) { // TODO: must be just ==
+			return b, lhs, errParse{}
+		}
+
+		switch c.ast.Nodes[lhs].(type) {
 		case NodeIdentifier, NodeExprList:
 			b2, lambda, err := parseAnd2(
 				parseFunctionArrow,
 				parseExpression,
 				func(_ string, body int) (int, errParse) {
 					var args []int
-					switch n := ast.Nodes[lhs].(type) {
+					switch n := cc.ast.Nodes[lhs].(type) {
 					case NodeIdentifier:
 						args = []int{lhs}
 					case NodeExprList:
 						args = n.Expressions
 					}
-					return ast.Append(NodeLiteralFunction{Pos{}, args, body}), errParse{}
+					return c.ast.Append(NodeLiteralFunction{c.pos(), args, body}), errParse{}
 				},
-			)(ast, b)
+			)(cc.to(b))
 			if err.Err == nil {
 				lhs = lambda
 				b = b2
@@ -505,16 +642,16 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			}
 		}
 
-		{
+		if b < len(c.b) && cc.b[b] != '\n' {
 			b2, call, err := parseAnd3(
 				parseParenLeft,
-				parseMany0(parseExpression),
+				parseMany(parseExpression),
 				parseParenRight,
 				func(_ byte, args []int, _ byte) (int, errParse) {
-					LogAST(ast)
-					return ast.Append(NodeFunctionCall{lhs, args}), errParse{}
+					LogAST(cc.ast)
+					return c.ast.Append(NodeFunctionCall{lhs, args}), errParse{}
 				},
-			)(ast, b)
+			)(c.to(b))
 			if err.Err == nil {
 				lhs = call
 				b = b2
@@ -543,25 +680,25 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 				func(op byte, rhs int) (int, errParse) {
 					mp := map[byte]Kind{
 						'.': OpAccessor,
-						'+': OpAdd,
-						'-': OpSubtract,
+						'%': OpModulus,
 						'*': OpMultiply,
 						'/': OpDivide,
-						'%': OpModulus,
-						'&': OpLogicalAnd,
-						'|': OpLogicalOr,
-						'^': OpLogicalXor,
 						'>': OpGreaterThan,
 						'<': OpLessThan,
 						'=': OpEqual,
+						'&': OpLogicalAnd,
+						'^': OpLogicalXor,
+						'|': OpLogicalOr,
+						'+': OpAdd,
+						'-': OpSubtract,
 					}
 					opKind, ok := mp[op]
 					if !ok {
-						return -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), Pos{}}}
+						return -1, errParse{&Err{nil, ErrSyntax, fmt.Sprintf("invalid operator %c", op), c.pos()}}
 					}
-					return ast.Append(NodeExprBinary{Pos{}, opKind, lhs, rhs}), errParse{}
+					return c.ast.Append(NodeExprBinary{c.pos(), opKind, lhs, rhs}), errParse{}
 				},
-			)(ast, b)
+			)(c.to(b))
 			if err.Err == nil {
 				lhs = bin
 				b = b2
@@ -573,19 +710,19 @@ func parseExpression(ast *AST, b []byte) ([]byte, int, errParse) {
 			b2, match, err := parseAnd4(
 				parseMatch,
 				parseBraceLeft,
-				parseMany0(parseAnd3(
+				parseMany(parseAnd3(
 					parseExpression,
 					parseArrow,
 					parseExpression,
 					func(target int, _ string, expression int) (int, errParse) {
-						return ast.Append(NodeMatchClause{target, expression}), errParse{}
+						return c.ast.Append(NodeMatchClause{target, expression}), errParse{}
 					},
 				)),
 				parseBraceRight,
 				func(_ string, _ byte, clauses []int, _ byte) (int, errParse) {
-					return ast.Append(NodeExprMatch{Condition: lhs, Clauses: clauses}), errParse{}
+					return c.ast.Append(NodeExprMatch{Condition: lhs, Clauses: clauses}), errParse{}
 				},
-			)(ast, b)
+			)(c.to(b))
 			if err.Err == nil {
 				lhs = match
 				b = b2

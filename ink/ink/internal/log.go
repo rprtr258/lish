@@ -86,7 +86,7 @@ func LogNode(node Node) {
 	}
 
 	log.Debug().
-		Stringer("at", node.Position()).
+		// Stringer("at", node.Position()).
 		Stringer("node", node).
 		Send()
 }
