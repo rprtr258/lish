@@ -35,6 +35,7 @@ test-mini:
 
 # run standard test suites
 test:
+	go test ./...
 	go build -o ink -race ${CMD}
 	./ink samples/mangled.ink
 	./ink samples/test.ink
@@ -45,6 +46,9 @@ test:
 	./ink samples/io.ink
 	./ink samples/pingpong.ink
 	./ink samples/exec.ink
+	./ink samples/grapher.ink
+	./ink samples/graph.ink
+	./ink samples/img.ink
 	# test -eval flag
 	./ink -eval "log:=import('samples/logging.ink').log,f:=x=>()=>log('Eval test: '+x),f('passed!.ink')()"
 	rm ./ink

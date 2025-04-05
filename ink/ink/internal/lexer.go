@@ -182,8 +182,7 @@ func (p Pos) String() string {
 	return fmt.Sprintf("%s:%d:%d", p.File, p.Line, p.Col)
 }
 
-// Token is the monomorphic struct representing all Ink program tokens
-// in the lexer.
+// Token is the monomorphic struct representing all Ink program tokens in the lexer
 type Token struct {
 	Kind Kind
 	Pos
@@ -360,7 +359,7 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 				colNo = 0
 			case unicode.IsSpace(char):
 				commitClear()
-			case char == '_':
+			case char == '_' && len(buf) == 0:
 				commitChar(IdentifierEmpty)
 			case char == '~':
 				commitChar(OpNegation)

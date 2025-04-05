@@ -1,5 +1,5 @@
-format := import('str.ink').format
-each := import('functional.ink').each
+{format} := import('str.ink')
+{each} := import('functional.ink')
 
 Level := {
     DEBUG:    0

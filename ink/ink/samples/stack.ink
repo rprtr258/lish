@@ -1,4 +1,4 @@
-slice := import('std.ink').slice
+{slice} := import('std.ink')
 
 {
   new: () => (

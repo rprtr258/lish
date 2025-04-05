@@ -8,7 +8,7 @@ flatmap := (list, f) => flatten(map(list, f))
 # tail recursive filter
 # ([]T, (T, number) => boolean) => []T
 filter := (list, f) => reduce(list, (l, item, i) => f(item, i) :: {
-  true -> l.(len(l)) := item
+  true -> l.len(l) := item
   _ -> l
 }, [])
 
@@ -100,7 +100,7 @@ every := list => reduce(list, (acc, x) => acc & x, true)
 # ([]T) => []T
 reverse := list => (sub := (acc, i) => i < 0 :: {
   true -> acc
-  _ -> sub(acc.(len(acc)) := list.(i), i - 1)
+  _ -> sub(acc.len(acc) := list.(i), i - 1)
 })([], len(list) - 1)
 
 # ({[K]: V}, (R, K, V) => R, R) => R

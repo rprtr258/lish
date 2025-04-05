@@ -41,7 +41,7 @@ slice := (s, start, end) => (
 
 # clone a composite value
 clone := x => (
-  reduce := import('functional.ink').reduce
+  {reduce} := import('functional.ink')
 
   type(x) :: {
     'string' -> '' + x

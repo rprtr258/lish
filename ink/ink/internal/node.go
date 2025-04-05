@@ -8,25 +8,31 @@ import (
 	"github.com/rprtr258/fun"
 )
 
+type NodeID int
+
+func (n NodeID) String() string {
+	return "#" + strconv.Itoa(int(n))
+}
+
 type AST struct {
-	cache map[string]int
+	cache map[string]NodeID
 	Nodes []Node
 }
 
 func NewAstSlice() *AST {
 	return &AST{
-		cache: map[string]int{},
+		cache: map[string]NodeID{},
 		Nodes: []Node{},
 	}
 }
 
-func (s *AST) Append(node Node) int {
+func (s *AST) Append(node Node) NodeID {
 	ss := node.String()
 	if _, ok := s.cache[ss]; ok {
 		return s.cache[ss]
 	}
 
-	n := len(s.Nodes)
+	n := NodeID(len(s.Nodes))
 	s.Nodes = append(s.Nodes, node)
 	s.cache[ss] = n
 	return n
@@ -86,7 +92,7 @@ func (s AST) Graph() string {
 			val = n.Operator.String()
 		case NodeFunctionCall:
 			props["fillcolor"] = _colorExpr
-		case NodeMatchClause, NodeExprMatch, NodeExprList:
+		case NodeExprMatch, NodeExprList:
 			props["fillcolor"] = _colorControl
 		}
 		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
@@ -108,13 +114,12 @@ func (s AST) Graph() string {
 		case NodeExprBinary:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.Left)
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.Right)
-		case NodeMatchClause:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, n.Target)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, n.Expression)
 		case NodeExprMatch:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.Condition)
-			for k, j := range n.Clauses {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
+			for k, clause := range n.Clauses {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, clause, k) // TODO: clause is not int
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, clause.Target)
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, clause.Expression)
 			}
 		case NodeLiteralFunction:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.Body)
@@ -146,7 +151,7 @@ type Node interface {
 type NodeExprUnary struct {
 	Pos
 	Operator Kind
-	Operand  int
+	Operand  NodeID
 }
 
 func (n NodeExprUnary) String() string {
@@ -160,7 +165,7 @@ func (n NodeExprUnary) Position(*AST) Pos {
 type NodeExprBinary struct {
 	Pos
 	Operator    Kind
-	Left, Right int
+	Left, Right NodeID
 }
 
 func (n NodeExprBinary) String() string {
@@ -172,21 +177,20 @@ func (n NodeExprBinary) Position(*AST) Pos {
 }
 
 type NodeFunctionCall struct {
-	Function  int
-	Arguments []int
+	Function  NodeID
+	Arguments []NodeID
 }
 
 func (n NodeFunctionCall) String() string {
 	var sb strings.Builder
-	sb.WriteString("Call #")
-	sb.WriteString(strconv.Itoa(n.Function))
+	sb.WriteString("Call ")
+	sb.WriteString(n.Function.String())
 	sb.WriteString(" on (")
 	for i, a := range n.Arguments {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
+		sb.WriteString(a.String())
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -197,34 +201,26 @@ func (n NodeFunctionCall) Position(s *AST) Pos {
 }
 
 type NodeMatchClause struct {
-	Target, Expression int
-}
-
-func (n NodeMatchClause) String() string {
-	return fmt.Sprintf("Clause #%d -> #%d", n.Target, n.Expression)
-}
-
-func (n NodeMatchClause) Position(s *AST) Pos {
-	return s.Nodes[n.Target].Position(s)
+	Target, Expression NodeID
 }
 
 type NodeExprMatch struct {
 	Pos
-	Condition int
-	Clauses   []int // TODO: inline clauses
+	Condition NodeID
+	Clauses   []NodeMatchClause
 }
 
 func (n NodeExprMatch) String() string {
 	var sb strings.Builder
-	sb.WriteString("Match on (#")
-	sb.WriteString(strconv.Itoa(n.Condition))
+	sb.WriteString("Match on (")
+	sb.WriteString(n.Condition.String())
 	sb.WriteString(") to {")
-	for i, a := range n.Clauses {
+	for i, clause := range n.Clauses {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
+
+		sb.WriteString(fmt.Sprintf("Clause #%d -> #%d", clause.Target, clause.Expression))
 	}
 	sb.WriteString("}")
 	return sb.String()
@@ -236,7 +232,7 @@ func (n NodeExprMatch) Position(*AST) Pos {
 
 type NodeExprList struct {
 	Pos
-	Expressions []int
+	Expressions []NodeID
 }
 
 func (n NodeExprList) String() string {
@@ -246,8 +242,7 @@ func (n NodeExprList) String() string {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(expr))
+		sb.WriteString(expr.String())
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -321,6 +316,11 @@ func (n NodeLiteralBoolean) Position(*AST) Pos {
 	return n.Pos
 }
 
+type NodeObjectEntry struct {
+	Pos
+	Key, Val NodeID
+}
+
 type NodeLiteralObject struct {
 	Pos
 	Entries []NodeObjectEntry
@@ -329,7 +329,7 @@ type NodeLiteralObject struct {
 func (n NodeLiteralObject) String() string {
 	entries := make([]string, len(n.Entries))
 	for i, e := range n.Entries {
-		entries[i] = e.String()
+		entries[i] = fmt.Sprintf("#%d: #%d", e.Key, e.Val)
 	}
 	return fmt.Sprintf("Object {%s}",
 		strings.Join(entries, ", "))
@@ -339,24 +339,15 @@ func (n NodeLiteralObject) Position(*AST) Pos {
 	return n.Pos
 }
 
-type NodeObjectEntry struct {
-	Pos
-	Key, Val int
-}
-
-func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("#%d: #%d", n.Key, n.Val)
-}
-
 type NodeLiteralList struct {
 	Pos
-	Vals []int
+	Vals []NodeID
 }
 
 func (n NodeLiteralList) String() string {
 	vals := make([]string, len(n.Vals))
 	for i, v := range n.Vals {
-		vals[i] = "#" + strconv.Itoa(v)
+		vals[i] = v.String()
 	}
 	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
 }
@@ -367,14 +358,14 @@ func (n NodeLiteralList) Position(*AST) Pos {
 
 type NodeLiteralFunction struct {
 	Pos
-	Arguments []int
-	Body      int
+	Arguments []NodeID
+	Body      NodeID
 }
 
 func (n NodeLiteralFunction) String() string {
 	args := make([]string, len(n.Arguments))
 	for i, a := range n.Arguments {
-		args[i] = "#" + strconv.Itoa(a)
+		args[i] = a.String()
 	}
 	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.Body)
 }

@@ -1,5 +1,5 @@
-format := import('str.ink').format
-print := import('logging.ink').log
+{format} := import('str.ink')
+{log: print} := import('logging.ink')
 {filter, each} := import('functional.ink')
 
 EventBus := () => (

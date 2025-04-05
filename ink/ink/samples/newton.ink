@@ -1,6 +1,6 @@
 # implementation of Newton's method to square root
 
-log := import('logging.ink').log
+{log} := import('logging.ink')
 
 # higher order function that returns a root finder
 # with the given degree of precision threshold

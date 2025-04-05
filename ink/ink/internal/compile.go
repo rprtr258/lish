@@ -48,12 +48,12 @@ func compileFunc(w *watWriter, ast *AST, name string, fn NodeLiteralFunction) {
 		}
 	}
 	w.Result("externref") // TODO: resolve type
-	compile(ast.Nodes[fn.Body], ast, w)
+	compile(fn.Body, ast, w)
 	w.WriteString(")")
 }
 
-func compile(n Node, ast *AST, w *watWriter) {
-	switch n := n.(type) {
+func compile(n NodeID, ast *AST, w *watWriter) {
+	switch n := ast.Nodes[n].(type) {
 	case NodeLiteralNumber:
 		w.WriteString("(f64.const ")
 		w.WriteString(strconv.FormatFloat(n.Val, 'f', -1, 64))
@@ -64,27 +64,27 @@ func compile(n Node, ast *AST, w *watWriter) {
 		switch n.Operator {
 		case OpAdd:
 			w.WriteString("(call $ink__plus ")
-			compile(ast.Nodes[n.Left], ast, w)
+			compile(n.Left, ast, w)
 			w.WriteString(" ")
-			compile(ast.Nodes[n.Right], ast, w)
+			compile(n.Right, ast, w)
 			w.WriteString(")")
 		case OpLessThan:
 			w.WriteString("(f64.lt ")
-			compile(ast.Nodes[n.Left], ast, w)
+			compile(n.Left, ast, w)
 			w.WriteString(" ")
-			compile(ast.Nodes[n.Right], ast, w)
+			compile(n.Right, ast, w)
 			w.WriteString(")")
 		case OpMultiply:
 			w.WriteString("(f64.mul ")
-			compile(ast.Nodes[n.Left], ast, w)
+			compile(n.Left, ast, w)
 			w.WriteString(" ")
-			compile(ast.Nodes[n.Right], ast, w)
+			compile(n.Right, ast, w)
 			w.WriteString(")")
 		case OpSubtract:
 			w.WriteString("(f64.sub ")
-			compile(ast.Nodes[n.Left], ast, w)
+			compile(n.Left, ast, w)
 			w.WriteString(" ")
-			compile(ast.Nodes[n.Right], ast, w)
+			compile(n.Right, ast, w)
 			w.WriteString(")")
 		case OpDefine:
 			switch lhs := ast.Nodes[n.Left].(type) {
@@ -111,7 +111,7 @@ func compile(n Node, ast *AST, w *watWriter) {
 		}
 		for _, arg := range n.Arguments {
 			w.WriteString(" ")
-			compile(ast.Nodes[arg], ast, w)
+			compile(arg, ast, w)
 		}
 		w.WriteString(")")
 	case NodeLiteralObject:
@@ -151,22 +151,21 @@ func compile(n Node, ast *AST, w *watWriter) {
 			}
 
 			for i, clause := range n.Clauses {
-				clauseNode := ast.Nodes[clause].(NodeMatchClause)
-				switch target := ast.Nodes[clauseNode.Target].(type) {
+				switch ast.Nodes[clause.Target].(type) {
 				case NodeIdentifierEmpty:
 					w.WriteString(") (else")
 					if i != len(n.Clauses)-1 {
 						panic("empty clause must be last")
 					}
 				default:
-					compile(target, ast, w)
+					compile(clause.Target, ast, w)
 					if i == 0 {
 						w.WriteString("(if (result externref) (then ")
 					} else {
 						panic("not implemented")
 					}
 				}
-				compile(ast.Nodes[clauseNode.Expression], ast, w)
+				compile(clause.Expression, ast, w)
 			}
 			w.WriteString("))")
 		default:
@@ -177,13 +176,11 @@ func compile(n Node, ast *AST, w *watWriter) {
 	}
 }
 
-func Compile(nodes []Node, ast *AST) string {
+func Compile(n NodeID, ast *AST) string {
 	var w watWriter
 	w.WriteString("(module")
-	for _, n := range nodes {
-		fmt.Println(n.String())
-		compile(n, ast, &w)
-	}
+	fmt.Println(n.String())
+	compile(n, ast, &w)
 	w.WriteString(")")
 	return w.String()
 }

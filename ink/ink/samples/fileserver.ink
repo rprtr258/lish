@@ -3,11 +3,11 @@
 # an http static file server
 # with support for directory indexes
 
-log := import('logging.ink').log
-slice := import('std.ink').slice
+{log} := import('logging.ink')
+{slice} := import('std.ink')
 {format: f, join: cat} := import('str.ink')
 {map, each} := import('functional.ink')
-readFile := import('io.ink').readFile
+{readFile} := import('io.ink')
 
 DIR := '.'
 PORT := 7800

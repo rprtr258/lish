@@ -1,10 +1,10 @@
 # generate bitmap graph images
 
-log := import('logging.ink').log
-f := import('str.ink').format
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
 {range, each, map} := import('functional.ink')
-wf := import('io.ink').writeFile
-bmp := import('bmp.ink').bmp
+{writeFile: wf} := import('io.ink')
+bmp := import('bmp.ink')
 
 # some basic configuration
 WIDTH := 600

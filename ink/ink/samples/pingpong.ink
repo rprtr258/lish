@@ -1,7 +1,7 @@
 # simple ping-pong request-response test over HTTP
 
-log := import('logging.ink').log
-f := import('str.ink').format
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
 
 # helper for logging errors
 logErr := msg => log('error: ' + msg)

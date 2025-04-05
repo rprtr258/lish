@@ -1,6 +1,6 @@
 # a primitive HTTP server
 
-log := import('logging.ink').log
+{log} := import('logging.ink')
 
 close := listen('0.0.0.0:8080', evt => (
   log(evt)

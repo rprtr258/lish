@@ -1,6 +1,6 @@
 # JSON serde
 
-map := import('functional.ink').map
+{map} := import('functional.ink')
 {join: cat, ws?, digit?} := import('str.ink')
 
 # string escape '"'

@@ -1,6 +1,6 @@
 # filesystem i/o demo
 
-log := import('logging.ink').log
+{log} := import('logging.ink')
 {slice, stringList} := import('std.ink')
 {map, each} := import('functional.ink')
 {format: f, decode} := import('str.ink')

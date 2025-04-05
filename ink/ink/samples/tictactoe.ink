@@ -1,7 +1,7 @@
 # interactive terminal tic tac toe in Ink
 
 {scan, slice} := import('std.ink')
-f := import('str.ink').format
+{format: f} := import('str.ink')
 {map, reduce, filter} := import('functional.ink')
 
 log := s => out(s + '\n')

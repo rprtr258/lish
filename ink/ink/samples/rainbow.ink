@@ -1,5 +1,5 @@
-f := import('str.ink').format
-fatal := import('logging.ink').critical
+{format: f} := import('str.ink')
+{critical: fatal} := import('logging.ink')
 {each, range: rawRange} := import('iter.ink')
 
 range := n => rawRange(0, n, 1)

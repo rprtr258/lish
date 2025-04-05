@@ -1,8 +1,8 @@
 # basic HTTP proxy
 
-log := import('logging.ink').log
-f := import('str.ink').format
-slice := import('std.ink').slice
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
+{slice} := import('std.ink')
 
 PORT := 7900
 

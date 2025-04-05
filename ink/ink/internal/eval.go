@@ -866,26 +866,20 @@ func evalInkFunction(ast *AST, fn Value, allowThunk bool, position Pos, args ...
 	}
 }
 
-func (n NodeMatchClause) Eval(*Scope, *AST, bool) (Value, *Err) {
-	log.Fatal().Stringer("kind", ErrAssert).Msg("cannot Eval a MatchClauseNode")
-	return nil, nil
-}
-
 func (n NodeExprMatch) Eval(scope *Scope, ast *AST, allowThunk bool) (Value, *Err) {
 	conditionVal, err := ast.Nodes[n.Condition].Eval(scope, ast, false)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, cl := range n.Clauses {
-		clNode := ast.Nodes[cl].(NodeMatchClause)
-		targetVal, err := ast.Nodes[clNode.Target].Eval(scope, ast, false)
+	for _, clause := range n.Clauses {
+		targetVal, err := ast.Nodes[clause.Target].Eval(scope, ast, false)
 		if err != nil {
 			return nil, err
 		}
 
 		if conditionVal.Equals(targetVal) {
-			return ast.Nodes[clNode.Expression].Eval(scope, ast, allowThunk)
+			return ast.Nodes[clause.Expression].Eval(scope, ast, allowThunk)
 		}
 	}
 
@@ -952,11 +946,6 @@ func (n NodeLiteralObject) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
 		}
 	}
 	return obj, nil
-}
-
-func (n NodeObjectEntry) Eval(*Scope, bool) (Value, *Err) {
-	log.Fatal().Stringer("kind", ErrAssert).Msg("cannot Eval an ObjectEntryNode")
-	return nil, nil
 }
 
 func (n NodeLiteralList) Eval(scope *Scope, ast *AST, _ bool) (Value, *Err) {
@@ -1054,15 +1043,12 @@ func (ctx *Context) resetWd() {
 // Eval takes a channel of Nodes to evaluate, and executes the Ink programs defined
 // in the syntax tree. Eval returns the last value of the last expression in the AST,
 // or an error if there was a runtime error.
-func (ctx *Context) Eval(nodes []Node) (val Value, err *Err) {
+func (ctx *Context) Eval(node NodeID) (val Value, err *Err) {
 	ctx.Engine.mu.Lock()
 	defer ctx.Engine.mu.Unlock()
 
-	for _, node := range nodes {
-		if val, err = node.Eval(ctx.Scope, ctx.Engine.AST, false); err != nil {
-			LogError(err)
-			break
-		}
+	if val, err = ctx.Engine.AST.Nodes[node].Eval(ctx.Scope, ctx.Engine.AST, false); err != nil {
+		LogError(err)
 	}
 
 	LogScope(ctx.Scope)
@@ -1087,32 +1073,36 @@ func (ctx *Context) ExecListener(callback func()) {
 // ParseReader runs an Ink program defined by an io.Reader.
 // This is the main way to invoke Ink programs from Go.
 // ParseReader blocks until the Ink program exits.
-func ParseReader(ast *AST, filename string, r io.Reader) ([]Node, *Err) {
-	b, errRead := io.ReadAll(r)
-	if errRead != nil {
-		panic(errRead.Error())
+func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
+	b, errr := io.ReadAll(r)
+	if errr != nil {
+		return -1, &Err{nil, ErrUnknown, errr.Error(), Pos{filename, 0, 0}}
 	}
 
-	// tokens := tokenize(filename, r) // TODO: delete
-	c := newCtx([]byte("("+string(b)+")"), filename)
-	c.ast = ast // TODO: ???
-	bb, expr, err := parseBlock(c)
+	tokens := tokenize(filename, strings.NewReader("("+string(b)+")"))
+	nodes, err := parse(ast, tokens)
 	if err.Err != nil {
-		return nil, err.Err
+		return -1, err.Err
 	}
-	if bb < c.len() {
-		return nil, &Err{nil, ErrSyntax, "not parsed: " + string(b), c.pos()}
+
+	var expr NodeID
+	if len(nodes) == 1 {
+		expr = nodes[0]
+	} else {
+		expr = ast.Append(NodeExprList{Pos{filename, 1, 1}, nodes})
 	}
+
+	// TODO: optimize pass:
+	constantFolding(ast, expr)
+	//   - dead code elimination
+
 	LogNode(ast.Nodes[expr])
 	LogAST(ast)
-	return fun.Map[Node](
-		func(n int) Node { return ast.Nodes[n] },
-		ast.Nodes[expr].(NodeExprList).Expressions...,
-	), nil
+	return expr, nil
 }
 
 // ExecPath is a convenience function to Exec() a program file in a given Context.
-func (ctx *Context) ExecPath(path string) ([]Node, *Err) {
+func (ctx *Context) ExecPath(path string) (NodeID, *Err) {
 	// update Cwd for any potential import() calls this file will make
 	ctx.File = path
 
@@ -1121,7 +1111,7 @@ func (ctx *Context) ExecPath(path string) ([]Node, *Err) {
 		ctx.WorkingDirectory = path
 		resp, err := http.Get(path)
 		if err != nil {
-			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not GET %s for execution: %s", path, err.Error()), Pos{}}
+			return -1, &Err{nil, ErrSystem, fmt.Sprintf("could not GET %s for execution: %s", path, err.Error()), Pos{}}
 		}
 		defer resp.Body.Close()
 
@@ -1130,7 +1120,7 @@ func (ctx *Context) ExecPath(path string) ([]Node, *Err) {
 		ctx.WorkingDirectory = filepath.Dir(path)
 		file, err := os.Open(path)
 		if err != nil {
-			return nil, &Err{nil, ErrSystem, fmt.Sprintf("could not open %s for execution: %s", path, err.Error()), Pos{}}
+			return -1, &Err{nil, ErrSystem, fmt.Sprintf("could not open %s for execution: %s", path, err.Error()), Pos{}}
 		}
 		defer file.Close()
 

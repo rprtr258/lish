@@ -1,7 +1,7 @@
 # standard string library
 
 {map, reduce} := import('functional.ink')
-slice := import('std.ink').slice
+{slice} := import('std.ink')
 
 # checking if a given character is of a type
 checkRange := (lo, hi) => c => (
@@ -103,11 +103,11 @@ split := (s, delim) => delim :: {
     ldelim := len(delim)
     (sub := (acc, i, last) => true :: {
       matchesAt?(acc, delim, i) -> (
-        coll.(len(coll)) := slice(acc, last, i)
+        coll.len(coll) := slice(acc, last, i)
         sub(acc, i + ldelim, i + ldelim)
       )
       i < len(acc) -> sub(acc, i + 1, last)
-      _ -> coll.(len(coll)) := slice(acc, last, len(acc))
+      _ -> coll.len(coll) := slice(acc, last, len(acc))
     })(s, 0, 0)
   )
 }
@@ -178,7 +178,7 @@ join := (list, joiner) => max := len(list) :: {
   0 -> ''
   _ -> (sub := (i, acc) => i :: {
     max -> acc
-    _ -> sub(i + 1, acc.(len(acc)) := joiner + list.(i))
+    _ -> sub(i + 1, acc.len(acc) := joiner + list.(i))
   })(1, list.0)
 }
 
@@ -186,7 +186,7 @@ join := (list, joiner) => max := len(list) :: {
 encode := str => map(str, (c, _) => point(c))
 
 # decode number list into an ascii string
-decode := data => reduce(data, (acc, cp) => acc.(len(acc)) := char(cp), '')
+decode := data => reduce(data, (acc, cp) => acc.len(acc) := char(cp), '')
 
 # template formatting with {{ key }} constructs
 format := (raw, values) => (

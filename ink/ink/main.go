@@ -109,7 +109,7 @@ func main() {
 		stdin, _ := os.Stdin.Stat()
 		eng := ink.NewEngine()
 		ctx := eng.CreateContext()
-		var nodes []ink.Node
+		var nodes ink.NodeID
 		switch {
 		case *eval != "":
 			var errP *ink.Err

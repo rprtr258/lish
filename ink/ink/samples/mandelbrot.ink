@@ -1,10 +1,10 @@
 # generate a rendering of the Mandelbrot set
 
-bmp := import('bmp').bmp
-log := import('logging.ink').log
-f := import('str.ink').format
+{bmp} := import('bmp')
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
 {map, reduce, range} := import('functional.ink')
-wf := import('io').writeFile
+{writeFile: wf} := import('io')
 {max, iverson} := import('math.ink')
 
 # graph position
