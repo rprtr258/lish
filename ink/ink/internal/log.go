@@ -40,7 +40,7 @@ type Logger struct {
 func LogError(err *Err) {
 	level := fun.IF(L.FatalError, zerolog.FatalLevel, zerolog.WarnLevel)
 	for ee := err; ee != nil; ee = ee.Parent {
-		defer log.WithLevel(level).
+		log.WithLevel(level).
 			Stringer("at", err.Pos).
 			Stringer("kind", err.Reason).
 			Msg(ee.Message)

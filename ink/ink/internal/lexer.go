@@ -179,7 +179,7 @@ func (p Pos) String() string {
 		return "??:??:??"
 	}
 
-	return fmt.Sprintf("%s:%d:%2d", p.File, p.Line, p.Col)
+	return fmt.Sprintf("%s:%d:%d", p.File, p.Line, p.Col)
 }
 
 // Token is the monomorphic struct representing all Ink program tokens

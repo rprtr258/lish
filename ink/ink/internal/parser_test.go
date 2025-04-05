@@ -97,6 +97,12 @@ func TestParser(t *testing.T) {
 			NodeIdentifier{},
 		)
 		f(
+			`valid symbols identifier`,
+			`w?t_f!`,
+			parseExpression,
+			NodeIdentifier{},
+		)
+		f(
 			`valid function-call`,
 			`out(str)`,
 			parseExpression,
@@ -112,7 +118,7 @@ func TestParser(t *testing.T) {
 			`valid negative number`,
 			`~1`,
 			parseExpression,
-			NodeLiteralNumber{},
+			NodeExprUnary{},
 		)
 		f(
 			`valid addition`,
@@ -141,6 +147,28 @@ func TestParser(t *testing.T) {
 			"``",
 			parseString,
 			NodeLiteralString{},
+		)
+		f(
+			`with escaping`,
+			`'a\n\'b'`,
+			parseString,
+			NodeLiteralString{},
+			func(a *AST, n Node) bool {
+				assertEqual(t, "a\n'b", n.(NodeLiteralString).Val)
+				return true
+			},
+		)
+		f(
+			`with escaping 2`,
+			`'es"c \\a"pe
+me'`,
+			parseString,
+			NodeLiteralString{},
+			func(a *AST, n Node) bool {
+				assertEqual(t, `es"c \a"pe
+me`, n.(NodeLiteralString).Val)
+				return true
+			},
 		)
 	})
 
@@ -185,6 +213,20 @@ func TestParser(t *testing.T) {
 	)
 
 	f(
+		"accessor",
+		`this.fields`,
+		parseExpression,
+		NodeExprBinary{},
+		func(ast *AST, n Node) bool {
+			op := n.(NodeExprBinary)
+			l := ast.Nodes[op.Left].(NodeIdentifier)
+			r := ast.Nodes[op.Right].(NodeLiteralString)
+			assert.Equal(t, "this", l.Val)
+			assert.Equal(t, "fields", r.Val)
+			return true
+		},
+	)
+	f(
 		"nested accessor",
 		`this.fields.(len(this.fields))`,
 		parseLhs,
@@ -198,6 +240,60 @@ func TestParser(t *testing.T) {
 			return true
 		},
 	)
+	f(
+		"sub accessor",
+		`(comp.list).(2).what`,
+		parseExpression,
+		NodeExprBinary{},
+		func(ast *AST, n Node) bool {
+			op := n.(NodeExprBinary)
+			complist2 := ast.Nodes[op.Left].(NodeExprBinary)
+			complist := ast.Nodes[complist2.Left].(NodeExprBinary)
+			comp := ast.Nodes[complist.Left].(NodeIdentifier)
+			list := ast.Nodes[complist.Right].(NodeLiteralString)
+			_2 := ast.Nodes[complist2.Right].(NodeLiteralNumber)
+			what := ast.Nodes[op.Right].(NodeLiteralString)
+			assertEqual(t, "comp", comp.Val)
+			assertEqual(t, "list", list.Val)
+			assertEqual(t, 2, _2.Val)
+			assertEqual(t, "what", what.Val)
+			return true
+		},
+	)
+	f(
+		"sub accessor",
+		`(comp.list).(2).what`,
+		parseLhs,
+		NodeExprBinary{},
+		func(ast *AST, n Node) bool {
+			op := n.(NodeExprBinary)
+			complist2 := ast.Nodes[op.Left].(NodeExprBinary)
+			complist := ast.Nodes[complist2.Left].(NodeExprBinary)
+			comp := ast.Nodes[complist.Left].(NodeIdentifier)
+			list := ast.Nodes[complist.Right].(NodeLiteralString)
+			_2 := ast.Nodes[complist2.Right].(NodeLiteralNumber)
+			what := ast.Nodes[op.Right].(NodeLiteralString)
+			assertEqual(t, "comp", comp.Val)
+			assertEqual(t, "list", list.Val)
+			assertEqual(t, 2, _2.Val)
+			assertEqual(t, "what", what.Val)
+			return true
+		},
+	)
+	f(
+		"array accessor",
+		`arr.2`,
+		parseLhs,
+		NodeExprBinary{},
+		func(ast *AST, n Node) bool {
+			op := n.(NodeExprBinary)
+			l := ast.Nodes[op.Left].(NodeIdentifier)
+			r := ast.Nodes[op.Right].(NodeLiteralNumber)
+			assertEqual(t, "arr", l.Val)
+			assertEqual(t, 2, r.Val)
+			return true
+		},
+	)
 
 	t.Run("assignment", func(t *testing.T) {
 		f(
@@ -205,6 +301,12 @@ func TestParser(t *testing.T) {
 			`log := (str => (out(str)
 				out('\n')
 			))`,
+			parseAssignment,
+			NodeExprBinary{},
+		)
+		f(
+			"lambda ignoring argument rhs",
+			`f := _ => 1`,
 			parseAssignment,
 			NodeExprBinary{},
 		)
@@ -232,8 +334,35 @@ func TestParser(t *testing.T) {
 			parseAssignment,
 			NodeExprBinary{},
 		)
+		f(
+			"array element",
+			`arr.2 := 'second'`,
+			parseAssignment,
+			NodeExprBinary{},
+			func(ast *AST, n Node) bool {
+				op := n.(NodeExprBinary)
+				r := ast.Nodes[op.Right].(NodeLiteralString)
+				assertEqual(t, "second", r.Val)
+				return true
+			},
+		)
+		f(
+			"two assignments with comment in between",
+			`(
+a := 1 # should yield a new copy
+b := 1
+)`,
+			parseBlock,
+			NodeExprList{},
+		)
 	})
 
+	f(
+		"comment v2",
+		"`aboba` 1",
+		parseExpression,
+		NodeLiteralNumber{},
+	)
 	f(
 		"valid match",
 		`1 :: {
@@ -255,10 +384,26 @@ func TestParser(t *testing.T) {
 		parseExpression,
 		NodeExprBinary{},
 	)
+	f(
+		"_ == anything",
+		`_ = len`,
+		parseExpression,
+		NodeExprBinary{},
+	)
+	f(
+		"negate expression",
+		`~(1-2)`,
+		parseExpression,
+		NodeExprUnary{},
+	)
 }
 
 //go:embed testdata/mangled.ink
 var mangled string
+
+func TestSkipSpaces(t *testing.T) {
+	assertEqual(t, 5, skipSpaces([]byte("`aaa`"), false))
+}
 
 func TestParse(t *testing.T) {
 	t.Run("mangled.ink", func(t *testing.T) {
@@ -293,7 +438,7 @@ func TestParse(t *testing.T) {
 		t.Log(ast.String())
 		assertEqual(t, []Node{
 			NodeExprBinary{Pos{"iife", 1, 1}, OpDefine, 0, 5},
-			NodeFunctionCall{10, []int{11}},
+			NodeFunctionCall{9, []int{11}},
 			// /*  0 */ NodeIdentifierEmpty{},
 			// /*  1 */ NodeLiteralBoolean{Val: false},
 			// /*  2 */ NodeLiteralBoolean{Val: true},

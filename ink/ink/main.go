@@ -122,8 +122,8 @@ func main() {
 			filePath := args[0]
 			var err *ink.Err
 			if nodes, err = ctx.ExecPath(filePath); err != nil {
+				ink.LogError(err)
 				log.Fatal().
-					Err(err).
 					Stringer("kind", ink.ErrRuntime).
 					Str("filepath", filePath).
 					Msg("failed to execute file")

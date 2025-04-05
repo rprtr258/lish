@@ -3,13 +3,10 @@ clear := '__cleared'
 # ink language test suite,
 # built on the suite library for testing
 
-s := import('suite.ink')(
+# short helper functions on the suite
+{mark: m, test: t} := import('suite.ink')(
   'Ink language and standard library'
 )
-
-# short helper functions on the suite
-m := s.mark
-t := s.test
 
 # import std & str once for all tests
 std := import('std.ink')
@@ -221,13 +218,13 @@ m('tail call optimizations and thunk unwrap order')
 
 m('match expressions')
 (
-  x := ('what ' + string(1 + 2 + 3 + 4) :: {
+  x := (('what ' + string(1 + 2 + 3 + 4)) :: {
     'what 10' -> 'what 10'
     _ -> '??'
   })
   t('match expression follows matched clause', x, 'what 10')
 
-  x := ('what ' + string(1 + 2 + 3 + 4) :: {
+  x := (('what ' + string(1 + 2 + 3 + 4)) :: {
     'what 11' -> 'what 11'
     _ -> '??'
   })
@@ -1247,3 +1244,224 @@ m('stack')
 
 # end test suite, print result
 (s.end)()
+m('composite value access')
+(
+  obj := {
+    39: 'clues'
+    ('ex' + 'pr'): 'ession'
+  }
+
+  # when calling a function that's a prop of a composite,
+  # we need to remember that AccessorOp is just a binary op
+  # and the function call precedes it in priority
+  obj.fn := () => 'xyz'
+  obj.fz := f => f() + f()
+
+  t('calling composite property', (obj.fn)(), 'xyz')
+  t('composite property by string value', (obj.('fn'))(), 'xyz')
+  t('composite property by property access', (obj.fz)(obj.fn), 'xyzxyz')
+  t('nonexistent composite key is ()', obj.nonexistent, ())
+  t('composite property by number value', obj.(~10), ())
+  t('composite property by number literal', obj.39, 'clues')
+  t('composite property by identifier', obj.expr, 'ession')
+
+  # string index access
+  t('string index access at 0', ('hello').0, 'h')
+  t('string index access', ('what').3, 't')
+  t('out of bounds string index access (negative)'
+    ('hi').(~1), ())
+  t('out of bounds string index access (too large)'
+    ('hello, world!').(len('hello, world!')), ())
+
+  # nested composites
+  comp := {list: ['hi', 'hello', {what: 'thing'}]}
+
+  # can't just do comp.list.2.what because
+  # 2.what is not a valid identifier.
+  # these are some other recommended ways
+  t('nested composite value access with number value'
+    comp.list.(2).what, 'thing')
+  t('nested composite value access with string value'
+    comp.list.('2').what, 'thing')
+  t('nested composite value access, parenthesized'
+    (comp.list.2).what, 'thing')
+  t('nested composite value access, double-parenthesized'
+    (comp.list).(2).what, 'thing')
+  t('string at index in computed string', comp.('li' + 'st').0, 'hi')
+  t('nested property access returns composite', comp.list.2, {what: 'thing'})
+
+  # modifying composite in chained accesses
+  comp.list.4 := 'oom'
+  comp.list.(2).what := 'arg'
+
+  t('modifying composite at key leaves others unchanged', comp.list.4, 'oom')
+  t('modifying composite at key', comp.list.(2).what, 'arg')
+)
+
+m('function, expression, and lexical scope')
+(
+  thing := 3
+  state := {
+    thing: 21
+  }
+  fn := () => thing := 4
+  fn2 := thing => thing := 24
+  fn3 := () => (
+    state.thing := 100
+    thing := ~3
+  )
+
+  fn()
+  fn2()
+  fn3()
+  (
+    thing := 200
+  )
+
+  t('function body forms a new scope', fn(), 4)
+  t('function body forms a new scope, assignment', fn2(), 24)
+  t('function body with expression list forms a new scope', fn3(), ~3)
+  t('assignment in child frames are isolated', thing, 3)
+  t('modifying composites in scope from child frames causes mutation', state.thing, 100)
+
+  x := 100
+  y := 100
+  z := 100
+  w := 100
+  x := 200 :: {
+    y := 200 -> 1000
+    (w := 200) -> 2000
+  }
+  nop := () => ()
+  nop(nop(z := 300, z := 400), z := 500, (w := 300))
+
+  t('assignment in match expression condition stays in scope', x, 200)
+  t('assignment in match expression target stays in scope', y, 200)
+  t('assignment in argument position stays in scope', z, 500)
+  t('assignment in exprlist in match expression target is in inner scope', w, 100)
+  t('assignment in exprlist in argument position is in inner scope', w, 100)
+)
+
+m('tail call optimizations and thunk unwrap order')
+(
+  acc := ['']
+
+  appender := prefix => str => acc.0 := acc.0 + prefix + str
+  f1 := appender('f1_')
+  f2 := appender('f2_')
+
+  sub := () => (
+    f1('hi')
+    (
+      f2('what')
+    )
+    f3 := () => (
+      f2('hg')
+      f1('bb')
+    )
+    f1('sup')
+    f2('sample')
+    f3()
+    f2('xyz')
+  )
+
+  sub()
+
+  t('tail optimized thunks are unwrapped in correct order'
+    acc.0, 'f1_hif2_whatf1_supf2_samplef2_hgf1_bbf2_xyz')
+)
+
+m('match expressions')
+(
+  x := (('what ' + string(1 + 2 + 3 + 4)) :: {
+    'what 10' -> 'what 10'
+    _ -> '??'
+  })
+  t('match expression follows matched clause', x, 'what 10')
+
+  x := (('what ' + string(1 + 2 + 3 + 4)) :: {
+    'what 11' -> 'what 11'
+    _ -> '??'
+  })
+  t('match expression follows through to empty identifier', x, '??')
+
+  x := (
+    y := {z: 9}
+    12 :: {
+      y.z + 1 + 5 - 3 -> 'correct'
+      12 -> 'incorrect'
+      10 -> 'incorrect'
+      _ -> 'wrong'
+    }
+  )
+  t('match expression target can be complex binary expressions', x, 'correct')
+
+  x := ('a' :: {
+    1 :: {
+      2 -> 'b'
+      1 -> 'a'
+    } -> 'c'
+    _ -> 'd'
+  })
+  t('match expression in match target position', x, 'c')
+
+  N := {
+    A: 1
+    B: 2
+    C: 3
+    D: 4
+  }
+  x := (3 :: {
+    N.A -> 'a'
+    N.B -> 'b'
+    N.C -> 'c'
+    N.D -> 'd'
+  })
+  t('match expression target can be object property', x, 'c')
+
+  x := [1, 2, [3, 4, ['thing']], {a: ['b']}]
+  t('composite deep equality after match expression'
+    x, [1, 2, [3, 4, ['thing']], {a: ['b']}])
+)
+
+m('accessing properties strangely, accessing nonexistent properties')
+(
+  t('property access with number literal', {1: ~1}.1, ~1)
+  t('list access with number literal', ['y', 'z'].1, ('z'))
+  t('property access with bare string literal', {1: 4.2}.'1', 4.2)
+  t('property access with number value', {1: 4.2}.(1), 4.2)
+  t('property access with decimal number value', {1: 'hi'}.(1.0000), 'hi')
+
+  # also: composite parts can be empty
+  t('composite parts can be empty', [_, _, 'hix'].('2'), 'hix')
+  t('property access with computed string'
+    string({test: 4200.00}.('te' + 'st')), '4200')
+  t('nested property access with computed string'
+    string({test: 4200.00}.('te' + 'st')).1, '2')
+  t('nested property access with computed string, nonexistent key'
+    string({test: 4200.00}.('te' + 'st')).10, ())
+
+  dashed := {'test-key': 14}
+  t('property access with string literal that is not valid identifier'
+    string(dashed.('test-key')), '14')
+)
+
+m('calling functions with mismatched argument length')
+(
+  tooLong := (a, b, c, d, e) => a + b
+  tooShort := (a, b) => a + b
+
+  t('function call with too few arguments', tooLong(1, 2), 3)
+  t('function call with too many arguments', tooShort(9, 8, 7, 6, 5, 4, 3), 17)
+)
+
+m('argument order of evaluation')
+(
+  acc := []
+  fn := (x, y) => (acc.(len(acc)) := x, y)
+
+  t('function arguments are evaluated in order, I'
+    fn(fn(fn(fn('i', '?'), 'h'), 'g'), 'k'), 'k')
+  t('function arguments are evaluated in order, II'
+    acc, ['i', '?', 'h', 'g'])
+)
