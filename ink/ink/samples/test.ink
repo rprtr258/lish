@@ -9,6 +9,7 @@ import('suite.ink')('Ink language and standard library', s => (
 
   # import std & str once for all tests
   std := import('std.ink')
+  {clone} := std
   math := import('math.ink')
   str := import('str.ink')
   functional := import('functional.ink')
@@ -45,47 +46,47 @@ import('suite.ink')('Ink language and standard library', s => (
   m('value equality')
   (
     # with primitives
-    t('() = ()', () = (), true)
-    t('() = bool', () = false, false)
-    t('number = number', 1 = 1.000, true)
-    t('number = number', 100 = 1000, false)
-    t('empty string = empty string', '' = '', true)
-    t('string = string', 'val' = 'val', true)
-    t('string = string', '' = 'empty', false)
-    t('number = string', '23' = 23, false)
-    t('string = number', 23 = '23', false)
-    t('bool = bool', false = false, true)
-    t('bool = bool', true = false, false)
-    t('list = list', ['first', '_second'] = ['first', '_second'], true)
-    t('list = list', ['first', '_second'] = ['first', '_second', '*third'], false)
-    t('composite = composite', {} = {}, true)
-    t('composite = list', {} = [], true)
-    t('composite = ()', {} = (), false)
+    t('() == ()', () == (), true)
+    t('() == bool', () == false, false)
+    t('number == number', 1 == 1.000, true)
+    t('number == number', 100 == 1000, false)
+    t('empty string == empty string', '' == '', true)
+    t('string == string', 'val' == 'val', true)
+    t('string == string', '' == 'empty', false)
+    t('number == string', '23' == 23, false)
+    t('string == number', 23 == '23', false)
+    t('bool == bool', false == false, true)
+    t('bool == bool', true == false, false)
+    t('list == list', ['first', '_second'] == ['first', '_second'], true)
+    t('list == list', ['first', '_second'] == ['first', '_second', '*third'], false)
+    t('composite == composite', {} == {}, true)
+    t('composite == list', {} == [], false)
+    t('composite == ()', {} == (), false)
 
     fn := () => 1
     fn2 := () => 1
-    t('function = function', fn = fn, true)
-    t('function = function', fn = fn2, false)
-    t('builtin fn = builtin fn', len = len, true)
-    t('builtin fn = builtin fn', len = string, false)
+    t('function == function', fn == fn, true)
+    t('function == function', fn == fn2, false)
+    t('builtin fn == builtin fn', len == len, true)
+    t('builtin fn == builtin fn', len == string, false)
 
     # to empty identifier
-    t('_ = _', _ = _, true)
-    t('bool = _', true = _, true)
-    t('_ = bool', _ = false, true)
-    t('number = _', 0 = _, true)
-    t('_ = number', _ = 3, true)
-    t('string = _', '' = _, true)
-    t('_ = string', _ = '', true)
-    t('() = _', () = _, true)
-    t('_ = ()', _ = (), true)
-    t('composite = _', {} = _, true)
-    t('_ = composite', _ = {}, true)
-    t('_ = list', _ = [_], true)
-    t('function = _', (() => ()) = _, true)
-    t('_ = function', _ = (() => ()), true)
-    t('builtin fn = _', len = _, true)
-    t('_ = builtin fn', _ = len, true)
+    t('_ == _', _ == _, true)
+    t('bool == _', true == _, true)
+    t('_ == bool', _ == false, true)
+    t('number == _', 0 == _, true)
+    t('_ == number', _ == 3, true)
+    t('string == _', '' == _, true)
+    t('_ == string', _ == '', true)
+    t('() == _', () == _, true)
+    t('_ == ()', _ == (), true)
+    t('composite == _', {} == _, true)
+    t('_ == composite', _ == {}, true)
+    t('_ == list', _ == [_], true)
+    t('function == _', (() => ()) == _, true)
+    t('_ == function', _ == (() => ()), true)
+    t('builtin fn == _', len == _, true)
+    t('_ == builtin fn', _ == len, true)
   )
 
   m('composite value access')
@@ -135,10 +136,10 @@ import('suite.ink')('Ink language and standard library', s => (
     t('nested property access returns composite', comp.list.2, {what: 'thing'})
 
     # modifying composite in chained accesses
-    comp.list.4 := 'oom'
+    comp.list.3 := 'oom'
     comp.list.(2).what := 'arg'
 
-    t('modifying composite at key leaves others unchanged', comp.list.4, 'oom')
+    t('modifying composite at key leaves others unchanged', comp.list.3, 'oom')
     t('modifying composite at key', comp.list.(2).what, 'arg')
   )
 
@@ -483,7 +484,6 @@ import('suite.ink')('Ink language and standard library', s => (
 
   m('object keys / list, mutable strings, std.clone')
   (
-    clone := std.clone
     obj := {
       first: 1
       second: 2
@@ -555,8 +555,6 @@ import('suite.ink')('Ink language and standard library', s => (
 
   m('string/composite pass by reference / mutation check')
   (
-    clone := std.clone
-
     obj := [1, 2, 3]
     twin := obj # by reference
     clone := clone(obj) # cloned (by value)
@@ -569,12 +567,12 @@ import('suite.ink')('Ink language and standard library', s => (
     t('define op does not create a copy of composite', len(twin), 6)
     t('std.clone creates a copy of composite', len(clone), 3)
 
-    t('assignment to composite key returns composite itself, updated', clone.hi := 'x', {
-      0: 1
-      1: 2
-      2: 3
-      hi: 'x'
-    })
+    t('assignment to composite key returns composite itself, updated', clone.3 := 'x', [
+      1
+      2
+      3
+      'x'
+    ])
 
     str := 'hello, world'
     str2 := '' + str
@@ -605,7 +603,7 @@ import('suite.ink')('Ink language and standard library', s => (
 
   m('number & composite/list -> string conversions')
   (
-    stringList := str.stringList
+    {stringList} := str
 
     t('string(number) uses least number of digits necessary, integer'
       string(42), '42')
@@ -630,11 +628,11 @@ import('suite.ink')('Ink language and standard library', s => (
     t('number(string) deals with negative numbers', number('-42'), ~42)
     t('number(string) with large exponent', number('3e10'), 30000000000)
     t('number(string) with small exponent', number('3e-9'), 0.000000003)
-    t('number(true) = 1', number(true), 1)
-    t('number(false) = 0', number(false), 0)
-    t('number(composite) = 0', number([]), 0)
-    t('number(function) = 0', number(() => 100), 0)
-    t('number(builtin fn) = 0', number(len), 0)
+    t('number(true) == 1', number(true), 1)
+    t('number(false) == 0', number(false), 0)
+    t('number(composite) == 0', number([]), 0)
+    t('number(function) == 0', number(() => 100), 0)
+    t('number(builtin fn) == 0', number(len), 0)
 
     t('string(composite)', string({a: 3.14}), '{a: 3.14}')
     t('string(composite) containing string and multiple keys', string([3, 'two']), '[3, \'two\']')
@@ -650,9 +648,9 @@ import('suite.ink')('Ink language and standard library', s => (
     fn2 := () => (3 + 4, 'hello')
 
     t('functions are equal if they are the same function'
-      fn1 = fnc, true)
+      fn1 == fnc, true)
     t('functions are different if they are defined separately, even if same effect'
-      fn1 = fn2, false)
+      fn1 == fn2, false)
 
     # composite equality
     comp1 := {1: 2, hi: '4'}
@@ -661,32 +659,32 @@ import('suite.ink')('Ink language and standard library', s => (
     list2 := [1, 2, 3, 4, 5]
     complist := {0: 1, 1: 2, 2: 3, 3: 4, 4: 5}
 
-    t('deep composite equality', comp1 = comp2, true)
-    t('deep list equality', list1 = list2, true)
-    t('deep composite inequality, I', comp1 = list1, false)
-    t('deep composite inequality, II', comp1 = {1: '4', 2: 2}, false)
-    t('composite = {}', comp1 = {}, false)
-    t('deep list inequality, I', list1 = [1, 2, 3], false)
-    t('deep list inequality, II', list1 = complist, true)
+    t('deep composite equality', comp1 == comp2, true)
+    t('deep list equality', list1 == list2, true)
+    t('deep composite inequality, I', comp1 == list1, false)
+    t('deep composite inequality, II', comp1 == {1: '4', 2: 2}, false)
+    t('composite == {}', comp1 == {}, false)
+    t('deep list inequality, I', list1 == [1, 2, 3], false)
+    t('deep list inequality, II', list1 == complist, false)
   )
 
   m('type() builtin function')
   (
     t('type(string)', type('hi'), 'string')
     t('type(number)', type(3.14), 'number')
-    t('type(list) (composite)', type([0, 1, 2]), 'composite')
+    t('type(list) (list)', type([0, 1, 2]), 'list')
     t('type(composite)', type({hi: 'what'}), 'composite')
     t('type(function)', type(() => 'hi'), 'function')
     t('type(builtin fn) (function), I', type(type), 'function')
     t('type(builtin fn) (function), II', type(out), 'function')
-    t('type(()) = ()', type(()), '()')
+    t('type(()) == ()', type(()), '()')
   )
 
   m('std.range/slice/append/join/cat and stringList')
   (
     {stringList, join: cat} := str
     {range, reverse} := functional
-    slice := std.slice
+    {slice} := std
 
     # slice returns copies
     (
@@ -735,10 +733,10 @@ import('suite.ink')('Ink language and standard library', s => (
     t('cat() list containing delimiter', cat(['hello', 'world,hi'], ','), 'hello,world,hi')
     t('cat() with empty string delimiter', cat(['good', 'bye', 'friend'], ''), 'goodbyefriend')
     t('cat() with comma separator', cat(['good', 'bye', 'friend'], ', '), 'good, bye, friend')
-    t('cat() with manually indexed composite', cat({
-      0: 'first'
-      1: 'last'
-    }, ' and '), 'first and last')
+    t('cat() with manually indexed composite', cat([
+      'first'
+      'last'
+    ], ' and '), 'first and last')
   )
 
   m('hexadecimal conversions, hex & xeh')
@@ -798,7 +796,7 @@ import('suite.ink')('Ink language and standard library', s => (
     list := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     t('std.map', map(list, n => n * n), [1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
-    t('std.filter', filter(list, n => n % 2 = 0), [2, 4, 6, 8, 10])
+    t('std.filter', filter(list, n => n % 2 == 0), [2, 4, 6, 8, 10])
     t('std.reduce', reduce(list, (acc, n) => acc + string(n), '')
       '12345678910')
     t('std.reduceBack', reduceBack(list, (acc, n) => acc + string(n), '')
@@ -821,7 +819,7 @@ import('suite.ink')('Ink language and standard library', s => (
     # passing index in callback
     t('std.map passes index to callback', map(list, (_, i) => i)
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    t('std.filter passes index to callback', filter(list, (_, i) => i % 2 = 1)
+    t('std.filter passes index to callback', filter(list, (_, i) => i % 2 == 1)
       [2, 4, 6, 8, 10])
     t('std.reduce passes index to callback'
       reduce(list, (acc, _, i) => acc + string(i), ''), '0123456789')
@@ -839,7 +837,7 @@ import('suite.ink')('Ink language and standard library', s => (
       str: ''
     }
     twice := f => x => (f(x), f(x))
-    each(list, twice(n => acc.str := acc.str + string(n)))
+    each(list, twice(n => acc.str = acc.str + string(n)))
     t('std.each', acc.str, '1122334455667788991010')
 
     # append mutates
@@ -893,7 +891,7 @@ import('suite.ink')('Ink language and standard library', s => (
     # every character should be a hex character or "-"
     isValidChar := s => s :: {
       '-' -> true
-      _ -> ~(xeh(s) = ())
+      _ -> ~(xeh(s) == ())
     }
     everyCharIsHex := every(map(
       uuids
@@ -904,13 +902,13 @@ import('suite.ink')('Ink language and standard library', s => (
     # test for uniqueness (kinda)
     collisions? := reduce(
       map(range(0, 200, 1), () => [uuid(), uuid()])
-      (acc, us) => acc | us.0 = us.1
+      (acc, us) => acc | us.0 == us.1
       false
     )
     t('uuid() validity, rare collisions', collisions?, false)
 
     # correct length, formatting
-    format? := u => map(u, x => x) = [
+    format? := u => map(u, x => x) == [
       _, _, _, _, _, _, _, _, '-'
       _, _, _, _, '-'
       _, _, _, _, '-'
@@ -926,7 +924,6 @@ import('suite.ink')('Ink language and standard library', s => (
 
   m('json ser/de')
   (
-    clone := std.clone
     {parse: de, serialize: ser} := import('json.ink')
 
     # primitives
@@ -942,7 +939,7 @@ me'), '"es\\"c \\\\a\\"pe\\nme"')
     t('ser negative number', ser(~2.4142), string(~2.4142))
     t('ser function => null', ser(x => x), 'null')
     t('ser empty composite', ser({}), '{}')
-    t('ser empty list => composite', ser([]), '{}')
+    t('ser empty list => composite', ser([]), '[]')
 
     t('de null', de('null'), ())
     t('de invalid JSON, null-ish', de('neh'), ())
@@ -976,12 +973,9 @@ me')
     s := ser({a: 'b', c: ~4.251})
     first := '{"a":"b","c":-4.251}'
     second := '{"c":-4.251,"a":"b"}'
-    t('ser composite', s = first | s = second, true)
+    t('ser composite', s == first | s == second, true)
 
-    s := ser([2, false])
-    first := '{"0":2,"1":false}'
-    second := '{"1":false,"0":2}'
-    t('ser list', s = first | s = second, true)
+    t('ser list', ser([2, false]) == '[2, false]', true)
 
     # complex serde
     obj := {
@@ -996,8 +990,8 @@ me')
     }
     objr := clone(obj)
     objr.func := ()
-    list := ['a', true, {c: 'd', e: 32.14}, ['f', {}, (), ~42]]
     t('ser complex composite', de(ser(obj)), objr)
+    list := ['a', true, {c: 'd', e: 32.14}, ['f', {}, (), ~42]]
     t('de ser complex composite', de(ser(list)), list)
 
     list.1 := obj
@@ -1039,7 +1033,7 @@ me')
       hasPrefix?('programming', 'prog'), true)
     t('hasPrefix? returns true for empty prefix'
       hasPrefix?('programming', ''), true)
-    t('hasPrefix? returns true if s = prefix'
+    t('hasPrefix? returns true if s == prefix'
       hasPrefix?('programming', 'programming'), true)
     t('hasPrefix? returns false if not prefix'
       hasPrefix?('programming', 'progx'), false)
@@ -1052,7 +1046,7 @@ me')
       hasSuffix?('programming', 'mming'), true)
     t('hasSuffix? returns true for empty suffix'
       hasSuffix?('programming', ''), true)
-    t('hasSuffix? returns true if s = suffix'
+    t('hasSuffix? returns true if s == suffix'
       hasSuffix?('programming', 'programming'), true)
     t('hasSuffix? returns false if not suffix'
       hasSuffix?('programming', 'science'), false)
@@ -1077,9 +1071,9 @@ me')
     t('matchesAt? returns false if no match'
       matchesAt?('some substring', 'other', 5), false)
 
-    index := str.index
+    {index} := str
 
-    t('index = 0 for empty string', index('quick brown fox', ''), 0)
+    t('index == 0 for empty string', index('quick brown fox', ''), 0)
     t('index returns index of substring'
       index('quick brown fox', 'ick'), 2)
     t('index returns 0 if matches whole string'
@@ -1093,13 +1087,13 @@ me')
 
     contains? := str.contains?
 
-    t('contains? = true for empty string'
+    t('contains? == true for empty string'
       contains?('quick brown fox', ''), true)
-    t('contains? = true if string fits substring'
+    t('contains? == true if string fits substring'
       contains?('quick brown fox', 'fox'), true)
-    t('contains? = true if substring fits multiple times'
+    t('contains? == true if substring fits multiple times'
       contains?('quick brown fox', 'o'), true)
-    t('contains? = false if not contained'
+    t('contains? == false if not contained'
       contains?('quick brown fox', 'lazy dog'), false)
 
     {lower, upper, title} := str
@@ -1112,7 +1106,7 @@ me')
     t('title returns uppercase first + lowercase rest'
       title(given), 'Mixed case string with ?!~:punct')
 
-    replace := str.replace
+    {replace} := str
 
     t('replace is no-op if empty string'
       replace('he stared in amazement', '', '__'), 'he stared in amazement')
@@ -1129,7 +1123,7 @@ me')
     t('replace works even if new str contains recursive match'
       replace('a {} b {} c {}', '{}', '{}-{}'), 'a {}-{} b {}-{} c {}-{}')
 
-    split := str.split
+    {split} := str
 
     t('split splits string into letters if empty'
       split('alphabet', ''), ['a', 'l', 'p', 'h', 'a', 'b', 'e', 't'])
@@ -1174,7 +1168,7 @@ me')
     getObjB := import('load_dedup/load_dedup_child.ink')
 
     t('import() from different contexts should be deduplicated'
-      getObjA() = getObjB(), true)
+      getObjA() == getObjB(), true)
   )
 
   m('args() list')
@@ -1205,7 +1199,7 @@ me')
     # TODO: parse back and check instead
     variant1 := '<!doctype html><head><title>Test page</title></head><body><div><h1 class="title" itemprop="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>'
     variant2 := '<!doctype html><head><title>Test page</title></head><body><div><h1 itemprop="title" class="title">Hello, World!</h1><p class="body">this is a body paragraph</p></div></body>'
-    t('example', got = variant1 | got = variant2, true)
+    t('example', got == variant1 | got == variant2, true)
   )
 
   m('sort')

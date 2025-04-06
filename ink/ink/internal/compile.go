@@ -114,7 +114,7 @@ func compile(n NodeID, ast *AST, w *watWriter) {
 			compile(arg, ast, w)
 		}
 		w.WriteString(")")
-	case NodeLiteralObject:
+	case NodeLiteralComposite:
 		for _, entry := range n.Entries {
 			k, v := entry.Key, entry.Val
 			switch k := ast.Nodes[k].(type) {

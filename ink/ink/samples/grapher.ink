@@ -79,8 +79,8 @@ each(RW, scaledX => (
   each(FUNCTIONS, item => (
     scaledY := scaleYToCanvas((item.f)(x))
 
-    scaledY > 0 & scaledY < HEIGHT :: {
-      true -> each(strokeRange, xoff => (
+    true :: {
+      scaledY > 0 & scaledY < HEIGHT -> each(strokeRange, xoff => (
         each(strokeRange, yoff => (
           pixels.((scaledY - yoff) * WIDTH + scaledX - xoff) := item.color
         ))
@@ -92,7 +92,7 @@ log('finished rendering functions...')
 
 # save image
 file := bmp(WIDTH, HEIGHT, pixels)
-wf('graph.bmp', file, done => done :: {
-  true -> log('Done!')
+wf('graph.bmp', file, done => true :: {
+  done -> log('Done!')
   () -> log('Error saving graph :(')
 })

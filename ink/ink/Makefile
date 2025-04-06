@@ -48,6 +48,7 @@ test:
 	./ink samples/exec.ink
 	./ink samples/grapher.ink
 	./ink samples/graph.ink
+	./ink samples/rainbow.ink 'YAY SHALAVI'
 	./ink samples/img.ink
 	# test -eval flag
 	./ink -eval "log:=import('samples/logging.ink').log,f:=x=>()=>log('Eval test: '+x),f('passed!.ink')()"

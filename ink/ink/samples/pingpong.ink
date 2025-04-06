@@ -12,8 +12,7 @@ closeServer := listen('0.0.0.0:9600', evt => evt.type :: {
   'req' -> (
     log(f('Request ---> {{ data }}', evt))
 
-    dt := evt.data
-    end := evt.end
+    {data: dt, end} := evt
     [dt.method, dt.url, dt.body] :: {
       ['POST', '/test', 'ping'] -> end({
         status: 302 # test that it doesn't auto-follow redirects

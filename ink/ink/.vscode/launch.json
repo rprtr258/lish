@@ -14,7 +14,7 @@
             "args": [
                 "-dump",
                 "-dumpast",
-                "./samples/mangled.ink"
+                "./samples/tco.ink"
             ]
         }
 

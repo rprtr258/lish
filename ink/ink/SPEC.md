@@ -54,7 +54,7 @@ BinaryOp: (
   '+' | '-' | '*' | '/' | '%' // arithmetic
   | '&' | '|' | '^' // logical and bitwise
   | '>' | '<' // arithmetic comparisons
-  | '=' // value comparison operator
+  | '==' // value comparison operator
   | ':=' // assignment operator
   | '.' // property accessor
 )
@@ -103,7 +103,7 @@ The Null type and value `()` is globally unique and often also used to represent
 a := 3, b := a
 a := 42
 
-b = 42 # false, since assignment of values are all copies
+b == 42 # false, since assignment of values are all copies
 
 # for composite values
 list := [1, 2, 3]
@@ -113,9 +113,9 @@ clone := clone(list) # makes a shallow clone
 list.(len(list)) := 4 # append 4 to list
 list.(len(list)) := 5 # append 5 to list
 
-len(list) = 5 # true
-len(twin) = 5 # true, since it keeps the same reference
-len(clone) = 5 # false, since it keeps a copy of the value instead
+len(list) == 5 # true
+len(twin) == 5 # true, since it keeps the same reference
+len(clone) == 5 # false, since it keeps a copy of the value instead
 ```
 
 These are tested in [samples/test.ink](samples/test.ink).
@@ -142,53 +142,6 @@ These are the right primitives, but we can build much more sophisticated systems
 
 ### Metaprogramming and packaging
 - `import(string) => any`: import the Ink expressions from another file as a _module_ to a different program file. The values declared in the top frame of the imported module will be entries in the composite value returned by `import`. If currently executing from a file, Ink will search relative to the executing file. Otherwise (e.g. if running from standard input or through the `-eval` flag), Ink will search relative to the current working directory of the running process. Ink programs imported this way are deduplicated by a canonicalized URL within a single Engine.
-
-### System interfaces
-- `args() => list`: argv of the currently running process
-- `in(callback<string> => boolean)`: Read from stdin. The callback function returns a boolean that determines whether to continue reading from input.
-- `out(string)`: Print to stdout.
-- `dir(string, callback<list>)`: List the contents of a directory. The callback gets a list of values of the form `{name: string, len: number, dir: boolean}`. Effectively `stat()` for all files in the directory.
-- `make(string, callback)`: Make a new directory at the given path.
-- `stat(string, callback)`: `stat` a file at a path, returning its canonicalized filename, size, and whether it's a directory or a file.
-- `read(string, number, number, callback<string>)`: Read from given file descriptor from some offset for some bytes, returned as a list of bytes (numbers).
-- `write(string, number, string, callback)`: Write to given file descriptor at some offset, some given bytes.
-- `delete(string, callback)`: Delete some given file.
-- `listen(string, callback) => callback`: Bind to a local TCP port and start handling HTTP requests.
-- `req(composite, callback) => callback`: Send an HTTP client request. `url` is required, `method`, `headers`, `body` are optional and default to their sensible zero values.
-- `wait(number, callback)`: Call the callback function after at least the given number of seconds has elapsed.
-- `rand() => number`: a pseudorandom floating point number in interval `[0, 1)`.
-- `urand(length) => string`: a string of given length containing random bits, safe for cryptography work
-- `time() => number`: number of seconds in floating point in UNIX epoch.
-- `exec(string, [list], string, callback) => callback`: Exec the command at a given path with given arguments, with a given stdin, call given callback with stdout when exited.
-- `exit(number)`: Exit the current process with the given exit code.
-
-### Math
-- `sin(number) => number`: sine
-- `cos(number) => number`: cosine
-- `asin(number) => number`: arcsine (inverse sin)
-- `acos(number) => number`: arccosine (inverse cos)
-- `pow(number, number) => number`: power, also stands in for finding roots with exponent < 1
-- `ln(number) => number`: natural log
-- `floor(number) => number`: floor / truncation
-
-### Type casts and utilities (implemented as native functions)
-- `string(any) => string`: Convert type to string
-- `number(any) => number`: Convert type to number
-- `point(string) => number`: Take the first byte (i.e. ASCII value) of the string and return its numerical value
-- `char(number) => string`: reverse of `point()`. Note that behavior for values above 255 (full Unicode values) is undefined (so far).
-- `len(composite) => number`: length of a list, string, or list-like composite value (equal to the number of keys on the composite or list value)
-- `keys(composite) => list<string>`: list of keys of the given composite
-
-## Standard library
-Ink's standard library is under active development, and contains...
-
-- utilities for working with lists, like `range`, `map`, `filter`, `reduce`, `clone`, and `reverse`
-- utilities that wrap around builtins, like `scan`, `readFile`, and `writeFile`
-- data transformations like `hex` and `xeh` (reverse of `hex`)
-- tools for working with strings like `slice`, `cat`, and `encode`/`decode`
-- the default templating / format string tool, `format`
-
-Find the source code in the meantime under [samples/std.ink](samples/std.ink).
 
 ## Other implementation notes
 - Ink source code is fully UTF-8 / Unicode compatible. Unicode printed non-whitespace characters are valid variable and function identifiers, as well as the characters `?`, `!`, and `@`.

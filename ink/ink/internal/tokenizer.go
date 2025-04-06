@@ -434,8 +434,10 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 				colNo++
 				if nextChar == '>' {
 					commitChar(FunctionArrow)
-				} else {
+				} else if nextChar == '=' {
 					commitChar(OpEqual)
+				} else {
+					commitChar(OpDefine) // TODO: assignment
 					br.UnreadRune()
 				}
 			case char == '-':

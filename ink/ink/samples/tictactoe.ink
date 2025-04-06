@@ -8,8 +8,8 @@ log := s => out(s + '\n')
 
 # async version of a while(... condition, ... predicate)
 # that takes a callback
-asyncWhile := (cond, do) => (sub := () => cond() :: {
-  true -> do(sub)
+asyncWhile := (cond, do) => (sub := () => true :: {
+  cond() -> do(sub)
   _ -> ()
 })()
 
@@ -69,7 +69,7 @@ Result := {
 }
 checkBoard := bd => (
   checkIfPlayerWon := player => (
-    isPlayer := row => row = [player, player, player]
+    isPlayer := row => row == [player, player, player]
     combinationToValues := combo => map(combo, idx => bd.(idx))
     possibleRows := map(Combinations, combinationToValues)
     didWin := len(filter(possibleRows, isPlayer)) > 0
@@ -82,7 +82,7 @@ checkBoard := bd => (
     checkIfPlayerWon(Player.o) -> Result.O
     _ -> (
       # check if game ended in a tie
-      takenCells := filter(slice(bd, 1, 10), val => ~(val = 0))
+      takenCells := filter(slice(bd, 1, 10), val => ~(val == 0))
       len(takenCells) :: {
         9 -> Result.Tie
         _ -> Result.None
@@ -95,9 +95,9 @@ checkBoard := bd => (
 stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
   # not a number, try again
   () -> stepBoard!(bd, cb)
-  _ -> idx > 0 & idx < 10 :: {
+  _ -> true :: {
     # number in range, make a move
-    true -> bd.(idx) :: {
+    idx > 0 & idx < 10 -> bd.(idx) :: {
       # the given cell is empty, make a move
       0 -> (
         bd.(number(s)) := getPlayer(bd)

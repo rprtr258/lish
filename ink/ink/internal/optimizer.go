@@ -8,9 +8,9 @@ import (
 
 func constEval(ast *AST, n NodeID) {
 	nn := ast.Nodes[n]
-	v, err := nn.Eval(&Scope{}, ast, false)
-	if err != nil {
-		panic(err.Error())
+	v := trampoline(nn.Eval(&Scope{}, ast, func(v Value) ValueThunk { return func() Value { return v } }))
+	if isErr(v) {
+		panic(v.String())
 	}
 
 	log.Printf("optimised %s to %v", nn.String(), v)
@@ -85,7 +85,7 @@ func constantFolding(ast *AST, n NodeID) bool {
 		return true
 	case NodeLiteralList:
 		return constFoldList(ast, n, nn.Vals)
-	case NodeLiteralObject:
+	case NodeLiteralComposite:
 		isConst := true
 		for _, n := range nn.Entries {
 			if !constantFolding(ast, n.Key) {

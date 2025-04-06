@@ -27,8 +27,8 @@ state := {
 
 # a single iteration of the Monte Carlo simulation
 iteration := iterCount => (
-  inCircle(randCoord()) :: {
-    true -> state.inCount := state.inCount + 1
+  true :: {
+    inCircle(randCoord()) -> state.inCount = state.inCount + 1
   }
 
   # log progress at 100k intervals

@@ -1,14 +1,14 @@
 # tail recursive map
 # ([]T, (T, number) => R) => R
-map := (list, f) => reduce(list, (l, item, i) => l.(i) := f(item, i), {})
+map := (list, f) => reduce(list, (l, item, i) => l.(i) := f(item, i), [])
 
 # ([]T, (T, number) => []R) => R
 flatmap := (list, f) => flatten(map(list, f))
 
 # tail recursive filter
 # ([]T, (T, number) => boolean) => []T
-filter := (list, f) => reduce(list, (l, item, i) => f(item, i) :: {
-  true -> l.len(l) := item
+filter := (list, f) => reduce(list, (l, item, i) => true :: {
+  f(item, i) -> l.len(l) := item
   _ -> l
 }, [])
 
@@ -30,8 +30,8 @@ each := (list, f) => (
 find := (list, f) => (
   # TODO: optimize and dont store all matching elements
   elems := filter(list, f)
-  len(elems) > 0 :: {
-    true -> elems.0.0
+  true :: {
+    len(elems) > 0 -> elems.0.0
     _ -> ()
   }
 )
@@ -98,8 +98,8 @@ every := list => reduce(list, (acc, x) => acc & x, true)
 
 # tail recursive reversing a list
 # ([]T) => []T
-reverse := list => (sub := (acc, i) => i < 0 :: {
-  true -> acc
+reverse := list => (sub := (acc, i) => true :: {
+  i < 0 -> acc
   _ -> sub(acc.len(acc) := list.(i), i - 1)
 })([], len(list) - 1)
 
@@ -111,8 +111,8 @@ objReduce := (obj, f, acc) => reduce(keys(obj), (acc, k) => f(acc, k, obj.(k)), 
 
 # Filter values from an object based on a predicate function and return a new object.
 # ({[K]: V}, (K, V) => boolean) => {[K]: V}
-objFilter := (obj, f) => objReduce(obj, (acc, k, v) => f(k, v) :: {
-  true -> acc.(k) := v
+objFilter := (obj, f) => objReduce(obj, (acc, k, v) => true :: {
+  f(k, v) -> acc.(k) := v
   _ -> acc
 }, {})
 
@@ -131,8 +131,8 @@ objToList := (obj, f) => map(keys(obj), (k, _) => f(k, obj.(k)))
 # (number, number, number) => []number
 range := (start, end, step) => (
   span := end - start
-  sub := (i, v, acc) => (v - start) / span < 1 :: {
-    true -> (
+  sub := (i, v, acc) => true :: {
+    (v - start) / span < 1 -> (
       acc.(i) := v
       sub(i + 1, v + step, acc)
     )
@@ -140,21 +140,21 @@ range := (start, end, step) => (
   }
 
   # preempt potential infinite loops
-  span / step < 1 :: {
-    true -> []
+  true :: {
+    span / step < 1 -> []
     _ -> sub(0, start, [])
   }
 )
 
 # find minimum in list
-min := numbers => reduce(numbers, (acc, n) => n < acc :: {
-  true -> n
+min := numbers => reduce(numbers, (acc, n) => true :: {
+  n < acc -> n
   _ -> acc
 }, numbers.0)
 
 # find maximum in list
-max := numbers => reduce(numbers, (acc, n) => n > acc :: {
-  true -> n
+max := numbers => reduce(numbers, (acc, n) => true :: {
+  n > acc -> n
   _ -> acc
 }, numbers.0)
 

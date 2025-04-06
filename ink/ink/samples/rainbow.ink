@@ -16,8 +16,8 @@ each(range(100), colshift => (
   each(range(floor(half * (1 + cos(colshift / 4)))), _ => out(' '))
   j := {value: 0}
   each(range(len(s)), i => (
-    out(f('[{{0}}m', [clrs.((j.value + colshift) % len(clrs))])+s.(i))
-    j.value := j.value + (s.(i) :: {' ' -> 1, _ -> 0})
+    out(f('[{{0}}m', [clrs.((j.value + colshift) % len(clrs))])+s.(i)) # TODO: reset
+    j.value = j.value + (s.(i) :: {' ' -> 1, _ -> 0})
   ))
   out('\n')
 ))

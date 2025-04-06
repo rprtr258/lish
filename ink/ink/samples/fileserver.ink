@@ -136,8 +136,8 @@ handleStat := (url, path, data, end, getElapsed) => data :: {
       }
     })
   )
-  {dir: true, name: _, len: _, mod: _} -> dirPath?(path) :: {
-    true -> handleDir(url, path, data, end, getElapsed)
+  {dir: true, name: _, len: _, mod: _} -> true :: {
+    dirPath?(path) -> handleDir(url, path, data, end, getElapsed)
     _ -> (
       log(f('  -> {{ url }} returned redirect to {{ url }}/ in {{ ms }}ms', {
         url
@@ -221,8 +221,8 @@ handleDir := (url, path, data, end, getElapsed) => (
 )
 
 # handle a directory we stat() confirmed to exist
-handleExistingDir := (url, path, end, getElapsed) => ALLOWINDEX :: {
-  true -> handleNoIndexDir(url, path, end, getElapsed)
+handleExistingDir := (url, path, end, getElapsed) => true :: {
+  ALLOWINDEX -> handleNoIndexDir(url, path, end, getElapsed)
   _ -> (
     log(f('  -> {{ url }} not allowed in {{ ms }}ms', {
       url
@@ -271,8 +271,8 @@ handleNoIndexDir := (url, path, end, getElapsed) => dir(path, evt => evt.type ::
         slice(path, 2, len(path))
         cat(map(evt.data, (fileStat, _) => makeIndexLi(
           fileStat
-          fileStat.dir :: {
-            true -> '/'
+          true :: {
+            fileStat.dir -> '/'
             _ -> ''
           }
         )), '')
@@ -305,8 +305,8 @@ getType := path => (
 # given a path, get the file extension
 getPathEnding := path => (
   (sub := (idx, acc) => true :: {
-    idx = 0 -> path
-    path.(idx) = '.' -> acc
+    idx == 0 -> path
+    path.(idx) == '.' -> acc
     _ -> sub(idx - 1, path.(idx) + acc)
   })(len(path) - 1, '')
 )

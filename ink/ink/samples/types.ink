@@ -11,7 +11,7 @@ Types := {
   Function: 'function',
 }
 
-# Type = any -> bool
+# Type :: any -> bool
 
 # Type funcs: any -> bool
 ##############

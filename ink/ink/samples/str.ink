@@ -23,12 +23,12 @@ ws? := c => c :: {
 }
 
 # hasPrefix? checks if a string begins with the given prefix substring
-hasPrefix? := (s, prefix) => reduce(prefix, (acc, c, i) => acc & (s.(i) = c), true)
+hasPrefix? := (s, prefix) => reduce(prefix, (acc, c, i) => acc & (s.(i) == c), true)
 
 # hasSuffix? checks if a string ends with the given suffix substring
 hasSuffix? := (s, suffix) => (
   diff := len(s) - len(suffix)
-  reduce(suffix, (acc, c, i) => acc & (s.(i + diff) = c), true)
+  reduce(suffix, (acc, c, i) => acc & (s.(i + diff) == c), true)
 )
 
 # mostly used for internal bookkeeping, matchesAt? reports if a string contains
@@ -58,14 +58,14 @@ index := (s, substring) => (
 contains? := (s, substring) => index(s, substring) > ~1
 
 # transforms given string to lowercase
-lower := s => reduce(s, (acc, c, i) => acc.(i) := (upper?(c) :: {
-  true -> char(point(c) + 32)
+lower := s => reduce(s, (acc, c, i) => acc.(i) := (true :: {
+  upper?(c) -> char(point(c) + 32)
   _ -> c
 }), '')
 
 # transforms given string to uppercase
-upper := s => reduce(s, (acc, c, i) => acc.(i) := (lower?(c) :: {
-  true -> char(point(c) - 32)
+upper := s => reduce(s, (acc, c, i) => acc.(i) := (true :: {
+  lower?(c) -> char(point(c) - 32)
   _ -> c
 }), '')
 
@@ -115,8 +115,8 @@ split := (s, delim) => delim :: {
 trimPrefixNonEmpty := (s, prefix) => (
   max := len(s)
   lpref := len(prefix)
-  idx := (sub := i => i < max & matchesAt?(s, prefix, i) :: {
-    true -> sub(i + lpref)
+  idx := (sub := i => true :: {
+    i < max & matchesAt?(s, prefix, i) -> sub(i + lpref)
     _ -> i
   })(0)
   slice(s, idx, len(s))
@@ -132,8 +132,8 @@ trimPrefix := (s, prefix) => prefix :: {
 
 trimSuffixNonEmpty := (s, suffix) => (
   lsuf := len(suffix)
-  idx := (sub := i => i > 0 & matchesAt?(s, suffix, i - lsuf) :: {
-    true -> sub(i - lsuf)
+  idx := (sub := i => true :: {
+    i > 0 & matchesAt?(s, suffix, i - lsuf) -> sub(i - lsuf)
     _ -> i
   })(len(s))
   slice(s, 0, idx)
@@ -155,8 +155,8 @@ hToN := {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 'a': 10, 'b
 nToH := '0123456789abcdef'
 
 # take number, return hex string
-hex := n => (sub := (p, acc) => p < 16 :: {
-  true -> nToH.(p) + acc
+hex := n => (sub := (p, acc) => true :: {
+  p < 16 -> nToH.(p) + acc
   _ -> sub(floor(p / 16), nToH.(p % 16) + acc)
 })(floor(n), '')
 
@@ -170,9 +170,6 @@ xeh := s => (
   })(0, 0)
 )
 
-# tail recursive numeric list -> string converter
-stringList := list => '[' + join(map(list, (x, _) => string(x)), ', ') + ']'
-
 # join a list of strings into a string
 join := (list, joiner) => max := len(list) :: {
   0 -> ''
@@ -181,6 +178,9 @@ join := (list, joiner) => max := len(list) :: {
     _ -> sub(i + 1, acc.len(acc) := joiner + list.(i))
   })(1, list.0)
 }
+
+# tail recursive numeric list -> string converter
+stringList := list => '[' + join(map(list, (x, _) => string(x)), ', ') + ']'
 
 # encode string buffer into a number list
 encode := str => map(str, (c, _) => point(c))
@@ -207,7 +207,7 @@ format := (raw, values) => (
   }
 
   # helper function for appending to state.buf
-  append := c => state.buf := state.buf + c
+  append := c => state.buf = state.buf + c
 
   # read next token, update state
   readNext := () => (
@@ -239,7 +239,7 @@ format := (raw, values) => (
         )
         # ignore spaces in keys -- not allowed
         ' ' -> ()
-        _ -> state.key := state.key + c
+        _ -> state.key = state.key + c
       }
       3 -> c :: {
         '}' -> state.which := 0
@@ -248,13 +248,13 @@ format := (raw, values) => (
       }
     }
 
-    state.idx := state.idx + 1
+    state.idx = state.idx + 1
   )
 
   # main recursive sub-loop
   max := len(raw)
-  (sub := () => state.idx < max :: {
-    true -> (
+  (sub := () => true :: {
+    state.idx < max -> (
       readNext()
       sub()
     )

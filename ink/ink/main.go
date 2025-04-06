@@ -33,20 +33,20 @@ Run from the command line with -eval.
 
 func repl(ctx *ink.Context) {
 	// add repl-specific builtins
-	ctx.LoadFunc("clear", func(*ink.Context, *ink.AST, ink.Pos, []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("clear", func(_ *ink.Context, _ ink.Pos, _ []ink.Value, k ink.Cont) ink.ValueThunk {
 		fmt.Printf("\x1b[2J\x1b[H")
-		return ink.Null, nil
+		return k(ink.Null)
 	})
-	ctx.LoadFunc("dump", func(ctx *ink.Context, _ *ink.AST, _ ink.Pos, _ []ink.Value) (ink.Value, *ink.Err) {
+	ctx.LoadFunc("dump", func(ctx *ink.Context, _ ink.Pos, _ []ink.Value, k ink.Cont) ink.ValueThunk {
 		fmt.Println(ctx.Scope.String())
-		return ink.Null, nil
+		return k(ink.Null)
 	})
 
 	// run interactively in a repl
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		const greenArrow = "\x1b[32;1m>\x1b[0m "
-		fmt.Printf(greenArrow)
+		fmt.Print(greenArrow)
 
 		text, err := reader.ReadString('\n')
 		if err == io.EOF {
@@ -109,11 +109,11 @@ func main() {
 		stdin, _ := os.Stdin.Stat()
 		eng := ink.NewEngine()
 		ctx := eng.CreateContext()
-		var nodes ink.NodeID
+		var node ink.NodeID
 		switch {
 		case *eval != "":
 			var errP *ink.Err
-			nodes, errP = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
+			node, errP = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
 			if errP != nil {
 				ink.LogError(errP)
 				return
@@ -121,7 +121,7 @@ func main() {
 		case len(args) > 0:
 			filePath := args[0]
 			var err *ink.Err
-			if nodes, err = ctx.ExecPath(filePath); err != nil {
+			if node, err = ctx.ExecPath(filePath); err != nil {
 				ink.LogError(err)
 				log.Fatal().
 					Stringer("kind", ink.ErrRuntime).
@@ -130,7 +130,7 @@ func main() {
 			}
 		case stdin.Mode()&os.ModeCharDevice == 0:
 			var errP *ink.Err
-			nodes, errP = ink.ParseReader(eng.AST, "stdin", os.Stdin)
+			node, errP = ink.ParseReader(eng.AST, "stdin", os.Stdin)
 			if errP != nil {
 				ink.LogError(errP)
 				return
@@ -144,10 +144,10 @@ func main() {
 		}
 
 		if *compile {
-			fmt.Println(ink.Compile(nodes, eng.AST))
+			fmt.Println(ink.Compile(node, eng.AST))
 		} else {
 			// just run
-			if _, err := ctx.Eval(nodes); err != nil {
+			if _, err := ctx.Eval(node); err != nil {
 				log.Fatal().Err(err).Stringer("kind", ink.ErrRuntime).Msg("failed to execute")
 			}
 			eng.Listeners.Wait()

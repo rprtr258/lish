@@ -11,7 +11,7 @@ each(range(52500, 11800, ~1), id => (
   }, res => (
     res.type :: {
       'resp' -> true :: {
-      ~(res.status = 400) & ~(res.status = 404) | id % 500 = 0 ->
+      ~(res.status == 400) & ~(res.status == 404) | id % 500 == 0 ->
           log(string(id) + ' ' + string(res.status) + ' ' + string(res.body))
       }
       _ -> out(string(res))

@@ -7,7 +7,7 @@
     this.peek := () => this.data.(len(this.data)-1)
     this.pop := () => (
       res := this.data.(len(this.data)-1)
-      this.data := slice(this.data, 0, len(this.data)-1)
+      this.data = slice(this.data, 0, len(this.data)-1)
       res
     )
     this.clear := () => this.data := []

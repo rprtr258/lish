@@ -19,7 +19,7 @@ type AST struct {
 	Nodes []Node
 }
 
-func NewAstSlice() *AST {
+func NewAst() *AST {
 	return &AST{
 		cache: map[string]NodeID{},
 		Nodes: []Node{},
@@ -143,7 +143,7 @@ type errParse struct {
 
 // Node represents an abstract syntax tree (AST) node in an Ink program.
 type Node interface {
-	Eval(*Scope, *AST, bool) (Value, *Err)
+	Eval(*Scope, *AST, Cont) ValueThunk
 	String() string
 	Position(*AST) Pos
 }
@@ -316,17 +316,17 @@ func (n NodeLiteralBoolean) Position(*AST) Pos {
 	return n.Pos
 }
 
-type NodeObjectEntry struct {
+type NodeCompositeKeyValue struct {
 	Pos
 	Key, Val NodeID
 }
 
-type NodeLiteralObject struct {
+type NodeLiteralComposite struct {
 	Pos
-	Entries []NodeObjectEntry
+	Entries []NodeCompositeKeyValue
 }
 
-func (n NodeLiteralObject) String() string {
+func (n NodeLiteralComposite) String() string {
 	entries := make([]string, len(n.Entries))
 	for i, e := range n.Entries {
 		entries[i] = fmt.Sprintf("#%d: #%d", e.Key, e.Val)
@@ -335,7 +335,7 @@ func (n NodeLiteralObject) String() string {
 		strings.Join(entries, ", "))
 }
 
-func (n NodeLiteralObject) Position(*AST) Pos {
+func (n NodeLiteralComposite) Position(*AST) Pos {
 	return n.Pos
 }
 

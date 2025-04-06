@@ -36,8 +36,8 @@ radius := (x, y) => (
 )
 pixels := reduce(range(0, H, 1), (acc, y) => (
   row := map(range(0, W, 1), x => (
-    radius(x, y) < R :: {
-      true -> [200, 255 * (x / W), 255 * (y / H)]
+    true :: {
+      radius(x, y) < R -> [200, 255 * (x / W), 255 * (y / H)]
       _ -> [80, 255 * (y / H), 255 * (x / W)]
     }
   ))

@@ -297,7 +297,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 		}
 		// may be called as a function, so flows beyond switch block
 	case BraceLeft:
-		entries := make([]NodeObjectEntry, 0)
+		entries := make([]NodeCompositeKeyValue, 0)
 		for tokens[idx].Kind != BraceRight {
 			keyExpr, keyIncr := parseExpression(tokens[idx:], s)
 			idx += keyIncr
@@ -320,7 +320,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}})
 			}
 
-			entries = append(entries, NodeObjectEntry{
+			entries = append(entries, NodeCompositeKeyValue{
 				Key: keyExpr,
 				Val: valExpr,
 				Pos: s.Nodes[keyExpr].Position(s),
@@ -330,7 +330,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 		}
 		idx++ // RightBrace
 
-		return s.Append(NodeLiteralObject{
+		return s.Append(NodeLiteralComposite{
 			Entries: entries,
 			Pos:     tok.Pos,
 		}), idx

@@ -27,8 +27,8 @@ incrementalCopy := (src, dest, offset) => read(src, offset, BUFSIZE, evt => (
       # write the read bit, and recurse back to reading
       write(dest, offset, evt.data, evt => evt.type :: {
         'error' -> log('Encountered an error writing: ' + evt.message)
-        'end' -> dataLength = BUFSIZE :: {
-          true -> incrementalCopy(src, dest, offset + dataLength)
+        'end' -> true :: {
+          dataLength == BUFSIZE -> incrementalCopy(src, dest, offset + dataLength)
         }
       })
     )
@@ -80,8 +80,8 @@ each(['.', 'samples', 'README.md', 'fake.txt'], path => stat(path, evt => evt.ty
       name: evt.data.name
       len: evt.data.len
       mod: evt.data.mod
-      sep: evt.data.dir :: {
-        true -> '/'
+      sep: true :: {
+        evt.data.dir -> '/'
         _ -> ''
       }
     }))

@@ -42,7 +42,7 @@ func parse_(ast *AST, source string) (NodeID, errParse) {
 }
 
 func TestParser_error(t *testing.T) {
-	s := NewAstSlice()
+	s := NewAst()
 	_, err := parse_(s, `)`)
 	require.NotEqual(t, errParse{}, err)
 }
@@ -56,7 +56,7 @@ func TestParser(t *testing.T) {
 		check ...func(*AST, Node) bool,
 	) {
 		t.Run(name, func(t *testing.T) {
-			ast := NewAstSlice()
+			ast := NewAst()
 			expr, err := parse_(ast, source)
 			t.Log(ast.String())
 			require.Equal(t, errParse{}, err)
@@ -364,7 +364,7 @@ func TestParse(t *testing.T) {
 	t.SkipNow()
 	t.Run("mangled.ink", func(t *testing.T) {
 		t.SkipNow()
-		ast := NewAstSlice()
+		ast := NewAst()
 		nodes, err := ParseReader(ast, "testdata/mangled.ink", strings.NewReader(mangled))
 		require.Nil(t, err)
 		t.Log(ast.String())
@@ -388,7 +388,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("iife", func(t *testing.T) {
-		ast := NewAstSlice()
+		ast := NewAst()
 		nodes, err := ParseReader(ast, "iife", strings.NewReader(`f:=(n,m)=>(n),(m=>f(1,m))(25)`))
 		require.Nil(t, err)
 		t.Log(ast.String())

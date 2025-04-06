@@ -5,8 +5,8 @@ readFile := (path, cb) => (
     'error' -> cb(())
     'data' -> (
       dataLen := len(evt.data)
-      dataLen = BufSize :: {
-        true -> sub(offset + dataLen, acc.len(acc) := evt.data)
+      true :: {
+        dataLen == BufSize -> sub(offset + dataLen, acc.len(acc) := evt.data)
         _ -> cb(acc.len(acc) := evt.data)
       }
     )

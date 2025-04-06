@@ -7,19 +7,19 @@
 sortBy := (v, pred) => (
   partition := (v, lo, hi) => (
     pivot := pred(v.(lo))
-    lsub := i => pred(v.(i)) < pivot :: {
-      true -> lsub(i + 1)
+    lsub := i => true :: {
+      pred(v.(i)) < pivot -> lsub(i + 1)
       _ -> i
     }
-    rsub := j => pred(v.(j)) > pivot :: {
-      true -> rsub(j - 1)
+    rsub := j => true :: {
+      pred(v.(j)) > pivot -> rsub(j - 1)
       _ -> j
     }
     (sub := (i, j) => (
       i := lsub(i)
       j := rsub(j)
-      i < j :: {
-        true -> (
+      true :: {
+        i < j -> (
           # inlined swap!
           tmp := v.(i)
           v.(i) := v.(j)
@@ -32,7 +32,7 @@ sortBy := (v, pred) => (
     ))(lo, hi)
   )
   (quicksort := (v, lo, hi) => true :: {
-    len(v) = 0 -> v
+    len(v) == 0 -> v
     lo < hi -> (
       p := partition(v, lo, hi)
       quicksort(v, lo, p)

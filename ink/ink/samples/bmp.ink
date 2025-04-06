@@ -8,8 +8,8 @@ hexsplit := n => (
   acc := [0, 0, 0, 0]
 
   # max 4 bytes
-  decode((sub := (p, i) => p < 256 | i > 3 :: {
-    true -> (
+  decode((sub := (p, i) => true :: {
+    p < 256 | i > 3 -> (
       acc.(i) := p
       acc
     )

@@ -22,7 +22,7 @@ EventBus := () => (
     }
     unsubscribe: (name, callback) => subscribers.(name) :: {
       () -> println(format('No such event "{{.0}}"', [name]))
-      _ -> subscribers.(name) = filter(subscribers.(name), (sub, _) => sub = callback)
+      _ -> subscribers.(name) == filter(subscribers.(name), (sub, _) => sub == callback)
     }
     emit: (name, payload) => subscribers.(name) :: {
       () -> () # no such event, skip
@@ -52,12 +52,12 @@ handleAccountDeleted := (_) => (
 )
 
 handleFundsAdded := (payload) => (
-  balance.value := balance.value + payload.amount
+  balance.value = balance.value + payload.amount
   print(balance.value)
 )
 
 handleFundsRemoved := (payload) => (
-  balance.value := balance.value - payload.amount
+  balance.value = balance.value - payload.amount
   print(balance.value)
 )
 
