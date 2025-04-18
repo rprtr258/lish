@@ -1317,6 +1317,8 @@ func inkString(ctx *Context, pos Pos, in []Value, k Cont) ValueThunk {
 
 	s := func() string {
 		switch v := in[0].(type) {
+		case ValueError:
+			return v.Error()
 		case ValueString:
 			return string(v)
 		case ValueNumber:
