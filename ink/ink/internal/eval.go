@@ -555,7 +555,7 @@ func (n NodeExprBinary) Eval(scope *Scope, ast *AST, k Cont) ValueThunk {
 
 					return k(Null)
 				default:
-					return k(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %d of a non-list/composite value %v", n.Right, left), ast.Nodes[n.Right].Position(ast)}})
+					return k(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %q of a non-list/composite value %v", rightValueStr, left), ast.Nodes[n.Right].Position(ast)}})
 				}
 			})
 		}

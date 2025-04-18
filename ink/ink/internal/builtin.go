@@ -143,6 +143,12 @@ func validateArgType[T any](in []Value, i int, dest *T) string {
 
 	res, ok := in[i].(T)
 	if !ok {
+		if err, ok := in[i].(ValueError); ok {
+			return fmt.Sprintf(
+				"%d-th argument must be %T, but got ERROR: %s",
+				i, *new(T), err.Error(),
+			)
+		}
 		return fmt.Sprintf(
 			"%d-th argument must be %T, but got %T",
 			i, *new(T), in[i],
@@ -1432,9 +1438,9 @@ func inkLen(ctx *Context, pos Pos, in []Value, k Cont) ValueThunk {
 	case ValueString:
 		// TODO: bytes count/rune count/grapheme clusters count?
 		return k(ValueNumber(len(v)))
+	default:
+		return k(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("len() takes a string or composite value, but got %s", in[0]), pos}})
 	}
-
-	return k(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("len() takes a string or composite value, but got %s", in[0]), pos}})
 }
 
 func inkKeys(ctx *Context, pos Pos, in []Value, k Cont) ValueThunk {
