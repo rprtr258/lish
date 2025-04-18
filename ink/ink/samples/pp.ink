@@ -1,3 +1,4 @@
+# implementation of [A prettier printer](https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf)
 # cons :: []Doc -> Doc
 # nil :: Doc # TODO: text('')
 # text :: string -> Doc
