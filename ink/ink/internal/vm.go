@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type Opcode uint
+type Opcode uint8
 
 const (
 	OpConstBoolean Opcode = iota
