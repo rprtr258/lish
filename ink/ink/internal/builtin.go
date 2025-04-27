@@ -36,7 +36,7 @@ func vs(s string) ValueString {
 type NativeFunctionValue struct {
 	name string
 	exec func(*Context, Pos, []Value) Value
-	ctx  *Context // runtime context to dispatch async errors
+	// ctx  *Context // runtime context to dispatch async errors
 }
 
 func (v NativeFunctionValue) String() string {
@@ -55,65 +55,72 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 	return false
 }
 
-// LoadEnvironment loads all builtins (functions and constants) to a given Context.
-func (ctx *Context) LoadEnvironment() {
-	for name, fn := range map[string]func(*Context, Pos, []Value) Value{
-		"import": inkImport,
-		"par":    inkPar,
-
-		// system interfaces
-		"args":   inkArgs,
-		"in":     inkIn,
-		"out":    inkOut,
-		"dir":    inkDir,
-		"make":   inkMake,
-		"stat":   inkStat,
-		"read":   inkRead,
-		"write":  inkWrite,
-		"delete": inkDelete,
-		"listen": inkListen,
-		"req":    inkReq,
-		"rand":   inkRand,
-		"urand":  inkUrand,
-		"time":   inkTime,
-		"wait":   inkWait,
-		"exec":   inkExec,
-		"env":    inkEnv,
-		"exit":   inkExit,
-
-		// math
-		"sin":   inkSin,
-		"cos":   inkCos,
-		"asin":  inkAsin,
-		"acos":  inkAcos,
-		"pow":   inkPow,
-		"ln":    inkLn,
-		"floor": inkFloor,
-
-		// type conversions
-		"string": inkString,
-		"number": inkNumber,
-		"point":  inkPoint,
-		"char":   inkChar,
-
-		// introspection
-		"type": inkType,
-		"len":  inkLen,
-		"keys": inkKeys,
-	} {
-		ctx.LoadFunc(name, fn)
-	}
-
-	// side effects
-	rand.Seed(time.Now().UTC().UnixNano())
+type builtinFn struct {
+	name string
+	fn   func(*Context, Pos, []Value) Value
 }
 
-// LoadFunc loads a single Go-implemented function into a Context.
-func (ctx *Context) LoadFunc(
-	name string,
-	exec func(*Context, Pos, []Value) Value,
-) {
-	ctx.Scope.Set(name, NativeFunctionValue{name, exec, ctx})
+var builtins = []builtinFn{
+	{"import", inkImport},
+	{"par", inkPar},
+
+	// system interfaces
+	{"args", inkArgs},
+	{"in", inkIn},
+	{"out", inkOut},
+	{"dir", inkDir},
+	{"make", inkMake},
+	{"stat", inkStat},
+	{"read", inkRead},
+	{"write", inkWrite},
+	{"delete", inkDelete},
+	{"listen", inkListen},
+	{"req", inkReq},
+	{"rand", inkRand},
+	{"urand", inkUrand},
+	{"time", inkTime},
+	{"wait", inkWait},
+	{"exec", inkExec},
+	{"env", inkEnv},
+	{"exit", inkExit},
+
+	// math
+	{"sin", inkSin},
+	{"cos", inkCos},
+	{"asin", inkAsin},
+	{"acos", inkAcos},
+	{"pow", inkPow},
+	{"ln", inkLn},
+	{"floor", inkFloor},
+
+	// type conversions
+	{"string", inkString},
+	{"number", inkNumber},
+	{"point", inkPoint},
+	{"char", inkChar},
+
+	// introspection
+	{"type", inkType},
+	{"len", inkLen},
+	{"keys", inkKeys},
+}
+
+var builtinsCompilerScope = func() map[string]int {
+	m := make(map[string]int, len(builtins))
+	for i, fn := range builtins {
+		m[fn.name] = i
+	}
+	return m
+}()
+
+// LoadEnvironment loads all builtins (functions and constants) to a given Context.
+func LoadEnvironment() []Value {
+	values := make([]Value, len(builtins))
+	for i, fn := range builtins {
+		// load single Go-implemented function into Context
+		values[i] = NativeFunctionValue{fn.name, fn.fn /*ctx*/}
+	}
+	return values
 }
 
 // Create and return a standard error callback response with the given message
@@ -231,7 +238,7 @@ func inkImport(ctx *Context, pos Pos, in []Value) Value {
 		// The imported program runs in a "child context", a distinct context from
 		// the importing program. The "child" term is a bit of a misnomer as Contexts
 		// do not exist in a hierarchy, but conceptually makes sense here.
-		childCtx := ctx.Engine.CreateContext()
+		childCtx := ctx // TODO: fix .Engine.CreateContext()
 		ctx.Engine.Contexts[importPath] = childCtx
 
 		// Execution here follows updating ctx.Engine.Contexts
@@ -795,7 +802,7 @@ func inkListen(ctx *Context, pos Pos, in []Value) Value {
 	return NativeFunctionValue{
 		name: "close",
 		exec: closer,
-		ctx:  ctx,
+		// ctx:  ctx,
 	}
 }
 
@@ -1058,7 +1065,7 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 
 			return Null
 		},
-		ctx: ctx,
+		// ctx: ctx,
 	}
 }
 
