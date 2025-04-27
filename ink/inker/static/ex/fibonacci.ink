@@ -1,21 +1,21 @@
-` fibonacci sequence generator `
+# fibonacci sequence generator
 
-log := import('std').log
+{log} := import('std.ink')
 
-` naive implementation `
+# naive implementation
 fib := n => n :: {
-	0 -> 0
-	1 -> 1
-	_ -> fib(n - 1) + fib(n - 2)
+  0 -> 0
+  1 -> 1
+  _ -> fib(n - 1) + fib(n - 2)
 }
 
-` memoized / dynamic programming implementation `
+# memoized / dynamic programming implementation
 memo := [0, 1]
 fibMemo := n => (
-	memo.(n) :: {
-		() -> memo.(n) := fibMemo(n - 1) + fibMemo(n - 2)
-	}
-	memo.(n)
+  memo.(n) :: {
+    () -> memo.(n) := fibMemo(n - 1) + fibMemo(n - 2)
+  }
+  memo.(n)
 )
 
 log('fib(20) is 6765:')

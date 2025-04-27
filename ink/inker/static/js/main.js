@@ -1,6 +1,4 @@
-const {
-  StyledComponent,
-} = Torus;
+const {StyledComponent} = Torus;
 
 const EXAMPLES = [
   {
@@ -59,7 +57,7 @@ async function evalInk(inkSource) {
     cache: 'no-cache',
     credentials: 'same-origin',
   });
-  return resp.json();
+  return await resp.json();
 }
 
 async function getExample(slug) {
@@ -67,7 +65,7 @@ async function getExample(slug) {
     method: 'GET',
     cache: 'no-cache',
   });
-  return resp.text();
+  return await resp.text();
 }
 
 function debounce(fn, duration) {
@@ -155,7 +153,6 @@ class IOBox extends StyledComponent {
 
   handleInput(evt) {
     this.stdin = evt.target.value;
-
     this.debouncedPersist();
   }
 
@@ -330,11 +327,9 @@ class IOBox extends StyledComponent {
       </div>
     </div>`;
   }
-
 }
 
 class App extends StyledComponent {
-
   init() {
     this.showExamples = false;
 
@@ -506,7 +501,6 @@ class App extends StyledComponent {
         ExampleList(this.insertExample, this.closeExamples) : null}
     </main>`;
   }
-
 }
 
 const app = new App();

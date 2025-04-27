@@ -476,6 +476,9 @@ func (vm *VM) pop() Value {
 	assert(len(vm.stack) > 0)
 	res := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
+	if err, ok := res.(ValueError); ok { // TODO: remove
+		fmt.Println("ERROR:", err.Error())
+	}
 	return res
 }
 
@@ -986,10 +989,7 @@ func (vm *VM) step() {
 		}
 		vm.push(ValueComposite(res))
 	case OpPop:
-		v := vm.pop()
-		if err, ok := v.(ValueError); ok { // TODO: remove
-			fmt.Println("ERROR:", err.Error())
-		}
+		_ = vm.pop()
 	case OpMatch:
 		matcher := vm.pop()
 		x := vm.peek()
