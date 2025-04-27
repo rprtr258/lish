@@ -133,9 +133,10 @@ func Make(op Opcode, args ...any) Instruction {
 }
 
 type compiler struct {
-	AST   *AST
-	funcs [][]Instruction
-	fnid  fnID
+	AST    *AST
+	funcs  [][]Instruction
+	fnid   fnID
+	scopes []map[string]int
 }
 
 func (c *compiler) emit(op Opcode, args ...any) {
@@ -145,6 +146,22 @@ func (c *compiler) emit(op Opcode, args ...any) {
 func (c *compiler) define(lhs, rhs NodeID) {
 	_, isEmpty := c.AST.Nodes[rhs].(NodeIdentifierEmpty)
 	assert(!isEmpty)
+
+	var scopeAdd func(lhs NodeID)
+	scopeAdd = func(lhs NodeID) {
+		switch leftSide := c.AST.Nodes[lhs].(type) {
+		case NodeIdentifier: // x = y
+			c.scopeAdd(leftSide.Val)
+		case NodeLiteralList: // list destructure: [a, b, c] = list // TODO: test complex cases like [[m11, m12, m13], ...] = m_3x3
+			for _, ln := range leftSide.Vals {
+				scopeAdd(ln)
+			}
+		case NodeLiteralComposite: // dict destructure: {log, format: f} = std// TODO: test complex cases like {x, y: [z, f]} := {x: 1, y: [2, 3]}
+			for _, ln := range leftSide.Entries {
+				scopeAdd(ln.Val)
+			}
+		}
+	}
 
 	var emitLhs func(lhs NodeID)
 	emitLhs = func(lhs NodeID) {
@@ -169,6 +186,7 @@ func (c *compiler) define(lhs, rhs NodeID) {
 	case NodeIdentifier, // x = y
 		NodeLiteralList,      // list destructure: [a, b, c] = list
 		NodeLiteralComposite: // dict destructure: {log, format: f} = std
+		scopeAdd(lhs)
 		c.compile(rhs)
 		emitLhs(lhs)
 		c.emit(OpVarSet)
@@ -203,6 +221,39 @@ func (c *compiler) define(lhs, rhs NodeID) {
 	default:
 		assert(false, "type", fmt.Sprintf("%T", leftSide))
 	}
+}
+
+func logScope(scope map[string]int) {
+	m := make([]string, len(scope))
+	for k, i := range scope {
+		m[i] = k
+	}
+	fmt.Println(m)
+}
+
+func (c *compiler) scopePush() {
+	c.scopes = append(c.scopes, map[string]int{})
+}
+
+func (c *compiler) scopePop() {
+	logScope(c.scope())
+	c.scopes = c.scopes[:len(c.scopes)-1]
+}
+
+func (c *compiler) scopeAdd(ident string) int {
+	// TODO: do not allow shadowing
+	for _, scope := range slices.Backward(c.scopes) {
+		if v, ok := scope[ident]; ok {
+			return v
+		}
+	}
+	scope := c.scope()
+	scope[ident] = len(scope)
+	return scope[ident]
+}
+
+func (c *compiler) scope() map[string]int {
+	return c.scopes[len(c.scopes)-1]
 }
 
 func (c *compiler) compile(n NodeID) {
@@ -282,15 +333,18 @@ func (c *compiler) compile(n NodeID) {
 			c.emit(OpConstNull)
 		} else {
 			c.emit(OpScopePush)
+			c.scopePush()
 			for i, expr := range n.Expressions {
 				c.compile(expr)
 				if i < len(n.Expressions)-1 {
 					c.emit(OpPop)
 				}
 			}
+			c.scopePop()
 			c.emit(OpScopePop)
 		}
 	case NodeIdentifier:
+		c.scopeAdd(n.Val)
 		c.emit(OpVar, n.Val)
 	case NodeIdentifierEmpty:
 		c.emit(OpConstEmpty)
@@ -302,6 +356,7 @@ func (c *compiler) compile(n NodeID) {
 		fnArgs := n.Arguments
 		// TODO: check function type at application site: assertb(len(fnArgs) == len(args), "fnArgs", fnArgs, "args", args)
 		c.emit(OpScopePush)
+		c.scopePush()
 		for _, argIdentNode := range slices.Backward(fnArgs) {
 			switch argIdent := c.AST.Nodes[argIdentNode].(type) { // TODO: args destructure
 			case NodeIdentifier:
@@ -316,6 +371,7 @@ func (c *compiler) compile(n NodeID) {
 		}
 		c.compile(n.Body)
 		c.emit(OpReturn)
+		c.scopePop()
 		c.emit(OpScopePop)
 		c.fnid = oldFnid
 		c.emit(OpConstFunction, ValueFunction{newFnid, &NodeLiteralFunction{Arguments: n.Arguments}, nil})

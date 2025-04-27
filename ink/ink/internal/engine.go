@@ -64,6 +64,9 @@ func (ctx *Context) Eval(node NodeID) Value {
 			}
 		}
 		fmt.Println()
+		// fmt.Println("SCOPE:")
+		// logScope(ctx.Engine.Cmplr.scopes)
+		// fmt.Println()
 	}
 
 	vm := &VM{ctx, []Value{}, []frame{{fnid, 0, &Scope{ctx.Scope, ValueTable{}}}}}
@@ -183,7 +186,7 @@ func NewEngine() *Engine {
 		values:   map[string]Value{},
 		// mu:        sync.Mutex{},
 		Listeners: sync.WaitGroup{},
-		Cmplr:     &compiler{NewAst(), [][]Instruction{}, 0},
+		Cmplr:     &compiler{NewAst(), [][]Instruction{}, 0, []map[string]int{}},
 	}
 }
 
