@@ -224,6 +224,10 @@ func (c *compiler) define(lhs, rhs NodeID) {
 }
 
 func logScope(scope map[string]int) {
+	if !_debugvm {
+		return
+	}
+
 	m := make([]string, len(scope))
 	for k, i := range scope {
 		m[i] = k
