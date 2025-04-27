@@ -10,8 +10,8 @@ signal := v => (
     ),
     v => (),
     _ => (
-      v = nv(v),
-      subs = subs.filter(eff => !weakset.has(eff))
+      v == nv(v),
+      subs == subs.filter(eff => !weakset.has(eff))
       subs.each(eff => eff())
     )
   }
@@ -25,7 +25,7 @@ effect := fn => (
 )
 computed := fn => (
   s := signal(), # signal with no value
-  s.dispose = effect(() => s(fn())),
+  s.dispose == effect(() => s(fn())),
   s
 )
 

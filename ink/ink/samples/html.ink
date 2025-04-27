@@ -1,7 +1,7 @@
 # html rendering library
 
 {format: f, join} := import('str.ink')
-map := import('functional.ink').map
+{map} := import('functional.ink')
 
 classes := classes => join(classes, ' ')
 el := (tag, attrs, children) =>

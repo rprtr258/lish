@@ -5,7 +5,7 @@ hex := import('str.ink').nToH
 
 () => (
   # generate 16 random bytes
-  r := map(urand(16), (c, _) => point(c))
+  r := map(urand(16), point)
 
   # helper to map numbers to uniform hexadecimals
   x := i => hex.(floor(r.(i)/16))+hex.(r.(i)%16)

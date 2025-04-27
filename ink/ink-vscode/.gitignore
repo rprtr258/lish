@@ -110,3 +110,8 @@ dist
 
 
 *.vsix
+\[Content_Types\].xml
+bun.lock
+extension.vsixmanifest
+extension/
+

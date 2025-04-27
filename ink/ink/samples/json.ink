@@ -1,6 +1,6 @@
 # JSON serde
 
-map := import('functional.ink').map
+{map} := import('functional.ink')
 {join: cat, ws?, digit?} := import('str.ink')
 
 # string escape '"'
@@ -36,7 +36,7 @@ reader := s => (
   }
 
   next := () => (
-    state.idx := state.idx + 1
+    state.idx = state.idx + 1
     c := s.(state.idx - 1) :: {
       () -> ''
       _ -> c
@@ -52,9 +52,9 @@ reader := s => (
     next
     peek
     # fast-forward through whitespace
-    ff: () => (sub := () => ws?(peek()) :: {
-      true -> (
-        state.idx := state.idx + 1
+    ff: () => (sub := () => true :: {
+      ws?(peek()) -> (
+        state.idx = state.idx + 1
         sub()
       )
     })()
@@ -66,8 +66,7 @@ reader := s => (
 
 # deserialize string
 deString := r => (
-  next := r.next # TODO: remove this and similar
-  peek := r.peek
+  {next, peek} := r
 
   # known to be a '"'
   next()
@@ -98,8 +97,7 @@ deString := r => (
 
 # deserialize number
 deNumber := r => (
-  next := r.next
-  peek := r.peek
+  {next, peek} := r
   state := {
     # have we seen a '.' yet?
     negate?: false
@@ -113,10 +111,10 @@ deNumber := r => (
     )
   }
 
-  result := (sub := acc => num?(peek()) :: {
-    true -> peek() :: {
-      '.' -> state.decimal? :: {
-        true -> (r.err)()
+  result := (sub := acc => true :: {
+    num?(peek()) -> peek() :: {
+      '.' -> true :: {
+        state.decimal? -> (r.err)()
         _ -> (
           state.decimal? := true
           sub(acc + next())
@@ -127,15 +125,15 @@ deNumber := r => (
     _ -> acc
   })('')
 
-  state.negate? :: {
-    true -> ~number(result)
+  true :: {
+    state.negate? -> ~number(result)
     _ -> number(result)
   }
 )
 
 # deserialize null
 deNull := r => (
-  next := r.next
+  {next} := r
   next() + next() + next() + next() :: {
     'null' -> ()
     _ -> (r.err)()
@@ -144,14 +142,14 @@ deNull := r => (
 
 # deserialize boolean
 deTrue := r => (
-  next := r.next
+  {next} := r
   next() + next() + next() + next() :: {
     'true' -> true
     _ -> (r.err)()
   }
 )
 deFalse := r => (
-  next := r.next
+  {next} := r
   next() + next() + next() + next() + next() :: {
     'false' -> false
     _ -> (r.err)()
@@ -160,9 +158,7 @@ deFalse := r => (
 
 # deserialize list
 deList := r => (
-  next := r.next
-  peek := r.peek
-  ff := r.ff
+  {next, peek, ff} := r
   state := {
     idx: 0
   }
@@ -171,8 +167,8 @@ deList := r => (
   next()
   ff()
 
-  (sub := acc => (r.err?)() :: {
-    true -> ()
+  (sub := acc => true :: {
+    (r.err?)() -> ()
     _ -> peek() :: {
       '' -> (
         (r.err)()
@@ -184,7 +180,7 @@ deList := r => (
       )
       _ -> (
         acc.(state.idx) := der(r)
-        state.idx := state.idx + 1
+        state.idx = state.idx + 1
 
         ff()
         peek() :: {
@@ -200,16 +196,14 @@ deList := r => (
 
 # deserialize composite
 deComp := r => (
-  next := r.next
-  peek := r.peek
-  ff := r.ff
+  {next, peek, ff} := r
 
   # known to be a '{'
   next()
   ff()
 
-  (sub := acc => (r.err?)() :: {
-    true -> ()
+  (sub := acc => true :: {
+    (r.err?)() -> ()
     _ -> peek() :: {
       '' -> (r.err)()
       '}' -> (
@@ -264,26 +258,27 @@ der := r => (
   })
 
   # if there was a parse error, just return null result
-  (r.err?)() :: {
-    true -> ()
+  true :: {
+    (r.err?)() -> ()
     _ -> result
   }
 )
 
 # JSON string to composite
-parse := s => der(reader(s))
+parse := s => der(reader(s)) # TODO: fix hanging on invalid strings
 
 # composite to JSON string
 serialize := c => type(c) :: {
   '()' -> 'null'
   'string' -> '"' + escape(c) + '"'
   'number' -> string(c)
-  'boolean' -> c :: {
-    true -> 'true'
+  'boolean' -> true :: {
+    c -> 'true'
     _ -> 'false'
   }
   'function' -> 'null' # do not serialize functions
   'composite' -> '{' + cat(map(keys(c), k => '"' + escape(k) + '":' + serialize(c.(k))), ',') + '}'
+  'list' -> '[' + cat(map(c, serialize), ', ') + ']'
 }
 
 {

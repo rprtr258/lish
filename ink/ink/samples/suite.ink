@@ -1,47 +1,41 @@
 # ink standard test suite tools
 
-# borrow from std
-log := import('logging.ink').log
-each := import('functional.ink').each
-f := import('str.ink').format
+{log} := import('logging.ink')
+{each} := import('functional.ink')
+{format: f} := import('str.ink')
 
-# suite constructor
-label => (
+(label, suite) => (
   # suite data store
   s := {
     all: 0
     passed: 0
-    msgs: []
   }
-
-  # mark sections of a test suite with human labels
-  mark := label => s.msgs.(len(s.msgs)) := '- ' + label
-
-  # signal end of test suite, print out results
-  end := () => (
-    log(f('suite: {{}}', label))
-    each(s.msgs, m => log('  ' + m))
-    s.passed :: {
-      s.all -> log(f('ALL {{ passed }} / {{ all }} PASSED', s))
-      _ -> (
-        log(f('PARTIAL: {{ passed }} / {{ all }} PASSED', s))
-        exit(1)
-      )
-    }
-  )
 
   # perform a new test case
   indent := '        '
-  test := (label, result, expected) => (
-    s.all := s.all + 1
-    result :: {
-      expected -> s.passed := s.passed + 1
-      _ -> s.msgs.(len(s.msgs)) := f('  * {{ label }}
-  {{ indent }}got {{ result }}
-  {{ indent }}exp {{ expected }}', {label, result, expected, indent})
-    }
+  # mark sections of a test suite with human labels
+  mark := (label, test_fn) => (
+    log(f('suite: {{}}', label))
+    test := (label, result, expected) => (
+      s.all = s.all + 1
+      true :: {
+        result == expected -> s.passed = s.passed + 1
+        _ -> log(f('  * {{ label }}
+    {{ indent }}got {{ result }}
+    {{ indent }}exp {{ expected }}', {label, result, expected, indent}))
+      }
+    )
+    test_fn(test)
   )
 
-  # expose API functions
-  {mark, test, end}
+  suite(mark)
+
+  # print out results
+  true :: {
+    s.passed == s.all -> log(f('ALL {{ passed }} / {{ all }} PASSED', s))
+    _ -> (
+      log(f('PARTIAL: {{ passed }} / {{ all }} PASSED', s))
+      exit(1)
+    )
+  }
 )

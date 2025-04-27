@@ -1,10 +1,10 @@
 # finding long collatz sequences
 
-log := import('logging.ink').log
-f := import('str.ink').format
-pipe := import('functional.ink').pipe
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
+{pipe} := import('functional.ink')
 {range, map, foldl: fold, generate, takeWhile, collect} := import('iter.ink')
-ternary := import('math.ink').ternary
+{ternary} := import('math.ink')
 
 sequence := start => pipe(start, [
   n => generate(n, n => n % 2 :: {

@@ -1,10 +1,10 @@
 # generate bitmap graph images
 
-log := import('logging.ink').log
-f := import('str.ink').format
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
 {range, each, map} := import('functional.ink')
-wf := import('io.ink').writeFile
-bmp := import('bmp.ink').bmp
+{writeFile: wf} := import('io.ink')
+bmp := import('bmp.ink')
 
 # some basic configuration
 WIDTH := 600
@@ -47,7 +47,7 @@ scaleXToGraph := x => (x - halfWidth) / SCALE
 scaleYToGraph := y => (y - halfHeight) / SCALE
 
 # make a big white rectangle
-pixels := map(range(0, WIDTH * HEIGHT, 1), () => white)
+pixels := map(range(0, WIDTH * HEIGHT, 1), _ => white)
 log('finished drawing canvas...')
 
 # axis lines
@@ -55,13 +55,13 @@ midX := scaleXToGraph(halfWidth)
 midY := scaleYToGraph(halfHeight)
 maxX := floor(scaleXToGraph(WIDTH))
 maxY := floor(scaleYToGraph(HEIGHT))
-drawVertAxis := (x, color) => each(RH, y => pixels.(y * WIDTH + scaleXToCanvas(x)) := color)
-drawHorizAxis := (y, color) => each(RW, x => pixels.(scaleYToCanvas(y) * WIDTH + x) := color)
-each(range(1, maxX + 1, 1), x => (
+drawVertAxis := (x, color) => each(RH, (y, _) => pixels.(y * WIDTH + scaleXToCanvas(x)) := color)
+drawHorizAxis := (y, color) => each(RW, (x, _) => pixels.(scaleYToCanvas(y) * WIDTH + x) := color)
+each(range(1, maxX + 1, 1), (x, _) => (
   drawVertAxis(x, grey)
   drawVertAxis(~x, grey)
 ))
-each(range(1, maxY + 1, 1), y => (
+each(range(1, maxY + 1, 1), (y, _) => (
   drawHorizAxis(y, grey)
   drawHorizAxis(~y, grey)
 ))
@@ -73,15 +73,15 @@ log('finished rendering axes...')
 strokeRange := range(0, STROKE, 1)
 
 # make a graph for each function at each x
-each(RW, scaledX => (
+each(RW, (scaledX, _) => (
   x := scaleXToGraph(scaledX)
 
-  each(FUNCTIONS, item => (
+  each(FUNCTIONS, (item, _) => (
     scaledY := scaleYToCanvas((item.f)(x))
 
-    scaledY > 0 & scaledY < HEIGHT :: {
-      true -> each(strokeRange, xoff => (
-        each(strokeRange, yoff => (
+    true :: {
+      scaledY > 0 & scaledY < HEIGHT -> each(strokeRange, (xoff, _) => (
+        each(strokeRange, (yoff, _) => (
           pixels.((scaledY - yoff) * WIDTH + scaledX - xoff) := item.color
         ))
       ))
@@ -92,7 +92,7 @@ log('finished rendering functions...')
 
 # save image
 file := bmp(WIDTH, HEIGHT, pixels)
-wf('graph.bmp', file, done => done :: {
-  true -> log('Done!')
+wf('graph.bmp', file, done => true :: {
+  done -> log('Done!')
   () -> log('Error saving graph :(')
 })

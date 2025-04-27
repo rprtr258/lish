@@ -1,7 +1,7 @@
 # demonstration of Ink calling into other
 # programs with exec(), assumes POSIX system
 
-log := import('logging.ink').log
+{log} := import('logging.ink')
 
 handleExec := evt => evt.type :: {
   'error' -> log(evt.message)
@@ -45,23 +45,24 @@ exec('cat', [], 'lovin-pasta', handleExec)
 (
   log('Should close during execution safely:')
   close := exec('sleep', ['5'], '', () => log('Closed during execution safely!'))
-  wait(1, close)
+  wait(1)
+  close()
 
   # multiple closes do not fail
-  wait(2, close)
+  wait(2)
+  close()
 )
 
 # closes after execution
 (
   log('Should exit safely, then close:')
   close := exec('sleep', ['1'], '', () => log('Exited safely!'))
-  wait(2, () => (
-    close()
-    log('Closed!')
+  wait(2)
+  close()
+  log('Closed!')
 
-    # multiple closes do not fail
-    close()
-    close()
-    close()
-  ))
+  # multiple closes do not fail
+  close()
+  close()
+  close()
 )

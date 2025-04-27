@@ -1,8 +1,8 @@
 # basic HTTP proxy
 
-log := import('logging.ink').log
-f := import('str.ink').format
-slice := import('std.ink').slice
+{log} := import('logging.ink')
+{format: f} := import('str.ink')
+{slice} := import('std.ink')
 
 PORT := 7900
 
@@ -19,8 +19,36 @@ DefaultHeaders := {
   'X-Served-By': 'ink-serve'
 }
 
+# handles when proxied request succeeds
+handleProxyResponse := (dest, data) => (
+  log(f('Proxied {{ dest }} success', {
+    dest
+  }))
+  {
+    status: data.status
+    headers: data.headers.('X-Proxied-By') := 'ink-proxy'
+    body: data.body
+  }
+)
+
+# handles when proxied request fails
+handleProxyError := (dest, data) => (
+  log(f('Error in proxied request to {{ dest }}: {{ err }}', {
+    dest
+    err: data.message
+  }))
+  {
+    status: 502
+    headers: DefaultHeaders
+    body: f('proxied service {{ dest }} was not available for {{ url }}', {
+      dest
+      url: data.url
+    })
+  }
+)
+
 # responds to all requests to the proxy
-handleRequest := (data, end) => (
+handleRequest := data => (
   prefixes := keys(PROXIES)
   max := len(prefixes) - 1
 
@@ -32,60 +60,30 @@ handleRequest := (data, end) => (
     slice(data.url + '/', 0, len(prefix) + 1) :: {
       prefix + '/' -> (
         dest := PROXIES.(prefix) + slice(data.url, len(prefix), len(data.url))
-        req(
-          {
-            method: data.method
-            url: dest
-            headers: data.headers.('X-Proxied-By') := 'ink-proxy'
-            body: data.body
-          }
-          evt => evt.type :: {
-            'error' -> handleProxyError(dest, evt.data, end)
-            'resp' -> handleProxyResponse(dest, evt.data, end)
-          }
-        )
+        evt := req({
+          method: data.method
+          url: dest
+          headers: data.headers.('X-Proxied-By') := 'ink-proxy'
+          body: data.body
+        })
+        evt => evt.type :: {
+          'error' -> handleProxyError(dest, evt.data)
+          'resp' -> handleProxyResponse(dest, evt.data)
+        }
       )
       _ -> i :: {
-        max -> end({
+        max -> {
           status: 404
           headers: DefaultHeaders
           body: 'could not locate proxy destination for ' + data.url
-        })
+        }
         _ -> sub(i + 1)
       }
     }
   ))(0)
 )
 
-# handles when proxied request fails
-handleProxyError := (dest, data, end) => (
-  log(f('Error in proxied request to {{ dest }}: {{ err }}', {
-    dest
-    err: data.message
-  }))
-  end({
-    status: 502
-    headers: DefaultHeaders
-    body: f('proxied service {{ dest }} was not available for {{ url }}', {
-      dest
-      url: data.url
-    })
-  })
-)
-
-# handles when proxied request succeeds
-handleProxyResponse := (dest, data, end) => (
-  log(f('Proxied {{ dest }} success', {
-    dest
-  }))
-  end({
-    status: data.status
-    headers: data.headers.('X-Proxied-By') := 'ink-proxy'
-    body: data.body
-  })
-)
-
 listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
   'error' -> log('Error starting server:' + evt.message)
-  'req' -> handleRequest(evt.data, evt.end)
+  'req' -> handleRequest(evt.data)
 })

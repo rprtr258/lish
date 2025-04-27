@@ -1,20 +1,22 @@
-sqrt := x => pow(x, 0.5)
-# pow := pow
+# power, also stands in for finding roots with exponent < 1
+# pow : (number, number) => number
 E := 2.718281828459045
 exp := x => pow(E, x)
+sqrt := x => pow(x, 0.5)
 
-# ln := ln
+# ln : number => number # natural log
 log := (x, base) => ln(x) / ln(base)
 
-# sin := sin
-# cos := cos
+# sin : number => number  # sine
+# cos : number => number  # cosine
 tan := x => sin(x) / cos(x)
 
-# asin := asin
-# acos := acos
+# asin : number => number # arcsine (inverse sin)
+# acos : number => number # arccosine (inverse cos)
+PI := acos(0) * 2
 
-ternary := (p, x, y) => p :: {
-  true -> x
+ternary := (p, x, y) => true :: {
+  p -> x
   _ -> y
 }
 min := (x, y) => ternary(x < y, x, y)
@@ -27,7 +29,7 @@ ceil := x => fract(x) :: {
   0 -> x
   _ -> fract(x + 1)
 }
-# floor := floor
+# floor : number => number # floor / truncation
 round := x => floor(x + 0.5)
 trunc := x => ternary(x > 0, floor, ceil)(x)
 
@@ -37,6 +39,7 @@ trunc := x => ternary(x > 0, floor, ceil)(x)
   exp
   log
   tan
+  PI
   ternary
   min
   max

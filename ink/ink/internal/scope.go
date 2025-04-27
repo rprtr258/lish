@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -59,6 +60,8 @@ func (s *Scope) String() string {
 		}
 		entries = append(entries, fmt.Sprintf("%s -> %s", k, vstr))
 	}
+
+	sort.Strings(entries)
 
 	return fmt.Sprintf("{\n\t%s\n} -prnt-> %s", strings.Join(entries, "\n\t"), s.parent)
 }

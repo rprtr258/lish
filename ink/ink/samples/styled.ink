@@ -1,4 +1,4 @@
-join := import('str.ink').join
+{join} := import('str.ink')
 
 FgANSI := c => true :: {
   c < 0 -> ''
@@ -74,3 +74,5 @@ styled := (s, mods) =>
   '[' + mod.reset + 'm'
 
 out(styled('ERROR', [mod.fg.red, mod.bold])+'\n')
+
+{mod, styled}

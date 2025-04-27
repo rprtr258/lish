@@ -10,7 +10,7 @@ Future := (T) => {
 # ((T => R) => R) => Future(T)
 future := f => {
   res := {value: ()}
-  f(value => res.value = value)
+  f(value => res.value == value)
   {
     ready?: () => res.value :: {() -> false, _ -> true}
     try_await: () => res.value

@@ -1,419 +1,13 @@
 package internal
 
 import (
+	"cmp"
 	"fmt"
 	"iter"
 	"slices"
-	"strconv"
-	"strings"
 
 	"github.com/rprtr258/fun"
 )
-
-const (
-	_astEmptyIdentifierIdx = 0
-	_astFalseLiteralIdx    = 1
-	_astTrueLiteralIdx     = 2
-)
-
-type AST struct {
-	numbers     map[float64]int
-	identifiers map[string]int
-	strings     map[string]int
-	nodes       []Node
-}
-
-func newAstSlice() *AST {
-	return &AST{
-		numbers:     map[float64]int{},
-		identifiers: map[string]int{},
-		strings:     map[string]int{},
-		nodes: []Node{
-			NodeIdentifierEmpty{},
-			NodeLiteralBoolean{val: false},
-			NodeLiteralBoolean{val: true},
-		},
-	}
-}
-
-func (s *AST) appendIdx(node Node) int {
-	// TODO: position is lost
-	switch node := node.(type) {
-	case NodeIdentifierEmpty:
-		// one empty identifier for all
-		return _astEmptyIdentifierIdx
-	case NodeLiteralBoolean:
-		return fun.IF(node.val, _astTrueLiteralIdx, _astFalseLiteralIdx)
-	case NodeLiteralNumber:
-		if _, ok := s.numbers[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.numbers[node.val] = n
-		}
-		return s.numbers[node.val]
-	case NodeLiteralString:
-		if _, ok := s.strings[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.strings[node.val] = n
-		}
-		return s.strings[node.val]
-	case NodeIdentifier:
-		if _, ok := s.identifiers[node.val]; !ok {
-			n := len(s.nodes)
-			s.nodes = append(s.nodes, node)
-			s.identifiers[node.val] = n
-		}
-		return s.identifiers[node.val]
-	default:
-		n := len(s.nodes)
-		s.nodes = append(s.nodes, node)
-		return n
-	}
-}
-
-func (s AST) String() string {
-	const (
-		_colorLiteral = "#fffd87"
-		_colorIdent   = "#88ff00"
-		_colorExpr    = "#a1c5ff"
-		_colorControl = "#ffa1a1"
-	)
-
-	var sb strings.Builder
-	sb.WriteString("digraph G {\n")
-	sb.WriteString(`node [
-	style=filled
-	shape=rect
-	fillcolor=white
-	fontname="Helvetica,Arial,sans-serif"
-]
-`)
-	for i, n := range s.nodes {
-		typ := strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node")
-		var val string
-		props := map[string]string{}
-		switch n := n.(type) {
-		case NodeLiteralBoolean:
-			props["fillcolor"] = _colorLiteral
-			val = fun.IF(n.val, "true", "false")
-		case NodeLiteralNumber:
-			props["fillcolor"] = _colorLiteral
-			val = fmt.Sprint(n.val)
-		case NodeLiteralString:
-			props["fillcolor"] = _colorLiteral
-			val = "'" + strings.Trim(strconv.Quote(strings.Trim(strconv.Quote(n.val), "\"")), "\"") + "'"
-		case NodeLiteralList, NodeLiteralFunction:
-			props["fillcolor"] = _colorLiteral
-		case NodeIdentifierEmpty:
-			props["fillcolor"] = _colorIdent
-		case NodeIdentifier:
-			props["fillcolor"] = _colorIdent
-			val = n.val
-		case NodeExprUnary:
-			props["fillcolor"] = _colorExpr
-			val = n.operator.String()
-		case NodeExprBinary:
-			props["fillcolor"] = _colorExpr
-			val = n.operator.String()
-		case NodeFunctionCall:
-			props["fillcolor"] = _colorExpr
-		case NodeMatchClause, NodeMatchExpr, NodeExprList:
-			props["fillcolor"] = _colorControl
-		}
-		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
-
-		fmt.Fprintf(&sb, "n%d [\n", i)
-		for k, v := range props {
-			fmt.Fprintf(&sb, "  %s=\"%s\"\n", k, v)
-		}
-		fmt.Fprint(&sb, "]\n")
-	}
-	for i, n := range s.nodes {
-		switch n := n.(type) {
-		case NodeExprList:
-			for k, j := range n.expressions {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
-			}
-		case NodeExprUnary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.operand)
-		case NodeExprBinary:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.left)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.right)
-		case NodeMatchClause:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, n.target)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, n.expression)
-		case NodeMatchExpr:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.condition)
-			for k, j := range n.clauses {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
-			}
-		case NodeLiteralFunction:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.body)
-			for k, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"arg/%d\"]\n", i, j, k)
-			}
-		case NodeFunctionCall:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"func\"]\n", i, n.function)
-			for k, j := range n.arguments {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
-			}
-		}
-	}
-	sb.WriteString("}")
-	return sb.String()
-}
-
-type errParse struct {
-	err *Err
-}
-
-// Node represents an abstract syntax tree (AST) node in an Ink program.
-type Node interface {
-	String() string
-	Position() Pos
-	Eval(*Scope, *AST, bool) (Value, *Err)
-}
-
-type NodeExprUnary struct {
-	Pos
-	operator Kind
-	operand  int
-}
-
-func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s #%d", n.operator, n.operand)
-}
-
-func (n NodeExprUnary) Position() Pos {
-	return n.Pos
-}
-
-type NodeExprBinary struct {
-	Pos
-	operator    Kind
-	left, right int
-}
-
-func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary #%d %s #%d", n.left, n.operator, n.right)
-}
-
-func (n NodeExprBinary) Position() Pos {
-	return n.Pos
-}
-
-type NodeFunctionCall struct {
-	function  int
-	arguments []int
-}
-
-func (n NodeFunctionCall) String() string {
-	var sb strings.Builder
-	sb.WriteString("Call (#")
-	sb.WriteString(strconv.Itoa(n.function))
-	sb.WriteString(") on (")
-	for i, a := range n.arguments {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
-	}
-	sb.WriteString(")")
-	return sb.String()
-}
-
-func (n NodeFunctionCall) Position() Pos {
-	return Pos{} // TODO: n.function.Position()
-}
-
-type NodeMatchClause struct {
-	target, expression int
-}
-
-func (n NodeMatchClause) String() string {
-	return fmt.Sprintf("Clause #%d -> #%d", n.target, n.expression)
-}
-
-func (n NodeMatchClause) Position() Pos {
-	return Pos{} // TODO: return n.target.Position()
-}
-
-type NodeMatchExpr struct {
-	Pos
-	condition int
-	clauses   []int // TODO: inline clauses
-}
-
-func (n NodeMatchExpr) String() string {
-	var sb strings.Builder
-	sb.WriteString("Match on (#")
-	sb.WriteString(strconv.Itoa(n.condition))
-	sb.WriteString(") to {")
-	for i, a := range n.clauses {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(a))
-	}
-	sb.WriteString("}")
-	return sb.String()
-}
-
-func (n NodeMatchExpr) Position() Pos {
-	return n.Pos
-}
-
-type NodeExprList struct {
-	Pos
-	expressions []int
-}
-
-func (n NodeExprList) String() string {
-	var sb strings.Builder
-	sb.WriteString("Expression list (")
-	for i, expr := range n.expressions {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString("#")
-		sb.WriteString(strconv.Itoa(expr))
-	}
-	sb.WriteString(")")
-	return sb.String()
-}
-
-func (n NodeExprList) Position() Pos {
-	return n.Pos
-}
-
-type NodeIdentifierEmpty struct {
-	Pos
-}
-
-func (n NodeIdentifierEmpty) String() string {
-	return "Empty Identifier"
-}
-
-func (n NodeIdentifierEmpty) Position() Pos {
-	return n.Pos
-}
-
-type NodeIdentifier struct {
-	Pos
-	val string
-}
-
-func (n NodeIdentifier) String() string {
-	return fmt.Sprintf("Identifier '%s'", n.val)
-}
-
-func (n NodeIdentifier) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralNumber struct {
-	Pos
-	val float64
-}
-
-func (n NodeLiteralNumber) String() string {
-	return fmt.Sprintf("Number %s", nToS(n.val))
-}
-
-func (n NodeLiteralNumber) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralString struct {
-	Pos
-	val string
-}
-
-func (n NodeLiteralString) String() string {
-	return fmt.Sprintf("String '%s'", n.val)
-}
-
-func (n NodeLiteralString) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralBoolean struct {
-	Pos
-	val bool
-}
-
-func (n NodeLiteralBoolean) String() string {
-	return fmt.Sprintf("Boolean %t", n.val)
-}
-
-func (n NodeLiteralBoolean) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralObject struct {
-	Pos
-	entries []NodeObjectEntry
-}
-
-func (n NodeLiteralObject) String() string {
-	entries := make([]string, len(n.entries))
-	for i, e := range n.entries {
-		entries[i] = e.String()
-	}
-	return fmt.Sprintf("Object {%s}",
-		strings.Join(entries, ", "))
-}
-
-func (n NodeLiteralObject) Position() Pos {
-	return n.Pos
-}
-
-type NodeObjectEntry struct {
-	Pos
-	key, val int
-}
-
-func (n NodeObjectEntry) String() string {
-	return fmt.Sprintf("#%d: #%d", n.key, n.val)
-}
-
-type NodeLiteralList struct {
-	Pos
-	vals []int
-}
-
-func (n NodeLiteralList) String() string {
-	vals := make([]string, len(n.vals))
-	for i, v := range n.vals {
-		vals[i] = "#" + strconv.Itoa(v)
-	}
-	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
-}
-
-func (n NodeLiteralList) Position() Pos {
-	return n.Pos
-}
-
-type NodeLiteralFunction struct {
-	Pos
-	arguments []int
-	body      int
-}
-
-func (n NodeLiteralFunction) String() string {
-	args := make([]string, len(n.arguments))
-	for i, a := range n.arguments {
-		args[i] = "#" + strconv.Itoa(a)
-	}
-	return fmt.Sprintf("Function (%s) => #%d", strings.Join(args, ", "), n.body)
-}
-
-func (n NodeLiteralFunction) Position() Pos {
-	return n.Pos
-}
 
 func guardUnexpectedInputEnd(tokens []Token, idx int) {
 	if idx < len(tokens) {
@@ -421,7 +15,7 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 	}
 
 	if len(tokens) == 0 {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input"), Pos{}}}) // TODO: report filename and position
+		panic(errParse{&Err{nil, ErrSyntax, "unexpected end of input", Pos{}}}) // TODO: report filename and position
 	}
 
 	panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}})
@@ -429,13 +23,12 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
+func parse(s *AST, tokenStream iter.Seq[Token]) (nodes []NodeID, e errParse) {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
-	nodes := []Node{}
 	for i := 0; i < len(tokens); {
-		if tokens[i].kind == Separator {
+		if tokens[i].Kind == Separator {
 			// this sometimes happens when the repl receives comment inputs
 			i++
 			continue
@@ -448,7 +41,7 @@ func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
 					panic(r)
 				}
 
-				LogError(err.err)
+				e = err
 			}
 		}()
 
@@ -456,11 +49,11 @@ func parse(s *AST, tokenStream iter.Seq[Token]) ([]Node, *AST) {
 
 		i += incr
 
-		logNode(s.nodes[expr])
-		nodes = append(nodes, s.nodes[expr])
+		LogNode(s.Nodes[expr])
+		nodes = append(nodes, expr)
 	}
-	logAST(s)
-	return nodes, s
+	LogAST(s)
+	return
 }
 
 var opPriority = map[Kind]int{
@@ -476,20 +69,16 @@ var opPriority = map[Kind]int{
 	OpLogicalXor: 15,
 	OpLogicalOr:  10,
 
-	OpDefine: 0,
+	OpDefine: 1,
 }
 
 func getOpPriority(t Token) int {
 	// higher == greater priority
-	priority, ok := opPriority[t.kind]
-	if !ok {
-		return -1
-	}
-	return priority
+	return cmp.Or(opPriority[t.Kind], -1)
 }
 
 func isBinaryOp(t Token) bool {
-	return fun.Contains(t.kind,
+	return fun.Contains(t.Kind,
 		OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor,
@@ -497,17 +86,17 @@ func isBinaryOp(t Token) bool {
 }
 
 func parseBinaryExpression(
-	leftOperand int,
+	leftOperand NodeID,
 	operator Token,
 	tokens []Token,
 	previousPriority int,
 	s *AST,
-) (int, int) {
+) (NodeID, int) {
 	rightAtom, idx := parseAtom(tokens, s)
 
 	incr := 0
 	ops := []Token{operator}
-	nodes := []int{leftOperand, rightAtom}
+	nodes := []NodeID{leftOperand, rightAtom}
 	// build up a list of binary operations, with tree nodes
 	// where there are higher-priority binary ops
 LOOP:
@@ -550,22 +139,22 @@ LOOP:
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
 	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = s.appendIdx(NodeExprBinary{
-			operator: ops[0].kind,
-			left:     tree,
-			right:    nodes[0],
+		tree = s.Append(NodeExprBinary{
+			Operator: ops[0].Kind,
+			Left:     tree,
+			Right:    nodes[0],
 			Pos:      ops[0].Pos,
 		})
 	}
 	return tree, idx
 }
 
-func parseExpression(tokens []Token, s *AST) (int, int) {
+func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 	idx := 0
 	consumeDanglingSeparator := func() {
 		// bounds check in case parseExpress() called at some point
 		// consumed end token
-		if idx < len(tokens) && tokens[idx].kind == Separator {
+		if idx < len(tokens) && tokens[idx].Kind == Separator {
 			idx++
 		}
 	}
@@ -579,7 +168,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 	nextTok := tokens[idx]
 	idx++
 
-	switch nextTok.kind {
+	switch nextTok.Kind {
 	case Separator:
 		// consuming dangling separator
 		return atom, idx
@@ -595,7 +184,7 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 
 		// Binary expressions are often followed by a match
 		// TODO: support empty match expression ((true by default) :: {n < 1 -> ...})
-		if idx < len(tokens) && tokens[idx].kind == MatchColon {
+		if idx < len(tokens) && tokens[idx].Kind == MatchColon {
 			colonPos := tokens[idx].Pos
 			idx++ // MatchColon
 
@@ -603,9 +192,9 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 			idx += incr
 
 			consumeDanglingSeparator()
-			return s.appendIdx(NodeMatchExpr{
-				condition: binExpr,
-				clauses:   clauses,
+			return s.Append(NodeExprMatch{
+				Condition: binExpr,
+				Clauses:   clauses,
 				Pos:       colonPos,
 			}), idx
 		}
@@ -618,9 +207,9 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 		idx += incr
 
 		consumeDanglingSeparator()
-		return s.appendIdx(NodeMatchExpr{
-			condition: atom,
-			clauses:   clauses,
+		return s.Append(NodeExprMatch{
+			Condition: atom,
+			Clauses:   clauses,
 			Pos:       nextTok.Pos,
 		}), idx
 	default:
@@ -628,34 +217,34 @@ func parseExpression(tokens []Token, s *AST) (int, int) {
 	}
 }
 
-func parseAtom(tokens []Token, s *AST) (int, int) {
+func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 	guardUnexpectedInputEnd(tokens, 0)
 
 	tok, idx := tokens[0], 1
 
-	if tok.kind == OpNegation {
+	if tok.Kind == OpNegation {
 		atom, idx := parseAtom(tokens[idx:], s)
-		return s.appendIdx(NodeExprUnary{
-			operator: tok.kind,
-			operand:  atom,
+		return s.Append(NodeExprUnary{
+			Operator: tok.Kind,
+			Operand:  atom,
 			Pos:      tok.Pos,
 		}), idx + 1
 	}
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	var atom int
-	switch tok.kind {
+	var atom NodeID
+	switch tok.Kind {
 	case LiteralNumber:
-		return s.appendIdx(NodeLiteralNumber{tok.Pos, tok.num}), idx
+		return s.Append(NodeLiteralNumber{tok.Pos, tok.Num}), idx
 	case LiteralString:
-		return s.appendIdx(NodeLiteralString{tok.Pos, tok.str}), idx
+		return s.Append(NodeLiteralString{tok.Pos, tok.Str}), idx
 	case LiteralTrue:
-		return s.appendIdx(NodeLiteralBoolean{tok.Pos, true}), idx
+		return s.Append(NodeLiteralBoolean{tok.Pos, true}), idx
 	case LiteralFalse:
-		return s.appendIdx(NodeLiteralBoolean{tok.Pos, false}), idx
+		return s.Append(NodeLiteralBoolean{tok.Pos, false}), idx
 	case Identifier:
-		if tokens[idx].kind == FunctionArrow {
+		if tokens[idx].Kind == FunctionArrow {
 			atom, idx = parseFunctionLiteral(tokens, s)
 
 			// parseAtom should not consume trailing Separators, but
@@ -663,12 +252,12 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = s.appendIdx(NodeIdentifier{tok.Pos, tok.str})
+			atom = s.Append(NodeIdentifier{tok.Pos, tok.Str})
 		}
 		// may be called as a function, so flows beyond
 		// switch block
 	case IdentifierEmpty:
-		if tokens[idx].kind == FunctionArrow {
+		if tokens[idx].Kind == FunctionArrow {
 			atom, idx = parseFunctionLiteral(tokens, s)
 
 			// parseAtom should not consume trailing Separators, but
@@ -677,11 +266,11 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			return atom, idx - 1
 		}
 
-		return s.appendIdx(NodeIdentifierEmpty{tok.Pos}), idx
+		return s.Append(NodeIdentifierEmpty{tok.Pos}), idx
 	case ParenLeft:
 		// grouped expression or function literal
-		exprs := make([]int, 0)
-		for tokens[idx].kind != ParenRight {
+		exprs := make([]NodeID, 0)
+		for tokens[idx].Kind != ParenRight {
 			expr, incr := parseExpression(tokens[idx:], s)
 
 			idx += incr
@@ -693,7 +282,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 
 		guardUnexpectedInputEnd(tokens, idx)
 
-		if tokens[idx].kind == FunctionArrow {
+		if tokens[idx].Kind == FunctionArrow {
 			atom, idx = parseFunctionLiteral(tokens, s)
 
 			// parseAtom should not consume trailing Separators, but
@@ -701,22 +290,22 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = s.appendIdx(NodeExprList{
-				expressions: exprs,
+			atom = s.Append(NodeExprList{
+				Expressions: exprs,
 				Pos:         tok.Pos,
 			})
 		}
 		// may be called as a function, so flows beyond switch block
 	case BraceLeft:
-		entries := make([]NodeObjectEntry, 0)
-		for tokens[idx].kind != BraceRight {
+		entries := make([]NodeCompositeKeyValue, 0)
+		for tokens[idx].Kind != BraceRight {
 			keyExpr, keyIncr := parseExpression(tokens[idx:], s)
 			idx += keyIncr
 
 			guardUnexpectedInputEnd(tokens, idx)
 
-			var valExpr int
-			if tokens[idx].kind == KeyValueSeparator { // "key: value" pair
+			var valExpr NodeID
+			if tokens[idx].Kind == KeyValueSeparator { // "key: value" pair
 				idx++
 
 				guardUnexpectedInputEnd(tokens, idx)
@@ -725,29 +314,29 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 
 				valExpr = expr
 				idx += valIncr // Separator consumed by parseExpression
-			} else if _, ok := s.nodes[keyExpr].(NodeIdentifier); ok { // "key", shorthand for "key: key"
+			} else if _, ok := s.Nodes[keyExpr].(NodeIdentifier); ok { // "key", shorthand for "key: key"
 				valExpr = keyExpr
 			} else {
 				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}})
 			}
 
-			entries = append(entries, NodeObjectEntry{
-				key: keyExpr,
-				val: valExpr,
-				Pos: s.nodes[keyExpr].Position(),
+			entries = append(entries, NodeCompositeKeyValue{
+				Key: keyExpr,
+				Val: valExpr,
+				Pos: s.Nodes[keyExpr].Position(s),
 			})
 
 			guardUnexpectedInputEnd(tokens, idx)
 		}
 		idx++ // RightBrace
 
-		return s.appendIdx(NodeLiteralObject{
-			entries: entries,
+		return s.Append(NodeLiteralComposite{
+			Entries: entries,
 			Pos:     tok.Pos,
 		}), idx
 	case BracketLeft:
-		vals := make([]int, 0)
-		for tokens[idx].kind != BracketRight {
+		vals := make([]NodeID, 0)
+		for tokens[idx].Kind != BracketRight {
 			expr, incr := parseExpression(tokens[idx:], s)
 
 			idx += incr
@@ -757,8 +346,8 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 		}
 		idx++ // RightBracket
 
-		return s.appendIdx(NodeLiteralList{
-			vals: vals,
+		return s.Append(NodeLiteralList{
+			Vals: vals,
 			Pos:  tok.Pos,
 		}), idx
 	default:
@@ -767,7 +356,7 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 
 	// bounds check here because parseExpression may have
 	// consumed all tokens before this
-	for idx < len(tokens) && tokens[idx].kind == ParenLeft {
+	for idx < len(tokens) && tokens[idx].Kind == ParenLeft {
 		var incr int
 		atom, incr = parseFunctionCall(tokens[idx:], s, atom)
 
@@ -782,14 +371,14 @@ func parseAtom(tokens []Token, s *AST) (int, int) {
 // parses everything that follows MatchColon
 //
 //	does not consume dangling separator -- that's for parseExpression
-func parseMatchBody(tokens []Token, s *AST) ([]int, int) {
+func parseMatchBody(tokens []Token, ast *AST) ([]NodeMatchClause, int) {
 	idx := 1 // LeftBrace
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	clauses := make([]int, 0)
-	for tokens[idx].kind != BraceRight {
-		clauseNode, incr := parseMatchClause(tokens[idx:], s)
+	clauses := make([]NodeMatchClause, 0)
+	for tokens[idx].Kind != BraceRight {
+		clauseNode, incr := parseMatchClause(tokens[idx:], ast)
 
 		idx += incr
 		clauses = append(clauses, clauseNode)
@@ -797,49 +386,56 @@ func parseMatchBody(tokens []Token, s *AST) ([]int, int) {
 		guardUnexpectedInputEnd(tokens, idx)
 	}
 	idx++ // RightBrace
+
+	// NOTE: adding _ -> () as last case
+	if len(clauses) > 0 && !func() bool {
+		_, ok := ast.Nodes[clauses[len(clauses)-1].Target].(NodeIdentifierEmpty)
+		return ok
+	}() {
+		clauses = append(clauses, NodeMatchClause{ast.Append(NodeIdentifierEmpty{}), ast.Append(NodeLiteralList{})})
+	}
+
 	return clauses, idx
 }
 
-func parseMatchClause(tokens []Token, s *AST) (int, int) {
-	atom, idx := parseExpression(tokens, s)
+func parseMatchClause(tokens []Token, ast *AST) (NodeMatchClause, int) {
+	atom, idx := parseExpression(tokens, ast)
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	if tokens[idx].kind != CaseArrow {
+	if tokens[idx].Kind != CaseArrow {
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].Pos}})
 	}
 	idx++ // CaseArrow
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	expr, incr := parseExpression(tokens[idx:], s)
+	expr, incr := parseExpression(tokens[idx:], ast)
 
 	idx += incr
 
-	return s.appendIdx(NodeMatchClause{
-		target:     atom,
-		expression: expr,
-	}), idx
+	return NodeMatchClause{
+		Target:     atom,
+		Expression: expr,
+	}, idx
 }
 
-func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
+func parseFunctionLiteral(tokens []Token, ast *AST) (NodeID, int) {
 	tok, idx := tokens[0], 1
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	arguments := make([]int, 0)
-	switch tok.kind {
+	arguments := make([]NodeID, 0)
+	switch tok.Kind {
 	case ParenLeft:
 	LOOP:
 		for {
 			tk := tokens[idx]
-			switch tk.kind {
+			switch tk.Kind {
 			case Identifier:
-				idNode := s.appendIdx(NodeIdentifier{tk.Pos, tk.str})
-				arguments = append(arguments, idNode)
+				arguments = append(arguments, ast.Append(NodeIdentifier{tk.Pos, tk.Str}))
 			case IdentifierEmpty:
-				idNode := s.appendIdx(NodeIdentifierEmpty{tk.Pos})
-				arguments = append(arguments, idNode)
+				arguments = append(arguments, ast.Append(NodeIdentifierEmpty{tk.Pos}))
 			default:
 				break LOOP
 			}
@@ -847,7 +443,7 @@ func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
 
 			guardUnexpectedInputEnd(tokens, idx)
 
-			if tokens[idx].kind != Separator {
+			if tokens[idx].Kind != Separator {
 				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].Pos}})
 			}
 			idx++ // Separator
@@ -855,46 +451,44 @@ func parseFunctionLiteral(tokens []Token, s *AST) (int, int) {
 
 		guardUnexpectedInputEnd(tokens, idx)
 
-		if tokens[idx].kind != ParenRight {
+		if tokens[idx].Kind != ParenRight {
 			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].Pos}})
 		}
 		idx++ // RightParen
 	case Identifier:
-		idNode := s.appendIdx(NodeIdentifier{tok.Pos, tok.str})
-		arguments = append(arguments, idNode)
+		arguments = append(arguments, ast.Append(NodeIdentifier{tok.Pos, tok.Str}))
 	case IdentifierEmpty:
-		idNode := s.appendIdx(NodeIdentifierEmpty{tok.Pos})
-		arguments = append(arguments, idNode)
+		arguments = append(arguments, ast.Append(NodeIdentifierEmpty{tok.Pos}))
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}})
 	}
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	if tokens[idx].kind != FunctionArrow {
+	if tokens[idx].Kind != FunctionArrow {
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].Pos}})
 	}
 
 	idx++ // FunctionArrow
 
-	body, incr := parseExpression(tokens[idx:], s)
+	body, incr := parseExpression(tokens[idx:], ast)
 
 	idx += incr
 
-	return s.appendIdx(NodeLiteralFunction{
-		arguments: arguments,
-		body:      body,
+	return ast.Append(NodeLiteralFunction{
+		Arguments: arguments,
+		Body:      body,
 		Pos:       tokens[0].Pos,
 	}), idx
 }
 
-func parseFunctionCall(tokens []Token, s *AST, function int) (int, int) {
+func parseFunctionCall(tokens []Token, s *AST, function NodeID) (NodeID, int) {
 	idx := 1
 
 	guardUnexpectedInputEnd(tokens, idx)
 
-	arguments := make([]int, 0)
-	for tokens[idx].kind != ParenRight {
+	arguments := make([]NodeID, 0)
+	for tokens[idx].Kind != ParenRight {
 		expr, incr := parseExpression(tokens[idx:], s)
 
 		idx += incr
@@ -905,8 +499,5 @@ func parseFunctionCall(tokens []Token, s *AST, function int) (int, int) {
 
 	idx++ // RightParen
 
-	return s.appendIdx(NodeFunctionCall{
-		function:  function,
-		arguments: arguments,
-	}), idx
+	return s.Append(NodeFunctionCall{function, arguments}), idx
 }
