@@ -53,6 +53,17 @@ func zeroExtend(s []byte, max int) []byte {
 	return extended
 }
 
+type ValueIndex struct{ scopeIndex } // TODO: not really a value, make it not so
+
+func (v ValueIndex) String() string {
+	return fmt.Sprintf("%d/%d", v.scope, v.var_)
+}
+
+func (v ValueIndex) Equals(other Value) bool {
+	e, ok := other.(ValueIndex)
+	return ok && v.scopeIndex == e.scopeIndex
+}
+
 type ValueError struct{ *Err }
 
 func (v ValueError) String() string {
@@ -246,12 +257,12 @@ func (v ValueComposite) Equals(other Value) bool {
 type ValueFunction struct {
 	id    fnID
 	defn  *NodeLiteralFunction
-	scope *Scope
+	scope Scope
 }
 
 func (v ValueFunction) String() string {
-	if v.scope == nil {
-		return fmt.Sprintf("fn(#%d)", v.id)
+	if v.scope.vt != nil {
+		return fmt.Sprintf("fn(#%d):%s", v.id, v.defn.String())
 	}
 	// ellipsize function body at a reasonable length,
 	// so as not to be too verbose in repl environments
@@ -870,7 +881,7 @@ func evalInkFunction(ctx *Context, fn Value, pos Pos, args ...Value) Value {
 		vm := &VM{ctx, args, []frame{{fn.id, 0, fn.scope}}}
 		return vm.Execute()
 	case NativeFunctionValue:
-		return fn.exec(fn.ctx, pos, args)
+		return fn.exec(ctx, pos, args)
 	default:
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("attempted to call a non-function value %s", fn), pos}}
 	}
@@ -920,12 +931,13 @@ func (n NodeIdentifierEmpty) Eval(_ *Scope, _ *AST) Value {
 }
 
 func (n NodeIdentifier) Eval(scope *Scope, ast *AST) Value {
-	LogScope(scope)
-	val, ok := scope.Get(n.Val)
-	if !ok {
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Val), n.Position(ast)}}
-	}
-	return val
+	panic(1)
+	// LogScope(scope)
+	// val, ok := scope.Get(n.Val)
+	// if !ok {
+	// 	return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Val), n.Position(ast)}}
+	// }
+	// return val
 }
 
 func (n NodeLiteralNumber) Eval(_ *Scope, _ *AST) Value {
@@ -972,7 +984,7 @@ func (n NodeLiteralBoolean) Eval(_ *Scope, _ *AST) Value {
 // 	return listVal
 // }
 
-func (n NodeLiteralFunction) Eval(scope *Scope, _ *AST) Value {
+func (n NodeLiteralFunction) Eval(scope Scope, _ *AST) Value {
 	return ValueFunction{
 		defn:  &n,
 		scope: scope,

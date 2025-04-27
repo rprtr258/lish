@@ -3,12 +3,14 @@ package internal
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -69,7 +71,8 @@ func (ctx *Context) Eval(node NodeID) Value {
 		// fmt.Println()
 	}
 
-	vm := &VM{ctx, []Value{}, []frame{{fnid, 0, &Scope{ctx.Scope, ValueTable{}}}}}
+	// vm := &VM{ctx, []Value{}, []frame{{fnid, 0, &Scope{ctx.Scope.vt}}}}
+	vm := &VM{ctx, []Value{}, []frame{{fnid, 0, Scope{[][]Value{ctx.Scope.vt[0]}}}}}
 	v := vm.Execute()
 	if _debugvm {
 		fmt.Println("RESULT:", v.String())
@@ -186,20 +189,21 @@ func NewEngine() *Engine {
 		values:   map[string]Value{},
 		// mu:        sync.Mutex{},
 		Listeners: sync.WaitGroup{},
-		Cmplr:     &compiler{NewAst(), [][]Instruction{}, 0, []map[string]int{}},
+		Cmplr:     &compiler{NewAst(), [][]Instruction{}, 0, []map[string]int{builtinsCompilerScope}},
 	}
 }
 
 // CreateContext creates and initializes a new Context tied to a given Engine.
 func (eng *Engine) CreateContext() *Context {
+	// side effects
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	ctx := &Context{
 		Engine: eng,
 		Scope: &Scope{
-			parent: nil,
-			vt:     ValueTable{},
+			vt: [][]Value{LoadEnvironment()},
 		},
 	}
 	ctx.resetWd()
-	ctx.LoadEnvironment()
 	return ctx
 }

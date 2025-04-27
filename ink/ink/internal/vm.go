@@ -19,6 +19,7 @@ const (
 	OpConstString
 	OpConstEmpty
 	OpConstNull
+	OpConstIndex
 	OpConstFunction
 	OpOperatorUnary
 	OpOperatorBinary
@@ -53,6 +54,7 @@ var definitions = [opCount]Definition{
 	OpConstString:    {"STR       ", []byte{8 * 2}},
 	OpConstEmpty:     {"EMPTY     ", []byte{}},
 	OpConstNull:      {"NULL      ", []byte{}},
+	OpConstIndex:     {"INDEX      ", []byte{1}},
 	OpConstFunction:  {"FUNC      ", []byte{1}},
 	OpOperatorUnary:  {"UNARY     ", []byte{1}},
 	OpOperatorBinary: {"BINARY    ", []byte{1}},
@@ -167,7 +169,8 @@ func (c *compiler) define(lhs, rhs NodeID) {
 	emitLhs = func(lhs NodeID) {
 		switch leftSide := c.AST.Nodes[lhs].(type) {
 		case NodeIdentifier: // x = y
-			c.emit(OpConstString, leftSide.Val)
+			idx := c.scopeGet(leftSide.Val)
+			c.emit(OpConstIndex, idx)
 		case NodeLiteralList: // list destructure: [a, b, c] = list // TODO: test complex cases like [[m11, m12, m13], ...] = m_3x3
 			for _, ln := range leftSide.Vals {
 				emitLhs(ln)
@@ -244,16 +247,35 @@ func (c *compiler) scopePop() {
 	c.scopes = c.scopes[:len(c.scopes)-1]
 }
 
-func (c *compiler) scopeAdd(ident string) int {
+type scopeIndex struct {
+	scope, var_ int
+}
+
+func (i scopeIndex) String() string {
+	return fmt.Sprintf("%d[%d]", i.scope, i.var_)
+}
+
+func (c *compiler) scopeAdd(ident string) scopeIndex {
 	// TODO: do not allow shadowing
-	for _, scope := range slices.Backward(c.scopes) {
+	for i, scope := range slices.Backward(c.scopes) {
 		if v, ok := scope[ident]; ok {
-			return v
+			return scopeIndex{i, v}
 		}
 	}
 	scope := c.scope()
 	scope[ident] = len(scope)
-	return scope[ident]
+	return scopeIndex{len(c.scopes) - 1, scope[ident]}
+}
+
+func (c *compiler) scopeGet(ident string) scopeIndex {
+	for i, scope := range slices.Backward(c.scopes) {
+		if v, ok := scope[ident]; ok {
+			return scopeIndex{i, v}
+		}
+	}
+
+	assert(false, "ident", ident)
+	return scopeIndex{}
 }
 
 func (c *compiler) scope() map[string]int {
@@ -348,8 +370,8 @@ func (c *compiler) compile(n NodeID) {
 			c.emit(OpScopePop)
 		}
 	case NodeIdentifier:
-		c.scopeAdd(n.Val)
-		c.emit(OpVar, n.Val)
+		idx := c.scopeGet(n.Val)
+		c.emit(OpVar, idx)
 	case NodeIdentifierEmpty:
 		c.emit(OpConstEmpty)
 	case NodeLiteralFunction:
@@ -364,11 +386,11 @@ func (c *compiler) compile(n NodeID) {
 		for _, argIdentNode := range slices.Backward(fnArgs) {
 			switch argIdent := c.AST.Nodes[argIdentNode].(type) { // TODO: args destructure
 			case NodeIdentifier:
-				c.emit(OpConstString, argIdent.Val)
+				idx := c.scopeAdd(argIdent.Val)
+				c.emit(OpConstIndex, idx)
 				c.emit(OpVarSet)
 				c.emit(OpPop)
 			case NodeIdentifierEmpty:
-				c.emit(OpPop)
 			default:
 				assert(false, "arg", fmt.Sprintf("%T", argIdent))
 			}
@@ -378,7 +400,11 @@ func (c *compiler) compile(n NodeID) {
 		c.scopePop()
 		c.emit(OpScopePop)
 		c.fnid = oldFnid
-		c.emit(OpConstFunction, ValueFunction{newFnid, &NodeLiteralFunction{Arguments: n.Arguments}, nil})
+		c.emit(OpConstFunction, ValueFunction{
+			newFnid,
+			&NodeLiteralFunction{Arguments: n.Arguments},
+			Scope{[][]Value{}},
+		})
 	case NodeLiteralList:
 		for _, e := range n.Vals {
 			c.compile(e)
@@ -421,7 +447,7 @@ type fnID int
 type frame struct {
 	fnid  fnID
 	ip    int
-	scope *Scope
+	scope Scope
 }
 
 // TODO: merge w/ Engine/Context
@@ -450,9 +476,18 @@ func (vm *VM) push(v Value) {
 }
 
 func (vm *VM) dumpStack() {
-	fmt.Println("  ENV:")
-	for f := vm.frame().scope; f.parent != nil; f = f.parent {
-		fmt.Println("   ", f.vt)
+	env := vm.frame().scope
+	fmt.Printf("  ENV(len=%d cap=%d):\n", len(env.vt), cap(env.vt))
+	fmt.Print("    0 (builtins):\n      ")
+	for i, v := range env.vt[0] { // builtins
+		fmt.Printf("%d[%v] ", i, v.(NativeFunctionValue).name)
+	}
+	fmt.Println()
+	for scopeIdx, f := range env.vt[1:] {
+		fmt.Printf("    %d(len=%d cap=%d):\n", scopeIdx+1, len(f), cap(f))
+		for i, v := range f {
+			fmt.Printf("      %d: %v\n", i, v)
+		}
 	}
 
 	fmt.Print("  STACK: ")
@@ -869,6 +904,9 @@ func (vm *VM) step() {
 		vm.push(ValueEmpty{})
 	case OpConstNull:
 		vm.push(Null)
+	case OpConstIndex:
+		idx := ins.Args[0].(scopeIndex)
+		vm.push(ValueIndex{idx})
 	case OpOperatorUnary:
 		op := ins.Args[0].(Kind)
 		arg := vm.pop()
@@ -886,7 +924,7 @@ func (vm *VM) step() {
 		}
 		vm.push(ValueList{&res})
 	case OpVar:
-		ident := ins.Args[0].(string)
+		ident := ins.Args[0].(scopeIndex)
 		v, ok := f.scope.Get(ident)
 		assert(ok, "ident", ident)
 		vm.push(v)
@@ -897,8 +935,8 @@ func (vm *VM) step() {
 		var set func(dest, val Value)
 		set = func(dest, val Value) {
 			switch d := dest.(type) {
-			case ValueString: // ident
-				f.scope.Set(string(*d.b), val)
+			case ValueIndex: // ident
+				f.scope.Set(d.scopeIndex, val)
 			case ValueList: // list destructure
 				valList := val.(ValueList)
 				assert(len(*d.xs) == len(*valList.xs), "len(*d.xs)", len(*d.xs), "len(*val.xs)", len(*valList.xs))
@@ -1003,14 +1041,15 @@ func (vm *VM) step() {
 		fni.scope = vm.frame().scope
 		vm.push(fni)
 	case OpScopePush:
-		f.scope = &Scope{f.scope, ValueTable{}}
+		f.scope.vt = slices.Grow(f.scope.vt, 35)
+		f.scope = Scope{append(f.scope.vt, []Value{})} // TODO: prealloc
 	case OpScopePop:
-		f.scope = f.scope.parent
+		f.scope.vt = f.scope.vt[:len(f.scope.vt)-1]
 	case OpCall: // TODO: check that NodeFunctionCall args the same len as required using function type
 		fn := vm.pop()
 		switch fn := fn.(type) {
 		case ValueFunction:
-			vm.framePush(frame{fn.id, 0, fn.scope})
+			vm.framePush(frame{fn.id, 0, f.scope})
 			f.ip--
 		case NativeFunctionValue:
 			nargs := ins.Args[0].(int)
