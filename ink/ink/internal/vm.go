@@ -78,6 +78,7 @@ var definitions = [opCount]Definition{
 type Instruction struct {
 	Op   Opcode
 	Args []any
+	Pos  Pos
 }
 
 func (ins Instruction) String() string {
@@ -114,7 +115,7 @@ func assert(b bool, kvs ...any) {
 	e.Msg("assert failed")
 }
 
-func Make(op Opcode, args ...any) Instruction {
+func Make(op Opcode, pos Pos, args ...any) Instruction {
 	def := definitions[op]
 	assert(len(args) == len(def.Widths), "args", args, "def.Widths", def.Widths)
 
@@ -129,7 +130,7 @@ func Make(op Opcode, args ...any) Instruction {
 	// 	// assertb(len(operand) == int(def.Widths[i]))
 	// 	instruction = append(instruction, operand...)
 	// }
-	return Instruction{op, args}
+	return Instruction{op, args, pos}
 }
 
 type compiler struct {
@@ -139,8 +140,8 @@ type compiler struct {
 	scopes []map[string]int
 }
 
-func (c *compiler) emit(op Opcode, args ...any) {
-	c.funcs[c.fnid] = append(c.funcs[c.fnid], Make(op, args...))
+func (c *compiler) emit(op Opcode, pos Pos, args ...any) {
+	c.funcs[c.fnid] = append(c.funcs[c.fnid], Make(op, pos, args...))
 }
 
 func (c *compiler) define(lhs, rhs NodeID) {
@@ -165,31 +166,35 @@ func (c *compiler) define(lhs, rhs NodeID) {
 
 	var emitLhs func(lhs NodeID)
 	emitLhs = func(lhs NodeID) {
-		switch leftSide := c.AST.Nodes[lhs].(type) {
+		l := c.AST.Nodes[lhs]
+		pos := l.Position(c.AST)
+		switch leftSide := l.(type) {
 		case NodeIdentifier: // x = y
-			c.emit(OpConstString, leftSide.Val)
+			c.emit(OpConstString, pos, leftSide.Val)
 		case NodeLiteralList: // list destructure: [a, b, c] = list // TODO: test complex cases like [[m11, m12, m13], ...] = m_3x3
 			for _, ln := range leftSide.Vals {
 				emitLhs(ln)
 			}
-			c.emit(OpList, len(leftSide.Vals))
+			c.emit(OpList, pos, len(leftSide.Vals))
 		case NodeLiteralComposite: // dict destructure: {log, format: f} = std// TODO: test complex cases like {x, y: [z, f]} := {x: 1, y: [2, 3]}
 			for _, ln := range leftSide.Entries {
-				c.emit(OpConstString, c.AST.Nodes[ln.Key].(NodeIdentifier).Val)
+				c.emit(OpConstString, pos, c.AST.Nodes[ln.Key].(NodeIdentifier).Val)
 				emitLhs(ln.Val)
 			}
-			c.emit(OpComposite, len(leftSide.Entries))
+			c.emit(OpComposite, pos, len(leftSide.Entries))
 		}
 	}
 
-	switch leftSide := c.AST.Nodes[lhs].(type) {
+	l := c.AST.Nodes[lhs]
+	pos := l.Position(c.AST)
+	switch leftSide := l.(type) {
 	case NodeIdentifier, // x = y
 		NodeLiteralList,      // list destructure: [a, b, c] = list
 		NodeLiteralComposite: // dict destructure: {log, format: f} = std
 		scopeAdd(lhs)
 		c.compile(rhs)
 		emitLhs(lhs)
-		c.emit(OpVarSet)
+		c.emit(OpVarSet, pos)
 	case NodeExprBinary: // x.y = z
 		assert(leftSide.Operator == OpAccessor)
 
@@ -198,7 +203,7 @@ func (c *compiler) define(lhs, rhs NodeID) {
 		pathlen := 1
 		switch r := c.AST.Nodes[leftSide.Right].(type) {
 		case NodeIdentifier:
-			c.emit(OpConstString, r.Val)
+			c.emit(OpConstString, pos, r.Val)
 		default:
 			c.compile(leftSide.Right)
 		}
@@ -207,17 +212,18 @@ func (c *compiler) define(lhs, rhs NodeID) {
 			return ok && n.Operator == OpAccessor
 		}() {
 			leftSide = c.AST.Nodes[leftSide.Left].(NodeExprBinary)
-			switch r := c.AST.Nodes[leftSide.Right].(type) {
+			r := c.AST.Nodes[leftSide.Right]
+			switch r := r.(type) {
 			case NodeIdentifier:
-				c.emit(OpConstString, r.Val)
+				c.emit(OpConstString, r.Position(c.AST), r.Val)
 			default:
 				c.compile(leftSide.Right)
 			}
 			pathlen++
 		}
-		c.emit(OpList, pathlen)
+		c.emit(OpList, pos, pathlen)
 		c.compile(leftSide.Left)
-		c.emit(OpSubSet)
+		c.emit(OpSubSet, pos)
 	default:
 		assert(false, "type", fmt.Sprintf("%T", leftSide))
 	}
@@ -261,97 +267,104 @@ func (c *compiler) scope() map[string]int {
 }
 
 func (c *compiler) compile(n NodeID) {
-	switch n := c.AST.Nodes[n].(type) {
+	node := c.AST.Nodes[n]
+	pos := node.Position(c.AST)
+	switch n := node.(type) {
 	case NodeLiteralBoolean:
-		c.emit(OpConstBoolean, n.Val)
+		c.emit(OpConstBoolean, pos, n.Val)
 	case NodeLiteralNumber:
-		c.emit(OpConstNumber, n.Val)
+		c.emit(OpConstNumber, pos, n.Val)
 	case NodeLiteralString:
-		c.emit(OpConstString, n.Val)
+		c.emit(OpConstString, pos, n.Val)
 	case NodeLiteralComposite:
 		for _, e := range n.Entries {
-			switch nk := c.AST.Nodes[e.Key].(type) {
+			nodeKey := c.AST.Nodes[e.Key]
+			pos := nodeKey.Position(c.AST)
+			switch nk := nodeKey.(type) {
 			case NodeIdentifier:
-				c.emit(OpConstString, nk.Val)
+				c.emit(OpConstString, pos, nk.Val)
 			case NodeLiteralNumber:
-				c.emit(OpConstString, fmt.Sprint(nk.Val))
+				c.emit(OpConstString, pos, fmt.Sprint(nk.Val))
 			default:
 				c.compile(e.Key)
 			}
 			c.compile(e.Val)
 		}
-		c.emit(OpComposite, len(n.Entries))
+		c.emit(OpComposite, pos, len(n.Entries))
 	case NodeExprUnary:
 		c.compile(n.Operand)
-		c.emit(OpOperatorUnary, n.Operator)
+		c.emit(OpOperatorUnary, pos, n.Operator)
 	case NodeExprBinary:
 		switch n.Operator {
 		case OpDefine:
 			c.define(n.Left, n.Right)
 		case OpAccessor:
 			c.compile(n.Left)
-			switch keyNode := c.AST.Nodes[n.Right].(type) {
+			r := c.AST.Nodes[n.Right]
+			pos := r.Position(c.AST)
+			switch keyNode := r.(type) {
 			case NodeIdentifier:
-				c.emit(OpConstString, keyNode.Val)
+				c.emit(OpConstString, pos, keyNode.Val)
 			case NodeLiteralString:
 				// // TODO: check type of left, if list || string, require int
 				// if n, err := strconv.Itoa(); err == nil {
 				// } else {
-				c.emit(OpConstString, keyNode.Val)
+				c.emit(OpConstString, pos, keyNode.Val)
 				// }
 			case NodeLiteralNumber:
 				// TODO: check if this is needed
 				// c.emit(OpConstString, nToS(keyNode.Val))
-				c.emit(OpConstNumber, keyNode.Val)
+				c.emit(OpConstNumber, pos, keyNode.Val)
 			case NodeExprUnary, NodeFunctionCall, NodeExprBinary, NodeExprList:
 				c.compile(n.Right)
 			default:
 				assert(false, "type", fmt.Sprintf("%T", c.AST.Nodes[n.Right]))
 			}
-			c.emit(OpOperatorBinary, n.Operator)
+			c.emit(OpOperatorBinary, pos, n.Operator)
 		case OpLogicalAnd:
 			c.compile(n.Left)
-			c.emit(OpDup)
-			c.emit(OpJmpIfNotTrue, 9999999)
+			c.emit(OpDup, pos)
+			c.emit(OpJmpIfNotTrue, pos, 9999999)
 			lastBackPatch := &c.funcs[c.fnid][len(c.funcs[c.fnid])-1].Args[0]
 			c.compile(n.Right)
-			c.emit(OpOperatorBinary, OpLogicalAnd)
-			c.emit(OpNop)
+			c.emit(OpOperatorBinary, pos, OpLogicalAnd)
+			c.emit(OpNop, pos)
 			*lastBackPatch = len(c.funcs[c.fnid])
 		case OpLogicalOr:
 			c.compile(n.Left)
-			c.emit(OpDup)
-			c.emit(OpJmpIfTrue, 9999999)
+			c.emit(OpDup, pos)
+			c.emit(OpJmpIfTrue, pos, 9999999)
 			lastBackPatch := &c.funcs[c.fnid][len(c.funcs[c.fnid])-1].Args[0]
 			c.compile(n.Right)
-			c.emit(OpOperatorBinary, OpLogicalOr)
-			c.emit(OpNop)
+			c.emit(OpOperatorBinary, pos, OpLogicalOr)
+			c.emit(OpNop, pos)
 			*lastBackPatch = len(c.funcs[c.fnid])
 		default:
 			c.compile(n.Left)
 			c.compile(n.Right)
-			c.emit(OpOperatorBinary, n.Operator)
+			c.emit(OpOperatorBinary, pos, n.Operator)
 		}
 	case NodeExprList:
 		if len(n.Expressions) == 0 {
-			c.emit(OpConstNull)
+			c.emit(OpConstNull, pos)
 		} else {
-			c.emit(OpScopePush)
+			c.emit(OpScopePush, pos)
 			c.scopePush()
 			for i, expr := range n.Expressions {
 				c.compile(expr)
+				pos := c.AST.Nodes[expr].Position(c.AST)
 				if i < len(n.Expressions)-1 {
-					c.emit(OpPop)
+					c.emit(OpPop, pos)
 				}
 			}
 			c.scopePop()
-			c.emit(OpScopePop)
+			c.emit(OpScopePop, pos)
 		}
 	case NodeIdentifier:
 		c.scopeAdd(n.Val)
-		c.emit(OpVar, n.Val)
+		c.emit(OpVar, pos, n.Val)
 	case NodeIdentifierEmpty:
-		c.emit(OpConstEmpty)
+		c.emit(OpConstEmpty, pos)
 	case NodeLiteralFunction:
 		oldFnid := c.fnid
 		newFnid := fnID(len(c.funcs))
@@ -359,37 +372,37 @@ func (c *compiler) compile(n NodeID) {
 		c.funcs = append(c.funcs, []Instruction{})
 		fnArgs := n.Arguments
 		// TODO: check function type at application site: assertb(len(fnArgs) == len(args), "fnArgs", fnArgs, "args", args)
-		c.emit(OpScopePush)
+		c.emit(OpScopePush, pos)
 		c.scopePush()
 		for _, argIdentNode := range slices.Backward(fnArgs) {
 			switch argIdent := c.AST.Nodes[argIdentNode].(type) { // TODO: args destructure
 			case NodeIdentifier:
-				c.emit(OpConstString, argIdent.Val)
-				c.emit(OpVarSet)
-				c.emit(OpPop)
+				c.emit(OpConstString, pos, argIdent.Val)
+				c.emit(OpVarSet, pos)
+				c.emit(OpPop, pos)
 			case NodeIdentifierEmpty:
-				c.emit(OpPop)
+				c.emit(OpPop, pos)
 			default:
 				assert(false, "arg", fmt.Sprintf("%T", argIdent))
 			}
 		}
 		c.compile(n.Body)
-		c.emit(OpReturn)
+		c.emit(OpReturn, pos)
 		c.scopePop()
-		c.emit(OpScopePop)
+		c.emit(OpScopePop, pos)
 		c.fnid = oldFnid
-		c.emit(OpConstFunction, ValueFunction{newFnid, &NodeLiteralFunction{Arguments: n.Arguments}, nil})
+		c.emit(OpConstFunction, pos, ValueFunction{newFnid, &NodeLiteralFunction{Arguments: n.Arguments}, nil})
 	case NodeLiteralList:
 		for _, e := range n.Vals {
 			c.compile(e)
 		}
-		c.emit(OpList, len(n.Vals))
+		c.emit(OpList, pos, len(n.Vals))
 	case NodeFunctionCall:
 		for _, expr := range n.Arguments {
 			c.compile(expr)
 		}
 		c.compile(n.Function)
-		c.emit(OpCall, len(n.Arguments))
+		c.emit(OpCall, pos, len(n.Arguments))
 	case NodeExprMatch:
 		c.compile(n.Condition)
 		backpatches := []*any{}
@@ -399,18 +412,18 @@ func (c *compiler) compile(n NodeID) {
 				*lastBackPatch = len(c.funcs[c.fnid])
 			}
 			c.compile(clause.Target)
-			c.emit(OpMatch)
-			c.emit(OpJmpIfNotTrue, 9999999)
+			c.emit(OpMatch, pos)
+			c.emit(OpJmpIfNotTrue, pos, 9999999)
 			lastBackPatch = &c.funcs[c.fnid][len(c.funcs[c.fnid])-1].Args[0]
 			c.compile(clause.Expression)
-			c.emit(OpJmp, 9999999)
+			c.emit(OpJmp, pos, 9999999)
 			backpatches = append(backpatches, &c.funcs[c.fnid][len(c.funcs[c.fnid])-1].Args[0])
 		}
 		*lastBackPatch = len(c.funcs[c.fnid])
 		for _, paddr := range backpatches {
 			*paddr = len(c.funcs[c.fnid])
 		}
-		c.emit(OpMatchClear)
+		c.emit(OpMatchClear, pos)
 	default:
 		assert(false, "type", fmt.Sprintf("%T", n))
 	}
@@ -477,7 +490,7 @@ func (vm *VM) pop() Value {
 	res := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
 	if err, ok := res.(ValueError); ok { // TODO: remove
-		fmt.Println("ERROR:", err.Error())
+		log.Fatal().Err(err).Msg("ERROR")
 	}
 	return res
 }
@@ -487,7 +500,7 @@ func (vm *VM) peek() Value {
 	return vm.stack[len(vm.stack)-1]
 }
 
-func unary(op Kind, arg Value) Value {
+func unary(op Kind, arg Value, pos Pos) Value {
 	switch op {
 	case OpNegation:
 		if isErr(arg) {
@@ -500,14 +513,14 @@ func unary(op Kind, arg Value) Value {
 		case ValueBoolean:
 			return ValueBoolean(!o)
 		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), Pos{} /*ast.Nodes[n.Operand].Position(ast)*/}}
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), pos}}
 		}
 	default:
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("unrecognized unary operator %s", "" /*n*/), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("unrecognized unary operator %s", "" /*n*/), pos}}
 	}
 }
 
-func binary(op Kind, lhs, rhs Value) Value {
+func binary(op Kind, lhs, rhs Value, pos Pos) Value {
 	switch op {
 	case OpDefine:
 		assert(false)
@@ -538,7 +551,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			if s, ok := rhs.(ValueString); ok { // TODO: compile into number in the first place
 				f, err := strconv.ParseFloat(string(*s.b), 64)
 				if err != nil {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("invalid list index: %q", string(*s.b)), Pos{}}} /*ast.Nodes[n.Right].Position(ast)*/
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("invalid list index: %q", string(*s.b)), pos}}
 				}
 				rhs = ValueNumber(f)
 			}
@@ -546,7 +559,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			idx := int(rhs.(ValueNumber))
 			if idx < 0 || idx >= len(*left.xs) {
 				return Null
-				// TODO: return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %d", idx, left, idx), Pos{}}} /*ast.Nodes[n.Right].Position(ast)*/
+				// TODO: return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %d", idx, left, idx), pos}}
 			}
 
 			v := (*left.xs)[idx]
@@ -564,7 +577,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			b := []byte{(*left.b)[idx]}
 			return ValueString{&b}
 		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %v of a non-list/composite value %v", rhs, left), Pos{}}} /*ast.Nodes[n.Right].Position(ast)*/
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %v of a non-list/composite value %v", rhs, left), pos}}
 		}
 	case OpAdd: // TODO: check string + list gives nothing // TODO: check ValueError values are shown explicitly, not ignored
 		if isErr(rhs) {
@@ -611,7 +624,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", lhs, rhs), Pos{}}} // TODO: n.Position(ast))
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", lhs, rhs), pos}}
 	case OpSubtract:
 		if isErr(rhs) {
 			return rhs
@@ -624,7 +637,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", lhs, rhs), Pos{}}} // TODO: n.Position(ast))
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", lhs, rhs), pos}}
 	case OpMultiply:
 		if isErr(rhs) {
 			return rhs
@@ -642,7 +655,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", lhs, rhs), Pos{}}} // TODO: n.Position(ast))
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", lhs, rhs), pos}}
 	case OpDivide:
 		if isErr(rhs) {
 			return rhs
@@ -651,14 +664,14 @@ func binary(op Kind, lhs, rhs Value) Value {
 		if leftNum, isNum := lhs.(ValueNumber); isNum {
 			if right, ok := rhs.(ValueNumber); ok {
 				if right == 0 {
-					return ValueError{&Err{nil, ErrRuntime, "division by zero error", Pos{}}} // TODO: ast.Nodes[n.Right].Position(ast))
+					return ValueError{&Err{nil, ErrRuntime, "division by zero error", pos}}
 				}
 
 				return leftNum / right
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", lhs, rhs), Pos{}}} // TODO: n.Position(ast))
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", lhs, rhs), pos}}
 	case OpModulus:
 		if isErr(rhs) {
 			return rhs
@@ -667,18 +680,18 @@ func binary(op Kind, lhs, rhs Value) Value {
 		if leftNum, isNum := lhs.(ValueNumber); isNum {
 			if right, ok := rhs.(ValueNumber); ok {
 				if right == 0 {
-					return ValueError{&Err{nil, ErrRuntime, "division by zero error in modulus", Pos{}}} // TODO: ast.Nodes[n.Right].Position(ast))
+					return ValueError{&Err{nil, ErrRuntime, "division by zero error in modulus", pos}}
 				}
 
 				if isInteger(right) {
 					return ValueNumber(int(leftNum) % int(right))
 				}
 
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), Pos{}}} // TODO: ast.Nodes[n.Left].Position(ast))
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), pos}}
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support modulus", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support modulus", lhs, rhs), pos}}
 	case OpLogicalAnd:
 		// TODO: do not evaluate `right` here
 		if isErr(rhs) {
@@ -692,7 +705,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 					return ValueNumber(int64(left) & int64(right))
 				}
 
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), Pos{} /*n.Position(ast)*/}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), pos}}
 			}
 		case ValueString:
 			if right, ok := rhs.(ValueString); ok {
@@ -708,7 +721,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 		case ValueBoolean:
 			right, ok := rhs.(ValueBoolean)
 			if !ok {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise & of %[1]T(%[1]v) and %[2]T(%[2]v)", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise & of %[1]T(%[1]v) and %[2]T(%[2]v)", lhs, rhs), pos}}
 			}
 
 			if !left { // false & x = false
@@ -722,7 +735,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			return ValueBoolean(right)
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical &", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical &", lhs, rhs), pos}}
 	case OpLogicalOr:
 		// TODO: do not evaluate `right` here
 		if isErr(rhs) {
@@ -733,7 +746,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 		case ValueNumber:
 			if right, ok := rhs.(ValueNumber); ok {
 				if !isInteger(left) {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), Pos{} /*n.Position(ast)*/}}
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), pos}}
 				}
 
 				return ValueNumber(int64(left) | int64(right))
@@ -760,13 +773,13 @@ func binary(op Kind, lhs, rhs Value) Value {
 
 			right, ok := rhs.(ValueBoolean)
 			if !ok {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T", left, right), Pos{} /*n.Position(ast)*/}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T", left, right), pos}}
 			}
 
 			return ValueBoolean(right)
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", lhs, rhs), pos}}
 	case OpLogicalXor:
 		if isErr(rhs) {
 			return rhs
@@ -779,7 +792,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 					return ValueNumber(int64(left) ^ int64(right))
 				}
 
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", right.String(), left.String()), Pos{} /*n.Position(ast)*/}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", right.String(), left.String()), pos}}
 			}
 		case ValueString:
 			if right, ok := rhs.(ValueString); ok {
@@ -798,7 +811,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", lhs, rhs), pos}}
 	case OpGreaterThan:
 		if isErr(rhs) {
 			return rhs
@@ -815,7 +828,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", lhs, rhs), pos}}
 	case OpLessThan:
 		if isErr(rhs) {
 			return rhs
@@ -832,7 +845,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 			}
 		}
 
-		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", lhs, rhs), Pos{} /*n.Position(ast)*/}}
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", lhs, rhs), pos}}
 	case OpEqual:
 		if isErr(rhs) {
 			return rhs
@@ -840,7 +853,7 @@ func binary(op Kind, lhs, rhs Value) Value {
 
 		return ValueBoolean(lhs.Equals(rhs))
 	}
-	return ValueError{&Err{nil, ErrAssert, fmt.Sprintf("unknown binary operator %s", op.String()), Pos{}}}
+	return ValueError{&Err{nil, ErrAssert, fmt.Sprintf("unknown binary operator %s", op.String()), pos}}
 }
 
 const _debugvm = false
@@ -875,12 +888,12 @@ func (vm *VM) step() {
 	case OpOperatorUnary:
 		op := ins.Args[0].(Kind)
 		arg := vm.pop()
-		vm.push(unary(op, arg))
+		vm.push(unary(op, arg, ins.Pos))
 	case OpOperatorBinary:
 		op := ins.Args[0].(Kind)
 		rhs := vm.pop()
 		lhs := vm.pop()
-		vm.push(binary(op, lhs, rhs))
+		vm.push(binary(op, lhs, rhs, ins.Pos))
 	case OpList:
 		length := ins.Args[0].(int)
 		res := make([]Value, length)
@@ -948,7 +961,7 @@ func (vm *VM) step() {
 			if s, ok := idx.(ValueString); ok { // TODO: compile into number in the first place
 				f, err := strconv.ParseFloat(string(*s.b), 64)
 				if err != nil {
-					vm.push(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("invalid list index: %q", string(*s.b)), Pos{}}} /*ast.Nodes[n.Right].Position(ast)*/)
+					vm.push(ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("invalid list index: %q", string(*s.b)), ins.Pos}})
 					return
 				}
 				idx = ValueNumber(f)
@@ -1018,7 +1031,7 @@ func (vm *VM) step() {
 			for i := range nargs {
 				args[nargs-i-1] = vm.pop()
 			}
-			vm.push(fn.exec(vm.ctx, Pos{}, args))
+			vm.push(fn.exec(vm.ctx, ins.Pos, args))
 		default:
 			assert(false, "arg", fmt.Sprintf("%T", fn))
 		}

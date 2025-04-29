@@ -6,7 +6,7 @@ mapi := (list, f) => reduce(list, (l, item, i) => l.(i) := f(item, i), [])
 # ([]T, T => R) => R
 map := (list, f) => mapi(list, (x, _) => f(x))
 
-# ([]T, (T, number) => []R) => R
+# ([]T, T => []R) => []R
 flatmap := (list, f) => flatten(map(list, f))
 
 # tail recursive filter
@@ -43,7 +43,7 @@ find := (list, f) => (
 # find index of first element in list that satisfies predicate
 # ([]T, (T, number) => boolean) => number | ()
 indexOf := (list, f) => (
-  listIndexed := map(list, (item, i) => {item: item, i: i})
+  listIndexed := mapi(list, (item, i) => {item: item, i: i})
   itemIndex := find(listIndexed, (item, i) => f(item.item, i))
   itemIndex :: {
     () -> ()
@@ -86,7 +86,7 @@ append := (base, child) => (
 )
 
 # flatten by depth 1
-# ([][]T) => []T
+# [][]T => []T
 flatten := list => reduce(list, (acc, x, _) => acc + x, [])
 
 # true iff some items in list are true
@@ -129,7 +129,7 @@ listToObj := (list, f) => reduce(list, (acc, item, i) => acc.(f(item)) := item, 
 
 # Convert an object to a list using a value transformation function.
 # ({[K]: V}, (K, V) => T) => [T]
-objToList := (obj, f) => map(keys(obj), (k, _) => f(k, obj.(k)))
+objToList := (obj, f) => map(keys(obj), k => f(k, obj.(k)))
 
 # like Python's range(), but no optional arguments
 # (number, number, number) => []number
