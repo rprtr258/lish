@@ -6,7 +6,7 @@
   "author": "Linus Lee <linus@thesephist.com>",
   "license": "MIT",
   "dependencies": {
-    "@mozilla/readability": "^0.4.1",
+    "@mozilla/readability": "^0.6.0",
     "jsdom": "^16.6.0",
     "node-fetch": "^2.6.7"
   }
