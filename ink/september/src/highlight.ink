@@ -1,29 +1,12 @@
-` september syntax highlighter command `
+# september syntax highlighter command
 
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-
-log := std.log
-map := std.map
-each := std.each
-slice := std.slice
-cat := std.cat
-
-ansi := import('../vendor/ansi.ink')
-
+{log, map, each, slice, cat} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{Gray, Red, Green, Yellow, Blue, Magenta, Cyan} := import('../vendor/ansi.ink')
 Norm := s => s
-Gray := ansi.Gray
-Red := ansi.Red
-Green := ansi.Green
-Yellow := ansi.Yellow
-Blue := ansi.Blue
-Magenta := ansi.Magenta
-Cyan := ansi.Cyan
 
-Tokenize := import('tokenize.ink')
-Tok := Tokenize.Tok
-tokenize := Tokenize.tokenizeWithComments
+{Tok, tokenizeWithComments: tokenize} := import('tokenize.ink')
 
-` associating token types with their highlight colors `
+# associating token types with their highlight colors
 colorFn := tok => tok.type :: {
   Tok.Separator -> Norm
 
@@ -42,7 +25,7 @@ colorFn := tok => tok.type :: {
 
   Tok.FunctionArrow -> Green
 
-  ` operators are all red `
+  # operators are all red
   Tok.KeyValueSeparator -> Red
   Tok.DefineOp -> Red
   Tok.MatchColon -> Red
@@ -69,12 +52,12 @@ colorFn := tok => tok.type :: {
   _ -> () # should error, unreachable
 }
 
-main := prog => (
+prog => (
   tokens := tokenize(prog)
   spans := map(tokens, (tok, i) => {
     colorFn: [tok.type, tokens.(i + 1)] :: {
-      ` direct function calls are marked green
-        on a best-effort basis `
+      # direct function calls are marked green
+      # on a best-effort basis
       [
         Tok.Ident
         {type: Tok.LParen, val: _, line: _, col: _, i: _}
@@ -93,5 +76,3 @@ main := prog => (
   )
   cat(pcs, '')
 )
-
-{main: main}

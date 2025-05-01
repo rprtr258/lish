@@ -1,16 +1,5 @@
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-log := std.log
-f := std.format
-slice := std.slice
-map := std.map
-each := std.each
-cat := std.cat
-
-Tokenize := import('tokenize.ink')
-Tok := Tokenize.Tok
-typeName := Tokenize.typeName
-tkString := Tokenize.tkString
-
+{log, format: f, slice, map, each, cat} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{Tok, typeName, tkString} := import('tokenize.ink')
 mkiota := import('iota.ink')
 
 iota := mkiota().next
@@ -716,8 +705,8 @@ parseObjectEntry := (tokens, idx) => (
 )
 
 {
-  Node: Node
-  parse: parse
-  ndString: ndString
-  ident?: ident?
+  Node
+  parse
+  ndString
+  ident?
 }

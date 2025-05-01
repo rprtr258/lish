@@ -1,23 +1,8 @@
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-log := std.log
-f := std.format
-clone := std.clone
-map := std.map
-cat := std.cat
-
-str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
-replace := str.replace
-
-quicksort := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/quicksort.ink')
-sort! := quicksort.sort!
-
-Tokenize := import('tokenize.ink')
-Tok := Tokenize.Tok
-
-Parse := import('parse.ink')
-Node := Parse.Node
-ident? := Parse.ident?
-ndString := Parse.ndString
+{log, format: f, clone, map, cat} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{replace} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
+{sort!} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/quicksort.ink')
+{Tok} := import('tokenize.ink')
+{Node, ident?, ndString} := import('parse.ink')
 
 genErr := msg => f('throw new Error("{{0}}")', [replace(msg, '"', '\\"')])
 genEmpty := () => '__Ink_Empty'
@@ -102,7 +87,7 @@ genBinaryExpr := node => node.op :: {
   Tok.LtOp -> f('({{0}} < {{1}})', [gen(node.left), gen(node.right)])
 
   Tok.DefineOp -> [node.left.type, node.left.op] :: {
-    ` DefineOp on a property `
+    # DefineOp on a property
     [Node.BinaryExpr, Tok.AccessorOp] -> (
       tmpDfn := clone(node.left)
       tmpDfn.left := {
@@ -110,11 +95,11 @@ genBinaryExpr := node => node.op :: {
         val: '__ink_assgn_trgt'
       }
       f(
-        ` this production preserves two Ink semantics:
-          - strings can be mutably assigned to.
-          - assignment on strings and composites return the
-            assignment target, not the assigned value,
-            as the value of the expression. `
+        # this production preserves two Ink semantics:
+        # - strings can be mutably assigned to.
+        # - assignment on strings and composites return the
+        #   assignment target, not the assigned value,
+        #   as the value of the expression.
         cat([
           '(() => {let __ink_assgn_trgt = __as_ink_string({{0}})'
           '__is_ink_string(__ink_assgn_trgt) ? __ink_assgn_trgt.assign({{3}}, {{2}}) : {{1}} = {{2}}'
@@ -123,11 +108,11 @@ genBinaryExpr := node => node.op :: {
         [
           gen(node.left.left)
 
-          ` composite assignment `
+          # composite assignment
           genDefineTarget(tmpDfn)
           gen(node.right)
 
-          ` string assignment `
+          # string assignment
           gen(node.left.right)
         ]
       )
@@ -164,7 +149,7 @@ genDefineTarget := node => node.type :: {
 }
 
 genIdent := node => node.val :: {
-  ` avoid JavaScript reserved words `
+  # avoid JavaScript reserved words
   'break' -> '__ink_ident_break'
   'case' -> '__ink_ident_case'
   'catch' -> '__ink_ident_catch'
@@ -228,7 +213,7 @@ genMatchClause := node => f('[() => ({{0}}), () => ({{1}})]', [
   gen(node.expr)
 ])
 
-gen := node => node.type :: {
+node => node.type :: {
   Node.FnCall -> genFnCall(node)
 
   Node.UnaryExpr -> genUnaryExpr(node)
@@ -250,5 +235,3 @@ gen := node => node.type :: {
 
   _ -> genErr('not implemented!')
 }
-
-gen

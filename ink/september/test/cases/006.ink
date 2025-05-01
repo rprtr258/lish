@@ -786,8 +786,7 @@ m('std.range/slice/append/join/cat and stringList')
 
 m('hexadecimal conversions, hex & xeh')
 (
-  hex := std.hex
-  xeh := std.xeh
+  {hex, xeh} := std
 
   # base cases
   t('hex(0)', hex(0), '0')

@@ -577,7 +577,7 @@ func binary(op Kind, lhs, rhs Value, pos Pos) Value {
 			b := []byte{(*left.b)[idx]}
 			return ValueString{&b}
 		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %v of a non-list/composite value %v", rhs, left), pos}}
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %v of a non-list/string/composite value %v", rhs, left), pos}}
 		}
 	case OpAdd: // TODO: check string + list gives nothing // TODO: check ValueError values are shown explicitly, not ignored
 		if isErr(rhs) {

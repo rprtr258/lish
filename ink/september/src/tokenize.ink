@@ -1,20 +1,6 @@
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-log := std.log
-f := std.format
-slice := std.slice
-map := std.map
-reduce := std.reduce
-every := std.every
-
-str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
-digit? := str.digit?
-hasPrefix? := str.hasPrefix?
-index := str.index
-
+{log, format: f, slice, map, reduce, every} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{digit?, hasPrefix?, index} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 mkiota := import('iota.ink')
-
-Newline := char(10)
-Tab := char(9)
 
 iota := mkiota().next
 Tok := {
@@ -68,16 +54,12 @@ typeName := type => reduce(keys(Tok), (acc, k) => Tok.(k) :: {
   _ -> acc
 }, '(unknown token)')
 
-tkString := tok => f('{{ 0 }}({{ 1 }}) @ {{2}}:{{3}}'
-  [typeName(tok.type), tok.val, tok.line, tok.col])
+tkString := tok => f(
+  '{{ 0 }}({{ 1 }}) @ {{2}}:{{3}}'
+  [typeName(tok.type), tok.val, tok.line, tok.col]
+)
 
-token := (type, val, line, col, i) => {
-  type: type
-  val: val
-  line: line
-  col: col
-  i: i
-}
+token := (type, val, line, col, i) => {type, val, line, col, i}
 
 tokenizeWithOpt := (s, lexComments) => (
   S := {
@@ -174,7 +156,7 @@ tokenizeWithOpt := (s, lexComments) => (
 
   hasPrefix?(s, '#!') :: {
     true -> (
-      S.i := index(s, Newline)
+      S.i := index(s, '\n')
       S.line := S.line + 1
     )
   }
@@ -206,7 +188,7 @@ tokenizeWithOpt := (s, lexComments) => (
         )
       }
       [_, true] -> c :: {
-        Newline -> (
+        '\n' -> (
           S.line := S.line + 1
           S.col := 0
           S.strbuf := S.strbuf + c
@@ -226,7 +208,7 @@ tokenizeWithOpt := (s, lexComments) => (
       _ -> c :: {
         '`' -> s.(S.i + 1) :: {
           ` line comment `
-          '`' -> advance := index(slice(s, S.i, len(s)), Newline) :: {
+          '`' -> advance := index(slice(s, S.i, len(s)), '\n') :: {
             ~1 -> (
               lexComments :: {
                 true -> commit(token(
@@ -269,7 +251,7 @@ tokenizeWithOpt := (s, lexComments) => (
             S.i := S.i + 1
             (sub := () => s.(S.i) :: {
               '`' -> S.col := S.col + 1
-              Newline -> (
+              '\n' -> (
                 S.i := S.i + 1
                 S.line := S.line + 1
                 S.col := 0
@@ -295,13 +277,13 @@ tokenizeWithOpt := (s, lexComments) => (
             sub()
           )
         }
-        Newline -> (
+        '\n' -> (
           ensureSeparator()
           S.line := S.line + 1
           S.col := 0
           sub()
         )
-        Tab -> (
+        '\t' -> (
           commitClear()
           sub()
         )
@@ -449,8 +431,8 @@ tokenizeWithOpt := (s, lexComments) => (
 )
 
 {
-  Tok: Tok
+  Tok
   tokenize: s => tokenizeWithOpt(s, false)
   tokenizeWithComments: s => tokenizeWithOpt(s, true)
-  tkString: tkString
+  tkString
 }

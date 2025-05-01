@@ -1,21 +1,6 @@
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-
-log := std.log
-f := std.format
-map := std.map
-each := std.each
-filter := std.filter
-clone := std.clone
-append := std.append
-
-Tokenize := import('tokenize.ink')
-Tok := Tokenize.Tok
-tkString := Tokenize.tkString
-
-Parse := import('parse.ink')
-Node := Parse.Node
-ident? := Parse.ident?
-ndString := Parse.ndString
+{log, format: f, map, each, filter, clone, append} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{Tok, tkString} := import('tokenize.ink')
+{Node, ident?, ndString} := import('parse.ink')
 
 decl? := expr => expr.type = Node.BinaryExpr & expr.op = Tok.DefineOp & ident?(expr.left)
 
@@ -29,16 +14,16 @@ analyzeSubexpr := (node, ctx, tail?) => node.type :: {
       (n, i) => analyzeSubexpr(n, ctx, i + 1 = len(node.exprs))
     )
 
-    ` do not re-declare function parameters `
+    # do not re-declare function parameters
     node.decls := filter(keys(ctx.decls), decl => ctx.args.(decl) = ())
     node
   )
   Node.FnLiteral -> (
     ctx := clone(ctx)
 
-    ` we ought only count as "recursion" when a function directly calls
-    itself -- we do not count references to itself in other callbacks,
-    which may be called asynchronously. `
+    # we ought only count as "recursion" when a function directly calls
+    # itself -- we do not count references to itself in other callbacks,
+    # which may be called asynchronously.
     ctx.enclosingFnLit :: {
       node -> ()
       _ -> ctx.enclosingFn := ()
@@ -52,7 +37,7 @@ analyzeSubexpr := (node, ctx, tail?) => node.type :: {
 
     node.body := analyzeSubexpr(node.body, ctx, true)
 
-    ` do not re-declare function parameters `
+    # do not re-declare function parameters
     node.decls := filter(keys(ctx.decls), decl => ctx.args.(decl) = ())
     node
   )
