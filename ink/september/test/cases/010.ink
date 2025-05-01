@@ -1,4 +1,4 @@
-` object literal {} in a value position in match expression `
+# object literal {} in a value position in match expression
 
 r := ({a: 'b', c: 42} :: {
   () -> 'wrong 1'
@@ -8,4 +8,3 @@ r := ({a: 'b', c: 42} :: {
 
 out('right: ')
 out(r + char(10))
-

@@ -1,4 +1,4 @@
-` parsing tests, does not run `
+# parsing tests, does not run
 
 2 * 3.14 + 4, 5 - 6 / 7
 'h`ello' + 'world'
@@ -26,8 +26,8 @@ x => 9 + x * x
 
 'x' + type('hi') :: {
   true -> 9 & 3 + x * x
-  ` block comment
-    that spans multiple lines `
+  # block comment
+  # that spans multiple lines
   Node.CaseArrow -> pow(10 + 12, 2)
   double(a, b, c) - 1 -> 2 + 3 = 1 + 4
   _ -> (

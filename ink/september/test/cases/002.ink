@@ -1,8 +1,6 @@
-` local and global variable scopes `
+# local and global variable scopes
 
-std := import('./runtime/std')
-
-log := std.log
+{log} := import('./runtime/std')
 
 log('should print 2, 5, 5, 5, 20, 5')
 
@@ -37,7 +35,7 @@ a := {}
 log(a.x := 'yyy')
 log(({}.to := 2).to)
 
-` scope inside match clause condition in fn literal `
+# scope inside match clause condition in fn literal
 max := 1
 fn := () => max := 3 :: {
   3 -> 'right'

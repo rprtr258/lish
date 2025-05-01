@@ -1,9 +1,6 @@
-` test: std.clone `
+# test: std.clone
 
-std := import('./runtime/std')
-
-log := std.log
-clone := std.clone
+{log, clone} := import('./runtime/std')
 
 x := {
   key: 'value'
@@ -18,4 +15,3 @@ x.key := 'v2'
 x.ork.len(x.ork) := 9
 log(x)
 log(y)
-

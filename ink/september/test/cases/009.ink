@@ -1,11 +1,7 @@
-` tail call elimination tests
-  with a large fibonacci seq `
+# tail call elimination tests
+# with a large fibonacci seq
 
-std := import('./runtime/std')
-
-log := std.log
-range := std.range
-each := std.each
+{log, range, each} := import('./runtime/std')
 
 # fibonacci
 fib := n => (sub := (a, b, i) => i :: {
@@ -29,4 +25,3 @@ sub := (acc, i) => i :: {
 sum := n => sub(0, n)
 
 each(map(range(1, 6, 1), exp => pow(10, exp)), n => log(sum(n)))
-

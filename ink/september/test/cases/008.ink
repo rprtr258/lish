@@ -1,16 +1,12 @@
-` prime sieve
-  taken from thesephist/ink/samples/`
+# prime sieve
+# taken from thesephist/ink/samples/
 
-std := import('./runtime/std')
-# std := import('../../vendor/std')
+{log, filter, stringList} := import('./runtime/std')
+# {log, filter, stringList} := import('../../vendor/std')
 
-log := std.log
-filter := std.filter
-stringList := std.stringList
-
-` is a single number prime? `
+# is a single number prime?
 isPrime := n => (
-  ` is n coprime with nums < p? `
+  # is n coprime with nums < p?
   max := floor(pow(n, 0.5)) + 1
   (ip := p => p :: {
     max -> true
@@ -18,10 +14,10 @@ isPrime := n => (
       0 -> false
       _ -> ip(p + 1)
     }
-  })(2) ` start with smaller # = more efficient `
+  })(2) # start with smaller # = more efficient
 )
 
-` build a list of consecutive integers from 2 .. max `
+# build a list of consecutive integers from 2 .. max
 buildConsecutive := max => (
   peak := max + 1
   acc := []
@@ -35,7 +31,7 @@ buildConsecutive := max => (
   acc
 )
 
-` primes under N are numbers 2 .. N, filtered by isPrime `
+# primes under N are numbers 2 .. N, filtered by isPrime
 getPrimesUnder := n => filter(buildConsecutive(n), isPrime)
 
 ps := getPrimesUnder(1250)

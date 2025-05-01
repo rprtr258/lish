@@ -1,10 +1,7 @@
-` minimal quicksort implementation
-  using hoare partition `
+# minimal quicksort implementation
+# using hoare partition
 
-std := import('./runtime/std')
-
-map := std.map
-clone := std.clone
+{map, clone, range, log, stringList: list} := import('./runtime/std')
 
 sortBy := (v, pred) => (
   vPred := map(v, pred)
@@ -51,14 +48,9 @@ sortBy := (v, pred) => (
 )
 
 sort! := v => sortBy(v, x => x)
-
 sort := v => sort!(clone(v))
 
-` TEST `
-range := std.range
-log := std.log
-list := std.stringList
-
+# TEST
 rint := () => floor(rand() * 500)
 L := map(range(0, 250, 1), rint)
 Before := clone(L)

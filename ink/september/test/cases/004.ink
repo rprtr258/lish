@@ -1,18 +1,16 @@
-` fibonacci sequence generator
-  copied from ink/samples/fib.ink `
+# fibonacci sequence generator
+# copied from ink/samples/fib.ink
 
-std := import('./runtime/std')
+{log} := import('./runtime/std')
 
-log := std.log
-
-` naive implementation `
+# naive implementation
 fib := n => n :: {
   0 -> 0
   1 -> 1
   _ -> fib(n - 1) + fib(n - 2)
 }
 
-` memoized / dynamic programming implementation `
+# memoized / dynamic programming implementation
 memo := [0, 1]
 fibMemo := n => (
   memo.(n) :: {

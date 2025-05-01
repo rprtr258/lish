@@ -1,12 +1,8 @@
-` command-line interface abstractions
-  for [cmd] [verb] [options] form`
+# command-line interface abstractions
+# for [cmd] [verb] [options] form
 
-std := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
-str := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
-
-each := std.each
-slice := std.slice
-hasPrefix? := str.hasPrefix?
+{each, slice} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/std.ink')
+{hasPrefix?} := import('https://gist.githubusercontent.com/rprtr258/e208d8a04f3c9a22b79445d4e632fe98/raw/str.ink')
 
 maybeOpt := part => true :: {
   hasPrefix?(part, '--') -> slice(part, 2, len(part))
@@ -14,14 +10,12 @@ maybeOpt := part => true :: {
   _ -> ()
 }
 
-`
-Supports:
-  -opt val
-  --opt val
-  -opt=val
-  --opt val
-all other values are considered args
-`
+# Supports:
+#   -opt val
+#   --opt val
+#   -opt=val
+#   --opt val
+# all other values are considered args
 parsed := () => (
   as := args()
 
@@ -37,20 +31,20 @@ parsed := () => (
   }
   each(rest, part => [maybeOpt(part), s.lastOpt] :: {
     [(), ()] -> (
-      ` not opt, no prev opt `
+      # not opt, no prev opt
       args.len(args) := part
     )
     [(), _] -> (
-      ` not opt, prev opt exists `
+      # not opt, prev opt exists
       opts.(s.lastOpt) := part
       s.lastOpt := ()
     )
     [_, ()] -> (
-      ` is opt, no prev opt `
+      # is opt, no prev opt
       s.lastOpt := maybeOpt(part)
     )
     _ -> (
-      ` is opt, prev opt exists `
+      # is opt, prev opt exists
       opts.(s.lastOpt) := true
       s.lastOpt := maybeOpt(part)
     )
@@ -62,10 +56,10 @@ parsed := () => (
   }
 
   {
-    verb: verb
-    opts: opts
-    args: args
+    verb
+    opts
+    args
   }
 )
 
-{parsed: parsed}
+{parsed}

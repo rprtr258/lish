@@ -1,4 +1,4 @@
-` ANSI terminal escape codes `
+# ANSI terminal escape codes
 
 Esc := ''
 
@@ -13,7 +13,7 @@ Clear := Esc + '[2J' + Home
 ClearLine := Esc + '[2K' + Reset
 ClearLastLine := Esc + '[0F' + ClearLine
 
-` color sequences `
+# color sequences
 
 Weight := {
   Regular: 0

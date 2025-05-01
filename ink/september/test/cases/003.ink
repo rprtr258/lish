@@ -1,4 +1,4 @@
-` objects and lists `
+# objects and lists
 
 obj := {
   first: 1
@@ -10,7 +10,7 @@ obj := {
 }
 arr := [1, 2, 3, 4, 5]
 
-log := x => out(string(x) + char(10))
+log := x => out(string(x) + '\n')
 
 log(len(obj))
 log(len(arr))
@@ -25,4 +25,3 @@ log(obj)
 log(arr)
 
 log(log)
-
