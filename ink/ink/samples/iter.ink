@@ -3,15 +3,6 @@
 # Iter(T)
 empty := () => ()
 
-# (number, number, number) => Iter(number)
-range := (start, end, step) => (
-  true :: {
-    step == 0 -> empty
-    step < 0 -> takeWhile(generate(start, x => x + step), x => x > end)
-    step > 0 -> takeWhile(generate(start, x => x + step), x => x < end)
-  }
-)
-
 generate := (x0, f) => (
   x := {value: x0}
   () => (
@@ -19,6 +10,19 @@ generate := (x0, f) => (
     x.value = f(x.value)
     res
   )
+)
+
+# () => Iter(int)
+count := () => generate(1, n => n + 1)
+
+# (Iter(A), Iter(B)) => Iter([A, B])
+zip := (l, r) => () => (
+  a := l()
+  b := r()
+  true :: {
+    (a == ()) | (b == ()) -> ()
+    _ => [a, b]
+  }
 )
 
 # TODO: make methods of iterator
@@ -64,6 +68,15 @@ takeWhile := (it, f) => (
         )
       }
     )
+  }
+)
+
+# (number, number, number) => Iter(number)
+range := (start, end, step) => (
+  true :: {
+    step == 0 -> empty
+    step < 0 -> takeWhile(generate(start, x => x + step), x => x > end)
+    step > 0 -> takeWhile(generate(start, x => x + step), x => x < end)
   }
 )
 
