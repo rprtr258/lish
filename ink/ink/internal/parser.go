@@ -10,15 +10,14 @@ import (
 )
 
 func guardUnexpectedInputEnd(tokens []Token, idx int) {
-	if idx < len(tokens) {
+	switch {
+	case idx < len(tokens):
 		return
-	}
-
-	if len(tokens) == 0 {
+	case len(tokens) == 0:
 		panic(errParse{&Err{nil, ErrSyntax, "unexpected end of input", Pos{}}}) // TODO: report filename and position
+	default:
+		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}})
 	}
-
-	panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}})
 }
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).

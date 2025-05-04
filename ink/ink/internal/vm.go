@@ -97,7 +97,7 @@ func (ins Instruction) String() string {
 	return sb.String()
 }
 
-const _asserts = false
+const _asserts = true
 
 func assert(b bool, kvs ...any) {
 	if !_asserts {
