@@ -66,10 +66,10 @@ const (
 
 	ParenLeft
 	ParenRight
-	BracketLeft
-	BracketRight
-	BraceLeft
-	BraceRight
+	SquareParenLeft
+	SquareParenRight
+	CurlyParenLeft
+	CurlyParenRight
 )
 
 func (kind Kind) String() string {
@@ -155,13 +155,13 @@ func (kind Kind) String() string {
 		return "'('"
 	case ParenRight:
 		return "')'"
-	case BracketLeft:
+	case SquareParenLeft:
 		return "'['"
-	case BracketRight:
+	case SquareParenRight:
 		return "']'"
-	case BraceLeft:
+	case CurlyParenLeft:
 		return "'{'"
-	case BraceRight:
+	case CurlyParenRight:
 		return "'}'"
 
 	default:
@@ -267,7 +267,7 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 		ensureSeparator := func() {
 			commitClear()
 			switch lastKind {
-			case Separator, ParenLeft, BracketLeft, BraceLeft,
+			case Separator, ParenLeft, SquareParenLeft, CurlyParenLeft,
 				OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus, OpNegation,
 				OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor,
 				KeyValueSeparator, FunctionArrow, MatchColon, CaseArrow:
@@ -459,15 +459,15 @@ func tokenize(file string, r io.Reader) iter.Seq[Token] {
 				ensureSeparator()
 				commitChar(ParenRight)
 			case char == '[':
-				commitChar(BracketLeft)
+				commitChar(SquareParenLeft)
 			case char == ']':
 				ensureSeparator()
-				commitChar(BracketRight)
+				commitChar(SquareParenRight)
 			case char == '{':
-				commitChar(BraceLeft)
+				commitChar(CurlyParenLeft)
 			case char == '}':
 				ensureSeparator()
-				commitChar(BraceRight)
+				commitChar(CurlyParenRight)
 			default:
 				buf = append(buf, char)
 			}

@@ -295,9 +295,9 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 			})
 		}
 		// may be called as a function, so flows beyond switch block
-	case BraceLeft:
+	case CurlyParenLeft:
 		entries := make([]NodeCompositeKeyValue, 0)
-		for tokens[idx].Kind != BraceRight {
+		for tokens[idx].Kind != CurlyParenRight {
 			keyExpr, keyIncr := parseExpression(tokens[idx:], s)
 			idx += keyIncr
 
@@ -333,9 +333,9 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 			Entries: entries,
 			Pos:     tok.Pos,
 		}), idx
-	case BracketLeft:
+	case SquareParenLeft:
 		vals := make([]NodeID, 0)
-		for tokens[idx].Kind != BracketRight {
+		for tokens[idx].Kind != SquareParenRight {
 			expr, incr := parseExpression(tokens[idx:], s)
 
 			idx += incr
@@ -376,7 +376,7 @@ func parseMatchBody(tokens []Token, ast *AST) ([]NodeMatchClause, int) {
 	guardUnexpectedInputEnd(tokens, idx)
 
 	clauses := make([]NodeMatchClause, 0)
-	for tokens[idx].Kind != BraceRight {
+	for tokens[idx].Kind != CurlyParenRight {
 		clauseNode, incr := parseMatchClause(tokens[idx:], ast)
 
 		idx += incr
