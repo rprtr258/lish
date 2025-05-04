@@ -22,7 +22,7 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(s *AST, tokenStream iter.Seq[Token]) (nodes []NodeID, e errParse) {
+func parse(ast *AST, tokenStream iter.Seq[Token]) (nodes []NodeID, e errParse) {
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
 	tokens := slices.Collect(tokenStream)
 
@@ -44,14 +44,14 @@ func parse(s *AST, tokenStream iter.Seq[Token]) (nodes []NodeID, e errParse) {
 			}
 		}()
 
-		expr, incr := parseExpression(tokens[i:], s)
+		expr, incr := parseExpression(tokens[i:], ast)
 
 		i += incr
 
-		LogNode(s.Nodes[expr])
+		LogNode(ast.Nodes[expr])
 		nodes = append(nodes, expr)
 	}
-	LogAST(s)
+	LogAST(ast)
 	return
 }
 
@@ -85,13 +85,13 @@ func isBinaryOp(t Token) bool {
 }
 
 func parseBinaryExpression(
+	tokens []Token,
+	ast *AST,
 	leftOperand NodeID,
 	operator Token,
-	tokens []Token,
 	previousPriority int,
-	s *AST,
 ) (NodeID, int) {
-	rightAtom, idx := parseAtom(tokens, s)
+	rightAtom, idx := parseAtom(tokens, ast)
 
 	incr := 0
 	ops := []Token{operator}
@@ -113,7 +113,7 @@ LOOP:
 
 			guardUnexpectedInputEnd(tokens, idx)
 
-			rightAtom, incr = parseAtom(tokens[idx:], s)
+			rightAtom, incr = parseAtom(tokens[idx:], ast)
 
 			nodes = append(nodes, rightAtom)
 			idx += incr
@@ -123,11 +123,11 @@ LOOP:
 			// Priority is higher than previous ops,
 			// so make it a right-heavy tree
 			subtree, incr := parseBinaryExpression(
+				tokens[idx+1:],
+				ast,
 				nodes[len(nodes)-1],
 				tokens[idx],
-				tokens[idx+1:],
 				getOpPriority(ops[len(ops)-1]),
-				s,
 			)
 
 			nodes[len(nodes)-1] = subtree
@@ -138,7 +138,7 @@ LOOP:
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
 	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = s.Append(NodeExprBinary{
+		tree = ast.Append(NodeExprBinary{
 			Operator: ops[0].Kind,
 			Left:     tree,
 			Right:    nodes[0],
@@ -148,7 +148,7 @@ LOOP:
 	return tree, idx
 }
 
-func parseExpression(tokens []Token, s *AST) (NodeID, int) {
+func parseExpression(tokens []Token, ast *AST) (NodeID, int) {
 	idx := 0
 	consumeDanglingSeparator := func() {
 		// bounds check in case parseExpress() called at some point
@@ -158,7 +158,7 @@ func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 		}
 	}
 
-	atom, incr := parseAtom(tokens[idx:], s)
+	atom, incr := parseAtom(tokens[idx:], ast)
 
 	idx += incr
 
@@ -178,7 +178,7 @@ func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
-		binExpr, incr := parseBinaryExpression(atom, nextTok, tokens[idx:], -1, s)
+		binExpr, incr := parseBinaryExpression(tokens[idx:], ast, atom, nextTok, -1)
 		idx += incr
 
 		// Binary expressions are often followed by a match
@@ -187,11 +187,11 @@ func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 			colonPos := tokens[idx].Pos
 			idx++ // MatchColon
 
-			clauses, incr := parseMatchBody(tokens[idx:], s)
+			clauses, incr := parseMatchBody(tokens[idx:], ast)
 			idx += incr
 
 			consumeDanglingSeparator()
-			return s.Append(NodeExprMatch{
+			return ast.Append(NodeExprMatch{
 				Condition: binExpr,
 				Clauses:   clauses,
 				Pos:       colonPos,
@@ -201,12 +201,12 @@ func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 		consumeDanglingSeparator()
 		return binExpr, idx
 	case MatchColon:
-		clauses, incr := parseMatchBody(tokens[idx:], s)
+		clauses, incr := parseMatchBody(tokens[idx:], ast)
 
 		idx += incr
 
 		consumeDanglingSeparator()
-		return s.Append(NodeExprMatch{
+		return ast.Append(NodeExprMatch{
 			Condition: atom,
 			Clauses:   clauses,
 			Pos:       nextTok.Pos,
@@ -216,14 +216,14 @@ func parseExpression(tokens []Token, s *AST) (NodeID, int) {
 	}
 }
 
-func parseAtom(tokens []Token, s *AST) (NodeID, int) {
+func parseAtom(tokens []Token, ast *AST) (NodeID, int) {
 	guardUnexpectedInputEnd(tokens, 0)
 
 	tok, idx := tokens[0], 1
 
 	if tok.Kind == OpNegation {
-		atom, idx := parseAtom(tokens[idx:], s)
-		return s.Append(NodeExprUnary{
+		atom, idx := parseAtom(tokens[idx:], ast)
+		return ast.Append(NodeExprUnary{
 			Operator: tok.Kind,
 			Operand:  atom,
 			Pos:      tok.Pos,
@@ -235,29 +235,29 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 	var atom NodeID
 	switch tok.Kind {
 	case LiteralNumber:
-		return s.Append(NodeLiteralNumber{tok.Pos, tok.Num}), idx
+		return ast.Append(NodeLiteralNumber{tok.Pos, tok.Num}), idx
 	case LiteralString:
-		return s.Append(NodeLiteralString{tok.Pos, tok.Str}), idx
+		return ast.Append(NodeLiteralString{tok.Pos, tok.Str}), idx
 	case LiteralTrue:
-		return s.Append(NodeLiteralBoolean{tok.Pos, true}), idx
+		return ast.Append(NodeLiteralBoolean{tok.Pos, true}), idx
 	case LiteralFalse:
-		return s.Append(NodeLiteralBoolean{tok.Pos, false}), idx
+		return ast.Append(NodeLiteralBoolean{tok.Pos, false}), idx
 	case Identifier:
 		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
+			atom, idx = parseFunctionLiteral(tokens, ast)
 
 			// parseAtom should not consume trailing Separators, but
 			// 	parseFunctionLiteral does because it ends with expressions.
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = s.Append(NodeIdentifier{tok.Pos, tok.Str})
+			atom = ast.Append(NodeIdentifier{tok.Pos, tok.Str})
 		}
 		// may be called as a function, so flows beyond
 		// switch block
 	case IdentifierEmpty:
 		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
+			atom, idx = parseFunctionLiteral(tokens, ast)
 
 			// parseAtom should not consume trailing Separators, but
 			// 	parseFunctionLiteral does because it ends with expressions.
@@ -265,12 +265,12 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 			return atom, idx - 1
 		}
 
-		return s.Append(NodeIdentifierEmpty{tok.Pos}), idx
+		return ast.Append(NodeIdentifierEmpty{tok.Pos}), idx
 	case ParenLeft:
 		// grouped expression or function literal
 		exprs := make([]NodeID, 0)
 		for tokens[idx].Kind != ParenRight {
-			expr, incr := parseExpression(tokens[idx:], s)
+			expr, incr := parseExpression(tokens[idx:], ast)
 
 			idx += incr
 			exprs = append(exprs, expr)
@@ -282,14 +282,14 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 		guardUnexpectedInputEnd(tokens, idx)
 
 		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, s)
+			atom, idx = parseFunctionLiteral(tokens, ast)
 
 			// parseAtom should not consume trailing Separators, but
 			// 	parseFunctionLiteral does because it ends with expressions.
 			// 	so we backtrack one token.
 			idx--
 		} else {
-			atom = s.Append(NodeExprList{
+			atom = ast.Append(NodeExprList{
 				Expressions: exprs,
 				Pos:         tok.Pos,
 			})
@@ -298,7 +298,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 	case CurlyParenLeft:
 		entries := make([]NodeCompositeKeyValue, 0)
 		for tokens[idx].Kind != CurlyParenRight {
-			keyExpr, keyIncr := parseExpression(tokens[idx:], s)
+			keyExpr, keyIncr := parseExpression(tokens[idx:], ast)
 			idx += keyIncr
 
 			guardUnexpectedInputEnd(tokens, idx)
@@ -309,11 +309,11 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 
 				guardUnexpectedInputEnd(tokens, idx)
 
-				expr, valIncr := parseExpression(tokens[idx:], s)
+				expr, valIncr := parseExpression(tokens[idx:], ast)
 
 				valExpr = expr
 				idx += valIncr // Separator consumed by parseExpression
-			} else if _, ok := s.Nodes[keyExpr].(NodeIdentifier); ok { // "key", shorthand for "key: key"
+			} else if _, ok := ast.Nodes[keyExpr].(NodeIdentifier); ok { // "key", shorthand for "key: key"
 				valExpr = keyExpr
 			} else {
 				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}})
@@ -322,21 +322,21 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 			entries = append(entries, NodeCompositeKeyValue{
 				Key: keyExpr,
 				Val: valExpr,
-				Pos: s.Nodes[keyExpr].Position(s),
+				Pos: ast.Nodes[keyExpr].Position(ast),
 			})
 
 			guardUnexpectedInputEnd(tokens, idx)
 		}
 		idx++ // RightBrace
 
-		return s.Append(NodeLiteralComposite{
+		return ast.Append(NodeLiteralComposite{
 			Entries: entries,
 			Pos:     tok.Pos,
 		}), idx
 	case SquareParenLeft:
 		vals := make([]NodeID, 0)
 		for tokens[idx].Kind != SquareParenRight {
-			expr, incr := parseExpression(tokens[idx:], s)
+			expr, incr := parseExpression(tokens[idx:], ast)
 
 			idx += incr
 			vals = append(vals, expr)
@@ -345,7 +345,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 		}
 		idx++ // RightBracket
 
-		return s.Append(NodeLiteralList{
+		return ast.Append(NodeLiteralList{
 			Vals: vals,
 			Pos:  tok.Pos,
 		}), idx
@@ -357,7 +357,7 @@ func parseAtom(tokens []Token, s *AST) (NodeID, int) {
 	// consumed all tokens before this
 	for idx < len(tokens) && tokens[idx].Kind == ParenLeft {
 		var incr int
-		atom, incr = parseFunctionCall(tokens[idx:], s, atom)
+		atom, incr = parseFunctionCall(tokens[idx:], ast, atom)
 
 		idx += incr
 
@@ -481,14 +481,14 @@ func parseFunctionLiteral(tokens []Token, ast *AST) (NodeID, int) {
 	}), idx
 }
 
-func parseFunctionCall(tokens []Token, s *AST, function NodeID) (NodeID, int) {
+func parseFunctionCall(tokens []Token, ast *AST, function NodeID) (NodeID, int) {
 	idx := 1
 
 	guardUnexpectedInputEnd(tokens, idx)
 
 	arguments := make([]NodeID, 0)
 	for tokens[idx].Kind != ParenRight {
-		expr, incr := parseExpression(tokens[idx:], s)
+		expr, incr := parseExpression(tokens[idx:], ast)
 
 		idx += incr
 		arguments = append(arguments, expr)
@@ -498,5 +498,5 @@ func parseFunctionCall(tokens []Token, s *AST, function NodeID) (NodeID, int) {
 
 	idx++ // RightParen
 
-	return s.Append(NodeFunctionCall{function, arguments}), idx
+	return ast.Append(NodeFunctionCall{function, arguments}), idx
 }
