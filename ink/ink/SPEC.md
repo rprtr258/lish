@@ -6,11 +6,13 @@ Ink has an LR(1) grammar that can be parsed successfully with at most 1 lookahea
 
 Ink's syntax is inspired by JavaScript and Go, but strives to be minimal. This is not necessarily a comprehensive grammar, but expresses the high level structure and mostly up-to-date with the interpreter implementation.
 
-```
-Program: Expression*
+```yaml
+Program: Block
+
+Block: Expression*
 
 Expression: (Atom | BinaryExpr | MatchExpr) ','
-ExpressionList: '(' Expression* ')'
+ExpressionList: '(' Block ')'
 
 
 Atom: UnaryExpr | EmptyIdentifier
