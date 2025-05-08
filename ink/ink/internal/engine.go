@@ -114,6 +114,10 @@ func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
 		expr = ast.Append(NodeExprList{Pos{filename, 1, 1}, nodes})
 	}
 
+	typeProgram, typeCtx := typeInfer(ast, expr, nil)
+	fmt.Printf("PROGRAM TYPE: %s\n", typeProgram.String())
+	fmt.Printf("PROGRAM TYPE CTX: %s\n", typeCtx.String())
+
 	// optimization passes
 	// TODO: optimize pass:
 	// listexprSimplifier(ast, expr) // TODO: fix and get back, breaks a.(b) expressions // turn (x) -> x
