@@ -117,9 +117,9 @@ func typeUnion(a, b Type) Type {
 		return b
 	case typeIs[TypeVoid](b):
 		return a
-	case typeCheck(a, b):
+	case isSubtypeOf(a, b):
 		return b
-	case typeCheck(b, a):
+	case isSubtypeOf(b, a):
 		return a
 	default:
 		return typeAny
@@ -130,17 +130,31 @@ func panicf(format string, args ...any) {
 	panic(fmt.Sprintf(format, args...))
 }
 
-// typeCheck checks that a can be assigned to b
-func typeCheck(a, b Type) bool {
-	switch b := b.(type) {
+// isSubtypeOf checks that subtype can be assigned to supertype (iso - is subtype of):
+//   - (same type) e.g. string iso string
+//   - (any type is top) any type iso any
+//   - (?transitivity) if A iso B and B iso C, then A iso C
+//   - (literal subtyping) literal type iso its primitive type, e.g. "aboba" type iso string
+//   - (row polymorphism) {x: number, y: number} iso {x: number, y: number, z: number}
+//   - (closed enum extension) 1|2 iso 1|2|3 and 1|2|... and 1|2|3|...
+//   - (open enum extension) 1|2|3|... iso 1|2|...
+//   - (?sum type extension) A+B iso A+B+C
+//   - (intersection) A&B iso A
+//   - (func/args covariance) A iso B, then B -> C iso A -> C
+//   - (func/result covariance) A iso B, then C -> A iso C -> B
+func isSubtypeOf(subtype, supertype Type) bool {
+	switch b := supertype.(type) {
+	// any type is top
 	case TypeAny:
 		return true
+	// same types
 	case TypeNumber:
-		return typeIs[TypeNumber](a)
+		return typeIs[TypeNumber](subtype)
 	case TypeString:
-		return typeIs[TypeString](a)
+		return typeIs[TypeString](subtype)
+	// not implemented cases
 	default:
-		panicf("unknown type check case: %s : %s", a, b)
+		panicf("unknown type check case: %s : %s", subtype, b)
 	}
 	panic(1) // unreachable
 }
@@ -190,10 +204,10 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 			return typeAny, ctx
 		case OpMultiply, OpSubtract, OpDivide: // number only operators
 			lhs, _ := typeInfer(ast, n.Left, ctx)
-			if !typeCheck(lhs, typeNumber) {
+			if !isSubtypeOf(lhs, typeNumber) {
 				typeCheckError("lhs of "+op.String(), typeNumber, lhs, ast.Nodes[n.Left].Position(ast))
 			}
-			if !typeCheck(rhs, typeNumber) {
+			if !isSubtypeOf(rhs, typeNumber) {
 				typeCheckError("rhs of "+op.String(), typeNumber, rhs, ast.Nodes[n.Right].Position(ast))
 			}
 			return typeNumber, ctx
@@ -245,7 +259,7 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		}
 		for i, argExpected := range typeFunction.Args {
 			argActual := args[i]
-			if !typeCheck(argActual, argExpected) {
+			if !isSubtypeOf(argActual, argExpected) {
 				typeCheckError(fmt.Sprintf("arg #%d", i), argExpected, argActual, ast.Nodes[n.Arguments[i]].Position(ast))
 			}
 		}
@@ -257,7 +271,7 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		for _, clause := range n.Clauses {
 			if false { // TODO: implement pattern matching
 				typeTarget, _ := typeInfer(ast, clause.Target, ctx)
-				if !typeCheck(typeCond, typeTarget) {
+				if !isSubtypeOf(typeCond, typeTarget) {
 					typeCheckError("target", typeTarget, typeCond, ast.Nodes[clause.Target].Position(ast))
 				}
 			}
