@@ -15,6 +15,8 @@ type TypeString struct{}
 func (TypeString) isType()        {}
 func (TypeString) String() string { return "string" }
 
+var typeString = TypeString{}
+
 type TypeNumber struct{}
 
 func (TypeNumber) isType()        {}
@@ -46,6 +48,8 @@ type TypeNull struct{}
 func (TypeNull) isType()        {}
 func (TypeNull) String() string { return "()" }
 
+var typeNull = TypeNull{}
+
 type TypeVoid struct{}
 
 func (TypeVoid) isType()        {}
@@ -53,35 +57,57 @@ func (TypeVoid) String() string { return "<void>" }
 
 var typeVoid = TypeVoid{}
 
-type TypeContext struct {
-	prev    *TypeContext
-	varname string
-	typ     Type
+type TypeFunction struct {
+	Args   []Type
+	Result Type
 }
 
-func (ctx *TypeContext) String() string {
+func (TypeFunction) isType() {}
+func (t TypeFunction) String() string {
 	var sb strings.Builder
-	for c := ctx; c != nil; c = c.prev {
-		fmt.Fprintf(&sb, "%s: %s\n", c.varname, c.typ.String())
+	sb.WriteString("(")
+	for i, arg := range t.Args {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(arg.String())
+	}
+	sb.WriteString(") -> ")
+	sb.WriteString(t.Result.String())
+	return sb.String()
+}
+
+type typeBinding struct {
+	varname string
+	ty      Type
+}
+
+type TypeContext []typeBinding
+
+func (ctx TypeContext) String() string {
+	var sb strings.Builder
+	for _, decl := range ctx {
+		fmt.Fprintf(&sb, "%s : %s\n", decl.varname, decl.ty.String())
 	}
 	return sb.String()
 }
 
-func (ctx *TypeContext) Lookup(varname string) (Type, bool) {
-	switch {
-	case ctx == nil:
-		return nil, false
-	case ctx.varname == varname:
-		return ctx.typ, true
-	case ctx.prev != nil:
-		return ctx.Lookup(varname)
-	default:
-		return nil, false
+func (ctx TypeContext) Lookup(varname string) (Type, bool) {
+	for _, decl := range ctx {
+		if decl.varname == varname {
+			return decl.ty, true
+		}
 	}
+	return nil, false
 }
 
-func typeIs[T Type](t Type) bool {
-	_, ok := t.(T)
+func (ctx TypeContext) Append(varname string, ty Type) TypeContext {
+	fmt.Println(varname, ":", ty.String())
+	return append(ctx, typeBinding{varname, ty})
+}
+
+func typeIs[T Type](ty Type) bool {
+	_, ok := ty.(T)
 	return ok
 }
 
@@ -130,14 +156,14 @@ func typeCheckError(
 	)
 }
 
-func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
+func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 	switch n := ast.Nodes[n].(type) {
 	case NodeLiteralBoolean:
 		return typeBool, ctx
 	case NodeLiteralNumber:
 		return typeNumber, ctx
 	case NodeLiteralString:
-		return TypeString{}, ctx
+		return typeString, ctx
 	case NodeIdentifier:
 		varType, ok := ctx.Lookup(n.Val)
 		if !ok {
@@ -145,7 +171,15 @@ func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
 		}
 		return varType, ctx
 	case NodeLiteralFunction:
-		return typeAny, ctx
+		// TODO: infer args types somehow or require to mark them explicitly
+		ctxFn := ctx
+		args := make([]Type, len(n.Arguments))
+		for i, arg := range n.Arguments {
+			args[i] = typeAny
+			ctxFn = ctxFn.Append(ast.Nodes[arg].(NodeIdentifier).Val, typeAny)
+		}
+		typeResult, _ := typeInfer(ast, n.Body, ctxFn)
+		return TypeFunction{args, typeResult}, ctx
 	case NodeExprUnary:
 		// NOTE: there is single unary operator ~ so type of unary expression is same as operand's
 		return typeInfer(ast, n.Operand, ctx)
@@ -154,30 +188,20 @@ func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
 		switch op := n.Operator; op {
 		case OpAccessor:
 			return typeAny, ctx
-		case OpMultiply:
+		case OpMultiply, OpSubtract, OpDivide: // number only operators
 			lhs, _ := typeInfer(ast, n.Left, ctx)
 			if !typeCheck(lhs, typeNumber) {
-				typeCheckError("lhs of *", typeNumber, lhs, ast.Nodes[n.Left].Position(ast))
+				typeCheckError("lhs of "+op.String(), typeNumber, lhs, ast.Nodes[n.Left].Position(ast))
 			}
 			if !typeCheck(rhs, typeNumber) {
-				typeCheckError("rhs of *", typeNumber, rhs, ast.Nodes[n.Right].Position(ast))
-			}
-			return typeNumber, ctx
-		case OpSubtract:
-			lhs, _ := typeInfer(ast, n.Left, ctx)
-			if !typeCheck(lhs, typeNumber) {
-				typeCheckError("lhs of -", typeNumber, lhs, ast.Nodes[n.Left].Position(ast))
-			}
-			if !typeCheck(rhs, typeNumber) {
-				typeCheckError("rhs of -", typeNumber, rhs, ast.Nodes[n.Right].Position(ast))
+				typeCheckError("rhs of "+op.String(), typeNumber, rhs, ast.Nodes[n.Right].Position(ast))
 			}
 			return typeNumber, ctx
 		case OpDefine:
 			rhs, _ := typeInfer(ast, n.Right, ctx)
 			switch lhs := ast.Nodes[n.Left].(type) {
 			case NodeIdentifier:
-				ctx1 := &TypeContext{ctx, lhs.Val, rhs}
-				return rhs, ctx1
+				return rhs, ctx.Append(lhs.Val, rhs)
 			default:
 				panicf("cant typecheck define operator with lhs %T", lhs)
 			}
@@ -186,7 +210,7 @@ func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
 		}
 	case NodeExprList:
 		if len(n.Expressions) == 0 {
-			return TypeNull{}, ctx
+			return typeNull, ctx
 		}
 
 		ctxOrig := ctx
@@ -202,6 +226,30 @@ func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
 	case NodeLiteralComposite:
 		return typeAny, ctx
 	case NodeFunctionCall:
+		typeFn, _ := typeInfer(ast, n.Function, ctx)
+		args := make([]Type, len(n.Arguments))
+		for i, arg := range n.Arguments {
+			args[i], _ = typeInfer(ast, arg, ctx)
+		}
+
+		typeFunction, ok := typeFn.(TypeFunction)
+		if !ok {
+			typeCheckError("thing called as function", TypeFunction{}, typeFn, ast.Nodes[n.Function].Position(ast))
+		}
+		if len(typeFunction.Args) != len(n.Arguments) {
+			panicf(
+				"expected %d args of types %v but found %d of types %v",
+				len(typeFunction.Args), typeFunction.Args,
+				len(n.Arguments), args,
+			)
+		}
+		for i, argExpected := range typeFunction.Args {
+			argActual := args[i]
+			if !typeCheck(argActual, argExpected) {
+				typeCheckError(fmt.Sprintf("arg #%d", i), argExpected, argActual, ast.Nodes[n.Arguments[i]].Position(ast))
+			}
+		}
+
 		return typeAny, ctx
 	case NodeExprMatch:
 		typeCond, _ := typeInfer(ast, n.Condition, ctx)
@@ -211,7 +259,6 @@ func typeInfer(ast *AST, n NodeID, ctx *TypeContext) (Type, *TypeContext) {
 				typeTarget, _ := typeInfer(ast, clause.Target, ctx)
 				if !typeCheck(typeCond, typeTarget) {
 					typeCheckError("target", typeTarget, typeCond, ast.Nodes[clause.Target].Position(ast))
-					panicf("cond is of type %T but target is of type %T", typeCond, typeTarget)
 				}
 			}
 

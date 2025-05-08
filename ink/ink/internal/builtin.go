@@ -55,53 +55,65 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 	return false
 }
 
+var ctxBuiltins TypeContext = nil
+
 // LoadEnvironment loads all builtins (functions and constants) to a given Context.
 func (ctx *Context) LoadEnvironment() {
-	for name, fn := range map[string]func(*Context, Pos, []Value) Value{
-		"import": inkImport,
-		"par":    inkPar,
+	// TODO: kal ebaniy, extract to var and use on init, cant be done right now because import func makes loop
+	fillCtxBuiltins := ctxBuiltins == nil
+	for _, sig := range []struct {
+		name     string
+		fn       func(*Context, Pos, []Value) Value
+		tyArgs   []Type
+		tyResult Type
+	}{
+		{"import", inkImport, []Type{typeString}, typeAny}, // TODO: string -> infer at compile time
+		{"par", inkPar, []Type{typeAny}, typeAny},          // TODO: [](() -> $T) -> $T
 
 		// system interfaces
-		"args":   inkArgs,
-		"in":     inkIn,
-		"out":    inkOut,
-		"dir":    inkDir,
-		"make":   inkMake,
-		"stat":   inkStat,
-		"read":   inkRead,
-		"write":  inkWrite,
-		"delete": inkDelete,
-		"listen": inkListen,
-		"req":    inkReq,
-		"rand":   inkRand,
-		"urand":  inkUrand,
-		"time":   inkTime,
-		"wait":   inkWait,
-		"exec":   inkExec,
-		"env":    inkEnv,
-		"exit":   inkExit,
+		{"args", inkArgs, []Type{}, typeString},
+		{"in", inkIn, []Type{TypeFunction{[]Type{typeAny}, typeAny}}, typeNull}, // TODO: ???
+		{"out", inkOut, []Type{typeString}, typeNull},
+		{"dir", inkDir, []Type{typeString, TypeFunction{[]Type{typeAny}, typeNull}}, typeNull},                               // TODO: ???
+		{"make", inkMake, []Type{typeString}, typeAny},                                                                       // TODO: ???
+		{"stat", inkStat, []Type{typeString}, typeAny},                                                                       // TODO: ???
+		{"read", inkRead, []Type{typeString, typeNumber, typeString, TypeFunction{[]Type{typeString}, typeNull}}, typeAny},   // TODO: ???
+		{"write", inkWrite, []Type{typeString, typeNumber, typeString, TypeFunction{[]Type{}, typeNull}}, typeAny},           // TODO: ???
+		{"delete", inkDelete, []Type{typeString, TypeFunction{[]Type{typeAny}, typeNull}}, typeAny},                          // TODO: ???
+		{"listen", inkListen, []Type{typeString, TypeFunction{[]Type{typeAny}, typeNull}}, TypeFunction{[]Type{}, typeNull}}, // TODO: (string, {type: "req", data: {method: string, url: string, headers: map[string]string, body: string | ()}} -> (string, number)) -> (() -> ())
+		{"req", inkReq, []Type{typeAny}, typeAny},                                                                            // TODO: {method: string, url: string, headers: map[string]string, body: string | ()} -> ???
+		{"rand", inkRand, []Type{}, typeNumber},
+		{"urand", inkUrand, []Type{typeNumber}, typeString},
+		{"time", inkTime, []Type{}, typeNumber},
+		{"wait", inkWait, []Type{typeNumber}, typeNull},
+		{"exec", inkExec, []Type{typeAny}, typeAny}, // TODO: (string, []string, string, string -> ()) -> ()|error
+		{"env", inkEnv, []Type{}, typeAny},          // TODO: () -> map[string, string]
+		{"exit", inkExit, []Type{typeNumber}, typeVoid},
 
 		// math
-		"sin":   inkSin,
-		"cos":   inkCos,
-		"asin":  inkAsin,
-		"acos":  inkAcos,
-		"pow":   inkPow,
-		"ln":    inkLn,
-		"floor": inkFloor,
+		{"sin", inkSin, []Type{typeNumber}, typeNumber},
+		{"cos", inkCos, []Type{typeNumber}, typeNumber},
+		{"asin", inkAsin, []Type{typeNumber}, typeNumber},
+		{"acos", inkAcos, []Type{typeNumber}, typeNumber},
+		{"pow", inkPow, []Type{typeNumber, typeNumber}, typeNumber}, // TODO: handle errors effect
+		{"ln", inkLn, []Type{typeNumber}, typeNumber},
+		{"floor", inkFloor, []Type{typeNumber}, typeNumber},
 
 		// type conversions
-		"string": inkString,
-		"number": inkNumber,
-		"point":  inkPoint,
-		"char":   inkChar,
+		{"string", inkString, []Type{typeAny}, typeString},
+		{"number", inkNumber, []Type{typeAny}, typeNumber}, // TODO: string -> number|error, number -> number, bool -> 0|1
+		{"point", inkPoint, []Type{typeString}, typeNumber},
+		{"char", inkChar, []Type{typeNumber}, typeString},
 
 		// introspection
-		"type": inkType,
-		"len":  inkLen,
-		"keys": inkKeys,
+		{"type", inkType, []Type{typeAny}, typeString},
+		{"len", inkLen, []Type{typeAny}, typeAny},   // TODO: []$T -> number, map[$K, $V] -> number
+		{"keys", inkKeys, []Type{typeAny}, typeAny}, // TODO: []$T -> []number, map[$K, $V] -> []$K
 	} {
-		ctx.LoadFunc(name, fn)
+		if fillCtxBuiltins {
+			ctxBuiltins = ctxBuiltins.Append(sig.name, TypeFunction{sig.tyArgs, sig.tyResult})
+		}
+		ctx.LoadFunc(sig.name, sig.fn)
 	}
 
 	// side effects
@@ -124,6 +136,7 @@ func errMsg(message string) ValueComposite {
 	}
 }
 
+// TODO: remove type checks, just assert them
 func validate(pos Pos, errs ...string) *Err {
 	for _, err := range errs {
 		if err != "" {
@@ -903,6 +916,7 @@ func inkRand(ctx *Context, pos Pos, in []Value) Value {
 	return ValueNumber(rand.Float64())
 }
 
+// TODO: rewrite in user-space using rand
 func inkUrand(ctx *Context, pos Pos, in []Value) Value {
 	var bufLength ValueNumber
 	if err := validate(pos,
@@ -1227,7 +1241,7 @@ func inkNumber(ctx *Context, pos Pos, in []Value) Value {
 	case ValueBoolean:
 		return ValueNumber(fun.IF[float64](bool(v), 1, 0))
 	default:
-		return ValueNumber(0)
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cant convert %v to number", v), pos}}
 	}
 }
 
@@ -1335,7 +1349,7 @@ func inkKeys(ctx *Context, pos Pos, in []Value) Value {
 }
 
 func inkPar(ctx *Context, pos Pos, in []Value) Value {
-	var funcs ValueComposite
+	var funcs ValueList
 	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &funcs),
@@ -1350,8 +1364,8 @@ func inkPar(ctx *Context, pos Pos, in []Value) Value {
 	// defer ctx.Engine.mu.Lock()
 
 	var wg sync.WaitGroup
-	wg.Add(len(funcs))
-	for _, f := range funcs {
+	wg.Add(len(*funcs.xs))
+	for _, f := range *funcs.xs {
 		go func() {
 			_ = evalInkFunction(ctx, f, pos)
 			wg.Done()
