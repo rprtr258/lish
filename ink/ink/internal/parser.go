@@ -377,10 +377,24 @@ func parseMatchBody(tokens []Token, ast *AST) ([]NodeMatchClause, int) {
 
 	clauses := make([]NodeMatchClause, 0)
 	for tokens[idx].Kind != CurlyParenRight {
-		clauseNode, incr := parseMatchClause(tokens[idx:], ast)
+		atom, incr1 := parseExpression(tokens[idx:], ast)
 
-		idx += incr
-		clauses = append(clauses, clauseNode)
+		guardUnexpectedInputEnd(tokens[idx:], incr1)
+
+		if tokens[idx+incr1].Kind != CaseArrow {
+			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx+incr1]), tokens[idx+incr1].Pos}})
+		}
+		incr1++ // CaseArrow
+
+		guardUnexpectedInputEnd(tokens[idx:], incr1)
+
+		expr, incr2 := parseExpression(tokens[idx+incr1:], ast)
+
+		idx += incr1 + incr2
+		clauses = append(clauses, NodeMatchClause{
+			Target:     atom,
+			Expression: expr,
+		})
 
 		guardUnexpectedInputEnd(tokens, idx)
 	}
@@ -395,28 +409,6 @@ func parseMatchBody(tokens []Token, ast *AST) ([]NodeMatchClause, int) {
 	}
 
 	return clauses, idx
-}
-
-func parseMatchClause(tokens []Token, ast *AST) (NodeMatchClause, int) {
-	atom, idx := parseExpression(tokens, ast)
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	if tokens[idx].Kind != CaseArrow {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx]), tokens[idx].Pos}})
-	}
-	idx++ // CaseArrow
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	expr, incr := parseExpression(tokens[idx:], ast)
-
-	idx += incr
-
-	return NodeMatchClause{
-		Target:     atom,
-		Expression: expr,
-	}, idx
 }
 
 func parseFunctionLiteral(tokens []Token, ast *AST) (NodeID, int) {

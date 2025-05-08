@@ -9,16 +9,17 @@ Ink's syntax is inspired by JavaScript and Go, but strives to be minimal. This i
 ```yaml
 Program: Block
 
-Block: Expression*
+SEP: ',' | '\n'
+Block: (Expression SEP)*
 
-Expression: (Atom | BinaryExpr | MatchExpr) ','
+Expression: (Atom | BinaryExpr | MatchExpr)
 ExpressionList: '(' Block ')'
 
 
-Atom: UnaryExpr | EmptyIdentifier
-  | Identifier | FunctionCall
-  | Literal | ExpressionList
+Atom: UnaryExpr | EmptyIdentifier | Identifier | FunctionCall | Literal | ExpressionList
 
+UnaryOp:
+  '~' // negation
 UnaryExpr: UnaryOp Atom
 
 EmptyIdentifier: '_'
@@ -26,40 +27,26 @@ Identifier: (A-Za-z@!?)[A-Za-z0-9@!?]*
 
 FunctionCall: Atom ExpressionList
 
-Literal: NumberLiteral | StringLiteral
-  | BooleanLiteral | FunctionLiteral
-  | ObjectLiteral | ListLiteral
-
 NumberLiteral: (0-9)+ ['.' (0-9)+] ['e' (0-9)+]
-StringLiteral: '\'' (.*) '\''
-
+StringLiteral: '\'' ([^\'] | \\ | \')* '\''
 BooleanLiteral: 'true' | 'false'
-FunctionLiteral: (Identifier | '(' (Identifier ',')* ')')
-  '=>' ( Expression | ExpressionList )
-
-ObjectLiteral: '{' ObjectEntry* '}'
-ObjectEntry: Expression ':' Expression
-ListLiteral: '[' Expression* ']'
+FunctionLiteral: (Identifier | '(' (Identifier SEP)* ')') '=>' (Expression | ExpressionList)
+ObjectLiteral: '{' (Expression ':' Expression SEP)* '}'
+ListLiteral: '[' (Expression SEP)* ']'
+Literal: NumberLiteral | StringLiteral | BooleanLiteral | FunctionLiteral | ObjectLiteral | ListLiteral
 
 
-BinaryExpr: (Atom | BinaryExpr) BinaryOp (Atom | BinaryExpr)
-
-
-MatchExpr: (Atom | BinaryExpr) '::' '{' MatchClause* '}'
-MatchClause: Expression '->' Expression
-
-
-UnaryOp: (
-  '~' // negation
-)
-BinaryOp: (
+BinaryOp:
   '+' | '-' | '*' | '/' | '%' // arithmetic
   | '&' | '|' | '^' // logical and bitwise
   | '>' | '<' // arithmetic comparisons
   | '==' // value comparison operator
   | ':=' // assignment operator
   | '.' // property accessor
-)
+BinaryExpr: (Atom | BinaryExpr) BinaryOp (Atom | BinaryExpr)
+
+
+MatchExpr: (Atom | BinaryExpr) '::' '{' (Expression '->' Expression SEP)* '}'
 ```
 
 A few quirks of this syntax, and notes about the language:
