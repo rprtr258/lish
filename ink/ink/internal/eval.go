@@ -201,7 +201,7 @@ func (v ValueList) Equals(other Value) bool {
 	}
 }
 
-// ValueComposite includes all objects and list values
+// ValueComposite includes all objects
 type ValueComposite map[string]Value
 
 func (v ValueComposite) String() string {

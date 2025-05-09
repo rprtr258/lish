@@ -24,12 +24,12 @@ func (TypeNumber) String() string { return "number" }
 
 var typeNumber = TypeNumber{}
 
-type TypeBool struct{}
+type TypeBoolean struct{}
 
-func (TypeBool) isType()        {}
-func (TypeBool) String() string { return "bool" }
+func (TypeBoolean) isType()        {}
+func (TypeBoolean) String() string { return "bool" }
 
-var typeBool = TypeBool{}
+var typeBool = TypeBoolean{}
 
 type TypeAny struct{}
 
@@ -57,16 +57,35 @@ func (TypeVoid) String() string { return "<void>" }
 
 var typeVoid = TypeVoid{}
 
+type TypeValue struct{ value Value }
+
+func (TypeValue) isType()          {}
+func (t TypeValue) String() string { return t.value.String() }
+
+type TypeVar struct{ id int }
+
+func (TypeVar) isType()          {}
+func (t TypeVar) String() string { return fmt.Sprintf("$%d", t.id) }
+
+type TypeComposite struct {
+	// TODO: open/closed composite: {x: number} vs {[string]: number}
+	// TODO: generics?
+	fields map[string]Type
+}
+
+func (TypeComposite) isType()        {}
+func (TypeComposite) String() string { return "<void>" }
+
 type TypeFunction struct {
-	Args   []Type
-	Result Type
+	Arguments []Type
+	Result    Type
 }
 
 func (TypeFunction) isType() {}
 func (t TypeFunction) String() string {
 	var sb strings.Builder
 	sb.WriteString("(")
-	for i, arg := range t.Args {
+	for i, arg := range t.Arguments {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
@@ -82,18 +101,22 @@ type typeBinding struct {
 	ty      Type
 }
 
-type TypeContext []typeBinding
+type TypeContext struct {
+	varID         *int
+	bindings      []typeBinding
+	substitutions map[int]Type
+}
 
 func (ctx TypeContext) String() string {
 	var sb strings.Builder
-	for _, decl := range ctx {
+	for _, decl := range ctx.bindings {
 		fmt.Fprintf(&sb, "%s : %s\n", decl.varname, decl.ty.String())
 	}
 	return sb.String()
 }
 
 func (ctx TypeContext) Lookup(varname string) (Type, bool) {
-	for _, decl := range ctx {
+	for _, decl := range ctx.bindings {
 		if decl.varname == varname {
 			return decl.ty, true
 		}
@@ -103,11 +126,94 @@ func (ctx TypeContext) Lookup(varname string) (Type, bool) {
 
 func (ctx TypeContext) Append(varname string, ty Type) TypeContext {
 	fmt.Println(varname, ":", ty.String())
-	return append(ctx, typeBinding{varname, ty})
+	return TypeContext{
+		ctx.varID,
+		append(ctx.bindings, typeBinding{varname, ty}),
+		ctx.substitutions,
+	}
+}
+
+func (ctx TypeContext) typevar() Type {
+	id := *ctx.varID
+	*ctx.varID++
+	return TypeVar{id}
+}
+
+func (ctx TypeContext) substitute(ty Type) Type {
+	switch ty := ty.(type) {
+	case TypeVar:
+		typeRes, ok := ctx.substitutions[ty.id]
+		if !ok {
+			return ty
+		}
+		return typeRes
+	case TypeComposite:
+		panic("not implemented")
+	case TypeFunction:
+		args := make([]Type, len(ty.Arguments))
+		for i, arg := range ty.Arguments {
+			args[i] = ctx.substitute(arg)
+		}
+		res := ctx.substitute(ty.Result)
+		return TypeFunction{args, res}
+	default:
+		return ty
+	}
+}
+
+func (ctx TypeContext) unify(
+	ty1, ty2 Type,
+	thing string,
+	pos Pos,
+) Type {
+	// substitute known type vars
+	ty1 = ctx.substitute(ty1)
+	ty2 = ctx.substitute(ty2)
+
+	switch {
+	case typeIs[TypeVar](ty1) && !typeIs[TypeVar](ty2):
+		id := ty1.(TypeVar).id
+		ctx.substitutions[id] = ty2
+		fmt.Printf("$%d is resolved to %s\n", id, ty2.String())
+		return ty2
+	case !typeIs[TypeVar](ty1) && typeIs[TypeVar](ty2):
+		id := ty2.(TypeVar).id
+		ctx.substitutions[id] = ty1
+		fmt.Printf("$%d is resolved to %s\n", id, ty1.String())
+		return ty1
+	case typeIs[TypeFunction](ty1) && typeIs[TypeFunction](ty1):
+		ty1 := ty1.(TypeFunction)
+		ty2 := ty2.(TypeFunction)
+		if len(ty1.Arguments) != len(ty2.Arguments) {
+			panicf(
+				"expected %d args of types %v but found %d of types %v",
+				len(ty1.Arguments), ty1.Arguments,
+				len(ty2.Arguments), ty2.Arguments,
+			)
+		}
+		args := make([]Type, len(ty1.Arguments))
+		for i := range len(ty1.Arguments) {
+			args[i] = ctx.unify(ty1.Arguments[i], ty2.Arguments[i], fmt.Sprintf("%s-th arg #%d", thing, i), pos)
+		}
+		res := ctx.unify(ty1.Result, ty2.Result, fmt.Sprintf("%s-th result", thing), pos)
+		return TypeFunction{args, res}
+	case isSubtypeOf(ty1, ty2):
+		return ty2
+	case isSubtypeOf(ty2, ty1):
+		return ty1
+	default:
+		typeCheckError("unify "+thing, ty1, ty2, pos)
+	}
+	panic(1) // unreachable
 }
 
 func typeIs[T Type](ty Type) bool {
 	_, ok := ty.(T)
+	return ok
+}
+
+func valueIs[V Value](v Value) bool {
+	_, ok := v.(V)
 	return ok
 }
 
@@ -143,20 +249,48 @@ func panicf(format string, args ...any) {
 //   - (func/args covariance) A iso B, then B -> C iso A -> C
 //   - (func/result covariance) A iso B, then C -> A iso C -> B
 func isSubtypeOf(subtype, supertype Type) bool {
-	switch b := supertype.(type) {
+	switch typeSuper := supertype.(type) {
 	// any type is top
 	case TypeAny:
 		return true
+	// void type is bottom, even void is not iso itself // TODO: ?
+	case TypeVoid:
+		return false
 	// same types
+	case TypeNull:
+		return typeIs[TypeNull](subtype)
+	case TypeBoolean:
+		return typeIs[TypeBoolean](subtype) ||
+			typeIs[TypeValue](subtype) && valueIs[ValueBoolean](subtype.(TypeValue).value)
 	case TypeNumber:
-		return typeIs[TypeNumber](subtype)
+		return typeIs[TypeNumber](subtype) ||
+			typeIs[TypeValue](subtype) && valueIs[ValueNumber](subtype.(TypeValue).value)
 	case TypeString:
-		return typeIs[TypeString](subtype)
+		return typeIs[TypeString](subtype) ||
+			typeIs[TypeValue](subtype) && valueIs[ValueString](subtype.(TypeValue).value)
+	// value type is supertype only of its value type
+	case TypeValue:
+		return typeIs[TypeValue](subtype) &&
+			// TODO: assert same value type explicitly
+			fmt.Sprintf("%T", typeSuper.value) == fmt.Sprintf("%T", subtype.(TypeValue).value)
+	// row polymorphism
+	case TypeComposite:
+		typeSub, ok := subtype.(TypeComposite)
+		if !ok {
+			return false
+		}
+		for k, typeValueSuper := range typeSuper.fields {
+			typeValueSub, ok := typeSub.fields[k]
+			if !ok || !isSubtypeOf(typeValueSub, typeValueSuper) {
+				return false
+			}
+		}
+		return true
 	// not implemented cases
 	default:
-		panicf("unknown type check case: %s : %s", subtype, b)
+		fmt.Printf("unknown subtype case: %s : %s\n", subtype, supertype)
+		return false
 	}
-	panic(1) // unreachable
 }
 
 func typeCheckError(
@@ -173,27 +307,18 @@ func typeCheckError(
 func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 	switch n := ast.Nodes[n].(type) {
 	case NodeLiteralBoolean:
-		return typeBool, ctx
+		return TypeValue{ValueBoolean(n.Val)}, ctx
 	case NodeLiteralNumber:
-		return typeNumber, ctx
+		return TypeValue{ValueNumber(n.Val)}, ctx
 	case NodeLiteralString:
-		return typeString, ctx
+		b := []byte(n.Val)
+		return TypeValue{ValueString{&b}}, ctx
 	case NodeIdentifier:
 		varType, ok := ctx.Lookup(n.Val)
 		if !ok {
 			panicf("var %s is not defined", n.Val)
 		}
 		return varType, ctx
-	case NodeLiteralFunction:
-		// TODO: infer args types somehow or require to mark them explicitly
-		ctxFn := ctx
-		args := make([]Type, len(n.Arguments))
-		for i, arg := range n.Arguments {
-			args[i] = typeAny
-			ctxFn = ctxFn.Append(ast.Nodes[arg].(NodeIdentifier).Val, typeAny)
-		}
-		typeResult, _ := typeInfer(ast, n.Body, ctxFn)
-		return TypeFunction{args, typeResult}, ctx
 	case NodeExprUnary:
 		// NOTE: there is single unary operator ~ so type of unary expression is same as operand's
 		return typeInfer(ast, n.Operand, ctx)
@@ -201,18 +326,31 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		rhs, _ := typeInfer(ast, n.Right, ctx)
 		switch op := n.Operator; op {
 		case OpAccessor:
-			return typeAny, ctx
+			lhs, _ := typeInfer(ast, n.Left, ctx)
+			switch lhs := lhs.(type) {
+			case TypeComposite:
+				field, _ := typeInfer(ast, n.Right, ctx)
+				// TODO: open composite indexing
+				fieldName := string(*field.(TypeValue).value.(ValueString).b)
+				typeValue, ok := lhs.fields[fieldName]
+				if !ok {
+					typeCheckError("map being accessed", TypeComposite{map[string]Type{fieldName: typeAny}}, typeNull, n.Pos)
+				}
+				return typeValue, ctx
+			default:
+				return typeAny, ctx
+			}
 		case OpMultiply, OpSubtract, OpDivide: // number only operators
 			lhs, _ := typeInfer(ast, n.Left, ctx)
-			if !isSubtypeOf(lhs, typeNumber) {
-				typeCheckError("lhs of "+op.String(), typeNumber, lhs, ast.Nodes[n.Left].Position(ast))
-			}
-			if !isSubtypeOf(rhs, typeNumber) {
-				typeCheckError("rhs of "+op.String(), typeNumber, rhs, ast.Nodes[n.Right].Position(ast))
-			}
+			_ = ctx.unify(lhs, typeNumber, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			_ = ctx.unify(rhs, typeNumber, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
 			return typeNumber, ctx
+		case OpAdd: // TODO: also might be numbers
+			lhs, _ := typeInfer(ast, n.Left, ctx)
+			_ = ctx.unify(lhs, typeString, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			_ = ctx.unify(rhs, typeString, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
+			return typeString, ctx
 		case OpDefine:
-			rhs, _ := typeInfer(ast, n.Right, ctx)
 			switch lhs := ast.Nodes[n.Left].(type) {
 			case NodeIdentifier:
 				return rhs, ctx.Append(lhs.Val, rhs)
@@ -238,7 +376,31 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 	case NodeLiteralList:
 		return typeAny, ctx
 	case NodeLiteralComposite:
-		return typeAny, ctx
+		fields := make(map[string]Type, len(n.Entries))
+		for _, entry := range n.Entries {
+			// TODO: if cant infer key literal, union them and add as open composite part
+			switch key := ast.Nodes[entry.Key].(type) {
+			case NodeIdentifier:
+				value, _ := typeInfer(ast, entry.Val, ctx)
+				fields[key.Val] = value
+			case NodeLiteralString:
+				value, _ := typeInfer(ast, entry.Val, ctx)
+				fields[key.Val] = value
+			default:
+				ty, _ := typeInfer(ast, entry.Key, ctx)
+				typeCheckError("key", typeString, ty, ast.Nodes[entry.Key].Position(ast))
+			}
+		}
+		return TypeComposite{fields}, ctx
+	case NodeLiteralFunction:
+		ctxFn := ctx
+		args := make([]Type, len(n.Arguments))
+		for i, arg := range n.Arguments {
+			args[i] = ctx.typevar()
+			ctxFn = ctxFn.Append(ast.Nodes[arg].(NodeIdentifier).Val, args[i])
+		}
+		typeResult, _ := typeInfer(ast, n.Body, ctxFn)
+		return TypeFunction{args, typeResult}, ctx
 	case NodeFunctionCall:
 		typeFn, _ := typeInfer(ast, n.Function, ctx)
 		args := make([]Type, len(n.Arguments))
@@ -250,21 +412,20 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		if !ok {
 			typeCheckError("thing called as function", TypeFunction{}, typeFn, ast.Nodes[n.Function].Position(ast))
 		}
-		if len(typeFunction.Args) != len(n.Arguments) {
+		if len(typeFunction.Arguments) != len(n.Arguments) {
 			panicf(
 				"expected %d args of types %v but found %d of types %v",
-				len(typeFunction.Args), typeFunction.Args,
+				len(typeFunction.Arguments), typeFunction.Arguments,
 				len(n.Arguments), args,
 			)
 		}
-		for i, argExpected := range typeFunction.Args {
+		for i, argExpected := range typeFunction.Arguments {
 			argActual := args[i]
-			if !isSubtypeOf(argActual, argExpected) {
-				typeCheckError(fmt.Sprintf("arg #%d", i), argExpected, argActual, ast.Nodes[n.Arguments[i]].Position(ast))
-			}
+			pos := ast.Nodes[n.Arguments[i]].Position(ast)
+			_ = ctx.unify(argExpected, argActual, fmt.Sprintf("arg #%d", i), pos)
 		}
 
-		return typeAny, ctx
+		return typeFunction.Result, ctx
 	case NodeExprMatch:
 		typeCond, _ := typeInfer(ast, n.Condition, ctx)
 		typeResult := Type(typeVoid)

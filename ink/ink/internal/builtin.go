@@ -55,12 +55,12 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 	return false
 }
 
-var ctxBuiltins TypeContext = nil
+var ctxBuiltins TypeContext = TypeContext{fun.Ptr(0), nil, map[int]Type{}}
 
 // LoadEnvironment loads all builtins (functions and constants) to a given Context.
 func (ctx *Context) LoadEnvironment() {
 	// TODO: kal ebaniy, extract to var and use on init, cant be done right now because import func makes loop
-	fillCtxBuiltins := ctxBuiltins == nil
+	fillCtxBuiltins := ctxBuiltins.bindings == nil
 	for _, sig := range []struct {
 		name     string
 		fn       func(*Context, Pos, []Value) Value

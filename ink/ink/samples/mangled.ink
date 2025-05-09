@@ -33,8 +33,7 @@ kl := [
   1
 ].2
 ol := {
-  ('te' +
-  	'-st'): 'magic'
+  'te-st': 'magic'
 }.('te-st')
 log('should be magic: ' + ol)
 log('should be 3: ' + string(kl))
