@@ -209,10 +209,17 @@ func (ctx TypeContext) unify(
 	ty1, ty2 Type,
 	thing string,
 	pos Pos,
-) Type {
+) (t Type) {
 	// substitute known type vars
 	ty1 = ctx.substitute(ty1)
 	ty2 = ctx.substitute(ty2)
+
+	defer func() {
+		if p := recover(); p != nil {
+			panic(p)
+		}
+		fmt.Printf("unify %s %s -> %s\n", ty1.String(ctx), ty2.String(ctx), t.String(ctx))
+	}()
 
 	switch {
 	case typeIs[TypeVar](ty1):
@@ -292,7 +299,11 @@ func panicf(format string, args ...any) {
 //   - (intersection) A&B iso A
 //   - (func/args covariance) A iso B, then B -> C iso A -> C
 //   - (func/result covariance) A iso B, then C -> A iso C -> B
+//   - (???union) a | c iso a | b | c
 func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
+	subtype = ctx.substitute(subtype)
+	supertype = ctx.substitute(supertype)
+
 	switch typeSuper := supertype.(type) {
 	// any type is top
 	case TypeAny:
@@ -331,12 +342,23 @@ func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
 		}
 		return true
 	case TypeUnion:
-		for _, variant := range typeSuper {
-			if isSubtypeOf(ctx, subtype, variant) {
-				return true
+		switch typeSub := subtype.(type) {
+		case TypeUnion:
+			// TODO: very stupid implementation, does not handle many cases
+			for i, variant := range typeSub {
+				if isSubtypeOf(ctx, variant, typeSuper[i]) {
+					return true
+				}
 			}
+			return false
+		default:
+			for _, variant := range typeSuper {
+				if isSubtypeOf(ctx, subtype, variant) {
+					return true
+				}
+			}
+			return false
 		}
-		return false
 	// not implemented cases
 	default:
 		fmt.Printf("unknown subtype case: %s : %s\n", subtype.String(ctx), supertype.String(ctx))
@@ -411,9 +433,9 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 			lhs, _ := typeInfer(ast, n.Left, ctx)
 			rhs, _ := typeInfer(ast, n.Right, ctx)
 			summandType := TypeUnion{typeString, typeNumber}
-			lhsType := ctx.unify(lhs, summandType, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			lhsType := ctx.unify(lhs, rhs, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
 			rhsType := ctx.unify(rhs, summandType, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
-			return typeUnion(ctx, lhsType, rhsType), ctx
+			return ctx.unify(lhsType, rhsType, "result of "+op.String(), n.Pos), ctx
 		default:
 			panicf("cant typecheck binary operator %s", op.String())
 		}
