@@ -248,24 +248,14 @@ func (ctx TypeContext) unify(
 		}
 		res := ctx.unify(ty1.Result, ty2.Result, fmt.Sprintf("%s-th result", thing), pos)
 		return TypeFunction{args, res}
-	case isSubtypeOf(ctx, ty1, ty2):
+	case ctx.isSubtypeOf(ty1, ty2):
 		return ty1
-	case isSubtypeOf(ctx, ty2, ty1):
+	case ctx.isSubtypeOf(ty2, ty1):
 		return ty2
 	default:
-		typeCheckError(ctx, "unify "+thing, ty1, ty2, pos)
+		ctx.typeCheckError("unify "+thing, ty1, ty2, pos)
 	}
 	panic(1) // unreachable
-}
-
-func typeIs[T Type](ty Type) bool {
-	_, ok := ty.(T)
-	return ok
-}
-
-func valueIs[V Value](v Value) bool {
-	_, ok := v.(V)
-	return ok
 }
 
 func typeUnion(ctx TypeContext, a, b Type) Type {
@@ -274,17 +264,13 @@ func typeUnion(ctx TypeContext, a, b Type) Type {
 		return b
 	case typeIs[TypeVoid](b):
 		return a
-	case isSubtypeOf(ctx, a, b):
+	case ctx.isSubtypeOf(a, b):
 		return b
-	case isSubtypeOf(ctx, b, a):
+	case ctx.isSubtypeOf(b, a):
 		return a
 	default:
 		return typeAny
 	}
-}
-
-func panicf(format string, args ...any) {
-	panic(fmt.Sprintf(format, args...))
 }
 
 // isSubtypeOf checks that subtype can be assigned to supertype (iso - is subtype of):
@@ -300,7 +286,7 @@ func panicf(format string, args ...any) {
 //   - (func/args covariance) A iso B, then B -> C iso A -> C
 //   - (func/result covariance) A iso B, then C -> A iso C -> B
 //   - (???union) a | c iso a | b | c
-func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
+func (ctx TypeContext) isSubtypeOf(subtype, supertype Type) bool {
 	subtype = ctx.substitute(subtype)
 	supertype = ctx.substitute(supertype)
 
@@ -336,7 +322,7 @@ func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
 		}
 		for k, typeValueSuper := range typeSuper.fields {
 			typeValueSub, ok := typeSub.fields[k]
-			if !ok || !isSubtypeOf(ctx, typeValueSub, typeValueSuper) {
+			if !ok || !ctx.isSubtypeOf(typeValueSub, typeValueSuper) {
 				return false
 			}
 		}
@@ -346,14 +332,14 @@ func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
 		case TypeUnion:
 			// TODO: very stupid implementation, does not handle many cases
 			for i, variant := range typeSub {
-				if isSubtypeOf(ctx, variant, typeSuper[i]) {
+				if ctx.isSubtypeOf(variant, typeSuper[i]) {
 					return true
 				}
 			}
 			return false
 		default:
 			for _, variant := range typeSuper {
-				if isSubtypeOf(ctx, subtype, variant) {
+				if ctx.isSubtypeOf(subtype, variant) {
 					return true
 				}
 			}
@@ -366,8 +352,7 @@ func isSubtypeOf(ctx TypeContext, subtype, supertype Type) bool {
 	}
 }
 
-func typeCheckError(
-	ctx TypeContext,
+func (ctx TypeContext) typeCheckError(
 	thing string,
 	typeExpected, typeActual Type,
 	pos Pos,
@@ -376,6 +361,20 @@ func typeCheckError(
 		"%s: %s is expected to be of type %s but it is %s",
 		pos.String(), thing, typeExpected.String(ctx), typeActual.String(ctx),
 	)
+}
+
+func typeIs[T Type](ty Type) bool {
+	_, ok := ty.(T)
+	return ok
+}
+
+func valueIs[V Value](v Value) bool {
+	_, ok := v.(V)
+	return ok
+}
+
+func panicf(format string, args ...any) {
+	panic(fmt.Sprintf(format, args...))
 }
 
 func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
@@ -417,7 +416,7 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 				fieldName := string(*field.(TypeValue).value.(ValueString).b)
 				typeValue, ok := lhs.fields[fieldName]
 				if !ok {
-					typeCheckError(ctx, "map being accessed", TypeComposite{map[string]Type{fieldName: typeAny}}, typeNull, n.Pos)
+					ctx.typeCheckError("map being accessed", TypeComposite{map[string]Type{fieldName: typeAny}}, typeNull, n.Pos)
 				}
 				return typeValue, ctx
 			default:
@@ -471,7 +470,7 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 				fields[key.Val] = value
 			default:
 				ty, _ := typeInfer(ast, entry.Key, ctx)
-				typeCheckError(ctx, "key", typeString, ty, ast.Nodes[entry.Key].Position(ast))
+				ctx.typeCheckError("key", typeString, ty, ast.Nodes[entry.Key].Position(ast))
 			}
 		}
 		return TypeComposite{fields}, ctx
@@ -495,7 +494,7 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		typeFunction, ok := ctx.unify(typeFn, typeExpected, "fn call", n.Position(ast)).(TypeFunction)
 		if !ok {
 			// TODO: return type might be deducted
-			typeCheckError(ctx, "thing called as function", typeExpected, typeFn, ast.Nodes[n.Function].Position(ast))
+			ctx.typeCheckError("thing called as function", typeExpected, typeFn, ast.Nodes[n.Function].Position(ast))
 		}
 		if len(typeFunction.Arguments) != len(n.Arguments) {
 			panicf(
@@ -517,8 +516,8 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 		for _, clause := range n.Clauses {
 			if false { // TODO: implement pattern matching
 				typeTarget, _ := typeInfer(ast, clause.Target, ctx)
-				if !isSubtypeOf(ctx, typeCond, typeTarget) {
-					typeCheckError(ctx, "target", typeTarget, typeCond, ast.Nodes[clause.Target].Position(ast))
+				if !ctx.isSubtypeOf(typeCond, typeTarget) {
+					ctx.typeCheckError("target", typeTarget, typeCond, ast.Nodes[clause.Target].Position(ast))
 				}
 			}
 
