@@ -116,7 +116,6 @@ func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
 
 	typeProgram, typeCtx := typeInfer(ast, expr, ctxBuiltins)
 	fmt.Printf("PROGRAM TYPE: %s\n", typeProgram.String(typeCtx))
-	fmt.Printf("PROGRAM TYPE CTX: %s\n", typeCtx.String())
 
 	// optimization passes
 	// TODO: optimize pass:

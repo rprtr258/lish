@@ -2,7 +2,11 @@ package internal
 
 import (
 	"fmt"
+	"os"
+	"slices"
 	"strings"
+
+	"github.com/rprtr258/scuf"
 )
 
 type Type interface {
@@ -172,7 +176,7 @@ func (ctx typeContext) Append(varname string, ty Type) typeContext {
 	fmt.Println(varname, ":", ty.String(ctx))
 	return typeContext{
 		ctx.varID,
-		append(ctx.bindings, typeBinding{varname, ty}),
+		append(slices.Clip(ctx.bindings), typeBinding{varname, ty}),
 		ctx.substitutions,
 	}
 }
@@ -218,7 +222,10 @@ func (ctx typeContext) unify(
 		if p := recover(); p != nil {
 			panic(p)
 		}
-		fmt.Printf("unify %s, %s |- %s\n", ty1.String(ctx), ty2.String(ctx), t.String(ctx))
+		scuf.
+			New(os.Stdout).
+			String(fmt.Sprintf("unify %s, %s |- %s", ty1.String(ctx), ty2.String(ctx), t.String(ctx)), scuf.FgBlack).
+			NL()
 	}()
 
 	switch {
@@ -399,12 +406,15 @@ func baseType(ty Type) Type {
 func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 	switch n := ast.Nodes[n].(type) {
 	case NodeLiteralBoolean:
-		return TypeValue{ValueBoolean(n.Val)}, ctx
+		return typeBool, ctx
+		// return TypeValue{ValueBoolean(n.Val)}, ctx
 	case NodeLiteralNumber:
-		return TypeValue{ValueNumber(n.Val)}, ctx
+		return typeNumber, ctx
+		// return TypeValue{ValueNumber(n.Val)}, ctx
 	case NodeLiteralString:
-		b := []byte(n.Val)
-		return TypeValue{ValueString{&b}}, ctx
+		return typeString, ctx
+		// b := []byte(n.Val)
+		// return TypeValue{ValueString{&b}}, ctx
 	case NodeIdentifier:
 		varType, ok := ctx.Lookup(n.Val)
 		if !ok {
@@ -450,11 +460,10 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 		case OpAdd, OpLessThan, OpGreaterThan: // T = number | string, check T op T
 			lhs, _ := typeInfer(ast, n.Left, ctx)
 			rhs, _ := typeInfer(ast, n.Right, ctx)
-			summandType := TypeUnion{typeString, typeNumber}
 			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
-			hs := ctx.unify(baseType(lhs), baseType(rhs), "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
-			resType := ctx.unify(hs, summandType, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
-			return resType, ctx
+			hs := ctx.unify(baseType(lhs), baseType(rhs), "operands of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			summandType := TypeUnion{typeString, typeNumber}
+			return ctx.unify(hs, summandType, "result of "+op.String(), ast.Nodes[n.Right].Position(ast)), ctx
 		default:
 			panicf("cant typecheck binary operator %s", op.String())
 		}
@@ -532,17 +541,19 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 		return typeFunction.Result, ctx
 	case NodeExprMatch:
 		typeCond, _ := typeInfer(ast, n.Condition, ctx)
-		typeResult := Type(typeVoid)
+		typeResult := Type(nil)
 		for _, clause := range n.Clauses {
-			if false { // TODO: implement pattern matching
+			if _, ok := ast.Nodes[clause.Target].(NodeIdentifierEmpty); !ok { // TODO: implement pattern matching
 				typeTarget, _ := typeInfer(ast, clause.Target, ctx)
-				if !ctx.isSubtypeOf(typeCond, typeTarget) {
-					ctx.typeCheckError("target", typeTarget, typeCond, ast.Nodes[clause.Target].Position(ast))
-				}
+				typeCond = ctx.unify(typeTarget, typeCond, "match target", ast.Nodes[clause.Target].Position(ast))
 			}
 
 			typeExpr, _ := typeInfer(ast, clause.Expression, ctx)
-			typeResult = typeUnion(ctx, typeResult, typeExpr)
+			if typeResult == nil {
+				typeResult = typeExpr
+			} else {
+				typeResult = ctx.unify(typeResult, typeExpr, "match result", ast.Nodes[clause.Expression].Position(ast))
+			}
 		}
 		return typeResult, ctx
 	default:
