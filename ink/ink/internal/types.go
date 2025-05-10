@@ -7,65 +7,65 @@ import (
 
 type Type interface {
 	isType()
-	String(ctx TypeContext) string
+	String(ctx typeContext) string
 }
 
 type TypeString struct{}
 
 func (TypeString) isType()                   {}
-func (TypeString) String(TypeContext) string { return "string" }
+func (TypeString) String(typeContext) string { return "string" }
 
 var typeString = TypeString{}
 
 type TypeNumber struct{}
 
 func (TypeNumber) isType()                   {}
-func (TypeNumber) String(TypeContext) string { return "number" }
+func (TypeNumber) String(typeContext) string { return "number" }
 
 var typeNumber = TypeNumber{}
 
 type TypeBoolean struct{}
 
 func (TypeBoolean) isType()                   {}
-func (TypeBoolean) String(TypeContext) string { return "bool" }
+func (TypeBoolean) String(typeContext) string { return "bool" }
 
 var typeBool = TypeBoolean{}
 
 type TypeAny struct{}
 
 func (TypeAny) isType()                   {}
-func (TypeAny) String(TypeContext) string { return "any" }
+func (TypeAny) String(typeContext) string { return "any" }
 
 var typeAny = TypeAny{}
 
 type TypeError struct{}
 
 func (TypeError) isType()                   {}
-func (TypeError) String(TypeContext) string { return "error" }
+func (TypeError) String(typeContext) string { return "error" }
 
 type TypeNull struct{}
 
 func (TypeNull) isType()                   {}
-func (TypeNull) String(TypeContext) string { return "()" }
+func (TypeNull) String(typeContext) string { return "()" }
 
 var typeNull = TypeNull{}
 
 type TypeVoid struct{}
 
 func (TypeVoid) isType()                   {}
-func (TypeVoid) String(TypeContext) string { return "<void>" }
+func (TypeVoid) String(typeContext) string { return "<void>" }
 
 var typeVoid = TypeVoid{}
 
 type TypeValue struct{ value Value }
 
 func (TypeValue) isType()                     {}
-func (t TypeValue) String(TypeContext) string { return t.value.String() }
+func (t TypeValue) String(typeContext) string { return t.value.String() }
 
 type TypeVar struct{ id int }
 
 func (TypeVar) isType()                     {}
-func (t TypeVar) String(TypeContext) string { return fmt.Sprintf("$%d", t.id) }
+func (t TypeVar) String(typeContext) string { return fmt.Sprintf("$%d", t.id) }
 
 type TypeComposite struct {
 	// TODO: open/closed composite: {x: number} vs {[string]: number}
@@ -74,7 +74,7 @@ type TypeComposite struct {
 }
 
 func (TypeComposite) isType()                   {}
-func (TypeComposite) String(TypeContext) string { return "<void>" }
+func (TypeComposite) String(typeContext) string { return "<void>" }
 
 type TypeFunction struct {
 	Arguments []Type
@@ -82,7 +82,7 @@ type TypeFunction struct {
 }
 
 func (TypeFunction) isType() {}
-func (t TypeFunction) String(ctx TypeContext) string {
+func (t TypeFunction) String(ctx typeContext) string {
 	var sb strings.Builder
 	if len(t.Arguments) == 1 {
 		sb.WriteString(ctx.substitute(t.Arguments[0]).String(ctx))
@@ -104,7 +104,7 @@ func (t TypeFunction) String(ctx TypeContext) string {
 type TypeUnion []Type // TODO: make sure they are mutually disjoint
 
 func (TypeUnion) isType() {}
-func (t TypeUnion) String(ctx TypeContext) string {
+func (t TypeUnion) String(ctx typeContext) string {
 	var sb strings.Builder
 	for i, variant := range t {
 		if i > 0 {
@@ -121,7 +121,7 @@ type TypeList struct {
 }
 
 func (TypeList) isType() {}
-func (t TypeList) String(ctx TypeContext) string {
+func (t TypeList) String(ctx typeContext) string {
 	var sb strings.Builder
 	sb.WriteString("[")
 	for i, elem := range t.elems {
@@ -145,13 +145,13 @@ type typeBinding struct {
 	ty      Type
 }
 
-type TypeContext struct {
+type typeContext struct {
 	varID         *int
 	bindings      []typeBinding
 	substitutions map[int]Type
 }
 
-func (ctx TypeContext) String() string {
+func (ctx typeContext) String() string {
 	var sb strings.Builder
 	for _, decl := range ctx.bindings {
 		fmt.Fprintf(&sb, "%s : %s\n", decl.varname, decl.ty.String(ctx))
@@ -159,7 +159,7 @@ func (ctx TypeContext) String() string {
 	return sb.String()
 }
 
-func (ctx TypeContext) Lookup(varname string) (Type, bool) {
+func (ctx typeContext) Lookup(varname string) (Type, bool) {
 	for _, decl := range ctx.bindings {
 		if decl.varname == varname {
 			return decl.ty, true
@@ -168,22 +168,22 @@ func (ctx TypeContext) Lookup(varname string) (Type, bool) {
 	return nil, false
 }
 
-func (ctx TypeContext) Append(varname string, ty Type) TypeContext {
+func (ctx typeContext) Append(varname string, ty Type) typeContext {
 	fmt.Println(varname, ":", ty.String(ctx))
-	return TypeContext{
+	return typeContext{
 		ctx.varID,
 		append(ctx.bindings, typeBinding{varname, ty}),
 		ctx.substitutions,
 	}
 }
 
-func (ctx TypeContext) typevar() Type {
+func (ctx typeContext) typevar() Type {
 	id := *ctx.varID
 	*ctx.varID++
 	return TypeVar{id}
 }
 
-func (ctx TypeContext) substitute(ty Type) Type {
+func (ctx typeContext) substitute(ty Type) Type {
 	switch ty := ty.(type) {
 	case TypeVar:
 		typeRes, ok := ctx.substitutions[ty.id]
@@ -205,7 +205,7 @@ func (ctx TypeContext) substitute(ty Type) Type {
 	}
 }
 
-func (ctx TypeContext) unify(
+func (ctx typeContext) unify(
 	ty1, ty2 Type,
 	thing string,
 	pos Pos,
@@ -218,7 +218,7 @@ func (ctx TypeContext) unify(
 		if p := recover(); p != nil {
 			panic(p)
 		}
-		fmt.Printf("unify %s %s -> %s\n", ty1.String(ctx), ty2.String(ctx), t.String(ctx))
+		fmt.Printf("unify %s, %s |- %s\n", ty1.String(ctx), ty2.String(ctx), t.String(ctx))
 	}()
 
 	switch {
@@ -258,7 +258,7 @@ func (ctx TypeContext) unify(
 	panic(1) // unreachable
 }
 
-func typeUnion(ctx TypeContext, a, b Type) Type {
+func typeUnion(ctx typeContext, a, b Type) Type {
 	switch {
 	case typeIs[TypeVoid](a):
 		return b
@@ -286,7 +286,7 @@ func typeUnion(ctx TypeContext, a, b Type) Type {
 //   - (func/args covariance) A iso B, then B -> C iso A -> C
 //   - (func/result covariance) A iso B, then C -> A iso C -> B
 //   - (???union) a | c iso a | b | c
-func (ctx TypeContext) isSubtypeOf(subtype, supertype Type) bool {
+func (ctx typeContext) isSubtypeOf(subtype, supertype Type) bool {
 	subtype = ctx.substitute(subtype)
 	supertype = ctx.substitute(supertype)
 
@@ -352,7 +352,7 @@ func (ctx TypeContext) isSubtypeOf(subtype, supertype Type) bool {
 	}
 }
 
-func (ctx TypeContext) typeCheckError(
+func (ctx typeContext) typeCheckError(
 	thing string,
 	typeExpected, typeActual Type,
 	pos Pos,
@@ -377,7 +377,26 @@ func panicf(format string, args ...any) {
 	panic(fmt.Sprintf(format, args...))
 }
 
-func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
+func baseType(ty Type) Type {
+	switch ty := ty.(type) {
+	case TypeValue:
+		switch ty.value.(type) {
+		case ValueBoolean:
+			return typeBool
+		case ValueNumber:
+			return typeNumber
+		case ValueString:
+			return typeString
+		default:
+			panicf("unknown value type %T", ty.value)
+		}
+	default:
+		return ty
+	}
+	panic(1) // unreachable
+}
+
+func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 	switch n := ast.Nodes[n].(type) {
 	case NodeLiteralBoolean:
 		return TypeValue{ValueBoolean(n.Val)}, ctx
@@ -432,9 +451,10 @@ func typeInfer(ast *AST, n NodeID, ctx TypeContext) (Type, TypeContext) {
 			lhs, _ := typeInfer(ast, n.Left, ctx)
 			rhs, _ := typeInfer(ast, n.Right, ctx)
 			summandType := TypeUnion{typeString, typeNumber}
-			lhsType := ctx.unify(lhs, rhs, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
-			rhsType := ctx.unify(rhs, summandType, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
-			return ctx.unify(lhsType, rhsType, "result of "+op.String(), n.Pos), ctx
+			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
+			hs := ctx.unify(baseType(lhs), baseType(rhs), "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			resType := ctx.unify(hs, summandType, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
+			return resType, ctx
 		default:
 			panicf("cant typecheck binary operator %s", op.String())
 		}

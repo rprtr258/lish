@@ -55,7 +55,7 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 	return false
 }
 
-var ctxBuiltins TypeContext = TypeContext{fun.Ptr(0), nil, map[int]Type{}}
+var ctxBuiltins typeContext = typeContext{fun.Ptr(0), nil, map[int]Type{}}
 
 // LoadEnvironment loads all builtins (functions and constants) to a given Context.
 func (ctx *Context) LoadEnvironment() {
