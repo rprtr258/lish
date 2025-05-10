@@ -457,13 +457,21 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 			_ = ctx.unify(lhs, typeNumber, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
 			_ = ctx.unify(rhs, typeNumber, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
 			return typeNumber, ctx
-		case OpAdd, OpLessThan, OpGreaterThan: // T = number | string, check T op T
+		case OpAdd: // T = number | string, check T op T
 			lhs, _ := typeInfer(ast, n.Left, ctx)
 			rhs, _ := typeInfer(ast, n.Right, ctx)
 			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
 			hs := ctx.unify(baseType(lhs), baseType(rhs), "operands of "+op.String(), ast.Nodes[n.Left].Position(ast))
 			summandType := TypeUnion{typeString, typeNumber}
 			return ctx.unify(hs, summandType, "result of "+op.String(), ast.Nodes[n.Right].Position(ast)), ctx
+		case OpLessThan, OpGreaterThan: // T = number | string, check T op T is bool
+			lhs, _ := typeInfer(ast, n.Left, ctx)
+			rhs, _ := typeInfer(ast, n.Right, ctx)
+			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
+			hs := ctx.unify(baseType(lhs), baseType(rhs), "operands of "+op.String(), ast.Nodes[n.Left].Position(ast))
+			summandType := TypeUnion{typeString, typeNumber}
+			_ = ctx.unify(hs, summandType, "operands of "+op.String(), n.Pos)
+			return typeBool, ctx
 		default:
 			panicf("cant typecheck binary operator %s", op.String())
 		}
