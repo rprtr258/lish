@@ -462,7 +462,7 @@ func (vm *VM) pop() Value {
 	res := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
 	if err, ok := res.(ValueError); ok { // TODO: remove
-		log.Fatal().Err(err).Msg("ERROR")
+		log.Error().Err(err).Msg("ERROR")
 	}
 	return res
 }
