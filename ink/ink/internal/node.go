@@ -84,9 +84,6 @@ func (s AST) Graph() string {
 		case NodeIdentifier:
 			props["fillcolor"] = _colorIdent
 			val = n.Val
-		case NodeExprUnary:
-			props["fillcolor"] = _colorExpr
-			val = n.Operator.String()
 		case NodeExprBinary:
 			props["fillcolor"] = _colorExpr
 			val = n.Operator.String()
@@ -109,8 +106,6 @@ func (s AST) Graph() string {
 			for k, j := range n.Expressions {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
 			}
-		case NodeExprUnary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.Operand)
 		case NodeExprBinary:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.Left)
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.Right)
@@ -145,20 +140,7 @@ type errParse struct {
 type Node interface {
 	String() string
 	Position(*AST) Pos
-}
-
-type NodeExprUnary struct {
-	Pos
-	Operator Kind
-	Operand  NodeID
-}
-
-func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s #%d", n.Operator, n.Operand)
-}
-
-func (n NodeExprUnary) Position(*AST) Pos {
-	return n.Pos
+	Eval(*Scope, *AST) Value
 }
 
 type NodeExprBinary struct {
@@ -197,6 +179,31 @@ func (n NodeFunctionCall) String() string {
 
 func (n NodeFunctionCall) Position(s *AST) Pos {
 	return s.Nodes[n.Function].Position(s)
+}
+
+type NodeConstFunctionCall struct {
+	Function  NativeFunctionValue
+	Arguments []NodeID
+	Pos       Pos
+}
+
+func (n NodeConstFunctionCall) String() string {
+	var sb strings.Builder
+	sb.WriteString("Call ")
+	sb.WriteString(n.Function.String())
+	sb.WriteString(" on (")
+	for i, a := range n.Arguments {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(a.String())
+	}
+	sb.WriteString(")")
+	return sb.String()
+}
+
+func (n NodeConstFunctionCall) Position(s *AST) Pos {
+	return n.Pos
 }
 
 type NodeMatchClause struct {

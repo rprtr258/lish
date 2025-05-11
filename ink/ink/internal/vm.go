@@ -291,9 +291,12 @@ func (c *compiler) compile(n NodeID) {
 			c.compile(e.Val)
 		}
 		c.emit(OpComposite, pos, len(n.Entries))
-	case NodeExprUnary:
-		c.compile(n.Operand)
-		c.emit(OpOperatorUnary, pos, n.Operator)
+	case NodeConstFunctionCall:
+		for _, arg := range n.Arguments {
+			c.compile(arg)
+		}
+		c.emit(OpConstFunction, pos, n.Function)
+		c.emit(OpCall, pos, 1)
 	case NodeExprBinary:
 		switch n.Operator {
 		case OpDefine:
@@ -315,7 +318,7 @@ func (c *compiler) compile(n NodeID) {
 				// TODO: check if this is needed
 				// c.emit(OpConstString, nToS(keyNode.Val))
 				c.emit(OpConstNumber, pos, keyNode.Val)
-			case NodeExprUnary, NodeFunctionCall, NodeExprBinary, NodeExprList:
+			case NodeConstFunctionCall, NodeFunctionCall, NodeExprBinary, NodeExprList:
 				c.compile(n.Right)
 			default:
 				assert(false, "type", fmt.Sprintf("%T", c.AST.Nodes[n.Right]))

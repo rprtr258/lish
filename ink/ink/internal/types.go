@@ -421,9 +421,6 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 			panicf("var %s is not defined", n.Val)
 		}
 		return varType, ctx
-	case NodeExprUnary:
-		// NOTE: there is single unary operator ~ so type of unary expression is same as operand's
-		return typeInfer(ast, n.Operand, ctx)
 	case NodeExprBinary:
 		switch op := n.Operator; op {
 		case OpDefine:
@@ -520,6 +517,9 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 		}
 		typeResult, _ := typeInfer(ast, n.Body, ctxFn)
 		return TypeFunction{args, typeResult}, ctx
+	// case NodeConstFunctionCall: // TODO: get back
+	// 	// NOTE: there is single unary operator ~ so type of unary expression is same as operand's
+	// 	return typeInfer(ast, n.Operand, ctx)
 	case NodeFunctionCall:
 		typeFn, _ := typeInfer(ast, n.Function, ctx)
 		args := make([]Type, len(n.Arguments))

@@ -116,7 +116,7 @@ func TestParser(t *testing.T) {
 		f(
 			`valid negative number`,
 			`~1`,
-			NodeExprUnary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			`valid addition`,
@@ -348,7 +348,7 @@ b := 1
 	f(
 		"negate expression",
 		`~(1-2)`,
-		NodeExprUnary{},
+		NodeConstFunctionCall{},
 	)
 }
 

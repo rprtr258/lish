@@ -55,6 +55,37 @@ func (v NativeFunctionValue) Equals(other Value) bool {
 	return false
 }
 
+var operators = map[Kind]func(Pos, []Value) Value{
+	OpSubtract: func(pos Pos, args []Value) Value { // TODO: - :: (number -> number) | (boolean -> boolean)
+		assert(len(args) == 1)
+
+		operand := args[0]
+		if isErr(operand) {
+			return operand
+		}
+
+		switch o := operand.(type) {
+		case ValueNumber:
+			return -o
+		case ValueBoolean:
+			return ValueBoolean(!o)
+		default:
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), pos}}
+		}
+	},
+}
+
+func operatorFunc(kind Kind) NativeFunctionValue {
+	f := operators[kind]
+	return NativeFunctionValue{
+		name: kind.String(),
+		exec: func(_ *Context, p Pos, v []Value) Value {
+			return f(p, v)
+		},
+		ctx: nil,
+	}
+}
+
 var ctxBuiltins typeContext = typeContext{fun.Ptr(0), nil, map[int]Type{}}
 
 // LoadEnvironment loads all builtins (functions and constants) to a given Context.

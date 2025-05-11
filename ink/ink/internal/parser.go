@@ -223,10 +223,10 @@ func parseAtom(tokens []Token, ast *AST) (NodeID, int) {
 
 	if tok.Kind == OpNegation {
 		atom, idx := parseAtom(tokens[idx:], ast)
-		return ast.Append(NodeExprUnary{
-			Operator: tok.Kind,
-			Operand:  atom,
-			Pos:      tok.Pos,
+		return ast.Append(NodeConstFunctionCall{
+			Function:  operatorFunc(tok.Kind),
+			Arguments: []NodeID{atom},
+			Pos:       tok.Pos,
 		}), idx + 1
 	}
 

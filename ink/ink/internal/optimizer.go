@@ -54,13 +54,6 @@ func constantFolding(ast *AST, n NodeID) bool {
 		return false
 	case NodeLiteralFunction:
 		return constFoldList(ast, n, append(nn.Arguments, nn.Body))
-	case NodeExprUnary:
-		isConst := constantFolding(ast, nn.Operand)
-		if !isConst {
-			return false
-		}
-		constEval(ast, n)
-		return true
 	case NodeExprBinary:
 		l := constantFolding(ast, nn.Left)
 		r := constantFolding(ast, nn.Right)
@@ -125,8 +118,6 @@ func listexprSimplifier(ast *AST, n NodeID) {
 	case NodeLiteralBoolean, NodeLiteralNumber, NodeLiteralString, NodeIdentifierEmpty, NodeIdentifier:
 	case NodeLiteralFunction:
 		listexprSimplifier(ast, nn.Body)
-	case NodeExprUnary:
-		listexprSimplifier(ast, nn.Operand)
 	case NodeExprBinary:
 		listexprSimplifier(ast, nn.Left)
 		listexprSimplifier(ast, nn.Right)
