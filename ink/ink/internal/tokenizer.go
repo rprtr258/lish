@@ -169,6 +169,19 @@ func (kind Kind) String() string {
 	}
 }
 
+type Pos2 struct {
+	File                     string
+	Line1, Col1, Line2, Col2 int
+}
+
+func (p Pos2) String() string {
+	if p == (Pos2{}) {
+		return "??: ??:?? - ??:??"
+	}
+
+	return fmt.Sprintf("%s: %d:%d - %d:%d", p.File, p.Line1, p.Col1, p.Line2, p.Col2)
+}
+
 type Pos struct {
 	File      string
 	Line, Col int

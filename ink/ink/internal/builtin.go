@@ -8,6 +8,7 @@ import (
 	crand "crypto/rand"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"math/rand"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kr/pretty"
 	"github.com/rprtr258/fun"
 )
 
@@ -31,56 +33,503 @@ func vs(s string) ValueString {
 
 // TODO: export as builtin.ink signatured functions
 
-// NativeFunctionValue represents a function whose implementation is written
+// ValueNativeFunction represents a function whose implementation is written
 // in Go and built-into the runtime.
-type NativeFunctionValue struct {
+type ValueNativeFunction struct {
 	name string
 	exec func(*Context, Pos, []Value) Value
 	ctx  *Context // runtime context to dispatch async errors
 }
 
-func (v NativeFunctionValue) String() string {
+func (v ValueNativeFunction) String() string {
 	return fmt.Sprintf("NATIVE_FUNCTION(%s)", v.name)
 }
 
-func (v NativeFunctionValue) Equals(other Value) bool {
+func (v ValueNativeFunction) Equals(other Value) bool {
 	if _, isEmpty := other.(ValueEmpty); isEmpty {
 		return true
 	}
 
-	if ov, ok := other.(NativeFunctionValue); ok {
+	if ov, ok := other.(ValueNativeFunction); ok {
 		return v.name == ov.name
 	}
 
 	return false
 }
 
-var operators = map[Kind]func(Pos, []Value) Value{
-	OpSubtract: func(pos Pos, args []Value) Value { // TODO: - :: (number -> number) | (boolean -> boolean)
-		assert(len(args) == 1)
+type operatorFn struct {
+	ty   TypeUnion
+	exec func(Pos, []Value) Value
+}
 
-		operand := args[0]
-		if isErr(operand) {
-			return operand
-		}
+var operators = map[Kind]operatorFn{
+	OpNegation: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeBool}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 1)
 
-		switch o := operand.(type) {
-		case ValueNumber:
-			return -o
-		case ValueBoolean:
-			return ValueBoolean(!o)
-		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), pos}}
-		}
+			operand := args[0]
+			if isErr(operand) {
+				return operand
+			}
+
+			switch o := operand.(type) {
+			case ValueNumber:
+				return -o
+			case ValueBoolean:
+				return ValueBoolean(!o)
+			default:
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), pos}}
+			}
+		},
+	},
+	OpMultiply: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeBool, typeBool}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					return left * right
+				}
+			// TODO: remove, same as &
+			case ValueBoolean:
+				if right, ok := rightValue.(ValueBoolean); ok {
+					return ValueBoolean(left && right)
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", leftValue, rightValue), pos}}
+		},
+	},
+	OpSubtract: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			// TODO: merge OpNegation here ?
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					return left - right
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), pos}}
+		},
+	},
+	OpDivide: {
+		ty: TypeUnion{TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber}},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			if leftNum, isNum := leftValue.(ValueNumber); isNum {
+				if right, ok := rightValue.(ValueNumber); ok {
+					if right == 0 {
+						return ValueError{&Err{nil, ErrRuntime, "division by zero error", pos}}
+					}
+
+					return leftNum / right
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", leftValue, rightValue), pos}}
+		},
+	},
+	OpModulus: {
+		ty: TypeUnion{TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber}},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			// TODO: string templating "% %" % [1, 2] == "1 2"
+			if leftNum, isNum := leftValue.(ValueNumber); isNum {
+				if right, ok := rightValue.(ValueNumber); ok {
+					if right == 0 {
+						return ValueError{&Err{nil, ErrRuntime, "division by zero error in modulus", pos}}
+					}
+
+					if isInteger(right) {
+						return ValueNumber(int(leftNum) % int(right))
+					}
+
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), pos}}
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support modulus", leftValue, rightValue), pos}}
+		},
+	},
+	OpAdd: { // TODO: check string + list gives nothing // TODO: check ValueError values are shown explicitly, not ignored
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeString, typeString}, typeString},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2, "len", len(args), "args", pretty.Sprint(args))
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					return left + right
+				}
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					// In this context, strings are immutable. i.e. concatenating
+					// strings should produce a completely new string whose modifications
+					// won't be observable by the original strings.
+					base := make([]byte, 0, len(*left.b)+len(*right.b))
+					base = append(base, *left.b...)
+					base = append(base, *right.b...)
+					return ValueString{&base}
+				}
+			// TODO: remove, same as |
+			case ValueBoolean:
+				if right, ok := rightValue.(ValueBoolean); ok {
+					return ValueBoolean(left || right)
+				}
+			case ValueComposite: // dict + dict
+				if right, ok := rightValue.(ValueComposite); ok {
+					res := make(ValueComposite, len(left)+len(right))
+					maps.Copy(res, left)
+					maps.Copy(res, right)
+					return res
+				}
+			case ValueList: // list + list
+				if right, ok := rightValue.(ValueList); ok {
+					xs := make([]Value, len(*left.xs)+len(*right.xs))
+					for i := range len(*left.xs) {
+						xs[i] = (*left.xs)[i]
+					}
+					for i := range len(*right.xs) {
+						xs[i+len(*left.xs)] = (*right.xs)[i]
+					}
+					return ValueList{&xs}
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", leftValue, rightValue), pos}}
+		},
+	},
+	OpEqual: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeAny, typeAny}, typeBool}, // TODO: assert equal type
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			return ValueBoolean(leftValue.Equals(rightValue))
+		},
+	},
+	OpLessThan: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeBool},
+			TypeFunction{[]Type{typeString, typeString}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					return ValueBoolean(left < right)
+				}
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					return ValueBoolean(bytes.Compare(*left.b, *right.b) < 0)
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", leftValue, rightValue), pos}}
+		},
+	},
+	OpGreaterThan: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeBool},
+			TypeFunction{[]Type{typeString, typeString}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					return ValueBoolean(left > right)
+				}
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					return ValueBoolean(bytes.Compare(*left.b, *right.b) > 0)
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", leftValue, rightValue), pos}}
+		},
+	},
+	OpLogicalXor: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeString, typeString}, typeString},
+			TypeFunction{[]Type{typeBool, typeBool}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					if isInteger(left) && isInteger(right) {
+						return ValueNumber(int64(left) ^ int64(right))
+					}
+
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", right.String(), left.String()), pos}}
+				}
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					max := max(len(*left.b), len(*right.b))
+
+					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+					c := make([]byte, max)
+					for i := range c {
+						c[i] = a[i] ^ b[i]
+					}
+					return ValueString{&c}
+				}
+			case ValueBoolean:
+				if right, ok := rightValue.(ValueBoolean); ok {
+					return ValueBoolean(left != right)
+				}
+			}
+
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", leftValue, rightValue), pos}}
+		},
+	},
+	OpLogicalAnd: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeString, typeString}, typeString},
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeBool, typeBool}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			fail := ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical &", leftValue, rightValue), pos}}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					if isInteger(left) && isInteger(right) {
+						return ValueNumber(int64(left) & int64(right))
+					}
+
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), pos}}
+				}
+
+				return fail
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					max := max(len(*left.b), len(*right.b))
+
+					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+					c := make([]byte, max)
+					for i := range c {
+						c[i] = a[i] & b[i]
+					}
+					return ValueString{&c}
+				}
+
+				return fail
+			case ValueBoolean:
+				if !left { // false & x = false
+					return ValueBoolean(false)
+				}
+
+				right, ok := rightValue.(ValueBoolean)
+				if !ok {
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise & of %T and %T", left, right), pos}}
+				}
+
+				return ValueBoolean(right)
+			}
+
+			return fail
+		},
+	},
+	OpLogicalOr: {
+		ty: TypeUnion{
+			TypeFunction{[]Type{typeString, typeString}, typeString},
+			TypeFunction{[]Type{typeNumber, typeNumber}, typeNumber},
+			TypeFunction{[]Type{typeBool, typeBool}, typeBool},
+		},
+		exec: func(pos Pos, args []Value) Value {
+			assert(len(args) == 2)
+
+			leftValue := args[0]
+			if isErr(leftValue) {
+				return leftValue
+			}
+
+			rightValue := args[1]
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			fail := ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", leftValue, rightValue), pos}}
+
+			switch left := leftValue.(type) {
+			case ValueNumber:
+				if right, ok := rightValue.(ValueNumber); ok {
+					if !isInteger(left) {
+						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), pos}}
+					}
+
+					return ValueNumber(int64(left) | int64(right))
+				}
+				return fail
+			case ValueString:
+				if right, ok := rightValue.(ValueString); ok {
+					max := max(len(*left.b), len(*right.b))
+
+					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+					c := make([]byte, max)
+					for i := range c {
+						c[i] = a[i] | b[i]
+					}
+					return ValueString{&c}
+				}
+
+				return fail
+			case ValueBoolean:
+				if left { // true | x = true
+					return ValueBoolean(true)
+				}
+
+				right, ok := rightValue.(ValueBoolean)
+				if !ok {
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T", left, right), pos}}
+				}
+
+				return ValueBoolean(right)
+			}
+
+			return fail
+		},
 	},
 }
 
-func operatorFunc(kind Kind) NativeFunctionValue {
+func operatorFunc(kind Kind) ValueNativeFunction {
 	f := operators[kind]
-	return NativeFunctionValue{
+	return ValueNativeFunction{
 		name: kind.String(),
 		exec: func(_ *Context, p Pos, v []Value) Value {
-			return f(p, v)
+			return f.exec(p, v)
 		},
 		ctx: nil,
 	}
@@ -156,7 +605,7 @@ func (ctx *Context) LoadFunc(
 	name string,
 	exec func(*Context, Pos, []Value) Value,
 ) {
-	ctx.Scope.Set(name, NativeFunctionValue{name, exec, ctx})
+	ctx.Scope.Set(name, ValueNativeFunction{name, exec, ctx})
 }
 
 // Create and return a standard error callback response with the given message
@@ -836,7 +1285,7 @@ func inkListen(ctx *Context, pos Pos, in []Value) Value {
 		return Null
 	}
 
-	return NativeFunctionValue{
+	return ValueNativeFunction{
 		name: "close",
 		exec: closer,
 		ctx:  ctx,
@@ -1082,7 +1531,7 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 	}()
 
 	closed := false
-	return NativeFunctionValue{
+	return ValueNativeFunction{
 		name: "close",
 		exec: func(_ *Context, pos Pos, _ []Value) Value {
 			// multiple calls to close() should be idempotent
@@ -1244,7 +1693,7 @@ func inkString(ctx *Context, pos Pos, in []Value) Value {
 			return v.String()
 		case ValueList:
 			return v.String()
-		case ValueFunction, NativeFunctionValue:
+		case ValueFunction, ValueNativeFunction:
 			return "(function)"
 		default:
 			return ""
@@ -1321,7 +1770,7 @@ func inkType(ctx *Context, pos Pos, in []Value) Value {
 		return vs("composite")
 	case ValueList:
 		return vs("list")
-	case ValueFunction, NativeFunctionValue:
+	case ValueFunction, ValueNativeFunction:
 		return vs("function")
 	case ValueError:
 		return vs("error")

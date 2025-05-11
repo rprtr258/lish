@@ -421,57 +421,6 @@ func typeInfer(ast *AST, n NodeID, ctx typeContext) (Type, typeContext) {
 			panicf("var %s is not defined", n.Val)
 		}
 		return varType, ctx
-	case NodeExprBinary:
-		switch op := n.Operator; op {
-		case OpDefine:
-			switch lhs := ast.Nodes[n.Left].(type) {
-			case NodeIdentifier:
-				varType := ctx.typevar()
-				ctx2 := ctx.Append(lhs.Val, varType)
-				rhs, _ := typeInfer(ast, n.Right, ctx2)
-				return ctx2.unify(varType, rhs, "var "+lhs.Val, lhs.Pos), ctx2
-			default:
-				panicf("cant typecheck define operator with lhs %T", lhs)
-			}
-		case OpAccessor:
-			lhs, _ := typeInfer(ast, n.Left, ctx)
-			switch lhs := lhs.(type) {
-			case TypeComposite:
-				field, _ := typeInfer(ast, n.Right, ctx)
-				// TODO: open composite indexing
-				fieldName := string(*field.(TypeValue).value.(ValueString).b)
-				typeValue, ok := lhs.fields[fieldName]
-				if !ok {
-					ctx.typeCheckError("map being accessed", TypeComposite{map[string]Type{fieldName: typeAny}}, typeNull, n.Pos)
-				}
-				return typeValue, ctx
-			default:
-				return typeAny, ctx
-			}
-		case OpMultiply, OpSubtract, OpDivide, OpModulus: // number only operators
-			lhs, _ := typeInfer(ast, n.Left, ctx)
-			rhs, _ := typeInfer(ast, n.Right, ctx)
-			_ = ctx.unify(lhs, typeNumber, "lhs of "+op.String(), ast.Nodes[n.Left].Position(ast))
-			_ = ctx.unify(rhs, typeNumber, "rhs of "+op.String(), ast.Nodes[n.Right].Position(ast))
-			return typeNumber, ctx
-		case OpAdd: // T = number | string, check T op T
-			lhs, _ := typeInfer(ast, n.Left, ctx)
-			rhs, _ := typeInfer(ast, n.Right, ctx)
-			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
-			hs := ctx.unify(baseType(lhs), baseType(rhs), "operands of "+op.String(), ast.Nodes[n.Left].Position(ast))
-			summandType := TypeUnion{typeString, typeNumber}
-			return ctx.unify(hs, summandType, "result of "+op.String(), ast.Nodes[n.Right].Position(ast)), ctx
-		case OpLessThan, OpGreaterThan: // T = number | string, check T op T is bool
-			lhs, _ := typeInfer(ast, n.Left, ctx)
-			rhs, _ := typeInfer(ast, n.Right, ctx)
-			// TODO: ebanie kostyli here since i dont know how to handle this appropriately
-			hs := ctx.unify(baseType(lhs), baseType(rhs), "operands of "+op.String(), ast.Nodes[n.Left].Position(ast))
-			summandType := TypeUnion{typeString, typeNumber}
-			_ = ctx.unify(hs, summandType, "operands of "+op.String(), n.Pos)
-			return typeBool, ctx
-		default:
-			panicf("cant typecheck binary operator %s", op.String())
-		}
 	case NodeExprList:
 		if len(n.Expressions) == 0 {
 			return typeNull, ctx

@@ -138,12 +138,7 @@ LOOP:
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
 	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = ast.Append(NodeExprBinary{
-			Operator: ops[0].Kind,
-			Left:     tree,
-			Right:    nodes[0],
-			Pos:      ops[0].Pos,
-		})
+		tree = ast.AppendOp(ops[0].Kind, ops[0].Pos, tree, nodes[0])
 	}
 	return tree, idx
 }

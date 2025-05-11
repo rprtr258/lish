@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -333,17 +332,13 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 	case NodeIdentifier:
 		scope.Set(leftSide.Val, rightValue)
 		return rightValue
-	case NodeExprBinary:
-		if leftSide.Operator != OpAccessor {
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), leftNode.Position(ast)}}
-		}
-
-		leftValue := ast.Nodes[leftSide.Left].Eval(scope, ast)
+	case NodeAccessor:
+		leftValue := ast.Nodes[leftSide.Arg].Eval(scope, ast)
 		if isErr(leftValue) {
 			return leftValue
 		}
 
-		leftKey, err := operandToStringKey(scope, ast, ast.Nodes[leftSide.Right])
+		leftKey, err := operandToStringKey(scope, ast, ast.Nodes[leftSide.Path])
 		if err != nil {
 			return ValueError{err}
 		}
@@ -355,11 +350,11 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 		case ValueList:
 			rightNum, errr := strconv.Atoi(leftKey)
 			if errr != nil {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Right].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Path].Position(ast)}}
 			}
 
 			if rightNum < 0 || rightNum > len(*left.xs) {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, leftKey), ast.Nodes[leftSide.Right].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, leftKey), ast.Nodes[leftSide.Path].Position(ast)}}
 			}
 
 			if rightNum == len(*left.xs) { // append
@@ -369,9 +364,9 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 			}
 			return left
 		case ValueString:
-			leftIdent, isLeftIdent := ast.Nodes[leftSide.Left].(NodeIdentifier)
+			leftIdent, isLeftIdent := ast.Nodes[leftSide.Path].(NodeIdentifier)
 			if !isLeftIdent {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), ast.Nodes[leftSide.Right].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot set string %s at index because string is not an identifier", left), ast.Nodes[leftSide.Path].Position(ast)}}
 			}
 
 			rightString, isString := rightValue.(ValueString)
@@ -381,7 +376,7 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 
 			rightNum, errr := strconv.Atoi(leftKey)
 			if errr != nil {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Right].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Path].Position(ast)}}
 			}
 
 			switch rn := rightNum; {
@@ -400,10 +395,10 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 				scope.Update(leftIdent.Val, left)
 				return left
 			default:
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), ast.Nodes[leftSide.Right].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), ast.Nodes[leftSide.Path].Position(ast)}}
 			}
 		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), ast.Nodes[leftSide.Left].Position(ast)}}
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot set property of a non-composite value %s", leftValue), ast.Nodes[leftSide.Arg].Position(ast)}}
 		}
 	case NodeLiteralList: // list destructure: [a, b, c] = list
 		rightList, isList := rightValue.(ValueList)
@@ -469,395 +464,89 @@ func define(scope *Scope, ast *AST, leftNode Node, rightValue Value) Value {
 	}
 }
 
-func (n NodeExprBinary) Eval(scope *Scope, ast *AST) Value {
-	left := ast.Nodes[n.Left]
-	right := ast.Nodes[n.Right]
-	return func() Value {
-		switch n.Operator {
-		case OpDefine:
-			rightValue := right.Eval(scope, ast)
-			if err, ok := rightValue.(ValueError); ok {
-				return ValueError{&Err{err.Err, ErrRuntime, "cannot evaluate right-side of assignment", ast.Nodes[n.Left].Position(ast)}}
-			}
+func (n NodeDefine) Eval(scope *Scope, ast *AST) Value {
+	// ty: func() Type {
+	// 	switch lhs := ast.Nodes[n.Left].(type) {
+	// 	case NodeIdentifier:
+	// 		varType := ctx.typevar()
+	// 		ctx2 := ctx.Append(lhs.Val, varType)
+	// 		rhs, _ := typeInfer(ast, n.Right, ctx2)
+	// 		return ctx2.unify(varType, rhs, "var "+lhs.Val, lhs.Pos), ctx2
+	// 	default:
+	// 		panicf("cant typecheck define operator with lhs %T", lhs)
+	// 	}
+	// },
 
-			return define(scope, ast, left, rightValue)
-		case OpAccessor:
-			leftValue := left.Eval(scope, ast)
-			if isErr(leftValue) {
-				return leftValue
-			}
+	rightValue := ast.Nodes[n.Value].Eval(scope, ast)
+	if err, ok := rightValue.(ValueError); ok {
+		return ValueError{&Err{err.Err, ErrRuntime, "cannot evaluate right-side of assignment", ast.Nodes[n.Defined].Position(ast)}}
+	}
 
-			rightValueStr, err := operandToStringKey(scope, ast, right)
-			if err != nil {
-				return ValueError{err}
-			}
+	return define(scope, ast, ast.Nodes[n.Defined], rightValue)
+}
 
-			switch left := leftValue.(type) {
-			case ValueComposite:
-				if v, ok := left[rightValueStr]; ok {
-					return v
-				}
+func (n NodeAccessor) Eval(scope *Scope, ast *AST) Value {
+	// ty: func() Type {
+	// 	assert(len(v) == 2)
+	// 	lhs, _ := typeInfer(ast, n.Left, ctx)
+	// 	switch lhs := lhs.(type) {
+	// 	case TypeComposite:
+	// 		field, _ := typeInfer(ast, n.Right, ctx)
+	// 		// TODO: open composite indexing
+	// 		fieldName := string(*field.(TypeValue).value.(ValueString).b)
+	// 		typeValue, ok := lhs.fields[fieldName]
+	// 		if !ok {
+	// 			ctx.typeCheckError("map being accessed", TypeComposite{map[string]Type{fieldName: typeAny}}, typeNull, n.Pos)
+	// 		}
+	// 		return typeValue, ctx
+	// 	default:
+	// 		return typeAny, ctx
+	// 	}
+	// },
 
-				return Null
-			case ValueList:
-				rightNum, err := strconv.Atoi(rightValueStr)
-				if err != nil {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Right].Position(ast)}}
-				}
-				if rightNum < 0 || rightNum >= len(*left.xs) {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, rightValueStr), ast.Nodes[n.Right].Position(ast)}}
-				}
+	leftValue := ast.Nodes[n.Arg].Eval(scope, ast)
+	if isErr(leftValue) {
+		return leftValue
+	}
 
-				v := (*left.xs)[rightNum]
-				return v
-			case ValueString:
-				rightNum, err := strconv.Atoi(rightValueStr)
-				if err != nil {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Right].Position(ast)}}
-				}
+	rightValueStr, err := operandToStringKey(scope, ast, ast.Nodes[n.Path])
+	if err != nil {
+		return ValueError{err}
+	}
 
-				if rn := int(rightNum); 0 <= rn && rn < len(*left.b) {
-					b := []byte{(*left.b)[rn]}
-					return ValueString{&b}
-				}
-
-				return Null
-			default:
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %q of a non-list/composite value %v", rightValueStr, left), ast.Nodes[n.Right].Position(ast)}}
-			}
+	switch left := leftValue.(type) {
+	case ValueComposite:
+		if v, ok := left[rightValueStr]; ok {
+			return v
 		}
 
-		leftValue := left.Eval(scope, ast)
-		if isErr(leftValue) {
-			return leftValue
+		return Null
+	case ValueList:
+		rightNum, err := strconv.Atoi(rightValueStr)
+		if err != nil {
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Path].Position(ast)}}
+		}
+		if rightNum < 0 || rightNum >= len(*left.xs) {
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, rightValueStr), ast.Nodes[n.Path].Position(ast)}}
 		}
 
-		switch n.Operator {
-		case OpAdd:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					return left + right
-				}
-			case ValueString:
-				if right, ok := rightValue.(ValueString); ok {
-					// In this context, strings are immutable. i.e. concatenating
-					// strings should produce a completely new string whose modifications
-					// won't be observable by the original strings.
-					base := make([]byte, 0, len(*left.b)+len(*right.b))
-					base = append(base, *left.b...)
-					base = append(base, *right.b...)
-					return ValueString{&base}
-				}
-			// TODO: remove, same as |
-			case ValueBoolean:
-				if right, ok := rightValue.(ValueBoolean); ok {
-					return ValueBoolean(left || right)
-				}
-			case ValueComposite: // dict + dict
-				if right, ok := rightValue.(ValueComposite); ok {
-					res := make(ValueComposite, len(left)+len(right))
-					maps.Copy(res, left)
-					maps.Copy(res, right)
-					return res
-				}
-			case ValueList: // list + list
-				if right, ok := rightValue.(ValueList); ok {
-					xs := make([]Value, len(*left.xs)+len(*right.xs))
-					for i := range len(*left.xs) {
-						xs[i] = (*left.xs)[i]
-					}
-					for i := range len(*right.xs) {
-						xs[i+len(*left.xs)] = (*right.xs)[i]
-					}
-					return ValueList{&xs}
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", leftValue, rightValue), n.Position(ast)}}
-		case OpSubtract:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					return left - right
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), n.Position(ast)}}
-		case OpMultiply:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					return left * right
-				}
-			// TODO: remove, same as &
-			case ValueBoolean:
-				if right, ok := rightValue.(ValueBoolean); ok {
-					return ValueBoolean(left && right)
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", leftValue, rightValue), n.Position(ast)}}
-		case OpDivide:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			if leftNum, isNum := leftValue.(ValueNumber); isNum {
-				if right, ok := rightValue.(ValueNumber); ok {
-					if right == 0 {
-						return ValueError{&Err{nil, ErrRuntime, "division by zero error", ast.Nodes[n.Right].Position(ast)}}
-					}
-
-					return leftNum / right
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", leftValue, rightValue), n.Position(ast)}}
-		case OpModulus:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			if leftNum, isNum := leftValue.(ValueNumber); isNum {
-				if right, ok := rightValue.(ValueNumber); ok {
-					if right == 0 {
-						return ValueError{&Err{nil, ErrRuntime, "division by zero error in modulus", ast.Nodes[n.Right].Position(ast)}}
-					}
-
-					if isInteger(right) {
-						return ValueNumber(int(leftNum) % int(right))
-					}
-
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take modulus of non-integer value %s", right.String()), ast.Nodes[n.Left].Position(ast)}}
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support modulus", leftValue, rightValue), n.Position(ast)}}
-		case OpLogicalAnd:
-			// TODO: do not evaluate `right` here
-			fail := func() Value {
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical &", leftValue, rightValue), n.Position(ast)}}
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				if right, ok := rightValue.(ValueNumber); ok {
-					if isInteger(left) && isInteger(right) {
-						return ValueNumber(int64(left) & int64(right))
-					}
-
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical & of non-integer values %s, %s", right.String(), left.String()), n.Position(ast)}}
-				}
-
-				return fail()
-			case ValueString:
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				if right, ok := rightValue.(ValueString); ok {
-					max := max(len(*left.b), len(*right.b))
-
-					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
-					c := make([]byte, max)
-					for i := range c {
-						c[i] = a[i] & b[i]
-					}
-					return ValueString{&c}
-				}
-
-				return fail()
-			case ValueBoolean:
-				if !left { // false & x = false
-					return ValueBoolean(false)
-				}
-
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				right, ok := rightValue.(ValueBoolean)
-				if !ok {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise & of %T and %T", left, right), n.Position(ast)}}
-				}
-
-				return ValueBoolean(right)
-			}
-
-			return fail()
-		case OpLogicalOr:
-			// TODO: do not evaluate `right` here
-			fail := func() Value {
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", leftValue, rightValue), n.Position(ast)}}
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				if right, ok := rightValue.(ValueNumber); ok {
-					if !isInteger(left) {
-						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), n.Position(ast)}}
-					}
-
-					return ValueNumber(int64(left) | int64(right))
-				}
-				return fail()
-			case ValueString:
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				if right, ok := rightValue.(ValueString); ok {
-					max := max(len(*left.b), len(*right.b))
-
-					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
-					c := make([]byte, max)
-					for i := range c {
-						c[i] = a[i] | b[i]
-					}
-					return ValueString{&c}
-				}
-
-				return fail()
-			case ValueBoolean:
-				if left { // true | x = true
-					return ValueBoolean(true)
-				}
-
-				rightValue := right.Eval(scope, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
-				right, ok := rightValue.(ValueBoolean)
-				if !ok {
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T", left, right), n.Position(ast)}}
-				}
-
-				return ValueBoolean(right)
-			}
-
-			return fail()
-		case OpLogicalXor:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					if isInteger(left) && isInteger(right) {
-						return ValueNumber(int64(left) ^ int64(right))
-					}
-
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take logical ^ of non-integer values %s, %s", right.String(), left.String()), n.Position(ast)}}
-				}
-			case ValueString:
-				if right, ok := rightValue.(ValueString); ok {
-					max := max(len(*left.b), len(*right.b))
-
-					a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
-					c := make([]byte, max)
-					for i := range c {
-						c[i] = a[i] ^ b[i]
-					}
-					return ValueString{&c}
-				}
-			case ValueBoolean:
-				if right, ok := rightValue.(ValueBoolean); ok {
-					return ValueBoolean(left != right)
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", leftValue, rightValue), n.Position(ast)}}
-		case OpGreaterThan:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					return ValueBoolean(left > right)
-				}
-			case ValueString:
-				if right, ok := rightValue.(ValueString); ok {
-					return ValueBoolean(bytes.Compare(*left.b, *right.b) > 0)
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
-		case OpLessThan:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			switch left := leftValue.(type) {
-			case ValueNumber:
-				if right, ok := rightValue.(ValueNumber); ok {
-					return ValueBoolean(left < right)
-				}
-			case ValueString:
-				if right, ok := rightValue.(ValueString); ok {
-					return ValueBoolean(bytes.Compare(*left.b, *right.b) < 0)
-				}
-			}
-
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
-		case OpEqual:
-			rightValue := right.Eval(scope, ast)
-			if isErr(rightValue) {
-				return rightValue
-			}
-
-			return ValueBoolean(leftValue.Equals(rightValue))
-		default:
-			return ValueError{&Err{nil, ErrAssert, fmt.Sprintf("unknown binary operator %s", n.String()), Pos{}}}
+		v := (*left.xs)[rightNum]
+		return v
+	case ValueString:
+		rightNum, err := strconv.Atoi(rightValueStr)
+		if err != nil {
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Path].Position(ast)}}
 		}
-	}()
+
+		if rn := int(rightNum); 0 <= rn && rn < len(*left.b) {
+			b := []byte{(*left.b)[rn]}
+			return ValueString{&b}
+		}
+
+		return Null
+	default:
+		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %q of a non-list/composite value %v", rightValueStr, left), ast.Nodes[n.Path].Position(ast)}}
+	}
 }
 
 func evalInkFunction(ctx *Context, fn Value, pos Pos, args ...Value) Value {
@@ -872,7 +561,7 @@ func evalInkFunction(ctx *Context, fn Value, pos Pos, args ...Value) Value {
 
 		vm := &VM{ctx, args, []frame{{fn.id, 0, fn.scope}}}
 		return vm.Execute()
-	case NativeFunctionValue:
+	case ValueNativeFunction:
 		return fn.exec(fn.ctx, pos, args)
 	default:
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("attempted to call a non-function value %s", fn), pos}}
