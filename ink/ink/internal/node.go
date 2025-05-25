@@ -38,7 +38,7 @@ func (s *AST) Append(node Node) NodeID {
 	return n
 }
 
-func (s AST) String() string {
+func (s *AST) String() string {
 	var sb strings.Builder
 	for i, n := range s.Nodes {
 		fmt.Fprintf(&sb, "%3d(%s): %s\n", i, n.Position(s).String(), n.String())
@@ -246,7 +246,7 @@ func (n Node) String() string {
 	}
 }
 
-func (n Node) Position(ast AST) Pos { // TODO: replace with []Node
+func (n Node) Position(ast *AST) Pos { // TODO: replace with []Node
 	switch n.Kind {
 	case NodeKindExprUnary, NodeKindExprBinary,
 		NodeKindExprMatch, NodeKindExprList,

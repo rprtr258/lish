@@ -325,7 +325,7 @@ func (v ValueFunctionCallThunk) Equals(other Value) bool {
 // unwrapThunk expands out a recursive structure of thunks
 //
 //	into a flat for loop control structure
-func unwrapThunk(thunk ValueFunctionCallThunk, ast AST) (v Value) {
+func unwrapThunk(thunk ValueFunctionCallThunk, ast *AST) (v Value) {
 	isThunk := true
 	for isThunk {
 		frame := &StackFrame{
@@ -343,10 +343,11 @@ func unwrapThunk(thunk ValueFunctionCallThunk, ast AST) (v Value) {
 }
 
 // call into an Ink callback function synchronously
-func evalInkFunction(ast AST, fn Value, pos Pos, allowThunk bool, args ...Value) Value {
+func evalInkFunction(ast *AST, fn Value, pos Pos, allowThunk bool, args ...Value) Value {
 	// call into an Ink callback function synchronously
 	switch fn := fn.(type) {
 	case ValueFunction:
+		// TODO: check args count matches
 		argValueTable := ValueTable{}
 		for i, argNode := range fn.defn.Children[1:] {
 			if i < len(args) {
@@ -375,7 +376,7 @@ func evalInkFunction(ast AST, fn Value, pos Pos, allowThunk bool, args ...Value)
 	}
 }
 
-func operandToStringKey(right Node, frame *StackFrame, ast AST) (string, *Err) {
+func operandToStringKey(right Node, frame *StackFrame, ast *AST) (string, *Err) {
 	switch right.Kind {
 	case NodeKindIdentifier:
 		return right.Meta.(string), nil
@@ -403,7 +404,7 @@ func operandToStringKey(right Node, frame *StackFrame, ast AST) (string, *Err) {
 	}
 }
 
-func define(frame *StackFrame, ast AST, leftSide Node, rightValue Value) Value {
+func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value {
 	if _, isEmpty := rightValue.(ValueEmpty); isEmpty {
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot assign an empty value to %s (actually anything)", leftSide), leftSide.Position(ast)}}
 	}
@@ -548,7 +549,7 @@ func define(frame *StackFrame, ast AST, leftSide Node, rightValue Value) Value {
 	}
 }
 
-func (n Node) Eval(frame *StackFrame, allowThunk bool, ast AST) Value {
+func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 	switch n.Kind {
 	case NodeKindIdentifier:
 		// LogScope(scope)
@@ -623,7 +624,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast AST) Value {
 		}
 
 		for i := range length - 1 {
-			if expr := ast.Nodes[n.Children[i]].Eval(frame, allowThunk, ast); isErr(expr) {
+			if expr := ast.Nodes[n.Children[i]].Eval(frame, false, ast); isErr(expr) {
 				return expr
 			}
 		}

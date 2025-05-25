@@ -18,11 +18,11 @@ func constEval(ast *AST, n NodeID) {
 	var nnn Node
 	switch v := v.(type) {
 	case ValueBoolean:
-		nnn = NodeLiteralBoolean(nn.Position(*ast), bool(v))
+		nnn = NodeLiteralBoolean(nn.Position(ast), bool(v))
 	case ValueNumber:
-		nnn = NodeLiteralNumber(nn.Position(*ast), float64(v))
+		nnn = NodeLiteralNumber(nn.Position(ast), float64(v))
 	case ValueString:
-		nnn = NodeLiteralString(nn.Position(*ast), string(*v.b))
+		nnn = NodeLiteralString(nn.Position(ast), string(*v.b))
 	case ValueNull, ValueComposite, ValueFunction:
 		return
 		// TODO: null, composite, list
