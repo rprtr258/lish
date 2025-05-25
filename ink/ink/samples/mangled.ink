@@ -33,18 +33,17 @@ kl := [
   1
 ].2
 ol := {
-  ('te' +
-  	'-st'): 'magic'
+  'te-st': 'magic'
 }.('te-st')
 log('should be magic: ' + ol)
 log('should be 3: ' + string(kl))
 
 # redefine log for a more concise fizzbuzz
-log := s => out(string(s) + ' ')
+log3 := s => out(string(s) + ' ')
 
 # fizzbuzz test for concatenated / minified ink code
-fb:=n=>([n%3,n%5]::{[0,0]->log('FizzBuzz'),[0,_]->log('Fizz'),[
-_,0]->log('Buzz'),_->log(n)}),fizzbuzzhelper:=(n,max)=>
+fb:=n=>([n%3,n%5]::{[0,0]->log3('FizzBuzz'),[0,_]->log3('Fizz'),[
+_,0]->log3('Buzz'),_->log3(n)}),fizzbuzzhelper:=(n,max)=>
 (n::{max->fb(n),_->(fb(n),fizzbuzzhelper(n+1,max))}),(max=>
 fizzbuzzhelper(1,max))(25)
 

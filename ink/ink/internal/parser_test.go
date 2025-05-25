@@ -116,12 +116,12 @@ func TestParser(t *testing.T) {
 		f(
 			`valid negative number`,
 			`~1`,
-			NodeExprUnary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			`valid addition`,
 			`string(s) + ' '`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"valid block, empty",
@@ -203,11 +203,11 @@ me`, n.(NodeLiteralString).Val)
 	f(
 		"accessor",
 		`this.fields`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			l := ast.Nodes[op.Left].(NodeIdentifier)
-			r := ast.Nodes[op.Right].(NodeIdentifier)
+			op := n.(NodeConstFunctionCall)
+			l := ast.Nodes[op.Arguments[0]].(NodeIdentifier)
+			r := ast.Nodes[op.Arguments[1]].(NodeIdentifier)
 			require.Equal(t, "this", l.Val)
 			require.Equal(t, "fields", r.Val)
 			return true
@@ -216,13 +216,13 @@ me`, n.(NodeLiteralString).Val)
 	f(
 		"nested accessor",
 		`this.fields.(len(this.fields))`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
+			op := n.(NodeConstFunctionCall)
 			// check n is (this.fields).len
-			src := ast.Nodes[op.Left].(NodeExprBinary)
-			require.Equal(t, "this", ast.Nodes[src.Left].(NodeIdentifier).Val)
-			require.Equal(t, "fields", ast.Nodes[src.Right].(NodeIdentifier).Val)
+			src := ast.Nodes[op.Arguments[0]].(NodeConstFunctionCall)
+			require.Equal(t, "this", ast.Nodes[src.Arguments[0]].(NodeIdentifier).Val)
+			require.Equal(t, "fields", ast.Nodes[src.Arguments[1]].(NodeIdentifier).Val)
 			// require.Equal(t, "fields", ast.Nodes[src.Right].(NodeLiteralString).Val)
 			return true
 		},
@@ -230,18 +230,18 @@ me`, n.(NodeLiteralString).Val)
 	f(
 		"sub accessor",
 		`(comp.list).(2).what`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			complist2 := ast.Nodes[op.Left].(NodeExprBinary)
-			complist := ast.Nodes[ast.Nodes[complist2.Left].(NodeExprList).Expressions[0]].(NodeExprBinary)
-			comp := ast.Nodes[complist.Left].(NodeIdentifier)
+			op := n.(NodeConstFunctionCall)
+			complist2 := ast.Nodes[op.Arguments[0]].(NodeConstFunctionCall)
+			complist := ast.Nodes[ast.Nodes[complist2.Arguments[0]].(NodeExprList).Expressions[0]].(NodeConstFunctionCall)
+			comp := ast.Nodes[complist.Arguments[0]].(NodeIdentifier)
 			// list := ast.Nodes[complist.Right].(NodeLiteralString)
-			list := ast.Nodes[complist.Right].(NodeIdentifier)
+			list := ast.Nodes[complist.Arguments[1]].(NodeIdentifier)
 			// _2 := ast.Nodes[complist2.Right].(NodeLiteralNumber)
-			_2 := ast.Nodes[ast.Nodes[complist2.Right].(NodeExprList).Expressions[0]].(NodeLiteralNumber)
+			_2 := ast.Nodes[ast.Nodes[complist2.Arguments[1]].(NodeExprList).Expressions[0]].(NodeLiteralNumber)
 			// what := ast.Nodes[op.Right].(NodeLiteralString)
-			what := ast.Nodes[op.Right].(NodeIdentifier)
+			what := ast.Nodes[op.Arguments[1]].(NodeIdentifier)
 			assertEqual(t, "comp", comp.Val)
 			assertEqual(t, "list", list.Val)
 			assertEqual(t, 2, _2.Val)
@@ -252,11 +252,11 @@ me`, n.(NodeLiteralString).Val)
 	f(
 		"array accessor",
 		`arr.2`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			l := ast.Nodes[op.Left].(NodeIdentifier)
-			r := ast.Nodes[op.Right].(NodeLiteralNumber)
+			op := n.(NodeConstFunctionCall)
+			l := ast.Nodes[op.Arguments[0]].(NodeIdentifier)
+			r := ast.Nodes[op.Arguments[1]].(NodeLiteralNumber)
 			assertEqual(t, "arr", l.Val)
 			assertEqual(t, 2, r.Val)
 			return true
@@ -269,40 +269,40 @@ me`, n.(NodeLiteralString).Val)
 			`log := (str => (out(str)
 				out('\n')
 			))`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"lambda ignoring argument rhs",
 			`f := _ => 1`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"lambda with assignment to acessor",
 			`this.setName := name => this.name := name`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"valid assignment into dict destructure",
 			`{a, b} := load('kal')`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"valid assignment into acessor",
 			`xs.(i) := f(item, i)`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"valid assignment into function result acessor",
 			`xs.(len(xs)) := 1`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 		)
 		f(
 			"array element",
 			`arr.2 := 'second'`,
-			NodeExprBinary{},
+			NodeConstFunctionCall{},
 			func(ast *AST, n Node) bool {
-				op := n.(NodeExprBinary)
-				r := ast.Nodes[op.Right].(NodeLiteralString)
+				op := n.(NodeConstFunctionCall)
+				r := ast.Nodes[op.Arguments[1]].(NodeLiteralString)
 				assertEqual(t, "second", r.Val)
 				return true
 			},
@@ -338,17 +338,17 @@ b := 1
 	f(
 		"valid binary-op, accessor",
 		`[5, 4, 3, 2, 1].2`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 	)
 	f(
 		"_ == anything",
 		`_ = len`,
-		NodeExprBinary{},
+		NodeConstFunctionCall{},
 	)
 	f(
 		"negate expression",
 		`~(1-2)`,
-		NodeExprUnary{},
+		NodeConstFunctionCall{},
 	)
 }
 
@@ -369,18 +369,18 @@ func TestParse(t *testing.T) {
 		t.Log(ast.String())
 		_ = nodes
 		// require.Equal(t, []Node{
-		// 	NodeExprBinary{Operator: 19, Left: 3, Right: 11},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{3, 11}},
 		// 	NodeExprMatch{Condition: 13, Clauses: []int{15, 18}},
 		// 	NodeLiteralFunction{Arguments: []int{}, Body: 20},
-		// 	NodeExprBinary{Operator: 19, Left: 22, Right: 28},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{22, 28}},
 		// 	NodeFunctionCall{Function: 3, Arguments: []int{22}},
-		// 	NodeExprBinary{Operator: 19, Left: 31, Right: 36},
-		// 	NodeExprBinary{Operator: 19, Left: 38, Right: 48},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{31, 36}},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{38, 48}},
 		// 	NodeFunctionCall{Function: 3, Arguments: []int{51}},
 		// 	NodeFunctionCall{Function: 3, Arguments: []int{56}},
-		// 	NodeExprBinary{Operator: 19, Left: 3, Right: 63},
-		// 	NodeExprBinary{Operator: 19, Left: 65, Right: 87},
-		// 	NodeExprBinary{Operator: 19, Left: 89, Right: 100},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{3, 63}},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{65, 87}},
+		// 	NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{89, 100}},
 		// 	NodeFunctionCall{Function: 104, Arguments: []int{105}},
 		// 	NodeFunctionCall{Function: 5, Arguments: []int{7}},
 		// }, nodes)
@@ -392,7 +392,7 @@ func TestParse(t *testing.T) {
 		require.Nil(t, err)
 		t.Log(ast.String())
 		assertEqual(t, []Node{
-			// NodeExprBinary{Pos{"iife", 1, 1}, OpDefine, 0, 5},
+			// NodeConstFunctionCall{Pos{"iife", 1, 1}, OpDefine, 0, 5},
 			// NodeFunctionCall{9, []int{11}},
 			NodeExprList{Pos{"iife", 1, 1}, []NodeID{5, 11}},
 			// /*  0 */ NodeIdentifierEmpty{},
@@ -408,7 +408,7 @@ func TestParse(t *testing.T) {
 			// /* 10 */ NodeLiteralFunction{Arguments: []int{5}, Body: 9},
 			// /* 11 */ NodeFunctionCall{7, []int{10}},
 			// /* 12 */ NodeLiteralFunction{Arguments: []int{4, 5}, Body: 11},
-			// /* 13 */ NodeExprBinary{Operator: 19, Left: 3, Right: 12},
+			// /* 13 */ NodeConstFunctionCall{Operator: 19, Arguments: []NodeID{3, 12}},
 			// /* 14 */ NodeLiteralNumber{Val: 25},
 			// /* 15 */ NodeFunctionCall{13, []int{14}},
 		}, fun.Map[Node](func(n NodeID) Node { return ast.Nodes[n] }, ast.Nodes[nodes].(NodeExprList).Expressions...))

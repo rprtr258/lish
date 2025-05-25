@@ -38,6 +38,29 @@ func (s *AST) Append(node Node) NodeID {
 	return n
 }
 
+func (s *AST) AppendOp(kind Kind, pos Pos, args ...NodeID) NodeID {
+	switch kind {
+	case OpDefine:
+		assert(len(args) == 2)
+		return s.Append(NodeDefine{
+			Defined: args[0],
+			Value:   args[1],
+		})
+	case OpAccessor:
+		assert(len(args) == 2)
+		return s.Append(NodeAccessor{
+			Arg:  args[0],
+			Path: args[1],
+		})
+	default:
+		return s.Append(NodeConstFunctionCall{
+			Function:  operatorFunc(kind),
+			Arguments: args,
+			Pos:       pos,
+		})
+	}
+}
+
 func (s AST) String() string {
 	var sb strings.Builder
 	for i, n := range s.Nodes {
@@ -84,13 +107,7 @@ func (s AST) Graph() string {
 		case NodeIdentifier:
 			props["fillcolor"] = _colorIdent
 			val = n.Val
-		case NodeExprUnary:
-			props["fillcolor"] = _colorExpr
-			val = n.Operator.String()
-		case NodeExprBinary:
-			props["fillcolor"] = _colorExpr
-			val = n.Operator.String()
-		case NodeFunctionCall:
+		case NodeFunctionCall, NodeConstFunctionCall:
 			props["fillcolor"] = _colorExpr
 		case NodeExprMatch, NodeExprList:
 			props["fillcolor"] = _colorControl
@@ -109,11 +126,6 @@ func (s AST) Graph() string {
 			for k, j := range n.Expressions {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
 			}
-		case NodeExprUnary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.Operand)
-		case NodeExprBinary:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.Left)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.Right)
 		case NodeExprMatch:
 			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.Condition)
 			for k, clause := range n.Clauses {
@@ -131,6 +143,11 @@ func (s AST) Graph() string {
 			for k, j := range n.Arguments {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
 			}
+		case NodeConstFunctionCall:
+			fmt.Fprintf(&sb, "n%d -> %s [label=\"func\"]\n", i, n.Function.name)
+			for k, j := range n.Arguments {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
+			}
 		}
 	}
 	sb.WriteString("}")
@@ -144,35 +161,8 @@ type errParse struct {
 // Node represents an abstract syntax tree (AST) node in an Ink program.
 type Node interface {
 	String() string
-	Position(*AST) Pos
-}
-
-type NodeExprUnary struct {
-	Pos
-	Operator Kind
-	Operand  NodeID
-}
-
-func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s #%d", n.Operator, n.Operand)
-}
-
-func (n NodeExprUnary) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeExprBinary struct {
-	Pos
-	Operator    Kind
-	Left, Right NodeID
-}
-
-func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary #%d %s #%d", n.Left, n.Operator, n.Right)
-}
-
-func (n NodeExprBinary) Position(*AST) Pos {
-	return n.Pos
+	Position(*AST) Pos // TODO: Pos2
+	Eval(*Scope, *AST) Value
 }
 
 type NodeFunctionCall struct {
@@ -197,6 +187,67 @@ func (n NodeFunctionCall) String() string {
 
 func (n NodeFunctionCall) Position(s *AST) Pos {
 	return s.Nodes[n.Function].Position(s)
+}
+
+type NodeAccessor struct {
+	Arg  NodeID
+	Path NodeID
+}
+
+func (n NodeAccessor) String() string {
+	var sb strings.Builder
+	sb.WriteString(n.Arg.String())
+	for _, a := range []NodeID{n.Path} {
+		sb.WriteString(".")
+		sb.WriteString(a.String())
+	}
+	return sb.String()
+}
+
+func (n NodeAccessor) Position(ast *AST) Pos {
+	return ast.Nodes[n.Arg].Position(ast)
+}
+
+type NodeDefine struct {
+	Defined NodeID
+	Value   NodeID
+}
+
+func (n NodeDefine) String() string {
+	var sb strings.Builder
+	sb.WriteString(n.Defined.String())
+	sb.WriteString(" := ")
+	sb.WriteString(n.Value.String())
+	return sb.String()
+}
+
+func (n NodeDefine) Position(ast *AST) Pos {
+	return ast.Nodes[n.Defined].Position(ast)
+}
+
+type NodeConstFunctionCall struct {
+	Function  ValueNativeFunction
+	Arguments []NodeID
+	Pos       Pos
+}
+
+func (n NodeConstFunctionCall) String() string {
+	var sb strings.Builder
+	sb.WriteString("Call ")
+	sb.WriteString(n.Function.String())
+	sb.WriteString(" on (")
+	for i, a := range n.Arguments {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(a.String())
+	}
+	sb.WriteString(")")
+	return sb.String()
+}
+
+func (n NodeConstFunctionCall) Position(s *AST) Pos {
+	return n.Pos
 }
 
 type NodeMatchClause struct {

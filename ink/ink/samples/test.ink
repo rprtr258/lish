@@ -597,9 +597,10 @@ import('suite.ink')('Ink language and standard library', m => (
     t('number(string) with small exponent', number('3e-9'), 0.000000003)
     t('number(true) == 1', number(true), 1)
     t('number(false) == 0', number(false), 0)
-    t('number(composite) == 0', number([]), 0)
-    t('number(function) == 0', number(() => 100), 0)
-    t('number(builtin fn) == 0', number(len), 0)
+    t('number(composite) == 0', type(number({})), 'error')
+    t('number(list) == 0', type(number([])), 'error')
+    t('number(function) == 0', type(number(() => 100)), 'error')
+    t('number(builtin fn) == 0', type(number(len)), 'error')
 
     t('string(composite)', string({a: 3.14}), '{a: 3.14}')
     t('string(composite) containing string and multiple keys', string([3, 'two']), '[3, \'two\']')
