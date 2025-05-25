@@ -51,7 +51,7 @@ func TestParser(t *testing.T) {
 	f := func(
 		name string,
 		source string,
-		node Node,
+		nodeKind NodeKind,
 		check ...func(*AST, Node) bool,
 	) {
 		t.Run(name, func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestParser(t *testing.T) {
 			expr, err := parse_(ast, source)
 			t.Log(ast.String())
 			require.Equal(t, errParse{}, err)
-			require.IsType(t, node, ast.Nodes[expr])
+			require.Equal(t, nodeKind, ast.Nodes[expr].Kind)
 			if len(check) > 0 {
 				require.True(t, check[0](ast, ast.Nodes[expr]))
 			}
@@ -70,12 +70,12 @@ func TestParser(t *testing.T) {
 		f(
 			`no traling comma`,
 			`(a,b,c)`,
-			NodeExprList{},
+			NodeKindExprList,
 		)
 		f(
 			`traling comma`,
 			`(a,b,c,)`,
-			NodeExprList{},
+			NodeKindExprList,
 		)
 	})
 
@@ -83,12 +83,12 @@ func TestParser(t *testing.T) {
 		f(
 			`regular`,
 			`log`,
-			NodeIdentifier{},
+			NodeKindIdentifier,
 		)
 		f(
 			`predicate function`,
 			`is_valid?`,
-			NodeIdentifier{},
+			NodeKindIdentifier,
 		)
 	})
 
@@ -96,37 +96,37 @@ func TestParser(t *testing.T) {
 		f(
 			`valid expression identifier`,
 			`log`,
-			NodeIdentifier{},
+			NodeKindIdentifier,
 		)
 		f(
 			`valid symbols identifier`,
 			`w?t_f!`,
-			NodeIdentifier{},
+			NodeKindIdentifier,
 		)
 		f(
 			`valid function-call`,
 			`out(str)`,
-			NodeFunctionCall{},
+			NodeKindFunctionCall,
 		)
 		f(
 			`valid literal-number`,
 			`1`,
-			NodeLiteralNumber{},
+			NodeKindLiteralNumber,
 		)
 		f(
 			`valid negative number`,
 			`~1`,
-			NodeExprUnary{},
+			NodeKindExprUnary,
 		)
 		f(
 			`valid addition`,
 			`string(s) + ' '`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"valid block, empty",
 			`()`,
-			NodeExprList{},
+			NodeKindExprList,
 		)
 	})
 
@@ -135,7 +135,7 @@ func TestParser(t *testing.T) {
 			`regular`,
 			`'
 			'`,
-			NodeLiteralString{},
+			NodeKindLiteralString,
 		)
 		// f(
 		// 	`backquoted`,
@@ -145,9 +145,9 @@ func TestParser(t *testing.T) {
 		f(
 			`with escaping`,
 			`'a\n\'b'`,
-			NodeLiteralString{},
+			NodeKindLiteralString,
 			func(a *AST, n Node) bool {
-				assertEqual(t, "a\n'b", n.(NodeLiteralString).Val)
+				assertEqual(t, "a\n'b", n.Meta.(string))
 				return true
 			},
 		)
@@ -155,10 +155,10 @@ func TestParser(t *testing.T) {
 			`with escaping 2`,
 			`'es"c \\a"pe
 me'`,
-			NodeLiteralString{},
+			NodeKindLiteralString,
 			func(a *AST, n Node) bool {
 				assertEqual(t, `es"c \a"pe
-me`, n.(NodeLiteralString).Val)
+me`, n.Meta.(string))
 				return true
 			},
 		)
@@ -170,7 +170,7 @@ me`, n.(NodeLiteralString).Val)
 			f(str)
 			g('\n')
 		)`,
-		NodeExprList{},
+		NodeKindExprList,
 	)
 
 	f(
@@ -179,50 +179,46 @@ me`, n.(NodeLiteralString).Val)
 			out(str)
 			out('\n')
 		)`,
-		NodeLiteralFunction{},
+		NodeKindLiteralFunction,
 		func(_ *AST, n Node) bool {
-			f := n.(NodeLiteralFunction)
-			return len(f.Arguments) == 1
+			return len(n.Children[1:]) == 1
 		},
 	)
 	f(
 		"valid lambda, zero args",
 		`() => ()`,
-		NodeLiteralFunction{},
+		NodeKindLiteralFunction,
 	)
 	f(
 		`valid lambda, two args`,
 		`(a,b) => (a+b)`,
-		NodeLiteralFunction{},
+		NodeKindLiteralFunction,
 		func(_ *AST, n Node) bool {
-			f := n.(NodeLiteralFunction)
-			return len(f.Arguments) == 2
+			return len(n.Children[1:]) == 2
 		},
 	)
 
 	f(
 		"accessor",
 		`this.fields`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			l := ast.Nodes[op.Left].(NodeIdentifier)
-			r := ast.Nodes[op.Right].(NodeIdentifier)
-			require.Equal(t, "this", l.Val)
-			require.Equal(t, "fields", r.Val)
+			require.Equal(t, "this", ast.Nodes[n.Children[0]].Meta.(string))
+			require.Equal(t, "fields", ast.Nodes[n.Children[1]].Meta.(string))
 			return true
 		},
 	)
 	f(
 		"nested accessor",
 		`this.fields.(len(this.fields))`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
+			require.Equal(t, NodeKindExprBinary, n.Kind)
 			// check n is (this.fields).len
-			src := ast.Nodes[op.Left].(NodeExprBinary)
-			require.Equal(t, "this", ast.Nodes[src.Left].(NodeIdentifier).Val)
-			require.Equal(t, "fields", ast.Nodes[src.Right].(NodeIdentifier).Val)
+			src := ast.Nodes[n.Children[0]]
+			require.Equal(t, NodeKindExprBinary, src.Kind)
+			require.Equal(t, "this", ast.Nodes[src.Children[0]].Meta.(string))
+			require.Equal(t, "fields", ast.Nodes[src.Children[1]].Meta.(string))
 			// require.Equal(t, "fields", ast.Nodes[src.Right].(NodeLiteralString).Val)
 			return true
 		},
@@ -230,35 +226,42 @@ me`, n.(NodeLiteralString).Val)
 	f(
 		"sub accessor",
 		`(comp.list).(2).what`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			complist2 := ast.Nodes[op.Left].(NodeExprBinary)
-			complist := ast.Nodes[ast.Nodes[complist2.Left].(NodeExprList).Expressions[0]].(NodeExprBinary)
-			comp := ast.Nodes[complist.Left].(NodeIdentifier)
+			complist2 := ast.Nodes[n.Children[0]]
+			require.Equal(t, NodeKindExprBinary, complist2.Kind)
+			complist := ast.Nodes[ast.Nodes[complist2.Children[0]].Children[0]]
+			require.Equal(t, NodeKindExprBinary, complist.Kind)
+			comp := ast.Nodes[complist.Children[0]]
+			require.Equal(t, NodeKindIdentifier, comp.Kind)
 			// list := ast.Nodes[complist.Right].(NodeLiteralString)
-			list := ast.Nodes[complist.Right].(NodeIdentifier)
+			list := ast.Nodes[complist.Children[1]]
+			require.Equal(t, NodeKindIdentifier, list.Kind)
 			// _2 := ast.Nodes[complist2.Right].(NodeLiteralNumber)
-			_2 := ast.Nodes[ast.Nodes[complist2.Right].(NodeExprList).Expressions[0]].(NodeLiteralNumber)
+			_2 := ast.Nodes[ast.Nodes[complist2.Children[1]].Children[0]]
+			require.Equal(t, NodeKindLiteralNumber, _2.Kind)
 			// what := ast.Nodes[op.Right].(NodeLiteralString)
-			what := ast.Nodes[op.Right].(NodeIdentifier)
-			assertEqual(t, "comp", comp.Val)
-			assertEqual(t, "list", list.Val)
-			assertEqual(t, 2, _2.Val)
-			assertEqual(t, "what", what.Val)
+			what := ast.Nodes[n.Children[1]]
+			require.Equal(t, NodeKindIdentifier, what.Kind)
+			assertEqual(t, "comp", comp.Meta.(string))
+			assertEqual(t, "list", list.Meta.(string))
+			assertEqual(t, 2, _2.Meta.(float64))
+			assertEqual(t, "what", what.Meta.(string))
 			return true
 		},
 	)
 	f(
 		"array accessor",
 		`arr.2`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 		func(ast *AST, n Node) bool {
-			op := n.(NodeExprBinary)
-			l := ast.Nodes[op.Left].(NodeIdentifier)
-			r := ast.Nodes[op.Right].(NodeLiteralNumber)
-			assertEqual(t, "arr", l.Val)
-			assertEqual(t, 2, r.Val)
+			require.Equal(t, NodeKindExprBinary, n.Kind)
+			l := ast.Nodes[n.Children[0]]
+			require.Equal(t, NodeKindIdentifier, l.Kind)
+			r := ast.Nodes[n.Children[1]]
+			require.Equal(t, NodeKindLiteralNumber, r.Kind)
+			assertEqual(t, "arr", l.Meta.(string))
+			assertEqual(t, 2, r.Meta.(float64))
 			return true
 		},
 	)
@@ -269,41 +272,42 @@ me`, n.(NodeLiteralString).Val)
 			`log := (str => (out(str)
 				out('\n')
 			))`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"lambda ignoring argument rhs",
 			`f := _ => 1`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"lambda with assignment to acessor",
 			`this.setName := name => this.name := name`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"valid assignment into dict destructure",
 			`{a, b} := load('kal')`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"valid assignment into acessor",
 			`xs.(i) := f(item, i)`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"valid assignment into function result acessor",
 			`xs.(len(xs)) := 1`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 		)
 		f(
 			"array element",
 			`arr.2 := 'second'`,
-			NodeExprBinary{},
+			NodeKindExprBinary,
 			func(ast *AST, n Node) bool {
-				op := n.(NodeExprBinary)
-				r := ast.Nodes[op.Right].(NodeLiteralString)
-				assertEqual(t, "second", r.Val)
+				require.Equal(t, NodeKindExprBinary, n.Kind)
+				r := ast.Nodes[n.Children[1]]
+				assertEqual(t, NodeKindLiteralString, r.Kind)
+				assertEqual(t, "second", r.Meta.(string))
 				return true
 			},
 		)
@@ -313,14 +317,14 @@ me`, n.(NodeLiteralString).Val)
 a := 1 # should yield a new copy
 b := 1
 )`,
-			NodeExprList{},
+			NodeKindExprList,
 		)
 	})
 
 	f(
 		"comment v2",
 		"`aboba` 1",
-		NodeLiteralNumber{},
+		NodeKindLiteralNumber,
 	)
 	f(
 		"valid match",
@@ -328,27 +332,27 @@ b := 1
 			1 -> 'hi'
 			2 -> 'thing'
 		}`,
-		NodeExprMatch{},
+		NodeKindExprMatch,
 	)
 	f(
 		"valid list",
 		`[5, 4, 3, 2, 1]`,
-		NodeLiteralList{},
+		NodeKindLiteralList,
 	)
 	f(
 		"valid binary-op, accessor",
 		`[5, 4, 3, 2, 1].2`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 	)
 	f(
 		"_ == anything",
 		`_ = len`,
-		NodeExprBinary{},
+		NodeKindExprBinary,
 	)
 	f(
 		"negate expression",
 		`~(1-2)`,
-		NodeExprUnary{},
+		NodeKindExprUnary,
 	)
 }
 
@@ -394,7 +398,7 @@ func TestParse(t *testing.T) {
 		assertEqual(t, []Node{
 			// NodeExprBinary{Pos{"iife", 1, 1}, OpDefine, 0, 5},
 			// NodeFunctionCall{9, []int{11}},
-			NodeExprList{Pos{"iife", 1, 1}, []NodeID{5, 11}},
+			NodeExprList(Pos{"iife", 1, 1}, []NodeID{5, 11}),
 			// /*  0 */ NodeIdentifierEmpty{},
 			// /*  1 */ NodeLiteralBoolean{Val: false},
 			// /*  2 */ NodeLiteralBoolean{Val: true},
@@ -411,6 +415,6 @@ func TestParse(t *testing.T) {
 			// /* 13 */ NodeExprBinary{Operator: 19, Left: 3, Right: 12},
 			// /* 14 */ NodeLiteralNumber{Val: 25},
 			// /* 15 */ NodeFunctionCall{13, []int{14}},
-		}, fun.Map[Node](func(n NodeID) Node { return ast.Nodes[n] }, ast.Nodes[nodes].(NodeExprList).Expressions...))
+		}, fun.Map[Node](func(n NodeID) Node { return ast.Nodes[n] }, ast.Nodes[nodes].Children...))
 	})
 }

@@ -21,9 +21,8 @@ type Context struct {
 	// currently executing file's path, if any
 	File   string
 	Engine *Engine
-	// Scope represents the Context's global heap
-	Scope *Scope
-	// TODO: store position stacke somewhere to use in error reports
+	// Frame represents the Context's global heap
+	Frame *StackFrame
 }
 
 func (ctx *Context) resetWd() {
@@ -41,41 +40,26 @@ func (ctx *Context) Eval(node NodeID) Value {
 	// ctx.Engine.mu.Lock()
 	// defer ctx.Engine.mu.Unlock()
 
-	ast := ctx.Engine.Cmplr.AST
+	ast := ctx.Engine.AST
 
 	if _debugvm {
 		fmt.Println("AST:")
 		fmt.Println(ast.String())
 	}
 
-	oldfnid := ctx.Engine.Cmplr.fnid
-	fnid := fnID(len(ctx.Engine.Cmplr.funcs))
-	ctx.Engine.Cmplr.funcs = append(ctx.Engine.Cmplr.funcs, []Instruction{})
-	ctx.Engine.Cmplr.fnid = fnid
-	ctx.Engine.Cmplr.compile(node)
-	ctx.Engine.Cmplr.fnid = oldfnid
-
-	if _debugvm {
-		fmt.Println("BYTECODE:")
-		for fnid, fn := range ctx.Engine.Cmplr.funcs {
-			fmt.Printf("FN #%d:\n", fnid)
-			for i, ins := range fn {
-				fmt.Printf("%3d %s\n", i, ins.String())
-			}
+	val := ctx.Engine.AST.Nodes[node].Eval(ctx.Frame, false, ast)
+	if isErr(val) {
+		if e, isErr := val.(ValueError); isErr {
+			LogError(e.Err)
 		}
-		fmt.Println()
-		// fmt.Println("SCOPE:")
-		// logScope(ctx.Engine.Cmplr.scopes)
-		// fmt.Println()
 	}
 
-	vm := &VM{ctx, []Value{}, []frame{{fnid, 0, &Scope{ctx.Scope, ValueTable{}}}}}
-	v := vm.Execute()
 	if _debugvm {
-		fmt.Println("RESULT:", v.String())
+		fmt.Println("RESULT:", val.String())
+		LogFrame(ctx.Frame)
 	}
-	LogScope(ctx.Scope)
-	return v
+
+	return val
 }
 
 // ExecListener queues an asynchronous callback task to the Engine behind the Context.
@@ -111,7 +95,7 @@ func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
 	if len(nodes) == 1 {
 		expr = nodes[0]
 	} else {
-		expr = ast.Append(NodeExprList{Pos{filename, 1, 1}, nodes})
+		expr = ast.Append(NodeExprList(Pos{filename, 1, 1}, nodes))
 	}
 
 	// optimization passes
@@ -151,7 +135,7 @@ func (ctx *Context) ExecPath(path string) (NodeID, *Err) {
 		r = file
 	}
 
-	return ParseReader(ctx.Engine.Cmplr.AST, path, r)
+	return ParseReader(ctx.Engine.AST, path, r)
 }
 
 // Engine is a single global context of Ink program execution.
@@ -174,7 +158,7 @@ type Engine struct {
 	// nice functionality.
 	Contexts map[string]*Context
 	values   map[string]Value
-	Cmplr    *compiler
+	AST      *AST
 
 	// Only a single function may write to the stack frames at any moment.
 	// mu sync.Mutex
@@ -186,7 +170,7 @@ func NewEngine() *Engine {
 		values:   map[string]Value{},
 		// mu:        sync.Mutex{},
 		Listeners: sync.WaitGroup{},
-		Cmplr:     &compiler{NewAst(), [][]Instruction{}, 0, []map[string]int{}},
+		AST:       NewAst(),
 	}
 }
 
@@ -194,7 +178,7 @@ func NewEngine() *Engine {
 func (eng *Engine) CreateContext() *Context {
 	ctx := &Context{
 		Engine: eng,
-		Scope: &Scope{
+		Frame: &StackFrame{
 			parent: nil,
 			vt:     ValueTable{},
 		},
