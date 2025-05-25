@@ -180,7 +180,7 @@ func (eng *Engine) CreateContext() *Context {
 		Engine: eng,
 		Frame: &StackFrame{
 			parent: nil,
-			vt:     ValueTable{},
+			vt:     map[string]Value{},
 		},
 	}
 	ctx.resetWd()

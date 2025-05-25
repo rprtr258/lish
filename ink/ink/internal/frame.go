@@ -6,15 +6,11 @@ import (
 	"strings"
 )
 
-// ValueTable is used anytime a map of names/labels to Ink Values is needed,
-// and is notably used to represent stack frames / heaps and CompositeValue dictionaries.
-type ValueTable = map[string]Value
-
 // StackFrame represents the heap of variables local to a particular function call frame,
 // and recursively references other parent StackFrames internally.
 type StackFrame struct {
 	parent *StackFrame
-	vt     ValueTable
+	vt     map[string]Value
 }
 
 // Get a value from the stack frame chain

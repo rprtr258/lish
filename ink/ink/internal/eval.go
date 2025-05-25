@@ -300,7 +300,7 @@ func (v ValueFunction) Equals(other Value) bool {
 // ValueFunctionCallThunk is an internal representation of a lazy
 // function evaluation used to implement tail call optimization.
 type ValueFunctionCallThunk struct {
-	vt       ValueTable
+	vt       map[string]Value
 	function ValueFunction
 }
 
@@ -348,7 +348,7 @@ func evalInkFunction(ast *AST, fn Value, pos Pos, allowThunk bool, args ...Value
 	switch fn := fn.(type) {
 	case ValueFunction:
 		// TODO: check args count matches
-		argValueTable := ValueTable{}
+		argValueTable := map[string]Value{}
 		for i, argNode := range fn.defn.Children[1:] {
 			if i < len(args) {
 				if identNode := ast.Nodes[argNode]; identNode.Kind == NodeKindIdentifier {
@@ -625,7 +625,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 		callFrame := &StackFrame{
 			parent: frame,
-			vt:     ValueTable{},
+			vt:     map[string]Value{},
 		}
 
 		for _, expr := range n.Children[:length-1] {
