@@ -575,7 +575,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 				return ValueError{err}
 			}
 
-			v := ast.Nodes[n.Children[i+1]].Eval(frame, allowThunk, ast)
+			v := ast.Nodes[n.Children[i+1]].Eval(frame, false, ast)
 			if isErr(v) {
 				return v
 			}
@@ -587,7 +587,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 		xs := make([]Value, len(n.Children))
 		listVal := ValueList{&xs}
 		for i, valn := range n.Children {
-			v := ast.Nodes[valn].Eval(frame, allowThunk, ast)
+			v := ast.Nodes[valn].Eval(frame, false, ast)
 			if isErr(v) {
 				return v
 			}
@@ -600,20 +600,20 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			parentFrame: frame,
 		}
 	case NodeKindExprMatch:
-		conditionVal := ast.Nodes[n.Children[0]].Eval(frame, allowThunk, ast)
+		conditionVal := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
 		if isErr(conditionVal) {
 			return conditionVal
 		}
 
 		for i := 0; i < len(n.Children[1:]); i += 2 {
 			target, expression := n.Children[1+i], n.Children[1+i+1]
-			targetVal := ast.Nodes[target].Eval(frame, allowThunk, ast)
+			targetVal := ast.Nodes[target].Eval(frame, false, ast)
 			if isErr(targetVal) {
 				return targetVal
 			}
 
 			if conditionVal.Equals(targetVal) {
-				return ast.Nodes[expression].Eval(frame, allowThunk, ast)
+				return ast.Nodes[expression].Eval(frame, false, ast)
 			}
 		}
 		return Null
@@ -634,7 +634,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 	case NodeKindExprUnary:
 		switch n.Meta.(Kind) {
 		case OpNegation:
-			operand := ast.Nodes[n.Meta.(Kind)].Eval(frame, allowThunk, ast)
+			operand := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
 			if isErr(operand) {
 				return operand
 			}
@@ -656,14 +656,14 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 		return func() Value {
 			switch n.Meta.(Kind) {
 			case OpDefine:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if err, ok := rightValue.(ValueError); ok {
 					return ValueError{&Err{err.Err, ErrRuntime, "cannot evaluate right-side of assignment", ast.Nodes[n.Children[0]].Position(ast)}}
 				}
 
 				return define(frame, ast, left, rightValue)
 			case OpAccessor:
-				leftValue := left.Eval(frame, allowThunk, ast)
+				leftValue := left.Eval(frame, false, ast)
 				if isErr(leftValue) {
 					return leftValue
 				}
@@ -708,14 +708,14 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 				}
 			}
 
-			leftValue := left.Eval(frame, allowThunk, ast)
+			leftValue := left.Eval(frame, false, ast)
 			if isErr(leftValue) {
 				return leftValue
 			}
 
 			switch n.Meta.(Kind) {
 			case OpAdd:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -762,7 +762,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", leftValue, rightValue), n.Position(ast)}}
 			case OpSubtract:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -776,7 +776,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), n.Position(ast)}}
 			case OpMultiply:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -795,7 +795,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", leftValue, rightValue), n.Position(ast)}}
 			case OpDivide:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -812,7 +812,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", leftValue, rightValue), n.Position(ast)}}
 			case OpModulus:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -835,7 +835,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			case OpLogicalAnd:
 				// TODO: do not evaluate `right` here
 				fail := func() Value {
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -845,7 +845,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				switch left := leftValue.(type) {
 				case ValueNumber:
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -860,7 +860,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 					return fail()
 				case ValueString:
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -882,7 +882,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						return ValueBoolean(false)
 					}
 
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -899,7 +899,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			case OpLogicalOr:
 				// TODO: do not evaluate `right` here
 				fail := func() Value {
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -909,7 +909,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				switch left := leftValue.(type) {
 				case ValueNumber:
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -923,7 +923,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 					return fail()
 				case ValueString:
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -945,7 +945,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						return ValueBoolean(true)
 					}
 
-					rightValue := right.Eval(frame, allowThunk, ast)
+					rightValue := right.Eval(frame, false, ast)
 					if isErr(rightValue) {
 						return rightValue
 					}
@@ -960,7 +960,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return fail()
 			case OpLogicalXor:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -993,7 +993,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", leftValue, rightValue), n.Position(ast)}}
 			case OpGreaterThan:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -1011,7 +1011,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
 			case OpLessThan:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
@@ -1029,7 +1029,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
 			case OpEqual:
-				rightValue := right.Eval(frame, allowThunk, ast)
+				rightValue := right.Eval(frame, false, ast)
 				if isErr(rightValue) {
 					return rightValue
 				}
