@@ -623,14 +623,19 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			return Null
 		}
 
-		for i := range length - 1 {
-			if expr := ast.Nodes[n.Children[i]].Eval(frame, false, ast); isErr(expr) {
+		callFrame := &StackFrame{
+			parent: frame,
+			vt:     ValueTable{},
+		}
+
+		for _, expr := range n.Children[:length-1] {
+			if expr := ast.Nodes[expr].Eval(callFrame, false, ast); isErr(expr) {
 				return expr
 			}
 		}
 		// return values of expression lists are tail call optimized,
 		// so return a maybe ThunkValue
-		return ast.Nodes[n.Children[length-1]].Eval(frame, allowThunk, ast)
+		return ast.Nodes[n.Children[length-1]].Eval(callFrame, allowThunk, ast)
 	case NodeKindExprUnary:
 		switch n.Meta.(Kind) {
 		case OpNegation:
