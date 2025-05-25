@@ -4,54 +4,51 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/rs/zerolog/log"
 )
 
 // ValueTable is used anytime a map of names/labels to Ink Values is needed,
 // and is notably used to represent stack frames / heaps and CompositeValue dictionaries.
 type ValueTable = map[string]Value
 
-// Scope represents the heap of variables local to a particular function call frame,
-// and recursively references other parent Scopes internally.
-type Scope struct {
-	parent *Scope
+// StackFrame represents the heap of variables local to a particular function call frame,
+// and recursively references other parent StackFrames internally.
+type StackFrame struct {
+	parent *StackFrame
 	vt     ValueTable
 }
 
-// Get a value from scope chain
-func (s *Scope) Get(name string) (Value, bool) {
-	for s != nil {
-		if val, ok := s.vt[name]; ok {
+// Get a value from the stack frame chain
+func (frame *StackFrame) Get(name string) (Value, bool) {
+	for frame != nil {
+		val, ok := frame.vt[name]
+		if ok {
 			return val, true
 		}
 
-		s = s.parent
+		frame = frame.parent
 	}
 
 	return Null, false
 }
 
-// Set a value to the last scope
-func (s *Scope) Set(name string, val Value) {
-	s.vt[name] = val
+// Set a value to the most recent call stack frame
+func (frame *StackFrame) Set(name string, val Value) {
+	frame.vt[name] = val
 }
 
-// Update updates a value in the scope chain
-func (s *Scope) Update(name string, val Value) {
-	for ; s != nil; s = s.parent {
-		if _, ok := s.vt[name]; ok {
-			s.vt[name] = val
+// Up updates a value in the stack frame chain
+func (frame *StackFrame) Update(name string, val Value) {
+	for ; frame != nil; frame = frame.parent {
+		if _, ok := frame.vt[name]; ok {
+			frame.vt[name] = val
 			return
 		}
 	}
 
-	log.Fatal().
-		Stringer("kind", ErrAssert).
-		Msgf("StackFrame.Up expected to find variable '%s' in frame but did not", name)
+	LogError(&Err{nil, ErrAssert, fmt.Sprintf("StackFrame.Up expected to find variable '%s' in frame but did not", name), Pos{}})
 }
 
-func (s *Scope) String() string {
+func (s *StackFrame) String() string {
 	entries := make([]string, 0, len(s.vt))
 	for k, v := range s.vt {
 		vstr := v.String()

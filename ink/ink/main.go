@@ -39,7 +39,7 @@ func repl(ctx *ink.Context) {
 		return ink.Null
 	})
 	ctx.LoadFunc("dump", func(ctx *ink.Context, _ ink.Pos, _ []ink.Value) ink.Value {
-		fmt.Println(ctx.Scope.String())
+		fmt.Println(ctx.Frame.String())
 		return ink.Null
 	})
 
@@ -58,7 +58,7 @@ func repl(ctx *ink.Context) {
 
 		// we don't really care if expressions fail to eval
 		// at the top level, user will see regardless, so drop err
-		nodes, errP := ink.ParseReader(ctx.Engine.Cmplr.AST, "stdin", strings.NewReader(text))
+		nodes, errP := ink.ParseReader(ctx.Engine.AST, "stdin", strings.NewReader(text))
 		if errP != nil {
 			ink.LogError(errP)
 			continue
@@ -124,7 +124,7 @@ func main() {
 		switch {
 		case *eval != "":
 			var errP *ink.Err
-			node, errP = ink.ParseReader(eng.Cmplr.AST, "eval", strings.NewReader(*eval))
+			node, errP = ink.ParseReader(eng.AST, "eval", strings.NewReader(*eval))
 			if errP != nil {
 				ink.LogError(errP)
 				return
@@ -141,7 +141,7 @@ func main() {
 			}
 		case stdin.Mode()&os.ModeCharDevice == 0:
 			var errP *ink.Err
-			node, errP = ink.ParseReader(eng.Cmplr.AST, "stdin", os.Stdin)
+			node, errP = ink.ParseReader(eng.AST, "stdin", os.Stdin)
 			if errP != nil {
 				ink.LogError(errP)
 				return

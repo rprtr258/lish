@@ -113,7 +113,7 @@ func (ctx *Context) LoadFunc(
 	name string,
 	exec func(*Context, Pos, []Value) Value,
 ) {
-	ctx.Scope.Set(name, NativeFunctionValue{name, exec, ctx})
+	ctx.Frame.Set(name, NativeFunctionValue{name, exec, ctx})
 }
 
 // Create and return a standard error callback response with the given message
@@ -280,7 +280,7 @@ func inkIn(ctx *Context, pos Pos, in []Value) Value {
 				break
 			}
 
-			rv := evalInkFunction(ctx, in[0], pos, ValueComposite{
+			rv := evalInkFunction(*ctx.Engine.AST, in[0], pos, false, ValueComposite{
 				"type": vs("data"),
 				"data": vs(str),
 			})
@@ -299,7 +299,7 @@ func inkIn(ctx *Context, pos Pos, in []Value) Value {
 			}
 		}
 
-		if err, ok := evalInkFunction(ctx, in[0], pos, ValueComposite{
+		if err, ok := evalInkFunction(*ctx.Engine.AST, in[0], pos, false, ValueComposite{
 			"type": vs("end"),
 		}).(ValueError); ok {
 			cbErr(err.Err)
@@ -349,7 +349,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 		fileInfos, err := os.ReadDir(string(*dirPath.b))
 		if err != nil {
 			ctx.ExecListener(func() {
-				cbMaybeErr(evalInkFunction(ctx, cb, pos, errMsg(
+				cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(
 					fmt.Sprintf("error listing directory contents in dir(), %s", err.Error()),
 				)))
 			})
@@ -361,7 +361,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 			info, err := fi.Info()
 			if err != nil {
 				ctx.ExecListener(func() {
-					cbMaybeErr(evalInkFunction(ctx, cb, pos, errMsg(
+					cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(
 						fmt.Sprintf("error listing directory contents in dir(), %s", err.Error()),
 					)))
 				})
@@ -377,7 +377,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, ValueComposite{
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 				"type": vs("data"),
 				"data": fileList,
 			}))
@@ -468,7 +468,7 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, errMsg(msg)))
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(msg)))
 		})
 	}
 
@@ -500,7 +500,7 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 		if err == io.EOF && count == 0 {
 			// if first read returns EOF, it may just be an empty file
 			ctx.ExecListener(func() {
-				cbMaybeErr(evalInkFunction(ctx, cb, pos, ValueComposite{
+				cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 					"type": vs("data"),
 					"data": ValueString{},
 				}))
@@ -512,7 +512,7 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, ValueComposite{
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 				"type": vs("data"),
 				"data": vs(string(buf[:count])),
 			}))
@@ -547,7 +547,7 @@ func inkWrite(ctx *Context, pos Pos, in []Value) Value {
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, errMsg(msg)))
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(msg)))
 		})
 	}
 
@@ -587,7 +587,7 @@ func inkWrite(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, ValueComposite{
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 				"type": vs("end"),
 			}))
 		})
@@ -623,7 +623,7 @@ func inkDelete(ctx *Context, pos Pos, in []Value) Value {
 		err := os.RemoveAll(string(*filePath.b))
 		if err != nil {
 			ctx.ExecListener(func() {
-				cbMaybeErr(evalInkFunction(ctx, cb, pos, errMsg(
+				cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(
 					fmt.Sprintf("error removing requested file in delete(), %s", err.Error()),
 				)))
 			})
@@ -631,7 +631,7 @@ func inkDelete(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		ctx.ExecListener(func() {
-			cbMaybeErr(evalInkFunction(ctx, cb, pos, ValueComposite{
+			cbMaybeErr(evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 				"type": vs("end"),
 			}))
 		})
@@ -662,7 +662,7 @@ func inkHTTPHandler(
 			bodyBuf, err := io.ReadAll(r.Body)
 			if err != nil {
 				ctx.ExecListener(func() {
-					_ = evalInkFunction(ctx, cb, pos, errMsg(
+					_ = evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(
 						fmt.Sprintf("error reading request in listen(), %s", err.Error()),
 					))
 				})
@@ -679,7 +679,7 @@ func inkHTTPHandler(
 		go func() {
 			defer ctx.Engine.Listeners.Done()
 
-			v := evalInkFunction(ctx, cb, pos, ValueComposite{
+			v := evalInkFunction(*ctx.Engine.AST, cb, pos, false, ValueComposite{
 				"type": vs("req"),
 				"data": ValueComposite{
 					"method":  vs(method),
@@ -740,7 +740,7 @@ func inkHTTPHandler(
 		// since it sends the status
 		w.WriteHeader(int(resStatus))
 		if _, err := w.Write(*resBody.b); err != nil {
-			_ = evalInkFunction(ctx, cb, pos, errMsg(
+			_ = evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(
 				fmt.Sprintf("error writing request body in listen(), %s", err.Error()),
 			))
 			return
@@ -763,7 +763,7 @@ func inkListen(ctx *Context, pos Pos, in []Value) Value {
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			if err, ok := evalInkFunction(ctx, cb, pos, errMsg(msg)).(ValueError); ok {
+			if err, ok := evalInkFunction(*ctx.Engine.AST, cb, pos, false, errMsg(msg)).(ValueError); ok {
 				LogError(&Err{err.Err, ErrRuntime, "error in callback to listen()", pos})
 			}
 		})
@@ -977,7 +977,7 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 
 	sendErr := func(msg string) {
 		ctx.ExecListener(func() {
-			v := evalInkFunction(ctx, stdoutFn, pos, errMsg(msg))
+			v := evalInkFunction(*ctx.Engine.AST, stdoutFn, pos, false, errMsg(msg))
 			if err, ok := v.(ValueError); ok {
 				LogError(&Err{err.Err, ErrRuntime, "error in callback to exec()", pos})
 			}
@@ -1014,7 +1014,7 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 				"type": vs("data"),
 				"data": ValueString{&output},
 			}
-			v := evalInkFunction(ctx, stdoutFn, pos, in)
+			v := evalInkFunction(*ctx.Engine.AST, stdoutFn, pos, false, in)
 			if err, ok := v.(ValueError); ok {
 				LogError(&Err{err.Err, ErrRuntime, "error in callback to exec()", pos})
 			}
@@ -1353,7 +1353,7 @@ func inkPar(ctx *Context, pos Pos, in []Value) Value {
 	wg.Add(len(funcs))
 	for _, f := range funcs {
 		go func() {
-			_ = evalInkFunction(ctx, f, pos)
+			_ = evalInkFunction(*ctx.Engine.AST, f, pos, false)
 			wg.Done()
 		}()
 	}

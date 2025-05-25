@@ -47,7 +47,7 @@ func LogError(err *Err) {
 	}
 }
 
-func LogScope(scope *Scope) {
+func LogFrame(scope *StackFrame) {
 	if !L.Dump {
 		return
 	}

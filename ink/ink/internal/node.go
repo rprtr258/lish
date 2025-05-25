@@ -41,7 +41,7 @@ func (s *AST) Append(node Node) NodeID {
 func (s AST) String() string {
 	var sb strings.Builder
 	for i, n := range s.Nodes {
-		fmt.Fprintf(&sb, "%3d(%s): %s\n", i, n.Position(&s).String(), n.String())
+		fmt.Fprintf(&sb, "%3d(%s): %s\n", i, n.Position(s).String(), n.String())
 	}
 	return sb.String()
 }
@@ -67,32 +67,32 @@ func (s AST) Graph() string {
 		typ := strings.TrimPrefix(fmt.Sprintf("%T", n), "internal.Node")
 		var val string
 		props := map[string]string{}
-		switch n := n.(type) {
-		case NodeLiteralBoolean:
+		switch n.Kind {
+		case NodeKindLiteralBoolean:
 			props["fillcolor"] = _colorLiteral
-			val = fun.IF(n.Val, "true", "false")
-		case NodeLiteralNumber:
+			val = fun.IF(n.Meta.(bool), "true", "false")
+		case NodeKindLiteralNumber:
 			props["fillcolor"] = _colorLiteral
-			val = fmt.Sprint(n.Val)
-		case NodeLiteralString:
+			val = fmt.Sprint(n.Meta.(float64))
+		case NodeKindLiteralString:
 			props["fillcolor"] = _colorLiteral
-			val = "'" + strings.Trim(strconv.Quote(strings.Trim(strconv.Quote(n.Val), "\"")), "\"") + "'"
-		case NodeLiteralList, NodeLiteralFunction:
+			val = "'" + strings.Trim(strconv.Quote(strings.Trim(strconv.Quote(n.Meta.(string)), "\"")), "\"") + "'"
+		case NodeKindLiteralList, NodeKindLiteralFunction:
 			props["fillcolor"] = _colorLiteral
-		case NodeIdentifierEmpty:
+		case NodeKindIdentifierEmpty:
 			props["fillcolor"] = _colorIdent
-		case NodeIdentifier:
+		case NodeKindIdentifier:
 			props["fillcolor"] = _colorIdent
-			val = n.Val
-		case NodeExprUnary:
+			val = n.Meta.(string)
+		case NodeKindExprUnary:
 			props["fillcolor"] = _colorExpr
-			val = n.Operator.String()
-		case NodeExprBinary:
+			val = n.Meta.(Kind).String()
+		case NodeKindExprBinary:
 			props["fillcolor"] = _colorExpr
-			val = n.Operator.String()
-		case NodeFunctionCall:
+			val = n.Meta.(Kind).String()
+		case NodeKindFunctionCall:
 			props["fillcolor"] = _colorExpr
-		case NodeExprMatch, NodeExprList:
+		case NodeKindExprMatch, NodeKindExprList:
 			props["fillcolor"] = _colorControl
 		}
 		props["label"] = fmt.Sprintf(`#%[1]d %[2]s\n%s`, i, typ, val)
@@ -104,31 +104,31 @@ func (s AST) Graph() string {
 		fmt.Fprint(&sb, "]\n")
 	}
 	for i, n := range s.Nodes {
-		switch n := n.(type) {
-		case NodeExprList:
-			for k, j := range n.Expressions {
+		switch n.Kind {
+		case NodeKindExprList:
+			for k, j := range n.Children {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, j, k)
 			}
-		case NodeExprUnary:
-			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.Operand)
-		case NodeExprBinary:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.Left)
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.Right)
-		case NodeExprMatch:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.Condition)
-			for k, clause := range n.Clauses {
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"%d\"]\n", i, clause, k) // TODO: clause is not int
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, clause.Target)
-				fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, clause.Expression)
+		case NodeKindExprUnary:
+			fmt.Fprintf(&sb, "n%d -> n%d\n", i, n.Children[0])
+		case NodeKindExprBinary:
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"left\"]\n", i, n.Children[0])
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"right\"]\n", i, n.Children[1])
+		case NodeKindExprMatch:
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"cond\"]\n", i, n.Children[0])
+			clauses := n.Children[1:]
+			for k := 0; k < len(clauses); k += 2 {
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"target\"]\n", i, clauses[k])
+				fmt.Fprintf(&sb, "n%d -> n%d [label=\"expr\"]\n", i, clauses[k+1])
 			}
-		case NodeLiteralFunction:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.Body)
-			for k, j := range n.Arguments {
+		case NodeKindLiteralFunction:
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"body\"]\n", i, n.Children[0])
+			for k, j := range n.Children[1:] {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"arg/%d\"]\n", i, j, k)
 			}
-		case NodeFunctionCall:
-			fmt.Fprintf(&sb, "n%d -> n%d [label=\"func\"]\n", i, n.Function)
-			for k, j := range n.Arguments {
+		case NodeKindFunctionCall:
+			fmt.Fprintf(&sb, "n%d -> n%d [label=\"func\"]\n", i, n.Children[0])
+			for k, j := range n.Children[1:] {
 				fmt.Fprintf(&sb, "n%d -> n%d [label=\"app/%d\"]\n", i, j, k)
 			}
 		}
@@ -141,178 +141,166 @@ type errParse struct {
 	*Err
 }
 
+type NodeKind uint8 // meta, [children]
+
+const (
+	NodeKindExprUnary        NodeKind = iota // Kind, [operand]
+	NodeKindExprBinary                       // Kind, [lhs, rhs]
+	NodeKindFunctionCall                     // nil, [function, args...]
+	NodeKindExprMatch                        // nil, [condition, [target, expression]...]
+	NodeKindExprList                         // nil, [expressions...]
+	NodeKindIdentifierEmpty                  // nil, []
+	NodeKindIdentifier                       // string, []
+	NodeKindLiteralNumber                    // float64, []
+	NodeKindLiteralString                    // string, []
+	NodeKindLiteralBoolean                   // boolean, []
+	NodeKindLiteralComposite                 // [n]Pos, [n][Key, Val]
+	NodeKindLiteralList                      // nil, [vals...]
+	NodeKindLiteralFunction                  // nil, [body, arguments...]
+)
+
 // Node represents an abstract syntax tree (AST) node in an Ink program.
-type Node interface {
-	String() string
-	Position(*AST) Pos
-}
-
-type NodeExprUnary struct {
+type Node struct {
+	Kind NodeKind
 	Pos
-	Operator Kind
-	Operand  NodeID
+	Meta     any
+	Children []NodeID
 }
 
-func (n NodeExprUnary) String() string {
-	return fmt.Sprintf("Unary %s #%d", n.Operator, n.Operand)
-}
-
-func (n NodeExprUnary) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeExprBinary struct {
-	Pos
-	Operator    Kind
-	Left, Right NodeID
-}
-
-func (n NodeExprBinary) String() string {
-	return fmt.Sprintf("Binary #%d %s #%d", n.Left, n.Operator, n.Right)
-}
-
-func (n NodeExprBinary) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeFunctionCall struct {
-	Function  NodeID
-	Arguments []NodeID
-}
-
-func (n NodeFunctionCall) String() string {
-	var sb strings.Builder
-	sb.WriteString("Call ")
-	sb.WriteString(n.Function.String())
-	sb.WriteString(" on (")
-	for i, a := range n.Arguments {
-		if i > 0 {
-			sb.WriteString(", ")
+func (n Node) String() string {
+	switch n.Kind {
+	case NodeKindExprUnary:
+		return fmt.Sprintf("Unary %s #%d", n.Meta.(Kind).String(), n.Children[0])
+	case NodeKindExprBinary:
+		lhs, rhs := n.Children[0], n.Children[1]
+		return fmt.Sprintf("Binary #%d %s #%d", lhs, n.Meta.(Kind).String(), rhs)
+	case NodeKindFunctionCall:
+		var sb strings.Builder
+		sb.WriteString("Call ")
+		sb.WriteString(n.Children[0].String())
+		sb.WriteString(" on (")
+		for i, a := range n.Children[1:] {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(a.String())
 		}
-		sb.WriteString(a.String())
+		sb.WriteString(")")
+		return sb.String()
+	case NodeKindExprMatch:
+		var sb strings.Builder
+		sb.WriteString("Match on (")
+		sb.WriteString(n.Children[0].String())
+		sb.WriteString(") to {")
+		clauses := n.Children[1:]
+		for i := 0; i < len(clauses); i += 2 {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+
+			sb.WriteString(fmt.Sprintf("Clause #%d -> #%d", clauses[i], clauses[i+1]))
+		}
+		sb.WriteString("}")
+		return sb.String()
+	case NodeKindExprList:
+		var sb strings.Builder
+		sb.WriteString("Expression list (")
+		for i, expr := range n.Children {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(expr.String())
+		}
+		sb.WriteString(")")
+		return sb.String()
+	case NodeKindIdentifierEmpty:
+		return "IDENTIFIER_EMPTY"
+	case NodeKindIdentifier:
+		return fmt.Sprintf("IDENTIFIER(%q)", n.Meta.(string))
+	case NodeKindLiteralNumber:
+		return fmt.Sprintf("Number %s", nToS(n.Meta.(float64)))
+	case NodeKindLiteralString:
+		return fmt.Sprintf("String %q", n.Meta.(string))
+	case NodeKindLiteralBoolean:
+		return fmt.Sprintf("Boolean %t", n.Meta.(bool))
+	case NodeKindLiteralComposite:
+		entries := make([]string, len(n.Children)/2)
+		for i := range entries {
+			entries[i] = fmt.Sprintf("#%d: #%d", n.Children[i*2], n.Children[i*2+1])
+		}
+		return fmt.Sprintf("Object {%s}", strings.Join(entries, ", "))
+	case NodeKindLiteralList:
+		vals := make([]string, len(n.Children))
+		for i, v := range n.Children {
+			vals[i] = v.String()
+		}
+		return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
+	case NodeKindLiteralFunction:
+		args := make([]string, len(n.Children[1:]))
+		for i, a := range n.Children[1:] {
+			args[i] = a.String()
+		}
+		return fmt.Sprintf("Function(%s)=>#%d", strings.Join(args, ", "), n.Children[0])
+	default:
+		panic("unreachable")
 	}
-	sb.WriteString(")")
-	return sb.String()
 }
 
-func (n NodeFunctionCall) Position(s *AST) Pos {
-	return s.Nodes[n.Function].Position(s)
+func (n Node) Position(ast AST) Pos { // TODO: replace with []Node
+	switch n.Kind {
+	case NodeKindExprUnary, NodeKindExprBinary,
+		NodeKindExprMatch, NodeKindExprList,
+		NodeKindIdentifierEmpty, NodeKindIdentifier,
+		NodeKindLiteralNumber, NodeKindLiteralString, NodeKindLiteralBoolean,
+		NodeKindLiteralComposite, NodeKindLiteralList, NodeKindLiteralFunction:
+		return n.Pos
+	case NodeKindFunctionCall:
+		return ast.Nodes[n.Children[0]].Position(ast)
+	default:
+		panic("unreachable")
+	}
+}
+
+func NodeExprUnary(Pos Pos, Operator Kind, Operand NodeID) Node {
+	return Node{NodeKindExprUnary, Pos, Operator, []NodeID{Operand}}
+}
+func NodeExprBinary(Pos Pos, Operator Kind, Left, Right NodeID) Node {
+	return Node{NodeKindExprBinary, Pos, Operator, []NodeID{Left, Right}}
+}
+func NodeFunctionCall(Function NodeID, Arguments []NodeID) Node {
+	return Node{NodeKindFunctionCall, Pos{}, nil, append([]NodeID{Function}, Arguments...)}
 }
 
 type NodeMatchClause struct {
 	Target, Expression NodeID
 }
 
-type NodeExprMatch struct {
-	Pos
-	Condition NodeID
-	Clauses   []NodeMatchClause
-}
-
-func (n NodeExprMatch) String() string {
-	var sb strings.Builder
-	sb.WriteString("Match on (")
-	sb.WriteString(n.Condition.String())
-	sb.WriteString(") to {")
-	for i, clause := range n.Clauses {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-
-		sb.WriteString(fmt.Sprintf("Clause #%d -> #%d", clause.Target, clause.Expression))
+func NodeExprMatch(Pos Pos, Condition NodeID, Clauses []NodeMatchClause) Node {
+	children := make([]NodeID, 1+len(Clauses)*2)
+	children[0] = Condition
+	for i, clause := range Clauses {
+		children[1+i*2] = clause.Target
+		children[1+i*2+1] = clause.Expression
 	}
-	sb.WriteString("}")
-	return sb.String()
+	return Node{NodeKindExprMatch, Pos, nil, children}
 }
-
-func (n NodeExprMatch) Position(*AST) Pos {
-	return n.Pos
+func NodeExprList(Pos Pos, Expressions []NodeID) Node {
+	return Node{NodeKindExprList, Pos, nil, Expressions}
 }
-
-type NodeExprList struct {
-	Pos
-	Expressions []NodeID
+func NodeIdentifierEmpty(Pos Pos) Node {
+	return Node{NodeKindIdentifierEmpty, Pos, nil, nil}
 }
-
-func (n NodeExprList) String() string {
-	var sb strings.Builder
-	sb.WriteString("Expression list (")
-	for i, expr := range n.Expressions {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(expr.String())
-	}
-	sb.WriteString(")")
-	return sb.String()
+func NodeIdentifier(Pos Pos, Val string) Node {
+	return Node{NodeKindIdentifier, Pos, Val, nil}
 }
-
-func (n NodeExprList) Position(*AST) Pos {
-	return n.Pos
+func NodeLiteralNumber(Pos Pos, Val float64) Node {
+	return Node{NodeKindLiteralNumber, Pos, Val, nil}
 }
-
-type NodeIdentifierEmpty struct {
-	Pos
+func NodeLiteralString(Pos Pos, Val string) Node {
+	return Node{NodeKindLiteralString, Pos, Val, nil}
 }
-
-func (n NodeIdentifierEmpty) String() string {
-	return "IDENTIFIER_EMPTY"
-}
-
-func (n NodeIdentifierEmpty) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeIdentifier struct {
-	Pos
-	Val string
-}
-
-func (n NodeIdentifier) String() string {
-	return fmt.Sprintf("IDENTIFIER(%q)", n.Val)
-}
-
-func (n NodeIdentifier) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeLiteralNumber struct {
-	Pos
-	Val float64
-}
-
-func (n NodeLiteralNumber) String() string {
-	return fmt.Sprintf("Number %s", nToS(n.Val))
-}
-
-func (n NodeLiteralNumber) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeLiteralString struct {
-	Pos
-	Val string
-}
-
-func (n NodeLiteralString) String() string {
-	return fmt.Sprintf("String '%s'", n.Val)
-}
-
-func (n NodeLiteralString) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeLiteralBoolean struct {
-	Pos
-	Val bool
-}
-
-func (n NodeLiteralBoolean) String() string {
-	return fmt.Sprintf("Boolean %t", n.Val)
-}
-
-func (n NodeLiteralBoolean) Position(*AST) Pos {
-	return n.Pos
+func NodeLiteralBoolean(Pos Pos, Val bool) Node {
+	return Node{NodeKindLiteralBoolean, Pos, Val, nil}
 }
 
 type NodeCompositeKeyValue struct {
@@ -320,55 +308,19 @@ type NodeCompositeKeyValue struct {
 	Key, Val NodeID
 }
 
-type NodeLiteralComposite struct {
-	Pos
-	Entries []NodeCompositeKeyValue
-}
-
-func (n NodeLiteralComposite) String() string {
-	entries := make([]string, len(n.Entries))
-	for i, e := range n.Entries {
-		entries[i] = fmt.Sprintf("#%d: #%d", e.Key, e.Val)
+func NodeLiteralComposite(pos Pos, Entries []NodeCompositeKeyValue) Node {
+	children := make([]NodeID, len(Entries)*2)
+	poss := make([]Pos, len(Entries))
+	for i, entry := range Entries {
+		children[i*2] = entry.Key
+		children[i*2+1] = entry.Val
+		poss[i] = entry.Pos
 	}
-	return fmt.Sprintf("Object {%s}",
-		strings.Join(entries, ", "))
+	return Node{NodeKindLiteralComposite, pos, poss, children}
 }
-
-func (n NodeLiteralComposite) Position(*AST) Pos {
-	return n.Pos
+func NodeLiteralList(Pos Pos, Vals ...NodeID) Node {
+	return Node{NodeKindLiteralList, Pos, nil, Vals}
 }
-
-type NodeLiteralList struct {
-	Pos
-	Vals []NodeID
-}
-
-func (n NodeLiteralList) String() string {
-	vals := make([]string, len(n.Vals))
-	for i, v := range n.Vals {
-		vals[i] = v.String()
-	}
-	return fmt.Sprintf("List [%s]", strings.Join(vals, ", "))
-}
-
-func (n NodeLiteralList) Position(*AST) Pos {
-	return n.Pos
-}
-
-type NodeLiteralFunction struct {
-	Pos
-	Arguments []NodeID
-	Body      NodeID
-}
-
-func (n NodeLiteralFunction) String() string {
-	args := make([]string, len(n.Arguments))
-	for i, a := range n.Arguments {
-		args[i] = a.String()
-	}
-	return fmt.Sprintf("Function(%s)=>#%d", strings.Join(args, ", "), n.Body)
-}
-
-func (n NodeLiteralFunction) Position(*AST) Pos {
-	return n.Pos
+func NodeLiteralFunction(Pos Pos, Arguments []NodeID, Body NodeID) Node {
+	return Node{NodeKindLiteralFunction, Pos, nil, append([]NodeID{Body}, Arguments...)}
 }
