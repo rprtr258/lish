@@ -3,11 +3,14 @@ package internal
 import (
 	"cmp"
 	"fmt"
-	"iter"
-	"slices"
 
 	"github.com/rprtr258/fun"
 )
+
+type parser struct {
+	tokens []Token
+	idx    int
+}
 
 func guardUnexpectedInputEnd(tokens []Token, idx int) {
 	switch {
@@ -22,10 +25,7 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 
 // parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
 // This implementation uses recursive descent parsing.
-func parse(ast *AST, tokenStream iter.Seq[Token]) (nodes []NodeID, e errParse) {
-	// TODO: parse stream if we can, hence making "one-pass" interpreter
-	tokens := slices.Collect(tokenStream)
-
+func parse(ast *AST, tokens []Token) (nodes []NodeID, e errParse) {
 	for i := 0; i < len(tokens); {
 		if tokens[i].Kind == Separator {
 			// this sometimes happens when the repl receives comment inputs

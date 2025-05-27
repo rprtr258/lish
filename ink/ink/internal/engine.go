@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -85,7 +86,9 @@ func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
 		return -1, &Err{nil, ErrUnknown, errr.Error(), Pos{filename, 0, 0}}
 	}
 
-	tokens := tokenize(filename, strings.NewReader("("+string(b)+")"))
+	// TODO: parse stream if we can, hence making "one-pass" interpreter
+	tokens := slices.Collect(tokenize(filename, strings.NewReader("("+string(b)+")")))
+
 	nodes, err := parse(ast, tokens)
 	if err.Err != nil {
 		return -1, err.Err
