@@ -19,7 +19,8 @@ func guardUnexpectedInputEnd(tokens []Token, idx int) {
 	case len(tokens) == 0:
 		panic(errParse{&Err{nil, ErrSyntax, "unexpected end of input", Pos{}}}) // TODO: report filename and position
 	default:
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tokens[len(tokens)-1]), tokens[len(tokens)-1].Pos}})
+		tok := tokens[len(tokens)-1]
+		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tok), tok.Pos}})
 	}
 }
 
