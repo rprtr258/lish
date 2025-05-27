@@ -20,7 +20,7 @@ filter := (list, f) => reduce(list, (l, item, i) => true :: {
 # ([]T, (T, number) => ()) => ()
 each := (list, f) => (
   max := len(list)
-  (sub := i => i :: {
+  (sub := (i) => i :: {
     max -> ()
     _ -> (
       f(list.(i), i)
@@ -76,7 +76,7 @@ reduceBack := (list, f, acc) => (sub := (i, acc) => i :: {
 append := (base, child) => (
   baseLength := len(base)
   childLength := len(child)
-  (sub := i => i :: {
+  (sub := (i) => i :: {
     childLength -> base
     _ -> (
       base.(baseLength + i) := child.(i)
@@ -87,22 +87,22 @@ append := (base, child) => (
 
 # flatten by depth 1
 # [][]T => []T
-flatten := list => reduce(list, (acc, x, _) => acc + x, [])
+flatten := (list) => reduce(list, (acc, x, _) => acc + x, [])
 
 # true iff some items in list are true
 # ([]boolean) => boolean
 # TODO: stop on first match
 # TODO: rename to any?
-some := list => reduce(list, (acc, x, _) => acc | x, false)
+some := (list) => reduce(list, (acc, x, _) => acc | x, false)
 
 # true iff every item in list is true
 # ([]boolean) => boolean
 # TODO: rename to all?
-every := list => reduce(list, (acc, x, _) => acc & x, true)
+every := (list) => reduce(list, (acc, x, _) => acc & x, true)
 
 # tail recursive reversing a list
 # ([]T) => []T
-reverse := list => (sub := (acc, i) => true :: {
+reverse := (list) => (sub := (acc, i) => true :: {
   i < 0 -> acc
   _ -> sub(acc.len(acc) := list.(i), i - 1)
 })([], len(list) - 1)
@@ -129,7 +129,7 @@ listToObj := (list, f) => reduce(list, (acc, item, i) => acc.(f(item)) := item, 
 
 # Convert an object to a list using a value transformation function.
 # ({[K]: V}, (K, V) => T) => [T]
-objToList := (obj, f) => map(keys(obj), k => f(k, obj.(k)))
+objToList := (obj, f) => map(keys(obj), (k) => f(k, obj.(k)))
 
 # like Python's range(), but no optional arguments
 # (number, number, number) => []number
@@ -151,13 +151,13 @@ range := (start, end, step) => (
 )
 
 # find minimum in list
-min := numbers => reduce(numbers, (acc, n, _) => true :: {
+min := (numbers) => reduce(numbers, (acc, n, _) => true :: {
   n < acc -> n
   _ -> acc
 }, numbers.0)
 
 # find maximum in list
-max := numbers => reduce(numbers, (acc, n, _) => true :: {
+max := (numbers) => reduce(numbers, (acc, n, _) => true :: {
   n > acc -> n
   _ -> acc
 }, numbers.0)

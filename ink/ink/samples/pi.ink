@@ -5,15 +5,15 @@
 {format: f} := import('str.ink')
 
 # take count from CLI, defaulting to 250k
-Count := (c := number(args().2) :: {
-  0 -> 250000
-  _ -> c
+Count := (true :: {
+  len(args()) < 3 -> 250000
+  _               -> args().2
 })
 
 # pick a random point in [0, 1) in x and y
 randCoord := () => [rand(), rand()]
 
-inCircle := coordPair => (
+inCircle := (coordPair) => (
   # is a given point in a quarter-circle at the origin?
   x := coordPair.0
   y := coordPair.1
@@ -26,7 +26,7 @@ state := {
 }
 
 # a single iteration of the Monte Carlo simulation
-iteration := iterCount => (
+iteration := (iterCount) => (
   true :: {
     inCircle(randCoord()) -> state.inCount = state.inCount + 1
   }
@@ -38,7 +38,7 @@ iteration := iterCount => (
 )
 
 # composable higher order function for looping
-loop := f => iter := n => n :: {
+loop := (f) => iter := (n) => n :: {
   0 -> ()
   _ -> (
     f(n)

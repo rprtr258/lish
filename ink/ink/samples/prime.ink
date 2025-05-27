@@ -4,9 +4,9 @@
 {filter, range} := import('functional.ink')
 
 # is a single number prime?
-isPrime := n =>
+isPrime := (n) =>
   # is n coprime with nums < p?
-  (ip := p => (p*p > n) | ~(n%p == 0) & ip(p + 1))(2) # start with smaller # == more efficient
+  (ip := (p) => (p*p > n) | ~(n%p == 0) & ip(p + 1))(2) # start with smaller # == more efficient
 
 N := 5000
 # primes under N are numbers 2 .. N, filtered by isPrime

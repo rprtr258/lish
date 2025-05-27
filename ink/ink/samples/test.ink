@@ -4,7 +4,7 @@ clear := '__cleared'
 # built on the suite library for testing
 
 # short helper functions on the suite
-import('suite.ink')('Ink language and standard library', m => (
+import('suite.ink')('Ink language and standard library', (m) => (
   # import std & str once for all tests
   std := import('std.ink')
   {clone} := std
@@ -12,13 +12,13 @@ import('suite.ink')('Ink language and standard library', m => (
   str := import('str.ink')
   functional := import('functional.ink')
 
-  m('eval with #!/usr/bin/env ink', t => (
+  m('eval with #!/usr/bin/env ink', (t) => (
     # check that the line immediately following #!/... still runs okay
     t('eval with #!/usr/bin/env ink does not miss lines'
       clear, '__cleared')
   ))
 
-  m('destructure assignment into list', t => (
+  m('destructure assignment into list', (t) => (
     list := [1, 2, 3]
     [a, b, c] := list
 
@@ -27,7 +27,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('c is 3', c, 3)
   ))
 
-  m('destructure assignment into dict', t => (
+  m('destructure assignment into dict', (t) => (
     dict := {a: 'A', b: 'B', c: 'C'}
     {a: a, b: bb} := dict
     {c} := dict
@@ -38,7 +38,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('shorthand constructor', {a, c}, {a: 'A', c: 'C'})
   ))
 
-  m('value equality', t => (
+  m('value equality', (t) => (
     # with primitives
     t('() == ()', () == (), true)
     t('() == bool', () == false, false)
@@ -83,7 +83,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('_ == builtin fn', _ == len, true)
   ))
 
-  m('composite value access', t => (
+  m('composite value access', (t) => (
     obj := {
       39: 'clues'
       ('ex' + 'pr'): 'ession'
@@ -93,7 +93,7 @@ import('suite.ink')('Ink language and standard library', m => (
     # we need to remember that AccessorOp is just a binary op
     # and the function call precedes it in priority
     obj.fn := () => 'xyz'
-    obj.fz := f => f() + f()
+    obj.fz := (f) => f() + f()
 
     t('calling composite property', (obj.fn)(), 'xyz')
     t('composite property by string value', (obj.('fn'))(), 'xyz')
@@ -136,7 +136,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('modifying composite at key', comp.list.(2).what, 'arg')
   ))
 
-  m('function, expression, and lexical scope', t => (
+  m('function, expression, and lexical scope', (t) => (
     thing := 3
     state := {
       thing: 21
@@ -178,10 +178,10 @@ import('suite.ink')('Ink language and standard library', m => (
     t('assignment in exprlist in argument position is in inner scope', w, 100)
   ))
 
-  m('tail call optimizations and thunk unwrap order', t => (
+  m('tail call optimizations and thunk unwrap order', (t) => (
     acc := ['']
 
-    appender := prefix => str => acc.0 := acc.0 + prefix + str
+    appender := (prefix) => (str) => acc.0 := acc.0 + prefix + str
     f1 := appender('f1_')
     f2 := appender('f2_')
 
@@ -206,7 +206,7 @@ import('suite.ink')('Ink language and standard library', m => (
       acc.0, 'f1_hif2_whatf1_supf2_samplef2_hgf1_bbf2_xyz')
   ))
 
-  m('match expressions', t => (
+  m('match expressions', (t) => (
     x := ('what ' + string(1 + 2 + 3 + 4) :: {
       'what 10' -> 'what 10'
       _ -> '??'
@@ -258,7 +258,7 @@ import('suite.ink')('Ink language and standard library', m => (
       x, [1, 2, [3, 4, ['thing']], {a: ['b']}])
   ))
 
-  m('accessing properties strangely, accessing nonexistent properties', t => (
+  m('accessing properties strangely, accessing nonexistent properties', (t) => (
     t('property access with number literal', {1: ~1}.1, ~1)
     t('list access with number literal', ['y', 'z'].1, ('z'))
     t('property access with bare string literal', {1: 4.2}.'1', 4.2)
@@ -279,7 +279,7 @@ import('suite.ink')('Ink language and standard library', m => (
       string(dashed.('test-key')), '14')
   ))
 
-  m('argument order of evaluation', t => (
+  m('argument order of evaluation', (t) => (
     acc := []
     fn := (x, y) => (acc.len(acc) := x, y)
 
@@ -289,8 +289,8 @@ import('suite.ink')('Ink language and standard library', m => (
       acc, ['i', '?', 'h', 'g'])
   ))
 
-  m('empty identifier "_" in arguments and functions', t => (
-    emptySingle := _ => 'snowman'
+  m('empty identifier "_" in arguments and functions', (t) => (
+    emptySingle := (_) => 'snowman'
     emptyMultiple := (_, a, _, b) => a + b
 
     t('_ is a valid argument placeholder', emptySingle(()), 'snowman')
@@ -298,7 +298,7 @@ import('suite.ink')('Ink language and standard library', m => (
       emptyMultiple('bright', 'rain', 'sky', 'bow'), 'rainbow')
   ))
 
-  m('comment syntaxes', t => (
+  m('comment syntaxes', (t) => (
     # t(wrong, wrong)
     ping := 'pong'
     ` t(wrong, more wrong) `
@@ -307,7 +307,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('inline comments terminate correctly', len('include `cmt` thing'), 19)
   ))
 
-  m('more complex pattern matching', t => (
+  m('more complex pattern matching', (t) => (
     t('nested list pattern matches correctly', [_, [2, _], 6], [10, [2, 7], 6])
     t(
       'nested composite pattern matches correctly'
@@ -328,7 +328,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('composite pattern matches with empty identifiers', {6: 9, 7: _}, {6: _, 7: _})
   ))
 
-  m('order of operations', t => (
+  m('order of operations', (t) => (
     t('addition/subtraction', 1 + 2 - 3 + 5 - 3, 2)
     t('multiplication over addition/subtraction', 1 + 2 * 3 + 5 - 3, 9)
     t('multiplication/division', 10 - 2 * 16 / 4 + 3, 5)
@@ -340,7 +340,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('logical operators, arithmetic, and parentheses', 1 + 1 & 5 % 3 * 10, (1 + 1) & ((5 % 3) * 10))
   ))
 
-  m('string lexicographical comparisons', t => (
+  m('string lexicographical comparisons', (t) => (
     t('less-than, I', 'a' < 'b', true)
     t('less-than, II', 'x' < 'A', false)
     # shorter strings are lesser
@@ -355,7 +355,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('non-printed byte arrays', char(253) > char(252), true)
   ))
 
-  m('bitwise operations on byte strings', t => (
+  m('bitwise operations on byte strings', (t) => (
     Z := char(0)
     ZZ := Z + Z
     ZZZ := ZZ + Z
@@ -400,7 +400,7 @@ import('suite.ink')('Ink language and standard library', m => (
       a ^ a, ZZZ + ZZZ + ZZZ)
   ))
 
-  m('min/max', t => (
+  m('min/max', (t) => (
     {min, max} := functional
 
     t('min of list of 1', min([~30]), ~30)
@@ -413,7 +413,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('max of array of same', min([2, 2, 2, 2, 2, 2, 2, 2]), 2)
   ))
 
-  m('logic composition correctness, std.some/std.every', t => (
+  m('logic composition correctness, std.some/std.every', (t) => (
     # and
     t('number & number, I', 1 & 4, 0)
     t('number & number, II', 2 & 3, 2)
@@ -452,7 +452,7 @@ import('suite.ink')('Ink language and standard library', m => (
       every([true, true, true, false, true]), false)
   ))
 
-  m('object keys / list, mutable strings, std.clone', t => (
+  m('object keys / list, mutable strings, std.clone', (t) => (
     obj := {
       first: 1
       second: 2
@@ -522,7 +522,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('std.clone creates a copy of string', copy, 'heyyo')
   ))
 
-  m('string/composite pass by reference / mutation check', t => (
+  m('string/composite pass by reference / mutation check', (t) => (
     obj := [1, 2, 3]
     twin := obj # by reference
     clone := clone(obj) # cloned (by value)
@@ -569,7 +569,7 @@ import('suite.ink')('Ink language and standard library', m => (
       str, '0000AAA0YYY')
   ))
 
-  m('number & composite/list -> string conversions', t => (
+  m('number & composite/list -> string conversions', (t) => (
     {stringList} := str
 
     t('string(number) uses least number of digits necessary, integer'
@@ -607,7 +607,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('stringList(list) for nested list', stringList(['fine', ['not']]), '[fine, [\'not\']]')
   ))
 
-  m('function/composite equality checks', t => (
+  m('function/composite equality checks', (t) => (
     # function equality
     fn1 := () => (3 + 4, 'hello')
     fnc := fn1
@@ -634,7 +634,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('deep list inequality, II', list1 == complist, false)
   ))
 
-  m('type() builtin function', t => (
+  m('type() builtin function', (t) => (
     t('type(string)', type('hi'), 'string')
     t('type(number)', type(3.14), 'number')
     t('type(list) (list)', type([0, 1, 2]), 'list')
@@ -645,7 +645,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('type(()) == ()', type(()), '()')
   ))
 
-  m('std.range/slice/append/join/cat and stringList', t => (
+  m('std.range/slice/append/join/cat and stringList', (t) => (
     {stringList, join: cat} := str
     {range, reverse} := functional
     {slice} := std
@@ -703,7 +703,7 @@ import('suite.ink')('Ink language and standard library', m => (
     ], ' and '), 'first and last')
   ))
 
-  m('hexadecimal conversions, hex & xeh', t => (
+  m('hexadecimal conversions, hex & xeh', (t) => (
     {hex, xeh} := str
 
     # base cases
@@ -728,7 +728,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('hex(xeh(hex(xeh()))), II', xeh(hex(xeh(hex(201900123)))), 201900123)
   ))
 
-  m('ascii <-> char point conversions and string encode/decode', t => (
+  m('ascii <-> char point conversions and string encode/decode', (t) => (
     {encode, decode} := str
 
     s1 := 'this is a long piece of string
@@ -751,12 +751,12 @@ import('suite.ink')('Ink language and standard library', m => (
     t('escape return',  point('\r'), 13)
   ))
 
-  m('std list: map/filter/reduce[Back]/each/reverse/flatten, append', t => (
+  m('std list: map/filter/reduce[Back]/each/reverse/flatten, append', (t) => (
     {map, mapi, filter, reduce, reduceBack, each, reverse, flatten, append} := functional
 
     list := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    t('std.map', map(list, n => n * n), [1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
+    t('std.map', map(list, (n) => n * n), [1, 4, 9, 16, 25, 36, 49, 64, 81, 100])
     t('std.filter', filter(list, (n, _) => n % 2 == 0), [2, 4, 6, 8, 10])
     t('std.reduce', reduce(list, (acc, n, _) => acc + string(n), '')
       '12345678910')
@@ -797,7 +797,7 @@ import('suite.ink')('Ink language and standard library', m => (
     acc := {
       str: ''
     }
-    twice := f => (x, i) => (f(x, i), f(x, i))
+    twice := (f) => (x, i) => (f(x, i), f(x, i))
     each(list, twice((n, _) => acc.str = acc.str + string(n)))
     t('std.each', acc.str, '1122334455667788991010')
 
@@ -807,7 +807,7 @@ import('suite.ink')('Ink language and standard library', m => (
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
   ))
 
-  m('std.format -- the standard library formatter / templater', t => (
+  m('std.format -- the standard library formatter / templater', (t) => (
     {format: f, stringList} := str
 
     values := {
@@ -840,34 +840,34 @@ import('suite.ink')('Ink language and standard library', m => (
     )
   ))
 
-  m('uuid -- uuid v4 generator', t => (
+  m('uuid -- uuid v4 generator', (t) => (
     uuid := import('uuid.ink')
     {xeh, split} := str
     {range, map, every, reduce} := functional
 
-    uuids := map(range(0, 200, 1), _ => uuid())
+    uuids := map(range(0, 200, 1), (_) => uuid())
 
     # every character should be a hex character or "-"
-    isValidChar := s => s :: {
+    isValidChar := (s) => s :: {
       '-' -> true
       _ -> ~(xeh(s) == ())
     }
     everyCharIsHex := every(map(
       uuids
-      u => every(map(split(u, ''), c => isValidChar(c)))
+      (u) => every(map(split(u, ''), isValidChar))
     ))
     t('uuid() validity, hexadecimal range set', everyCharIsHex, true)
 
     # test for uniqueness (kinda)
     collisions? := reduce(
-      map(range(0, 200, 1), _ => [uuid(), uuid()])
+      map(range(0, 200, 1), (_) => [uuid(), uuid()])
       (acc, us, _) => acc | us.0 == us.1
       false
     )
     t('uuid() validity, rare collisions', collisions?, false)
 
     # correct length, formatting
-    format? := u => map(u, x => x) == [
+    format? := (u) => map(u, (x) => x) == [
       _, _, _, _, _, _, _, _, '-'
       _, _, _, _, '-'
       _, _, _, _, '-'
@@ -878,7 +878,7 @@ import('suite.ink')('Ink language and standard library', m => (
     t('uuid() validity, correct string formatting', everyIsFormatted, true)
   ))
 
-  m('json ser/de', t => (
+  m('json ser/de', (t) => (
     {parse: de, serialize: ser} := import('json.ink')
 
     # primitives
@@ -892,7 +892,7 @@ me'), '"es\\"c \\\\a\\"pe\\nme"')
     t('ser number', ser(12), '12')
     t('ser fractional number', ser(3.14), string(3.14))
     t('ser negative number', ser(~2.4142), string(~2.4142))
-    t('ser function => null', ser(x => x), 'null')
+    t('ser function => null', ser((x) => x), 'null')
     t('ser empty composite', ser({}), '{}')
     t('ser empty list => composite', ser([]), '[]')
 
@@ -955,7 +955,7 @@ me')
     t('de ser de ser complex list', de(ser(de(ser(list)))), listr)
   ))
 
-  m('str.upper/lower/digit/letter/ws? -- checked char ranges', t => (
+  m('str.upper/lower/digit/letter/ws? -- checked char ranges', (t) => (
     {upper?, lower?, digit?, letter?, ws?} := str
     {every, some, map} := functional
 
@@ -1116,7 +1116,7 @@ me')
       trim('????what?????', '???'), '?what??')
   ))
 
-  m('import() import semantics', t => (
+  m('import() import semantics', (t) => (
     getObjA := import('load_dedup.ink')
     getObjB := import('load_dedup/load_dedup_child.ink')
 
@@ -1124,7 +1124,7 @@ me')
       getObjA() == getObjB(), true)
   ))
 
-  m('args() list', t => (
+  m('args() list', (t) => (
     hasSuffix? := str.hasSuffix?
 
     as := args()
@@ -1136,7 +1136,7 @@ me')
       hasSuffix?(as.1, 'test.ink'), true)
   ))
 
-  m('html', t => (
+  m('html', (t) => (
     {html, title, h1, d, p, classes} := import('html.ink')
 
     got := html(
@@ -1153,7 +1153,7 @@ me')
     t('example', got == variant1 | got == variant2, true)
   ))
 
-  m('sort', t => (
+  m('sort', (t) => (
     {range} := import('functional.ink')
     {clone} := std
     {sort, sort!} := import('quicksort.ink')
@@ -1171,7 +1171,7 @@ me')
     t('after mutable sort', L, [1, 2, 3, 4, 5])
   ))
 
-  m('stack', t => (
+  m('stack', (t) => (
     {new: stack} := import('stack.ink')
 
     s := stack()

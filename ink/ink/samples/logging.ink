@@ -73,16 +73,16 @@ Logger := (name) => (
       fields: this.fields
     }))
   }
-  this.setName    = name => this.name := name
-  this.setLevel   = level => this.logLevel := level
-  this.setFormat  = format => this.format := format
+  this.setName    = (name) => this.name := name
+  this.setLevel   = (level) => this.logLevel := level
+  this.setFormat  = (format) => this.format := format
   this.with       = (key, value) => this.fields.(key) := value
-  this.withFields = fields => each(keys(fields), (key) => this.fields.(key) := dict.(value))
-  this.debug      = message => lg(Level.DEBUG, message)
-  this.info       = message => lg(Level.INFO, message)
-  this.warn       = message => lg(Level.WARNING, message)
-  this.error      = message => lg(Level.ERROR, message)
-  this.critical   = message => (
+  this.withFields = (fields) => each(keys(fields), (key) => this.fields.(key) := dict.(value))
+  this.debug      = (message) => lg(Level.DEBUG, message)
+  this.info       = (message) => lg(Level.INFO, message)
+  this.warn       = (message) => lg(Level.WARNING, message)
+  this.error      = (message) => lg(Level.ERROR, message)
+  this.critical   = (message) => (
     lg(Level.CRITICAL, message)
     exit(1)
   )
@@ -100,5 +100,5 @@ logger := Logger('root')
   warn: logger.warn
   error: logger.error
   critical: logger.critical
-  log: val => (logger.info)(string(val))
+  log: (val) => (logger.info)(string(val))
 }

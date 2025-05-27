@@ -8,7 +8,7 @@ hex := import('str.ink').nToH
   r := map(urand(16), point)
 
   # helper to map numbers to uniform hexadecimals
-  x := i => hex.(floor(r.(i)/16))+hex.(r.(i)%16)
+  x := (i) => hex.(floor(r.(i)/16))+hex.(r.(i)%16)
 
   # set version bits per UUID V4 section 4.4
   r.6 := (r.6 & 15) | 64

@@ -4,7 +4,7 @@
 {format: f} := import('str.ink')
 
 # start a server
-closeServer := listen('0.0.0.0:9600', evt => evt.type :: {
+closeServer := listen('0.0.0.0:9600', (evt) => evt.type :: {
   'error' -> logErr(evt.message)
   'req' -> (
     log(f('Request ---> {{ data }}', evt))

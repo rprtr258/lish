@@ -269,19 +269,19 @@ me`, n.Meta.(string))
 	t.Run("assignment", func(t *testing.T) {
 		f(
 			"lambda rhs",
-			`log := (str => (out(str)
+			`log := ((str) => (out(str)
 				out('\n')
 			))`,
 			NodeKindExprBinary,
 		)
 		f(
 			"lambda ignoring argument rhs",
-			`f := _ => 1`,
+			`f := (_) => 1`,
 			NodeKindExprBinary,
 		)
 		f(
 			"lambda with assignment to acessor",
-			`this.setName := name => this.name := name`,
+			`this.setName := (name) => this.name := name`,
 			NodeKindExprBinary,
 		)
 		f(

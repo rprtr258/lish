@@ -5,7 +5,7 @@
 {format: f} := import('str.ink')
 {map, mapi, filter} := import('functional.ink')
 
-log := s => out(s + '\n')
+log := (s) => out(s + '\n')
 
 # async version of a while(... condition, ... predicate)
 # that takes a callback
@@ -18,8 +18,8 @@ asyncWhile := (cond, do) => (sub := () => true :: {
 Player := {x: 1, o: 2}
 Label := [' ', 'x', 'o']
 # make letters appear bolder / fainter on the board
-bold := c => styled(c, [mod.bold])
-grey := c => styled(c, [mod.fg.yellow, mod.faint])
+bold := (c) => styled(c, [mod.bold])
+grey := (c) => styled(c, [mod.fg.yellow, mod.faint])
 
 # create a new game board + state
 newBoard := () => [
@@ -37,7 +37,7 @@ BoardFormat := '{{ 1 }} │ {{ 2 }} │ {{ 3 }}
 {{ 7 }} │ {{ 8 }} │ {{ 9 }}
 '
 # format-print board state
-stringBoard := bd => f(
+stringBoard := (bd) => f(
   BoardFormat
   mapi(bd, (player, idx) => Label.(player) :: {
     ' ' -> grey(string(idx))
@@ -68,10 +68,10 @@ Result := {
   X: Player.x
   O: Player.o
 }
-checkBoard := bd => (
-  checkIfPlayerWon := player => (
-    isPlayer := row => row == [player, player, player]
-    possibleRows := map(Combinations, combo => map(combo, idx => bd.(idx)))
+checkBoard := (bd) => (
+  checkIfPlayerWon := (player) => (
+    isPlayer := (row) => row == [player, player, player]
+    possibleRows := map(Combinations, (combo) => map(combo, (idx) => bd.(idx)))
     didWin := len(filter(possibleRows, (row, _) => isPlayer(row))) > 0
 
     didWin
@@ -92,7 +92,7 @@ checkBoard := bd => (
 )
 
 # take one player turn, mutates game state
-stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
+stepBoard! := (bd, cb) => scan((s) => idx := number(s) :: {
   # not a number, try again
   () -> stepBoard!(bd, cb)
   _ -> true :: {
@@ -125,9 +125,9 @@ stepBoard! := (bd, cb) => scan(s => idx := number(s) :: {
 })
 
 # get/set/modify player turn state from the game board
-getPlayer := bd => bd.0
+getPlayer := (bd) => bd.0
 setPlayer := (bd, pl) => bd.0 := pl
-nextPlayer := bd => Label.(getPlayer(bd)) :: {
+nextPlayer := (bd) => Label.(getPlayer(bd)) :: {
   'x' -> Player.o
   _ -> Player.x
 }
@@ -156,7 +156,7 @@ asyncWhile(
       false
     )
   }
-  cb => (
+  (cb) => (
     log(Divider)
     log(stringBoard(bd))
     out(f('Move for player {{ player }}: ', {

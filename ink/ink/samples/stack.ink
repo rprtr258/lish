@@ -3,7 +3,7 @@
 {
   new: () => (
     this := {data: []}
-    this.push := x => this.data.(len(this.data)) := x
+    this.push := (x) => this.data.(len(this.data)) := x
     this.peek := () => this.data.(len(this.data)-1)
     this.pop := () => (
       res := this.data.(len(this.data)-1)

@@ -5,7 +5,7 @@
 {format: f, decode} := import('str.ink')
 {readFile, writeFile} := import('io.ink')
 
-log := s => out(s + '\n')
+log := (s) => out(s + '\n')
 SOURCE := 'internal/eval.go'
 TARGET := 'test_io.go'
 
@@ -14,7 +14,7 @@ BUFSIZE := 4096 # bytes
 
 # main routine that reads/writes through buffer and recursively copies data. This is also tail-recursive
 copy := (in, out) => incrementalCopy(in, out, 0)
-incrementalCopy := (src, dest, offset) => read(src, offset, BUFSIZE, evt => (
+incrementalCopy := (src, dest, offset) => read(src, offset, BUFSIZE, (evt) => (
   evt.type :: {
     'error' -> log('Encountered an error reading: ' + evt.message)
     'data' -> (
@@ -25,7 +25,7 @@ incrementalCopy := (src, dest, offset) => read(src, offset, BUFSIZE, evt => (
       log('copying --> ' + slice(evt.data, 0, 8) + '...')
 
       # write the read bit, and recurse back to reading
-      write(dest, offset, evt.data, evt => evt.type :: {
+      write(dest, offset, evt.data, (evt) => evt.type :: {
         'error' -> log('Encountered an error writing: ' + evt.message)
         'end' -> true :: {
           dataLength == BUFSIZE -> incrementalCopy(src, dest, offset + dataLength)
@@ -41,7 +41,7 @@ log('Copy scheduled at ' + string(time()))
 # delete the file, since we don't need it
 wait(1)
 log('Delete fired at ' + string(time()))
-delete(TARGET, evt => evt.type :: { # TODO: should delete file AFTER copying
+delete(TARGET, (evt) => evt.type :: { # TODO: should delete file AFTER copying
   'error' -> log('Encountered an error deleting: ' + evt.message)
   'end' -> log('Safely deleted the generated file')
 })
@@ -50,7 +50,7 @@ log('Delete scheduled at ' + string(time()))
 # as concurrency test, schedule a copy-back task in between copy and delete
 wait(0.5)
 log('Copy-back fired at ' + string(time()))
-readFile(TARGET, data => data :: {
+readFile(TARGET, (data) => data :: {
   () -> log('Error copying-back ' + TARGET)
   _ -> writeFile(SOURCE, data, () => log('Copy-back done!'))
 })
@@ -62,7 +62,7 @@ testdir := 'ink_io_test_dir'
   'error' -> log('dir() error: ' + evt.message)
   'end' -> (
     log('Created test directory...')
-    delete(testdir, evt => evt.type :: {
+    delete(testdir, (evt) => evt.type :: {
       'error' -> log('delete() of dir error: ' + evt.message)
       'end' -> log('Deleted test directory.')
     })
@@ -90,7 +90,7 @@ each(['.', 'samples', 'README.md', 'fake.txt'], (path, _) => (
 ))
 
 # test dir(): list all samples and file sizes
-dir('./samples', evt => evt.type :: {
+dir('./samples', (evt) => evt.type :: {
   'error' -> log('Error listing samples: ' + evt.message)
   'data' -> each(evt.data, (file, _) => log(f('{{ name }} ({{ len }}B mod:{{ mod }})', file)))
 })

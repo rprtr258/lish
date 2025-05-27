@@ -39,7 +39,7 @@ TYPES := {
 }
 
 # given a path, get the file extension
-getPathEnding := path => (
+getPathEnding := (path) => (
   (sub := (idx, acc) => true :: {
     idx == 0 -> path
     path.(idx) == '.' -> acc
@@ -48,7 +48,7 @@ getPathEnding := path => (
 )
 
 # given a path, get the MIME type
-getType := path => (
+getType := (path) => (
   guess := TYPES.(getPathEnding(path))
   guess :: {
     () -> 'application/octet-stream'
@@ -57,17 +57,17 @@ getType := path => (
 )
 
 # prepare standard header
-hdr := attrs => ( # TODO: just base + attrs ?
+hdr := (attrs) => ( # TODO: just base + attrs ?
   base := {
     'X-Served-By': 'ink-serve'
     'Content-Type': 'text/plain'
   }
-  each(keys(attrs), k => base.(k) := attrs.(k))
+  each(keys(attrs), (k) => base.(k) := attrs.(k))
   base
 )
 
 # is this path a path to a directory?
-dirPath? := path => path.(len(path) - 1) == '/'
+dirPath? := (path) => path.(len(path) - 1) == '/'
 
 # handles requests to validated paths
 handleStat := (url, path, data, getElapsed) => data :: {
@@ -121,7 +121,7 @@ handleStat := (url, path, data, getElapsed) => data :: {
       }
     )
   }
-  {dir: false, name: _, len: _, mod: _} -> readFile(path, data => handleFileRead(url, path, data, getElapsed))
+  {dir: false, name: _, len: _, mod: _} -> readFile(path, (data) => handleFileRead(url, path, data, getElapsed))
   _ -> {
     status: 500
     headers: hdr({})
@@ -214,7 +214,7 @@ makeIndexLi := (fileStat, separator) => '<li><a href="' + fileStat.name + '" tit
   fileStat.name + separator + ' (' + string(fileStat.len) + ' B)</a></li>'
 
 # handles requests to dir() without /index.html
-handleNoIndexDir := (url, path, getElapsed) => dir(path, evt => evt.type :: {
+handleNoIndexDir := (url, path, getElapsed) => dir(path, (evt) => evt.type :: {
   'error' -> (
     log(f('  -> {{ url }} dir() led to error in {{ ms }}ms: {{ error }}', {
       url
@@ -239,7 +239,7 @@ handleNoIndexDir := (url, path, getElapsed) => dir(path, evt => evt.type :: {
       })
       body: makeIndex(
         slice(path, 2, len(path))
-        cat(map(evt.data, fileStat => makeIndexLi(
+        cat(map(evt.data, (fileStat) => makeIndexLi(
           fileStat
           true :: {
             fileStat.dir -> '/'
@@ -252,7 +252,7 @@ handleNoIndexDir := (url, path, getElapsed) => dir(path, evt => evt.type :: {
 })
 
 # trim query parameters
-trimQP := path => (
+trimQP := (path) => (
   max := len(path)
   (sub := (idx, acc) => idx :: {
     max -> path
@@ -284,7 +284,7 @@ handlePath := (url, path, getElapsed) => (
 )
 
 # main server handler
-listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
+listen('0.0.0.0:' + string(PORT), (evt) => evt.type :: {
   'error' -> log('server error: ' + evt.message)
   'req' -> (
     log(f('{{ method }}: {{ url }}', evt.data))

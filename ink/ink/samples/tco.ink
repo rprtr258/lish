@@ -13,7 +13,7 @@ success := () => log('-> success! we are tail call optimized')
 # we define a fast function that can be TC optimized.
 # this also uses a form of TCO in match expressions
 log('testing simple recursion ... (test 1/3)')
-testTCO := n => n :: {
+testTCO := (n) => n :: {
   0 -> success()
   _ -> testTCO(n - 1)
 }
@@ -21,7 +21,7 @@ testTCO(RECLIMIT)
 
 # second form of TCO -- in expression lists
 log('testing expr list recursion ... (test 2/3)')
-testTCO2 := n => n :: {
+testTCO2 := (n) => n :: {
   0 -> success()
   _ -> (
     1
@@ -32,11 +32,11 @@ testTCO2(RECLIMIT)
 
 # third form of TCO -- mutual recursion
 log('testing mutual recursion ... (test 3/3)')
-testA := n => n :: {
+testA := (n) => n :: {
   0 -> success()
   _ -> testB(n - 1)
 }
-testB := m => m :: {
+testB := (m) => m :: {
   0 -> success()
   _ -> (
     3

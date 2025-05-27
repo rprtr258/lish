@@ -5,5 +5,5 @@
   # (number, number) => number
   rand_range: (min, max) => rand() * (max - min) + min
   # number => number
-  randn: max => rand_range(0, max)
+  randn: (max) => rand_range(0, max)
 }

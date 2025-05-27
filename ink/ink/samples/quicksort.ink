@@ -6,11 +6,11 @@
 sortBy := (v, pred) => (
   partition := (v, lo, hi) => (
     pivot := pred(v.(lo))
-    lsub := i => true :: {
+    lsub := (i) => true :: {
       pred(v.(i)) < pivot -> lsub(i + 1)
       _ -> i
     }
-    rsub := j => true :: {
+    rsub := (j) => true :: {
       pred(v.(j)) > pivot -> rsub(j - 1)
       _ -> j
     }
@@ -41,9 +41,9 @@ sortBy := (v, pred) => (
   })(v, 0, len(v) - 1)
 )
 
-sort! := v => sortBy(v, x => x)
+sort! := (v) => sortBy(v, (x) => x)
 
 {
   sort!
-  sort: v => sort!(clone(v))
+  sort: (v) => sort!(clone(v))
 }

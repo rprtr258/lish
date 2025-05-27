@@ -7,7 +7,7 @@ bmp := import('bmp.ink')
 
 # modified version of std.append that's faster when we know the length of the base and child arrays
 fastappend := (base, child, baseLength, childLength) => (
-  (sub := i => i :: {
+  (sub := (i) => i :: {
     childLength -> base
     _ -> (
       base.(baseLength + i) := child.(i)
@@ -18,7 +18,7 @@ fastappend := (base, child, baseLength, childLength) => (
 
 # utility to time things
 startTime := time()
-mk := msg => log(f('{{ time }}ms -> {{ msg }}', {
+mk := (msg) => log(f('{{ time }}ms -> {{ msg }}', {
   msg
   time: floor((time() - startTime) * 1000)
 }))
@@ -35,7 +35,7 @@ radius := (x, y) => (
   pow((xoff * xoff) + (yoff * yoff), 0.5)
 )
 pixels := reduce(range(0, H, 1), (acc, y, _) => (
-  row := map(range(0, W, 1), x => (
+  row := map(range(0, W, 1), (x) => (
     true :: {
       radius(x, y) < R -> [200, 255 * (x / W), 255 * (y / H)]
       _ -> [80, 255 * (y / H), 255 * (x / W)]
@@ -48,7 +48,7 @@ mk('generated pixel array')
 file := bmp(W, H, pixels)
 mk('generated bmp file')
 
-(import('io.ink').writeFile)('img.bmp', file, result => result :: {
+(import('io.ink').writeFile)('img.bmp', file, (result) => result :: {
   () -> log(f('file write error: {{ message }}', evt))
 })
 mk('saved file')

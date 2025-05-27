@@ -23,31 +23,31 @@ grey := [200, 200, 200]
 # functions we're going to graph
 FUNCTIONS := [
   {
-    f: x => x * x / 2 - 1.5
+    f: (x) => x * x / 2 - 1.5
     color: [0, 0, 0]
   }
   {
-    f: x => sin(x)
+    f: (x) => sin(x)
     color: [255, 0, 100]
   }
   {
-    f: x => 2 * cos(x)
+    f: (x) => 2 * cos(x)
     color: [120, 0, 250]
   }
   {
-    f: x => pow(x, 3) / 3 + x * x - 2
+    f: (x) => pow(x, 3) / 3 + x * x - 2
     color: [0, 210, 170]
   }
 ]
 
 # scaling to and from canvas <-> graph dimensions
-scaleXToCanvas := x => floor(x * SCALE + halfWidth)
-scaleYToCanvas := y => floor(y * SCALE + halfHeight)
-scaleXToGraph := x => (x - halfWidth) / SCALE
-scaleYToGraph := y => (y - halfHeight) / SCALE
+scaleXToCanvas := (x) => floor(x * SCALE + halfWidth)
+scaleYToCanvas := (y) => floor(y * SCALE + halfHeight)
+scaleXToGraph := (x) => (x - halfWidth) / SCALE
+scaleYToGraph := (y) => (y - halfHeight) / SCALE
 
 # make a big white rectangle
-pixels := map(range(0, WIDTH * HEIGHT, 1), _ => white)
+pixels := map(range(0, WIDTH * HEIGHT, 1), (_) => white)
 log('finished drawing canvas...')
 
 # axis lines
@@ -92,7 +92,7 @@ log('finished rendering functions...')
 
 # save image
 file := bmp(WIDTH, HEIGHT, pixels)
-wf('graph.bmp', file, done => true :: {
+wf('graph.bmp', file, (done) => true :: {
   done -> log('Done!')
   () -> log('Error saving graph :(')
 })

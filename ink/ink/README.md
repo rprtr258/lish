@@ -37,9 +37,9 @@ Here's an implementation of FizzBuzz in Ink.
 
 {log, range, each} := import('std.ink')
 
-fizzbuzz := n => each(
+fizzbuzz := (n) => each(
   range(1, n + 1, 1)
-  n => [n % 3, n % 5] :: {
+  (n) => [n % 3, n % 5] :: {
     [0, 0] -> log('FizzBuzz')
     [0, _] -> log('Fizz')
     [_, 0] -> log('Buzz')
@@ -55,7 +55,7 @@ Here's a simple Hello World HTTP server program.
 ```js
 {log} := import('std.ink')
 
-listen('0.0.0.0:8080', evt => (
+listen('0.0.0.0:8080', (evt) => (
   evt.type :: {
     'error' -> log('Error: ' + evt.message)
     'req' -> (evt.end)({

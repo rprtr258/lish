@@ -8,52 +8,36 @@ import (
 )
 
 type parser struct {
+	ast    *AST
 	tokens []Token
 	idx    int
 }
 
-func guardUnexpectedInputEnd(tokens []Token, idx int) {
+func (p *parser) peek() Token {
 	switch {
-	case idx < len(tokens):
-		return
-	case len(tokens) == 0:
+	case p.idx < len(p.tokens):
+		tok := p.tokens[p.idx]
+		return tok
+	case len(p.tokens) == 0:
 		panic(errParse{&Err{nil, ErrSyntax, "unexpected end of input", Pos{}}}) // TODO: report filename and position
 	default:
-		tok := tokens[len(tokens)-1]
+		tok := p.tokens[len(p.tokens)-1]
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected end of input at %s", tok), tok.Pos}})
 	}
 }
 
-// parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
-// This implementation uses recursive descent parsing.
-func parse(ast *AST, tokens []Token) (nodes []NodeID, e errParse) {
-	for i := 0; i < len(tokens); {
-		if tokens[i].Kind == Separator {
-			// this sometimes happens when the repl receives comment inputs
-			i++
-			continue
-		}
+func (p *parser) consume() Token {
+	tok := p.peek()
+	p.idx++
+	return tok
+}
 
-		defer func() {
-			if r := recover(); r != nil {
-				err, ok := r.(errParse)
-				if !ok {
-					panic(r)
-				}
-
-				e = err
-			}
-		}()
-
-		expr, incr := parseExpression(tokens[i:], ast)
-
-		i += incr
-
-		LogNode(ast.Nodes[expr])
-		nodes = append(nodes, expr)
+func (p *parser) consumeKind(kind Kind) Token {
+	tok := p.consume()
+	if tok.Kind != kind {
+		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", kind, tok), tok.Pos}})
 	}
-	LogAST(ast)
-	return
+	return tok
 }
 
 var opPriority = map[Kind]int{
@@ -85,380 +69,289 @@ func isBinaryOp(t Token) bool {
 	)
 }
 
-func parseBinaryExpression(
-	tokens []Token,
-	ast *AST,
+func (p *parser) parseBinaryExpression(
 	leftOperand NodeID,
 	operator Token,
 	previousPriority int,
-) (NodeID, int) {
-	rightAtom, idx := parseAtom(tokens, ast)
+) NodeID {
+	ast, tokens := p.ast, p.tokens
+	rightAtom := p.parseAtom()
 
-	incr := 0
 	ops := []Token{operator}
 	nodes := []NodeID{leftOperand, rightAtom}
 	// build up a list of binary operations, with tree nodes
 	// where there are higher-priority binary ops
 LOOP:
-	for len(tokens) > idx && isBinaryOp(tokens[idx]) {
+	for len(tokens) > p.idx && isBinaryOp(tokens[p.idx]) {
 		switch {
-		case previousPriority >= getOpPriority(tokens[idx]):
+		case previousPriority >= getOpPriority(tokens[p.idx]):
 			// Priority is lower than the calling function's last op,
 			//  so return control to the parent binary op
 			break LOOP
-		case getOpPriority(ops[len(ops)-1]) >= getOpPriority(tokens[idx]):
+		case getOpPriority(ops[len(ops)-1]) >= getOpPriority(tokens[p.idx]):
 			// Priority is lower than the previous op (but higher than parent),
 			// so it's ok to be left-heavy in this tree
-			ops = append(ops, tokens[idx])
-			idx++
-
-			guardUnexpectedInputEnd(tokens, idx)
-
-			rightAtom, incr = parseAtom(tokens[idx:], ast)
-
+			op := p.consume()
+			rightAtom = p.parseAtom()
+			ops = append(ops, op)
 			nodes = append(nodes, rightAtom)
-			idx += incr
 		default:
-			guardUnexpectedInputEnd(tokens, idx+1)
-
+			op := p.consume()
 			// Priority is higher than previous ops,
 			// so make it a right-heavy tree
-			subtree, incr := parseBinaryExpression(
-				tokens[idx+1:],
-				ast,
+			nodes[len(nodes)-1] = p.parseBinaryExpression(
 				nodes[len(nodes)-1],
-				tokens[idx],
+				op,
 				getOpPriority(ops[len(ops)-1]),
 			)
-
-			nodes[len(nodes)-1] = subtree
-			idx += incr + 1
 		}
 	}
 
 	// ops, nodes -> left-biased binary expression tree
 	tree := nodes[0]
-	for nodes := nodes[1:]; len(ops) > 0; nodes, ops = nodes[1:], ops[1:] {
-		tree = ast.Append(NodeExprBinary(ops[0].Pos, ops[0].Kind, tree, nodes[0]))
+	for i := range len(ops) {
+		tree = ast.Append(NodeExprBinary(ops[i].Pos, ops[i].Kind, tree, nodes[i+1]))
 	}
-	return tree, idx
+	return tree
 }
 
-func parseExpression(tokens []Token, ast *AST) (NodeID, int) {
-	idx := 0
-	consumeDanglingSeparator := func() {
-		// bounds check in case parseExpress() called at some point
-		// consumed end token
-		if idx < len(tokens) && tokens[idx].Kind == Separator {
-			idx++
-		}
+func (p *parser) consumeDanglingSeparator() {
+	// bounds check in case parseExpression() called at some point consumed end token
+	if p.idx < len(p.tokens) && p.tokens[p.idx].Kind == Separator {
+		p.idx++
 	}
+}
 
-	atom, incr := parseAtom(tokens[idx:], ast)
+func (p *parser) parseExpression() NodeID {
+	atom := p.parseAtom()
 
-	idx += incr
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	nextTok := tokens[idx]
-	idx++
+	nextTok := p.consume()
 
 	switch nextTok.Kind {
 	case Separator:
 		// consuming dangling separator
-		return atom, idx
+		return atom
 	case ParenRight, KeyValueSeparator, CaseArrow:
 		// these belong to the parent atom that contains this expression,
-		// so return without consuming token (idx - 1)
-		return atom, idx - 1
+		// so return without consuming token
+		p.idx--
+		return atom
 	case OpAdd, OpSubtract, OpMultiply, OpDivide, OpModulus,
 		OpLogicalAnd, OpLogicalOr, OpLogicalXor,
 		OpGreaterThan, OpLessThan, OpEqual, OpDefine, OpAccessor:
-		binExpr, incr := parseBinaryExpression(tokens[idx:], ast, atom, nextTok, -1)
-		idx += incr
+		binExpr := p.parseBinaryExpression(atom, nextTok, -1)
 
-		// Binary expressions are often followed by a match
+		// Binary expressions followed by a match
 		// TODO: support empty match expression ((true by default) :: {n < 1 -> ...})
-		if idx < len(tokens) && tokens[idx].Kind == MatchColon {
-			colonPos := tokens[idx].Pos
-			idx++ // MatchColon
-
-			clauses, incr := parseMatchBody(tokens[idx:], ast)
-			idx += incr
-
-			consumeDanglingSeparator()
-			return ast.Append(NodeExprMatch(colonPos, binExpr, clauses)), idx
+		if p.idx < len(p.tokens) && p.tokens[p.idx].Kind == MatchColon {
+			colonPos := p.consumeKind(MatchColon).Pos
+			clauses := p.parseMatchBody()
+			p.consumeDanglingSeparator()
+			return p.ast.Append(NodeExprMatch(colonPos, binExpr, clauses))
 		}
-
-		consumeDanglingSeparator()
-		return binExpr, idx
+		p.consumeDanglingSeparator()
+		return binExpr
 	case MatchColon:
-		clauses, incr := parseMatchBody(tokens[idx:], ast)
-
-		idx += incr
-
-		consumeDanglingSeparator()
-		return ast.Append(NodeExprMatch(nextTok.Pos, atom, clauses)), idx
+		clauses := p.parseMatchBody()
+		p.consumeDanglingSeparator()
+		return p.ast.Append(NodeExprMatch(nextTok.Pos, atom, clauses))
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected token %s following an expression", nextTok), nextTok.Pos}})
 	}
 }
 
-func parseAtom(tokens []Token, ast *AST) (NodeID, int) {
-	guardUnexpectedInputEnd(tokens, 0)
-
-	tok, idx := tokens[0], 1
+func (p *parser) parseAtom() NodeID {
+	ast, tokens := p.ast, p.tokens
+	tok := p.consume()
 
 	if tok.Kind == OpNegation {
-		atom, idx := parseAtom(tokens[idx:], ast)
-		return ast.Append(NodeExprUnary(tok.Pos, tok.Kind, atom)), idx + 1
+		atom := p.parseAtom()
+		return ast.Append(NodeExprUnary(tok.Pos, tok.Kind, atom))
 	}
-
-	guardUnexpectedInputEnd(tokens, idx)
 
 	var atom NodeID
 	switch tok.Kind {
 	case LiteralNumber:
-		return ast.Append(NodeLiteralNumber(tok.Pos, tok.Num)), idx
+		return ast.Append(NodeLiteralNumber(tok.Pos, tok.Num))
 	case LiteralString:
-		return ast.Append(NodeLiteralString(tok.Pos, tok.Str)), idx
+		return ast.Append(NodeLiteralString(tok.Pos, tok.Str))
 	case LiteralTrue:
-		return ast.Append(NodeLiteralBoolean(tok.Pos, true)), idx
+		return ast.Append(NodeLiteralBoolean(tok.Pos, true))
 	case LiteralFalse:
-		return ast.Append(NodeLiteralBoolean(tok.Pos, false)), idx
+		return ast.Append(NodeLiteralBoolean(tok.Pos, false))
 	case Identifier:
-		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, ast)
-
-			// parseAtom should not consume trailing Separators, but
-			// 	parseFunctionLiteral does because it ends with expressions.
-			// 	so we backtrack one token.
-			idx--
-		} else {
-			atom = ast.Append(NodeIdentifier(tok.Pos, tok.Str))
-		}
-		// may be called as a function, so flows beyond
-		// switch block
+		atom = ast.Append(NodeIdentifier(tok.Pos, tok.Str))
+		// may be called as a function, so flows beyond switch block
 	case IdentifierEmpty:
-		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, ast)
-
-			// parseAtom should not consume trailing Separators, but
-			// 	parseFunctionLiteral does because it ends with expressions.
-			// 	so we backtrack one token.
-			return atom, idx - 1
-		}
-
-		return ast.Append(NodeIdentifierEmpty(tok.Pos)), idx
+		return ast.Append(NodeIdentifierEmpty(tok.Pos))
 	case ParenLeft:
 		// grouped expression or function literal
 		exprs := make([]NodeID, 0)
-		for tokens[idx].Kind != ParenRight {
-			expr, incr := parseExpression(tokens[idx:], ast)
-
-			idx += incr
+		for p.peek().Kind != ParenRight {
+			expr := p.parseExpression()
 			exprs = append(exprs, expr)
-
-			guardUnexpectedInputEnd(tokens, idx)
 		}
-		idx++ // RightParen
+		p.consumeKind(ParenRight)
 
-		guardUnexpectedInputEnd(tokens, idx)
-
-		if tokens[idx].Kind == FunctionArrow {
-			atom, idx = parseFunctionLiteral(tokens, ast)
-
+		if tokens[p.idx].Kind == FunctionArrow {
+			atom = p.parseFunctionLiteral(exprs)
 			// parseAtom should not consume trailing Separators, but
 			// 	parseFunctionLiteral does because it ends with expressions.
 			// 	so we backtrack one token.
-			idx--
+			p.idx--
 		} else {
 			atom = ast.Append(NodeExprList(tok.Pos, exprs))
 		}
 		// may be called as a function, so flows beyond switch block
 	case CurlyParenLeft:
-		entries := make([]NodeCompositeKeyValue, 0)
-		for tokens[idx].Kind != CurlyParenRight {
-			keyExpr, keyIncr := parseExpression(tokens[idx:], ast)
-			idx += keyIncr
-
-			guardUnexpectedInputEnd(tokens, idx)
-
-			var valExpr NodeID
-			if tokens[idx].Kind == KeyValueSeparator { // "key: value" pair
-				idx++
-
-				guardUnexpectedInputEnd(tokens, idx)
-
-				expr, valIncr := parseExpression(tokens[idx:], ast)
-
-				valExpr = expr
-				idx += valIncr // Separator consumed by parseExpression
-			} else if ast.Nodes[keyExpr].Kind == NodeKindIdentifier { // "key", shorthand for "key: key"
-				valExpr = keyExpr
-			} else {
-				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), tokens[idx]), tok.Pos}})
-			}
-
-			entries = append(entries, NodeCompositeKeyValue{
-				Key: keyExpr,
-				Val: valExpr,
-				Pos: ast.Nodes[keyExpr].Position(ast),
-			})
-
-			guardUnexpectedInputEnd(tokens, idx)
-		}
-		idx++ // RightBrace
-
-		return ast.Append(NodeLiteralComposite(tok.Pos, entries)), idx
+		return p.parseCompositeLiteral(tok.Pos)
 	case SquareParenLeft:
-		vals := make([]NodeID, 0)
-		for tokens[idx].Kind != SquareParenRight {
-			expr, incr := parseExpression(tokens[idx:], ast)
-
-			idx += incr
-			vals = append(vals, expr)
-
-			guardUnexpectedInputEnd(tokens, idx)
-		}
-		idx++ // RightBracket
-
-		return ast.Append(NodeLiteralList(tok.Pos, vals...)), idx
+		return p.parseListLiteral(tok.Pos)
 	default:
 		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("unexpected start of atom, found %s", tok), tok.Pos}})
 	}
 
 	// bounds check here because parseExpression may have
 	// consumed all tokens before this
-	for idx < len(tokens) && tokens[idx].Kind == ParenLeft {
-		var incr int
-		atom, incr = parseFunctionCall(tokens[idx:], ast, atom)
-
-		idx += incr
-
-		guardUnexpectedInputEnd(tokens, idx)
+	for p.idx < len(tokens) && tokens[p.idx].Kind == ParenLeft {
+		atom = p.parseFunctionCall(atom)
 	}
 
-	return atom, idx
+	return atom
 }
 
-// parses everything that follows MatchColon
-//
-//	does not consume dangling separator -- that's for parseExpression
-func parseMatchBody(tokens []Token, ast *AST) ([]NodeMatchClause, int) {
-	idx := 1 // LeftBrace
+func (p *parser) parseCompositeLiteral(pos Pos) NodeID {
+	entries := make([]NodeCompositeKeyValue, 0)
+	for p.peek().Kind != CurlyParenRight {
+		keyExpr := p.parseExpression()
 
-	guardUnexpectedInputEnd(tokens, idx)
-
-	clauses := make([]NodeMatchClause, 0)
-	for tokens[idx].Kind != CurlyParenRight {
-		atom, incr1 := parseExpression(tokens[idx:], ast)
-
-		guardUnexpectedInputEnd(tokens[idx:], incr1)
-
-		if tokens[idx+incr1].Kind != CaseArrow {
-			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s, but got %s", CaseArrow, tokens[idx+incr1]), tokens[idx+incr1].Pos}})
+		var valExpr NodeID
+		if p.tokens[p.idx].Kind == KeyValueSeparator { // "key: value" pair
+			p.idx++
+			valExpr = p.parseExpression() // Separator consumed by parseExpression
+		} else if p.ast.Nodes[keyExpr].Kind == NodeKindIdentifier { // "key", shorthand for "key: key"
+			valExpr = keyExpr
+		} else {
+			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s after composite key, found %s", KeyValueSeparator.String(), p.tokens[p.idx]), pos}})
 		}
-		incr1++ // CaseArrow
 
-		guardUnexpectedInputEnd(tokens[idx:], incr1)
+		entries = append(entries, NodeCompositeKeyValue{
+			Key: keyExpr,
+			Val: valExpr,
+			Pos: p.ast.Nodes[keyExpr].Position(p.ast),
+		})
+	}
+	_ = p.consumeKind(CurlyParenRight)
 
-		expr, incr2 := parseExpression(tokens[idx+incr1:], ast)
+	return p.ast.Append(NodeLiteralComposite(pos, entries))
+}
 
-		idx += incr1 + incr2
+func (p *parser) parseListLiteral(pos Pos) NodeID {
+	vals := make([]NodeID, 0)
+	for p.peek().Kind != SquareParenRight {
+		expr := p.parseExpression()
+		vals = append(vals, expr)
+	}
+	p.consumeKind(SquareParenRight)
+	return p.ast.Append(NodeLiteralList(pos, vals...))
+}
+
+// parses everything that follows MatchColon does not consume dangling separator -- that's for parseExpression
+func (p *parser) parseMatchBody() []NodeMatchClause {
+	_ = p.consumeKind(CurlyParenLeft)
+	clauses := make([]NodeMatchClause, 0)
+	for p.peek().Kind != CurlyParenRight {
+		atom := p.parseExpression()
+		_ = p.consumeKind(CaseArrow)
+		expr := p.parseExpression()
+
 		clauses = append(clauses, NodeMatchClause{
 			Target:     atom,
 			Expression: expr,
 		})
-
-		guardUnexpectedInputEnd(tokens, idx)
 	}
-	idx++ // RightBrace
-
-	// NOTE: adding _ -> () as last case
-	if len(clauses) > 0 && !func() bool {
-		return ast.Nodes[clauses[len(clauses)-1].Target].Kind == NodeKindIdentifierEmpty
-	}() {
-		clauses = append(clauses, NodeMatchClause{ast.Append(NodeIdentifierEmpty(Pos{})), ast.Append(NodeLiteralList(Pos{}))})
-	}
-
-	return clauses, idx
+	p.consumeKind(CurlyParenRight)
+	return clauses
 }
 
-func parseFunctionLiteral(tokens []Token, ast *AST) (NodeID, int) {
-	tok, idx := tokens[0], 1
+func (p *parser) parseFunctionLiteral(arguments []NodeID) NodeID {
+	// arguments := make([]NodeID, 0)
+	// switch tok.Kind {
+	// case ParenLeft:
+	// LOOP:
+	// 	for {
+	// 		tk := tokens[p.idx]
+	// 		switch tk.Kind {
+	// 		case Identifier:
+	// 			arguments = append(arguments, ast.Append(NodeIdentifier(tk.Pos, tk.Str)))
+	// 		case IdentifierEmpty:
+	// 			arguments = append(arguments, ast.Append(NodeIdentifierEmpty(tk.Pos)))
+	// 		default:
+	// 			break LOOP
+	// 		}
+	// 		p.idx++
 
-	guardUnexpectedInputEnd(tokens, idx)
+	// 		_ = p.consumeKind(Separator)
+	// 	}
 
-	arguments := make([]NodeID, 0)
-	switch tok.Kind {
-	case ParenLeft:
-	LOOP:
-		for {
-			tk := tokens[idx]
-			switch tk.Kind {
-			case Identifier:
-				arguments = append(arguments, ast.Append(NodeIdentifier(tk.Pos, tk.Str)))
-			case IdentifierEmpty:
-				arguments = append(arguments, ast.Append(NodeIdentifierEmpty(tk.Pos)))
-			default:
-				break LOOP
-			}
-			idx++
+	// 	_ = p.consumeKind(ParenRight)
 
-			guardUnexpectedInputEnd(tokens, idx)
+	// case Identifier:
+	// 	arguments = append(arguments, ast.Append(NodeIdentifier(tok.Pos, tok.Str)))
+	// case IdentifierEmpty:
+	// 	arguments = append(arguments, ast.Append(NodeIdentifierEmpty(tok.Pos)))
+	// default:
+	// 	panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}})
+	// }
 
-			if tokens[idx].Kind != Separator {
-				panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments in a list separated by %s, found %s", Separator, tokens[idx]), tokens[idx].Pos}})
-			}
-			idx++ // Separator
-		}
+	pos := p.consumeKind(FunctionArrow).Pos
 
-		guardUnexpectedInputEnd(tokens, idx)
+	body := p.parseExpression()
 
-		if tokens[idx].Kind != ParenRight {
-			panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected arguments list to terminate with %s, found %s", ParenRight, tokens[idx]), tokens[idx].Pos}})
-		}
-		idx++ // RightParen
-	case Identifier:
-		arguments = append(arguments, ast.Append(NodeIdentifier(tok.Pos, tok.Str)))
-	case IdentifierEmpty:
-		arguments = append(arguments, ast.Append(NodeIdentifierEmpty(tok.Pos)))
-	default:
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("malformed arguments list in function at %s", tok), tok.Pos}})
-	}
-
-	guardUnexpectedInputEnd(tokens, idx)
-
-	if tokens[idx].Kind != FunctionArrow {
-		panic(errParse{&Err{nil, ErrSyntax, fmt.Sprintf("expected %s but found %s", FunctionArrow, tokens[idx]), tokens[idx].Pos}})
-	}
-
-	idx++ // FunctionArrow
-
-	body, incr := parseExpression(tokens[idx:], ast)
-
-	idx += incr
-
-	return ast.Append(NodeLiteralFunction(tokens[0].Pos, arguments, body)), idx
+	return p.ast.Append(NodeLiteralFunction(pos, arguments, body))
 }
 
-func parseFunctionCall(tokens []Token, ast *AST, function NodeID) (NodeID, int) {
-	idx := 1
-
-	guardUnexpectedInputEnd(tokens, idx)
+func (p *parser) parseFunctionCall(function NodeID) NodeID {
+	p.idx++
 
 	arguments := make([]NodeID, 0)
-	for tokens[idx].Kind != ParenRight {
-		expr, incr := parseExpression(tokens[idx:], ast)
-
-		idx += incr
+	for p.peek().Kind != ParenRight {
+		expr := p.parseExpression()
 		arguments = append(arguments, expr)
-
-		guardUnexpectedInputEnd(tokens, idx)
 	}
+	p.consumeKind(ParenRight)
 
-	idx++ // RightParen
+	return p.ast.Append(NodeFunctionCall(function, arguments))
+}
 
-	return ast.Append(NodeFunctionCall(function, arguments)), idx
+// parse concurrently transforms a stream of Tok (tokens) to Node (AST nodes).
+// This implementation uses recursive descent parsing.
+func parse(ast *AST, tokens []Token) (nodes []NodeID, e errParse) {
+	for i := 0; i < len(tokens); {
+		if tokens[i].Kind == Separator {
+			// this sometimes happens when the repl receives comment inputs
+			i++
+			continue
+		}
+
+		defer func() {
+			if r := recover(); r != nil {
+				err, ok := r.(errParse)
+				if !ok {
+					panic(r)
+				}
+
+				e = err
+			}
+		}()
+
+		p := &parser{ast, tokens, i}
+		expr := p.parseExpression()
+		i = p.idx
+
+		LogNode(ast.Nodes[expr])
+		nodes = append(nodes, expr)
+	}
+	LogAST(ast)
+	return
 }

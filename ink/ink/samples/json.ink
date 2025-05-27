@@ -4,7 +4,7 @@
 {join: cat, ws?, digit?} := import('str.ink')
 
 # string escape '"'
-esc := c => point(c) :: {
+esc := (c) => point(c) :: {
   9 -> '\\t'
   10 -> '\\n'
   13 -> '\\r'
@@ -12,7 +12,7 @@ esc := c => point(c) :: {
   92 -> '\\\\'
   _ -> c
 }
-escape := s => (
+escape := (s) => (
   max := len(s)
   (sub := (i, acc) => i :: {
     max -> acc
@@ -21,14 +21,14 @@ escape := s => (
 )
 
 # is this character a numeral digit or .?
-num? := c => c :: {
+num? := (c) => c :: {
   '' -> false
   '.' -> true
   _ -> digit?(c)
 }
 
 # reader implementation with internal state for deserialization
-reader := s => (
+reader := (s) => (
   state := {
     idx: 0
     # has there been a parse error?
@@ -65,13 +65,13 @@ reader := s => (
 )
 
 # deserialize string
-deString := r => (
+deString := (r) => (
   {next, peek} := r
 
   # known to be a '"'
   next()
 
-  (sub := acc => peek() :: {
+  (sub := (acc) => peek() :: {
     '' -> (
       (r.err)()
       ()
@@ -96,7 +96,7 @@ deString := r => (
 )
 
 # deserialize number
-deNumber := r => (
+deNumber := (r) => (
   {next, peek} := r
   state := {
     # have we seen a '.' yet?
@@ -111,7 +111,7 @@ deNumber := r => (
     )
   }
 
-  result := (sub := acc => true :: {
+  result := (sub := (acc) => true :: {
     num?(peek()) -> peek() :: {
       '.' -> true :: {
         state.decimal? -> (r.err)()
@@ -132,7 +132,7 @@ deNumber := r => (
 )
 
 # deserialize null
-deNull := r => (
+deNull := (r) => (
   {next} := r
   next() + next() + next() + next() :: {
     'null' -> ()
@@ -141,14 +141,14 @@ deNull := r => (
 )
 
 # deserialize boolean
-deTrue := r => (
+deTrue := (r) => (
   {next} := r
   next() + next() + next() + next() :: {
     'true' -> true
     _ -> (r.err)()
   }
 )
-deFalse := r => (
+deFalse := (r) => (
   {next} := r
   next() + next() + next() + next() + next() :: {
     'false' -> false
@@ -157,7 +157,7 @@ deFalse := r => (
 )
 
 # deserialize list
-deList := r => (
+deList := (r) => (
   {next, peek, ff} := r
   state := {
     idx: 0
@@ -167,7 +167,7 @@ deList := r => (
   next()
   ff()
 
-  (sub := acc => true :: {
+  (sub := (acc) => true :: {
     (r.err?)() -> ()
     _ -> peek() :: {
       '' -> (
@@ -195,14 +195,14 @@ deList := r => (
 )
 
 # deserialize composite
-deComp := r => (
+deComp := (r) => (
   {next, peek, ff} := r
 
   # known to be a '{'
   next()
   ff()
 
-  (sub := acc => true :: {
+  (sub := (acc) => true :: {
     (r.err?)() -> ()
     _ -> peek() :: {
       '' -> (r.err)()
@@ -243,7 +243,7 @@ deComp := r => (
 )
 
 # JSON string in reader to composite
-der := r => (
+der := (r) => (
   # trim preceding whitespace
   (r.ff)()
 
@@ -265,10 +265,10 @@ der := r => (
 )
 
 # JSON string to composite
-parse := s => der(reader(s)) # TODO: fix hanging on invalid strings
+parse := (s) => der(reader(s)) # TODO: fix hanging on invalid strings
 
 # composite to JSON string
-serialize := c => type(c) :: {
+serialize := (c) => type(c) :: {
   '()' -> 'null'
   'string' -> '"' + escape(c) + '"'
   'number' -> string(c)
@@ -277,7 +277,7 @@ serialize := c => type(c) :: {
     _ -> 'false'
   }
   'function' -> 'null' # do not serialize functions
-  'composite' -> '{' + cat(map(keys(c), k => '"' + escape(k) + '":' + serialize(c.(k))), ',') + '}'
+  'composite' -> '{' + cat(map(keys(c), (k) => '"' + escape(k) + '":' + serialize(c.(k))), ',') + '}'
   'list' -> '[' + cat(map(c, serialize), ', ') + ']'
 }
 

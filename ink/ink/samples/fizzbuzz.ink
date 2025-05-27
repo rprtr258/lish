@@ -2,9 +2,9 @@
 
 {range, each} := import('functional.ink')
 
-log := s => out(string(s) + '\n')
+log := (s) => out(string(s) + '\n')
 
-fizzbuzz := n => each(
+fizzbuzz := (n) => each(
   range(1, n + 1, 1)
   (n, _) => log([n % 3, n % 5] :: {
     [0, 0] -> 'FizzBuzz'

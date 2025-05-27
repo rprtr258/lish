@@ -13,7 +13,7 @@ generate := (x0, f) => (
 )
 
 # () => Iter(int)
-count := () => generate(1, n => n + 1)
+count := () => generate(1, (n) => n + 1)
 
 # (Iter(A), Iter(B)) => Iter([A, B])
 zip := (l, r) => () => (
@@ -21,12 +21,12 @@ zip := (l, r) => () => (
   b := r()
   true :: {
     (a == ()) | (b == ()) -> ()
-    _ => [a, b]
+    _ -> [a, b]
   }
 )
 
 # TODO: make methods of iterator
-list := list => (
+list := (list) => (
   i := {value: 0}
   () => true :: {
     i.value < len(list) -> (
@@ -75,8 +75,8 @@ takeWhile := (it, f) => (
 range := (start, end, step) => (
   true :: {
     step == 0 -> empty
-    step < 0 -> takeWhile(generate(start, x => x + step), x => x > end)
-    step > 0 -> takeWhile(generate(start, x => x + step), x => x < end)
+    step < 0 -> takeWhile(generate(start, (x) => x + step), (x) => x > end)
+    step > 0 -> takeWhile(generate(start, (x) => x + step), (x) => x < end)
   }
 )
 
@@ -99,7 +99,7 @@ each := (it, f) => (
   }
 )
 
-collect := it => foldl(it, (acc, x) => acc.(len(acc)) := x, [])
+collect := (it) => foldl(it, (acc, x) => acc.(len(acc)) := x, [])
 
 {
   range

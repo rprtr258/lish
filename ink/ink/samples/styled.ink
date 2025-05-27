@@ -1,6 +1,6 @@
 {join} := import('str.ink')
 
-FgANSI := c => true :: {
+FgANSI := (c) => true :: {
   c < 0 -> ''
   c < 8 -> string(c + 30) # 0-7  -> 30-37
   c < 15 -> string(c + 82) # 8-15 -> 90-97
@@ -8,7 +8,7 @@ FgANSI := c => true :: {
   _ -> ''
 }
 
-BgANSI := c => true :: {
+BgANSI := (c) => true :: {
   c < 0 -> ''
   c < 8 -> string(c + 40) # 0-7 -> 40-47
   c < 16 -> string(c + 92) # 8-15 -> 100-107

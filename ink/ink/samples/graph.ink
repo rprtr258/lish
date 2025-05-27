@@ -1,7 +1,7 @@
 # let's graph the sine / cosine functions in Ink!
 {join} := import('str.ink')
 
-log := s => out(s + '\n')
+log := (s) => out(s + '\n')
 
 # loop a function F, N times
 loop := (n, f) => true :: {
@@ -14,7 +14,7 @@ loop := (n, f) => true :: {
 # repeat a string n times
 repeat := (s, n) => (
   res := []
-  loop(n, _ => res.len(res) := s)
+  loop(n, (_) => res.len(res) := s)
   join(res, '')
 )
 
@@ -26,11 +26,11 @@ draw := (row, x, func, symbol) => (
 )
 
 # recursively draw from a single value
-drawRec := max => (
+drawRec := (max) => (
   loop(max, (n) => (
     row := repeat(' ', 60)
     draw(row, n, sin, '+')
-    draw(row, n, x => cos(x) + 0.7, 'o')
+    draw(row, n, (x) => cos(x) + 0.7, 'o')
     log(row)
   ))
 )

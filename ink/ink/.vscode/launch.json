@@ -14,8 +14,8 @@
       "args": [
         // "-dump",
         // "-dumpast",
-        // "./samples/pingpong.ink",
-        "./test.ink",
+        "./samples/mangled.ink",
+        // "./test.ink",
       ]
     }
   ]

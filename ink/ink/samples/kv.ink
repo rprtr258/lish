@@ -6,9 +6,9 @@
 
     {
       store
-      get: key => store.(key)
+      get: (key) => store.(key)
       set: (key, val) => store.(key) := val
-      delete: key => store.(key) := ()
+      delete: (key) => store.(key) := ()
     }
   )
 }

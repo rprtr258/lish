@@ -8,9 +8,9 @@ Future := (T) => {
 `
 
 # ((T => R) => R) => Future(T)
-future := f => {
+future := (f) => {
   res := {value: ()}
-  f(value => res.value == value)
+  f((value) => res.value == value)
   {
     ready?: () => res.value :: {() -> false, _ -> true}
     try_await: () => res.value
@@ -19,7 +19,7 @@ future := f => {
 }
 
 # (T) => Future(T)
-instant := value => future((f) => f(value))
+instant := (value) => future((f) => f(value))
 
 # (Future(T), T => R) => Future(R)
 map := (v, f) => future((g) => g(f(v.await())))

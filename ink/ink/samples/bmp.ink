@@ -3,7 +3,7 @@
 {decode} := import('str.ink')
 
 # utility function for splitting a large number > 16^2 into 4-byte list
-hexsplit := n => (
+hexsplit := (n) => (
   # accumulate list, growing to right
   acc := [0, 0, 0, 0]
 
@@ -28,7 +28,7 @@ hexsplit := n => (
   # last written byte offset
   last := {off: 0}
   # append byte values to buf
-  appd := part => (
+  appd := (part) => (
     buf.(last.off) := part
     last.off := len(buf)
   )
@@ -42,9 +42,9 @@ hexsplit := n => (
   })
 
   # write the nth row of pixels to buf
-  wrow := y => (
+  wrow := (y) => (
     offset := width * y
-    (sub := x => x :: {
+    (sub := (x) => x :: {
       width -> ()
       _ -> (
         appd(decode(pixels.(offset + x)))
@@ -56,7 +56,7 @@ hexsplit := n => (
 
   # write the pixel array to buf
   wpixels := () => (
-    (sub := y => y :: {
+    (sub := (y) => y :: {
       height -> ()
       _ -> (
         wrow(y)

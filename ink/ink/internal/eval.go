@@ -435,11 +435,11 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 		case ValueList:
 			rightNum, errr := strconv.Atoi(leftKey)
 			if errr != nil {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %q", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
 			}
 
 			if rightNum < 0 || rightNum > len(*left.xs) {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %q", rightNum, left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
 			}
 
 			if rightNum == len(*left.xs) { // append
@@ -461,7 +461,7 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 
 			rightNum, errr := strconv.Atoi(leftKey)
 			if errr != nil {
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %q", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
 			}
 
 			switch rn := rightNum; {
@@ -688,10 +688,10 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 				case ValueList:
 					rightNum, err := strconv.Atoi(rightValueStr)
 					if err != nil {
-						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
+						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing list %s at an index, found non-integer index %q", left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
 					}
 					if rightNum < 0 || rightNum >= len(*left.xs) {
-						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %s", rightNum, left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
+						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("out of bounds %d while accessing list %s at an index, found non-integer index %q", rightNum, left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
 					}
 
 					v := (*left.xs)[rightNum]
@@ -699,7 +699,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 				case ValueString:
 					rightNum, err := strconv.Atoi(rightValueStr)
 					if err != nil {
-						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %s", left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
+						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %q", left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
 					}
 
 					if rn := int(rightNum); 0 <= rn && rn < len(*left.b) {

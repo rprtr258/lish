@@ -2,7 +2,7 @@
 
 # test weird line breaks
 log :=
-(str => (
+((str) => (
   out(str)
 
   out('
@@ -14,7 +14,7 @@ log :=
 () =>
   () # line break after arrow
 log2 :=
-  (str =>
+  ((str) =>
   (
 
   out(str)
@@ -40,12 +40,12 @@ log('should be magic: ' + ol)
 log('should be 3: ' + string(kl))
 
 # redefine log for a more concise fizzbuzz
-log := s => out(string(s) + ' ')
+log := (s) => out(string(s) + ' ')
 
 # fizzbuzz test for concatenated / minified ink code
-fb:=n=>([n%3,n%5]::{[0,0]->log('FizzBuzz'),[0,_]->log('Fizz'),[
+fb:=(n)=>([n%3,n%5]::{[0,0]->log('FizzBuzz'),[0,_]->log('Fizz'),[
 _,0]->log('Buzz'),_->log(n)}),fizzbuzzhelper:=(n,max)=>
-(n::{max->fb(n),_->(fb(n),fizzbuzzhelper(n+1,max))}),(max=>
+(n::{max->fb(n),_->(fb(n),fizzbuzzhelper(n+1,max))}),((max)=>
 fizzbuzzhelper(1,max))(25)
 
 # exit with newline

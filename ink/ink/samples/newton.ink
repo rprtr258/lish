@@ -4,9 +4,9 @@
 
 # higher order function that returns a root finder
 # with the given degree of precision threshold
-makeNewtonRoot := threshold => n => (
+makeNewtonRoot := (threshold) => (n) => (
   # tail call optimized root finder
-  (find := previous => (
+  (find := (previous) => (
     guess := (previous + n / previous) / 2
     offset := guess * guess - n
     true :: {

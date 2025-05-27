@@ -3,7 +3,7 @@
 
 {log} := import('logging.ink')
 
-handleExec := evt => evt.type :: {
+handleExec := (evt) => evt.type :: {
   'error' -> log(evt.message)
   _ -> out(evt.data)
 }
@@ -14,7 +14,7 @@ exec('echo', ['Hello, World!'], '', handleExec)
 
 # swallows stdout correctly
 log('See: nothing')
-exec('echo', ['Hello, World!'], '', evt => evt.type :: {
+exec('echo', ['Hello, World!'], '', (evt) => evt.type :: {
   'error' -> log(evt.message)
 })
 

@@ -110,7 +110,7 @@ true :: {
 rotAroundZOrY := false
 rotateSpeed := 0.05
 poly := flatmap(range(0, vertices, 1), (i, _) =>
-  map(range(0, vertices, 1), t => (
+  map(range(0, vertices, 1), (t) => (
     k := i + step * t
     {
       x: round(radius * cos(2 * PI * k / vertices + PI / 2))
@@ -122,14 +122,14 @@ poly := flatmap(range(0, vertices, 1), (i, _) =>
 out('\x1B[?25l') # hide cursor
 (loop := () => (
   poly = true :: {
-    rotAroundZOrY -> map(poly, p =>
+    rotAroundZOrY -> map(poly, (p) =>
       apply(p, [
         [cos(rotateSpeed), ~sin(rotateSpeed), 0]
         [sin(rotateSpeed), cos(rotateSpeed), 0]
         [0, 0, 1]
       ]) # Z X
     )
-    _ -> map(poly, p => (
+    _ -> map(poly, (p) => (
         p = apply(p, [
           [cos(rotateSpeed), 0, ~sin(rotateSpeed)]
           [0, 1, 0]

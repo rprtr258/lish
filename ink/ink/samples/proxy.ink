@@ -48,11 +48,11 @@ handleProxyError := (dest, data) => (
 )
 
 # responds to all requests to the proxy
-handleRequest := data => (
+handleRequest := (data) => (
   prefixes := keys(PROXIES)
   max := len(prefixes) - 1
 
-  (sub := i => (
+  (sub := (i) => (
     prefix := prefixes.(i)
 
     # check that proxy prefix matches exactly.
@@ -66,7 +66,7 @@ handleRequest := data => (
           headers: data.headers.('X-Proxied-By') := 'ink-proxy'
           body: data.body
         })
-        evt => evt.type :: {
+        (evt) => evt.type :: {
           'error' -> handleProxyError(dest, evt.data)
           'resp' -> handleProxyResponse(dest, evt.data)
         }
@@ -83,7 +83,7 @@ handleRequest := data => (
   ))(0)
 )
 
-listen('0.0.0.0:' + string(PORT), evt => evt.type :: {
+listen('0.0.0.0:' + string(PORT), (evt) => evt.type :: {
   'error' -> log('Error starting server:' + evt.message)
   'req' -> handleRequest(evt.data)
 })

@@ -1,8 +1,8 @@
 # the ink standard library
 
-scan := cb => (
+scan := (cb) => (
   acc := ['']
-  in(evt => evt.type :: {
+  in((evt) => evt.type :: {
     'end' -> cb(acc.0)
     'data' -> (
       acc.0 := acc.0 + slice(evt.data, 0, len(evt.data) - 1)
@@ -40,7 +40,7 @@ slice := (s, start, end) => (
 )
 
 # clone a composite value
-clone := x => (
+clone := (x) => (
   {reduce} := import('functional.ink')
 
   type(x) :: {

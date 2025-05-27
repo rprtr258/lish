@@ -21,7 +21,7 @@ MAXITER := 600
 ESCAPE := max(max(WIDTH, HEIGHT) / SCALE, 2)
 
 # complex arithmetic functions
-cpxAbsSq := z => z.0 * z.0 + z.1 * z.1
+cpxAbsSq := (z) => z.0 * z.0 + z.1 * z.1
 cpxAdd := (z, w) => [z.0 + w.0, z.1 + w.1]
 cpxMul := (z, w) => [
   z.0 * w.0 - z.1 * w.1
@@ -30,7 +30,7 @@ cpxMul := (z, w) => [
 
 # given a number [0, WIDTH * HEIGHT), return a, (a, b) pair in a + bi
 # whose mandelbrot set value is to be computed
-idxToCpx := i => (
+idxToCpx := (i) => (
   x := (i % WIDTH) - WIDTH / 2
   y := floor(i / WIDTH) - HEIGHT / 2
 
@@ -41,7 +41,7 @@ idxToCpx := i => (
 # returns a number [0, 1)
 lb := 1 / ln(ESCAPE) # log base
 lhb := ln(0.5) * lb # log half-base
-mcompute := coord => (
+mcompute := (coord) => (
   thresholdSq := ESCAPE * ESCAPE
   (sub := (last, iter) => true :: {
     # provably diverges
@@ -90,7 +90,7 @@ hsl := (h, s, l) => (
 )
 
 # map [0, 1) output from mcompute to RGB values
-mrgb := n => n :: {
+mrgb := (n) => n :: {
   1 -> [20, 20, 20]
   _ -> hsl(n, 0.8, 0.6)
 }
@@ -98,7 +98,7 @@ mrgb := n => n :: {
 # generate image
 startTime := time()
 total := WIDTH * HEIGHT
-file := bmp(WIDTH, HEIGHT, map(range(0, WIDTH * HEIGHT, 1), x => (
+file := bmp(WIDTH, HEIGHT, map(range(0, WIDTH * HEIGHT, 1), (x) => (
   x % floor(total / 50) :: {
     0 -> log(f('{{ progress }}% rendered  {{ rate }} pixels/sec', {
       progress: floor(x / total * 100)
@@ -110,7 +110,7 @@ file := bmp(WIDTH, HEIGHT, map(range(0, WIDTH * HEIGHT, 1), x => (
 )))
 
 # save file
-wf('mandelbrot.bmp', file, result => true :: {
+wf('mandelbrot.bmp', file, (result) => true :: {
   result -> log('done!')
   () -> log('error writing file!')
 })

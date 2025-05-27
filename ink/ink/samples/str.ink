@@ -4,17 +4,17 @@
 {slice} := import('std.ink')
 
 # checking if a given character is of a type
-checkRange := (lo, hi) => c => (
+checkRange := (lo, hi) => (c) => (
   p := point(c)
   point(lo)-1 < p & p < point(hi)+1
 )
 upper? := checkRange('A', 'Z')
 lower? := checkRange('a', 'z')
 digit? := checkRange('0', '9')
-letter? := c => upper?(c) | lower?(c)
+letter? := (c) => upper?(c) | lower?(c)
 
 # is the char a whitespace?
-ws? := c => c :: {
+ws? := (c) => c :: {
   '\t'  -> true
   '\n' -> true
   '\r' -> true
@@ -35,7 +35,7 @@ hasSuffix? := (s, suffix) => (
 # the given substring at the given index idx.
 matchesAt? := (s, substring, idx) => (
   max := len(substring)
-  (sub := i => i :: {
+  (sub := (i) => i :: {
     max -> true
     _ -> s.(idx + i) :: {
       substring.(i) -> sub(i + 1)
@@ -47,7 +47,7 @@ matchesAt? := (s, substring, idx) => (
 # index is indexOf() for ink strings
 index := (s, substring) => (
   max := len(s) - 1
-  (sub := i => true :: {
+  (sub := (i) => true :: {
     matchesAt?(s, substring, i) -> i
     i < max -> sub(i + 1)
     _ -> ~1
@@ -58,19 +58,19 @@ index := (s, substring) => (
 contains? := (s, substring) => index(s, substring) > ~1
 
 # transforms given string to lowercase
-lower := s => reduce(s, (acc, c, i) => acc.(i) := (true :: {
+lower := (s) => reduce(s, (acc, c, i) => acc.(i) := (true :: {
   upper?(c) -> char(point(c) + 32)
   _ -> c
 }), '')
 
 # transforms given string to uppercase
-upper := s => reduce(s, (acc, c, i) => acc.(i) := (true :: {
+upper := (s) => reduce(s, (acc, c, i) => acc.(i) := (true :: {
   lower?(c) -> char(point(c) - 32)
   _ -> c
 }), '')
 
 # primitive "title-case" transformation, uppercases first letter and lowercases the rest.
-title := s => (
+title := (s) => (
   lowered := lower(s)
   lowered.0 := upper(lowered.0)
 )
@@ -93,7 +93,7 @@ replace := (s, old, new) => old :: {
 }
 
 # convert string into list of characters
-chars := s => map(s, c => c)
+chars := (s) => map(s, (c) => c)
 
 # split given string into a list of substrings, splitting by the delimiter
 split := (s, delim) => delim :: {
@@ -115,7 +115,7 @@ split := (s, delim) => delim :: {
 trimPrefixNonEmpty := (s, prefix) => (
   max := len(s)
   lpref := len(prefix)
-  idx := (sub := i => true :: {
+  idx := (sub := (i) => true :: {
     i < max & matchesAt?(s, prefix, i) -> sub(i + lpref)
     _ -> i
   })(0)
@@ -132,7 +132,7 @@ trimPrefix := (s, prefix) => prefix :: {
 
 trimSuffixNonEmpty := (s, suffix) => (
   lsuf := len(suffix)
-  idx := (sub := i => true :: {
+  idx := (sub := (i) => true :: {
     i > 0 & matchesAt?(s, suffix, i - lsuf) -> sub(i - lsuf)
     _ -> i
   })(len(s))
@@ -155,13 +155,13 @@ hToN := {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 'a': 10, 'b
 nToH := '0123456789abcdef'
 
 # take number, return hex string
-hex := n => (sub := (p, acc) => true :: {
+hex := (n) => (sub := (p, acc) => true :: {
   p < 16 -> nToH.(p) + acc
   _ -> sub(floor(p / 16), nToH.(p % 16) + acc)
 })(floor(n), '')
 
 # take hex string, return number
-xeh := s => (
+xeh := (s) => (
   # i is the num of places from the left, 0-indexed
   max := len(s)
   (sub := (i, acc) => i :: {
@@ -173,20 +173,20 @@ xeh := s => (
 # join a list of strings into a string
 join := (list, joiner) => max := len(list) :: {
   0 -> ''
-  _ -> list.0 + (sub := i => i :: {
+  _ -> list.0 + (sub := (i) => i :: {
     max -> ''
     _ -> joiner + list.(i) + sub(i + 1)
   })(1)
 }
 
 # tail recursive numeric list -> string converter
-stringList := list => '[' + join(map(list, string), ', ') + ']'
+stringList := (list) => '[' + join(map(list, string), ', ') + ']'
 
 # encode string buffer into a number list
-encode := str => map(str, point)
+encode := (str) => map(str, point)
 
 # decode number list into an ascii string
-decode := data => reduce(data, (acc, cp, _) => acc.len(acc) := char(cp), '')
+decode := (data) => reduce(data, (acc, cp, _) => acc.len(acc) := char(cp), '')
 
 # template formatting with {{ key }} constructs
 format := (raw, values) => (
@@ -207,7 +207,7 @@ format := (raw, values) => (
   }
 
   # helper function for appending to state.buf
-  append := c => state.buf = state.buf + c
+  append := (c) => state.buf = state.buf + c
 
   # read next token, update state
   readNext := () => (
