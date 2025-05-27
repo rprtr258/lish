@@ -55,8 +55,7 @@ test:
 	./ink samples/graph.ink
 	./ink samples/rainbow.ink 'YAY SHALAVI'
 	./ink samples/img.ink
-	# test -eval flag
-	./ink -eval "log:=import('samples/logging.ink').log,f:=(x)=>()=>log('Eval test: '+x),f('passed!.ink')()"
+	./ink -eval "log:=import('samples/logging.ink').log,f:=(x)=>()=>log('Eval test: '+x),f('passed!.ink')()" # test -eval flag
 	rm ./ink
 
 # build for specific OS target
