@@ -8,7 +8,7 @@ import (
 
 // StackFrame represents the heap of variables local to a particular function call frame,
 // and recursively references other parent StackFrames internally.
-type StackFrame struct {
+type StackFrame struct { // TODO: unembed
 	parent *StackFrame
 	vt     map[string]Value
 }
@@ -42,17 +42,21 @@ func (frame *StackFrame) Update(name string, val Value) {
 	LogError(&Err{nil, ErrAssert, fmt.Sprintf("StackFrame.Up expected to find variable '%s' in frame but did not", name), Pos{}})
 }
 
-func (s *StackFrame) String() string {
-	entries := make([]string, 0, len(s.vt))
-	for k, v := range s.vt {
-		vstr := v.String()
-		if len(vstr) > maxPrintLen {
-			vstr = vstr[:maxPrintLen] + ".."
+func (frame *StackFrame) String() string {
+	var sb strings.Builder
+	for ; frame != nil; frame = frame.parent {
+		if len(frame.vt) > 0 {
+			entries := make([]string, 0, len(frame.vt))
+			for k, v := range frame.vt {
+				entries = append(entries, fmt.Sprintf("%s : %s", k, v.String()))
+			}
+			sort.Strings(entries)
+
+			sb.WriteString(fmt.Sprintf("{\n\t%s\n}", strings.Join(entries, "\n\t")))
+		} else {
+			sb.WriteString(fmt.Sprintf("{}"))
 		}
-		entries = append(entries, fmt.Sprintf("%s -> %s", k, vstr))
+		sb.WriteString("\n")
 	}
-
-	sort.Strings(entries)
-
-	return fmt.Sprintf("{\n\t%s\n} -prnt-> %s", strings.Join(entries, "\n\t"), s.parent)
+	return sb.String()
 }
