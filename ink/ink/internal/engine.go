@@ -48,7 +48,7 @@ func (ctx *Context) Eval(node NodeID) Value {
 		fmt.Println(ast.String())
 	}
 
-	val := ctx.Engine.AST.Nodes[node].Eval(ctx.Frame, false, ast)
+	val := ast.Nodes[node].Eval(ctx.Frame, false, ast)
 	if isErr(val) {
 		if e, isErr := val.(ValueError); isErr {
 			LogError(e.Err)
