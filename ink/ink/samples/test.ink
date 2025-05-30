@@ -516,7 +516,7 @@ import('suite.ink')('Ink language and standard library', (m) => (
     copy.2 := 'yy'
 
     t('std.clone does not affect original string', str, 'hexxo')
-    t('define op does not create a copy of string', twin, 'hexxo')
+    t('define op does not create a copy of string', twin, 'hello')
     t('concatenation via + creates a copy of string, I', ccpy, 'hello')
     t('concatenation via + creates a copy of string, II', tcpy, 'hello')
     t('std.clone creates a copy of string', copy, 'heyyo')

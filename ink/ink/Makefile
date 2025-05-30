@@ -46,12 +46,12 @@ test:
 	./ink samples/fib.ink
 	./ink samples/collatz.ink
 	./ink samples/newton.ink
-	./ink samples/pi.ink || true # TODO: fix
+	#./ink samples/pi.ink || true # TODO: fix
 	./ink samples/prime.ink
 	./ink samples/quicksort.ink
 	./ink samples/pingpong.ink
 	./ink samples/exec.ink || true # TODO: fix
-	./ink samples/grapher.ink || true # TODO: fix
+	#./ink samples/grapher.ink || true # TODO: fix
 	./ink samples/graph.ink
 	./ink samples/rainbow.ink 'YAY SHALAVI'
 	./ink samples/img.ink

@@ -24,11 +24,6 @@ import (
 	"github.com/rprtr258/fun"
 )
 
-func vs(s string) ValueString {
-	b := []byte(s)
-	return ValueString{&b}
-}
-
 // TODO: export as builtin.ink signatured functions
 
 // NativeFunctionValue represents a function whose implementation is written
@@ -119,8 +114,8 @@ func (ctx *Context) LoadFunc(
 // Create and return a standard error callback response with the given message
 func errMsg(message string) ValueComposite {
 	return ValueComposite{
-		"type":    vs("error"),
-		"message": vs(message),
+		"type":    ValueString("error"),
+		"message": ValueString(message),
 	}
 }
 
@@ -203,14 +198,14 @@ func inkImport(ctx *Context, pos Pos, in []Value) Value {
 	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &givenPath),
-		validateCustom(len(*givenPath.b) > 0, "arg must be path"),
+		validateCustom(len(givenPath) > 0, "arg must be path"),
 	); err != nil {
 		return ValueError{&Err{err, ErrRuntime, "import()", pos}}
 	}
 
 	// imports via import() are assumed to be relative
 	// TODO: separate type and operations over import paths
-	importPath := string(*givenPath.b)
+	importPath := string(givenPath)
 	if u, err := url.Parse(importPath); err == nil && u.Scheme != "" {
 	} else if !filepath.IsAbs(importPath) {
 		if u, err := url.Parse(ctx.WorkingDirectory); err == nil && u.Scheme != "" {
@@ -255,7 +250,7 @@ func inkImport(ctx *Context, pos Pos, in []Value) Value {
 func inkArgs(_ *Context, _ Pos, _ []Value) Value {
 	comp := make([]Value, len(os.Args))
 	for i, v := range os.Args {
-		comp[i] = vs(v)
+		comp[i] = ValueString(v)
 	}
 	return ValueList{&comp}
 }
@@ -281,8 +276,8 @@ func inkIn(ctx *Context, pos Pos, in []Value) Value {
 			}
 
 			rv := evalInkFunction(ctx.Engine.AST, in[0], pos, false, ValueComposite{
-				"type": vs("data"),
-				"data": vs(str),
+				"type": ValueString("data"),
+				"data": ValueString(str),
 			})
 			if errEval, ok := rv.(ValueError); ok {
 				cbErr(errEval.Err)
@@ -300,7 +295,7 @@ func inkIn(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		if err, ok := evalInkFunction(ctx.Engine.AST, in[0], pos, false, ValueComposite{
-			"type": vs("end"),
+			"type": ValueString("end"),
 		}).(ValueError); ok {
 			cbErr(err.Err)
 		}
@@ -319,7 +314,7 @@ func inkOut(ctx *Context, pos Pos, in []Value) Value {
 		return ValueError{&Err{err, ErrRuntime, "out()", pos}}
 	}
 
-	os.Stdout.Write(*output.b)
+	os.Stdout.Write([]byte(output))
 	return Null
 }
 
@@ -346,7 +341,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 	go func() {
 		defer ctx.Engine.Listeners.Done()
 
-		fileInfos, err := os.ReadDir(string(*dirPath.b))
+		fileInfos, err := os.ReadDir(string(dirPath))
 		if err != nil {
 			ctx.ExecListener(func() {
 				cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, errMsg(
@@ -369,7 +364,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 			}
 
 			fileList[strconv.Itoa(i)] = ValueComposite{
-				"name": vs(info.Name()),
+				"name": ValueString(info.Name()),
 				"len":  ValueNumber(info.Size()),
 				"dir":  ValueBoolean(info.IsDir()),
 				"mod":  ValueNumber(info.ModTime().Unix()),
@@ -378,7 +373,7 @@ func inkDir(ctx *Context, pos Pos, in []Value) Value {
 
 		ctx.ExecListener(func() {
 			cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-				"type": vs("data"),
+				"type": ValueString("data"),
 				"data": fileList,
 			}))
 		})
@@ -396,7 +391,7 @@ func inkMake(ctx *Context, pos Pos, in []Value) Value {
 		return ValueError{&Err{err, ErrRuntime, "make()", pos}}
 	}
 
-	err := os.MkdirAll(string(*dirPath.b), 0o755)
+	err := os.MkdirAll(string(dirPath), 0o755)
 	if err != nil {
 		return errMsg(
 			fmt.Sprintf("error making a new directory in make(), %s", err.Error()),
@@ -404,7 +399,7 @@ func inkMake(ctx *Context, pos Pos, in []Value) Value {
 	}
 
 	return ValueComposite{
-		"type": vs("end"),
+		"type": ValueString("end"),
 	}
 }
 
@@ -418,11 +413,11 @@ func inkStat(ctx *Context, pos Pos, in []Value) Value {
 	}
 
 	var res Value
-	fi, err := os.Stat(string(*statPath.b))
+	fi, err := os.Stat(string(statPath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			res = ValueComposite{
-				"type": vs("data"),
+				"type": ValueString("data"),
 				"data": Null,
 			}
 		} else {
@@ -430,9 +425,9 @@ func inkStat(ctx *Context, pos Pos, in []Value) Value {
 		}
 	} else {
 		res = ValueComposite{
-			"type": vs("data"),
+			"type": ValueString("data"),
 			"data": ValueComposite{
-				"name": vs(fi.Name()),
+				"name": ValueString(fi.Name()),
 				"len":  ValueNumber(fi.Size()),
 				"dir":  ValueBoolean(fi.IsDir()),
 				"mod":  ValueNumber(fi.ModTime().Unix()),
@@ -477,7 +472,7 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 		defer ctx.Engine.Listeners.Done()
 
 		// open
-		file, err := os.OpenFile(string(*filePath.b), os.O_RDONLY, 0o644)
+		file, err := os.OpenFile(string(filePath), os.O_RDONLY, 0o644)
 		if err != nil {
 			sendErr(fmt.Sprintf("error opening requested file in read(), %s", err.Error()))
 			return
@@ -501,8 +496,8 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 			// if first read returns EOF, it may just be an empty file
 			ctx.ExecListener(func() {
 				cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-					"type": vs("data"),
-					"data": ValueString{},
+					"type": ValueString("data"),
+					"data": ValueString(""),
 				}))
 			})
 			return
@@ -513,8 +508,8 @@ func inkRead(ctx *Context, pos Pos, in []Value) Value {
 
 		ctx.ExecListener(func() {
 			cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-				"type": vs("data"),
-				"data": vs(string(buf[:count])),
+				"type": ValueString("data"),
+				"data": ValueString(string(buf[:count])),
 			}))
 		})
 	}()
@@ -564,7 +559,7 @@ func inkWrite(ctx *Context, pos Pos, in []Value) Value {
 			// all other offsets are writing
 			flag = os.O_CREATE | os.O_WRONLY
 		}
-		file, err := os.OpenFile(string(*filePath.b), flag, 0o644)
+		file, err := os.OpenFile(string(filePath), flag, 0o644)
 		if err != nil {
 			sendErr(fmt.Sprintf("error opening requested file in write(), %s", err.Error()))
 			return
@@ -581,14 +576,14 @@ func inkWrite(ctx *Context, pos Pos, in []Value) Value {
 		}
 
 		// write
-		if _, err := file.Write(*buf.b); err != nil {
+		if _, err := file.Write([]byte(buf)); err != nil {
 			sendErr(fmt.Sprintf("error writing to requested file in write(), %s", err.Error()))
 			return
 		}
 
 		ctx.ExecListener(func() {
 			cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-				"type": vs("end"),
+				"type": ValueString("end"),
 			}))
 		})
 	}()
@@ -620,7 +615,7 @@ func inkDelete(ctx *Context, pos Pos, in []Value) Value {
 		defer ctx.Engine.Listeners.Done()
 
 		// delete
-		err := os.RemoveAll(string(*filePath.b))
+		err := os.RemoveAll(string(filePath))
 		if err != nil {
 			ctx.ExecListener(func() {
 				cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, errMsg(
@@ -632,7 +627,7 @@ func inkDelete(ctx *Context, pos Pos, in []Value) Value {
 
 		ctx.ExecListener(func() {
 			cbMaybeErr(evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-				"type": vs("end"),
+				"type": ValueString("end"),
 			}))
 		})
 	}()
@@ -654,10 +649,10 @@ func inkHTTPHandler(
 
 		headers := make(ValueComposite, len(r.Header))
 		for key, values := range r.Header {
-			headers[key] = vs(strings.Join(values, ","))
+			headers[key] = ValueString(strings.Join(values, ","))
 		}
 
-		body := ValueString{new([]byte)}
+		body := ValueString("")
 		if r.ContentLength != 0 {
 			bodyBuf, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -668,7 +663,7 @@ func inkHTTPHandler(
 				})
 				return
 			}
-			body = ValueString{&bodyBuf}
+			body = ValueString(bodyBuf)
 		}
 
 		// construct request object to pass to Ink, and call handler
@@ -680,10 +675,10 @@ func inkHTTPHandler(
 			defer ctx.Engine.Listeners.Done()
 
 			v := evalInkFunction(ctx.Engine.AST, cb, pos, false, ValueComposite{
-				"type": vs("req"),
+				"type": ValueString("req"),
 				"data": ValueComposite{
-					"method":  vs(method),
-					"url":     vs(url),
+					"method":  ValueString(method),
+					"url":     ValueString(url),
 					"headers": headers,
 					"body":    body,
 				},
@@ -721,7 +716,7 @@ func inkHTTPHandler(
 		// Content-Length is automatically set for us by Go
 		for k, v := range resHeaders {
 			if str, isStr := v.(ValueString); isStr {
-				w.Header().Set(k, string(*str.b))
+				w.Header().Set(k, string(str))
 			} else {
 				LogError(&Err{nil, ErrRuntime, fmt.Sprintf("could not set response header, value %s was not a string", v), pos})
 				return
@@ -739,7 +734,7 @@ func inkHTTPHandler(
 		// status code write must follow all other header writes,
 		// since it sends the status
 		w.WriteHeader(int(resStatus))
-		if _, err := w.Write(*resBody.b); err != nil {
+		if _, err := w.Write([]byte(resBody)); err != nil {
 			_ = evalInkFunction(ctx.Engine.AST, cb, pos, false, errMsg(
 				fmt.Sprintf("error writing request body in listen(), %s", err.Error()),
 			))
@@ -770,7 +765,7 @@ func inkListen(ctx *Context, pos Pos, in []Value) Value {
 	}
 
 	server := &http.Server{
-		Addr:    string(*host.b),
+		Addr:    string(host),
 		Handler: http.HandlerFunc(inkHTTPHandler(ctx, cb)),
 	}
 
@@ -823,10 +818,10 @@ func inkReq(ctx *Context, pos Pos, in []Value) Value {
 	// }
 
 	// unmarshal request contents
-	methodVal := cmp.Or(data["method"], Value(vs("GET")))
+	methodVal := cmp.Or(data["method"], Value(ValueString("GET")))
 	urlVal := data["url"]
 	headersVal := cmp.Or(data["headers"], Value(ValueComposite{}))
-	bodyVal := cmp.Or(data["body"], Value(vs("")))
+	bodyVal := cmp.Or(data["body"], Value(ValueString("")))
 
 	// TODO: add query params
 
@@ -840,9 +835,9 @@ func inkReq(ctx *Context, pos Pos, in []Value) Value {
 	}
 	req, err := http.NewRequestWithContext(
 		reqContext,
-		string(*reqMethod.b),
-		string(*reqURL.b),
-		bytes.NewReader(*reqBody.b),
+		string(reqMethod),
+		string(reqURL),
+		bytes.NewReader([]byte(reqBody)),
 	)
 	if err != nil {
 		return errMsg(fmt.Sprintf("error creating request in req(), %s", err.Error()))
@@ -853,7 +848,7 @@ func inkReq(ctx *Context, pos Pos, in []Value) Value {
 	req.Header.Set("User-Agent", "") // remove Go's default user agent header
 	for k, v := range reqHeaders {
 		if str, isStr := v.(ValueString); isStr {
-			req.Header.Set(k, string(*str.b))
+			req.Header.Set(k, string(str))
 		} else {
 			return errMsg(fmt.Sprintf("could not set request header, value %s was not a string", v))
 		}
@@ -869,22 +864,22 @@ func inkReq(ctx *Context, pos Pos, in []Value) Value {
 	resStatus := ValueNumber(resp.StatusCode)
 	resHeaders := make(ValueComposite, len(resp.Header))
 	for key, values := range resp.Header {
-		resHeaders[key] = vs(strings.Join(values, ","))
+		resHeaders[key] = ValueString(strings.Join(values, ","))
 	}
 
 	var resBody Value
 	if resp.ContentLength == 0 {
-		resBody = ValueString{}
+		resBody = ValueString("")
 	} else {
 		bodyBuf, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errMsg(fmt.Sprintf("error reading response in req(), %s", err.Error()))
 		}
-		resBody = ValueString{&bodyBuf}
+		resBody = ValueString(bodyBuf)
 	}
 
 	return ValueComposite{
-		"type": vs("resp"),
+		"type": ValueString("resp"),
 		"data": ValueComposite{
 			"status":  resStatus,
 			"headers": resHeaders,
@@ -917,7 +912,7 @@ func inkUrand(ctx *Context, pos Pos, in []Value) Value {
 		return Null
 	}
 
-	return ValueString{&buf}
+	return ValueString(buf)
 }
 
 func inkTime(ctx *Context, pos Pos, in []Value) Value {
@@ -963,16 +958,16 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 
 	argsList := make([]string, len(args))
 	for i, v := range args {
-		argsList[i] = string(*v.b)
+		argsList[i] = string(v)
 	}
 
-	cmd := exec.Command(string(*path.b), argsList...)
+	cmd := exec.Command(string(path), argsList...)
 	// cmdMutex locks control over reading and modifying child
 	// process state, because both the Ink eval thread and exec
 	// thread must read from/write to cmd.
 	cmdMutex := sync.Mutex{} // TODO: remove as much mutexes as possible
 	stdout := bytes.Buffer{}
-	cmd.Stdin = strings.NewReader(string(*stdin.b))
+	cmd.Stdin = strings.NewReader(string(stdin))
 	cmd.Stdout = &stdout
 
 	sendErr := func(msg string) {
@@ -1011,8 +1006,8 @@ func inkExec(ctx *Context, pos Pos, in []Value) Value {
 
 		ctx.ExecListener(func() {
 			in := ValueComposite{
-				"type": vs("data"),
-				"data": ValueString{&output},
+				"type": ValueString("data"),
+				"data": ValueString(output),
 			}
 			v := evalInkFunction(ctx.Engine.AST, stdoutFn, pos, false, in)
 			if err, ok := v.(ValueError); ok {
@@ -1068,7 +1063,7 @@ func inkEnv(ctx *Context, pos Pos, in []Value) Value {
 	envVars := make(ValueComposite, len(envp))
 	for _, e := range envp {
 		kv := strings.SplitN(e, "=", 2)
-		envVars[kv[0]] = vs(kv[1])
+		envVars[kv[0]] = ValueString(kv[1])
 	}
 	return envVars
 }
@@ -1188,7 +1183,7 @@ func inkString(ctx *Context, pos Pos, in []Value) Value {
 		case ValueError:
 			return v.Error()
 		case ValueString:
-			return string(*v.b)
+			return string(v)
 		case ValueNumber:
 			return v.String()
 		case ValueBoolean:
@@ -1205,7 +1200,7 @@ func inkString(ctx *Context, pos Pos, in []Value) Value {
 			return ""
 		}
 	}()
-	return vs(s)
+	return ValueString(s)
 }
 
 func inkNumber(ctx *Context, pos Pos, in []Value) Value {
@@ -1217,7 +1212,7 @@ func inkNumber(ctx *Context, pos Pos, in []Value) Value {
 
 	switch v := in[0].(type) {
 	case ValueString:
-		f, err := strconv.ParseFloat(string(*v.b), 64)
+		f, err := strconv.ParseFloat(string(v), 64)
 		if err != nil {
 			return Null
 		}
@@ -1236,12 +1231,12 @@ func inkPoint(ctx *Context, pos Pos, in []Value) Value {
 	if err := validate(pos,
 		validateArgsLen(in, 1),
 		validateArgType(in, 0, &str),
-		validateCustom(len(*str.b) >= 1, "argument must be of length at least 1"),
+		validateCustom(len(str) >= 1, "argument must be of length at least 1"),
 	); err != nil {
 		return ValueError{&Err{err, ErrRuntime, "point()", pos}}
 	}
 
-	return ValueNumber((*str.b)[0])
+	return ValueNumber(str[0])
 }
 
 func inkChar(ctx *Context, pos Pos, in []Value) Value {
@@ -1253,7 +1248,7 @@ func inkChar(ctx *Context, pos Pos, in []Value) Value {
 		return ValueError{&Err{err, ErrRuntime, "char()", pos}}
 	}
 
-	return vs(string([]byte{byte(cp)}))
+	return ValueString(string([]byte{byte(cp)}))
 }
 
 func inkType(ctx *Context, pos Pos, in []Value) Value {
@@ -1265,21 +1260,21 @@ func inkType(ctx *Context, pos Pos, in []Value) Value {
 
 	switch in[0].(type) {
 	case ValueString:
-		return vs("string")
+		return ValueString("string")
 	case ValueNumber:
-		return vs("number")
+		return ValueString("number")
 	case ValueBoolean:
-		return vs("boolean")
+		return ValueString("boolean")
 	case ValueNull:
-		return vs("()")
+		return ValueString("()")
 	case ValueComposite:
-		return vs("composite")
+		return ValueString("composite")
 	case ValueList:
-		return vs("list")
+		return ValueString("list")
 	case ValueFunction, NativeFunctionValue:
-		return vs("function")
+		return ValueString("function")
 	case ValueError:
-		return vs("error")
+		return ValueString("error")
 	default:
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("unknown type: %T", in[0]), pos}}
 	}
@@ -1299,7 +1294,7 @@ func inkLen(ctx *Context, pos Pos, in []Value) Value {
 		return ValueNumber(len(*v.xs))
 	case ValueString:
 		// TODO: bytes count/rune count/grapheme clusters count?
-		return ValueNumber(len(*v.b))
+		return ValueNumber(len(v))
 	default:
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("len() takes a string or list or composite value, but got %s", in[0].String()), pos}}
 	}
@@ -1319,7 +1314,7 @@ func inkKeys(ctx *Context, pos Pos, in []Value) Value {
 		keys := make([]Value, len(obj))
 		i := 0
 		for k := range obj {
-			keys[i] = vs(k)
+			keys[i] = ValueString(k)
 			i++
 		}
 		return ValueList{&keys}

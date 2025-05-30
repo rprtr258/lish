@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"bytes"
 	"fmt"
 	"maps"
 	"strconv"
@@ -34,9 +33,9 @@ func assert(b bool, kvs ...any) {
 }
 
 // zero-extend a slice of bytes to given length
-func zeroExtend(s []byte, max int) []byte {
+func zeroExtend(s ValueString, max int) []byte {
 	if max <= len(s) {
-		return s
+		return []byte(s)
 	}
 
 	extended := make([]byte, max)
@@ -142,9 +141,7 @@ func (v ValueNumber) Equals(other Value) bool {
 }
 
 // ValueString represents all characters and strings in Ink
-type ValueString struct {
-	b *[]byte
-}
+type ValueString string
 
 var stringValueReplacer = strings.NewReplacer(
 	`\`, `\\`,
@@ -155,7 +152,7 @@ var stringValueReplacer = strings.NewReplacer(
 )
 
 func (v ValueString) String() string {
-	return "'" + stringValueReplacer.Replace(string(*v.b)) + "'"
+	return "'" + stringValueReplacer.Replace(string(v)) + "'"
 }
 
 func (v ValueString) Equals(other Value) bool {
@@ -163,7 +160,7 @@ func (v ValueString) Equals(other Value) bool {
 	case ValueEmpty:
 		return true
 	case ValueString:
-		return bytes.Equal(*v.b, *ov.b)
+		return v == ov
 	default:
 		return false
 	}
@@ -395,7 +392,7 @@ func operandToStringKey(right Node, frame *StackFrame, ast *AST) (string, *Err) 
 
 		switch rv := rightEvaluatedValue.(type) {
 		case ValueString:
-			return string(*rv.b), nil
+			return string(rv), nil
 		case ValueNumber:
 			return nToS(float64(rv)), nil
 		default:
@@ -465,20 +462,22 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 			}
 
 			switch rn := rightNum; {
-			case 0 <= rn && rn < len(*left.b):
-				for i, r := range *rightString.b {
-					if rn+i < len(*left.b) {
-						(*left.b)[rn+i] = r
+			case 0 <= rn && rn < len(left):
+				b := []rune(left)
+				for i, r := range rightString {
+					if rn+i < len(left) {
+						b[rn+i] = r
 					} else {
-						*left.b = append(*left.b, r)
+						b = append(b, r)
 					}
 				}
-				frame.Update(leftIdent.Meta.(string), left)
-				return left
-			case rn == len(*left.b):
-				*left.b = append(*left.b, *rightString.b...)
-				frame.Update(leftIdent.Meta.(string), left)
-				return left
+				res := ValueString(string(b))
+				frame.Update(leftIdent.Meta.(string), res)
+				return res
+			case rn == len(left):
+				res := left + rightString
+				frame.Update(leftIdent.Meta.(string), res)
+				return res
 			default:
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
 			}
@@ -563,8 +562,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 	case NodeKindLiteralNumber:
 		return ValueNumber(n.Meta.(float64))
 	case NodeKindLiteralString:
-		b := []byte(n.Meta.(string))
-		return ValueString{&b}
+		return ValueString(n.Meta.(string))
 	case NodeKindLiteralBoolean:
 		return ValueBoolean(n.Meta.(bool))
 	case NodeKindLiteralComposite:
@@ -702,9 +700,8 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("while accessing string %s at an index, found non-integer index %q", left, rightValueStr), ast.Nodes[n.Children[1]].Position(ast)}}
 					}
 
-					if rn := int(rightNum); 0 <= rn && rn < len(*left.b) {
-						b := []byte{(*left.b)[rn]}
-						return ValueString{&b}
+					if rn := int(rightNum); 0 <= rn && rn < len(left) {
+						return left[rn : rn+1]
 					}
 
 					return Null
@@ -735,10 +732,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						// In this context, strings are immutable. i.e. concatenating
 						// strings should produce a completely new string whose modifications
 						// won't be observable by the original strings.
-						base := make([]byte, 0, len(*left.b)+len(*right.b))
-						base = append(base, *left.b...)
-						base = append(base, *right.b...)
-						return ValueString{&base}
+						return left + right
 					}
 				// TODO: remove, same as |
 				case ValueBoolean:
@@ -871,14 +865,14 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 
 					if right, ok := rightValue.(ValueString); ok {
-						max := max(len(*left.b), len(*right.b))
+						max := max(len(left), len(right))
 
-						a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+						a, b := zeroExtend(left, max), zeroExtend(right, max)
 						c := make([]byte, max)
 						for i := range c {
 							c[i] = a[i] & b[i]
 						}
-						return ValueString{&c}
+						return ValueString(c)
 					}
 
 					return fail()
@@ -934,14 +928,14 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 
 					if right, ok := rightValue.(ValueString); ok {
-						max := max(len(*left.b), len(*right.b))
+						max := max(len(left), len(right))
 
-						a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+						a, b := zeroExtend(left, max), zeroExtend(right, max)
 						c := make([]byte, max)
 						for i := range c {
 							c[i] = a[i] | b[i]
 						}
-						return ValueString{&c}
+						return ValueString(c)
 					}
 
 					return fail()
@@ -981,14 +975,14 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 				case ValueString:
 					if right, ok := rightValue.(ValueString); ok {
-						max := max(len(*left.b), len(*right.b))
+						max := max(len(left), len(right))
 
-						a, b := zeroExtend(*left.b, max), zeroExtend(*right.b, max)
+						a, b := zeroExtend(left, max), zeroExtend(right, max)
 						c := make([]byte, max)
 						for i := range c {
 							c[i] = a[i] ^ b[i]
 						}
-						return ValueString{&c}
+						return ValueString(c)
 					}
 				case ValueBoolean:
 					if right, ok := rightValue.(ValueBoolean); ok {
@@ -1010,7 +1004,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 				case ValueString:
 					if right, ok := rightValue.(ValueString); ok {
-						return ValueBoolean(bytes.Compare(*left.b, *right.b) > 0)
+						return ValueBoolean(left > right)
 					}
 				}
 
@@ -1028,7 +1022,7 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 				case ValueString:
 					if right, ok := rightValue.(ValueString); ok {
-						return ValueBoolean(bytes.Compare(*left.b, *right.b) < 0)
+						return ValueBoolean(left < right)
 					}
 				}
 

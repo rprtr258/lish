@@ -22,7 +22,7 @@ func constEval(ast *AST, n NodeID) {
 	case ValueNumber:
 		nnn = NodeLiteralNumber(nn.Position(ast), float64(v))
 	case ValueString:
-		nnn = NodeLiteralString(nn.Position(ast), string(*v.b))
+		nnn = NodeLiteralString(nn.Position(ast), string(v))
 	case ValueNull, ValueComposite, ValueFunction:
 		return
 		// TODO: null, composite, list
