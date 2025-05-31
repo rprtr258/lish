@@ -494,21 +494,15 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 
 		xs := make([]Value, len(leftSide.Children))
 		res := ValueList{&xs}
-		var k_ func(int) Value
-		k_ = func(i int) Value {
-			if i < len(leftSide.Children) {
-				leftSide := leftSide.Children[i]
-				v := define(frame, ast, ast.Nodes[leftSide], (*rightList.xs)[i])
-				if isErr(v) {
-					return v
-				}
-				(*res.xs)[i] = v
-				return k_(i + 1)
-			} else {
-				return res
+		for i := 0; i < len(leftSide.Children); i++ {
+			leftSide := leftSide.Children[i]
+			v := define(frame, ast, ast.Nodes[leftSide], (*rightList.xs)[i])
+			if isErr(v) {
+				return v
 			}
+			(*res.xs)[i] = v
 		}
-		return k_(0)
+		return res
 	case NodeKindLiteralComposite: // dict destructure: {log, format: f} = std
 		rightComposite, isComposite := rightValue.(ValueComposite)
 		if !isComposite {
