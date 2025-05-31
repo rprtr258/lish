@@ -178,7 +178,7 @@ func (n Node) String() string {
 		var sb strings.Builder
 		sb.WriteString("Call ")
 		sb.WriteString(n.Children[0].String())
-		sb.WriteString(" on (")
+		sb.WriteString(" with (")
 		for i, a := range n.Children[1:] {
 			if i > 0 {
 				sb.WriteString(", ")

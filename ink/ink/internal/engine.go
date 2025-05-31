@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rprtr258/fun"
 	"github.com/rs/zerolog/log"
 )
 
@@ -22,8 +23,7 @@ type Context struct {
 	// currently executing file's path, if any
 	File   string
 	Engine *Engine
-	// Frame represents the Context's global heap
-	Frame *StackFrame
+	VM     *VM
 }
 
 func (ctx *Context) resetWd() {
@@ -32,6 +32,37 @@ func (ctx *Context) resetWd() {
 	if err != nil {
 		log.Fatal().Err(err).Stringer("kind", ErrSystem).Msg("could not identify current working directory")
 	}
+}
+
+type Stack[T any] []T
+
+func (s *Stack[T]) Push(v T) {
+	*s = append(*s, v)
+}
+
+func (s *Stack[T]) Popn(n int) []T {
+	assertc(2, len(*s) >= n, "stack_size", len(*s), "want", n, "stack", fmt.Sprintf("%v", *s))
+	v := slices.Clone((*s)[len(*s)-n:])
+	*s = (*s)[:len(*s)-n]
+	return v
+}
+
+func (s *Stack[T]) Pop() T {
+	// return s.Popn(1)[0] // TODO: get back
+	n := 1
+	assertc(2, len(*s) >= n, "stack_size", len(*s), "want", n, "stack", fmt.Sprintf("%v", *s))
+	v := slices.Clone((*s)[len(*s)-n:])
+	*s = (*s)[:len(*s)-n]
+	return v[0]
+}
+
+func (s Stack[T]) Peek() T {
+	return s[len(s)-1]
+}
+
+type returnFrame struct {
+	n NodeID
+	i int
 }
 
 // Eval takes a channel of Nodes to evaluate, and executes the Ink programs defined
@@ -48,17 +79,31 @@ func (ctx *Context) Eval(node NodeID) Value {
 		fmt.Println(ast.String())
 	}
 
-	val := ast.Nodes[node].Eval(ctx.Frame, false, ast)
-	if isErr(val) {
-		if e, isErr := val.(ValueError); isErr {
-			LogError(e.Err)
-		}
+	ctx.VM = &VM{
+		ctx.VM.Stack,
+		ctx.VM.Frame,
+		Stack[returnFrame]{{node, 0}},
+		Stack[Value]{},
 	}
 
+	for len(ctx.VM.returnStack) > 0 {
+		val := ctx.VM.Eval(ast)
+		if isErr(val) {
+			if e, isErr := val.(ValueError); isErr {
+				LogError(e.Err)
+				return val
+			}
+		}
+		ctx.VM.valueStack.Push(val)
+	}
+
+	assert(len(ctx.VM.valueStack) == 1, "value_stack_len", len(ctx.VM.valueStack), "value_stack", strings.Join(fun.Map[string](Value.String, ctx.VM.valueStack...), ", "))
+	val := ctx.VM.valueStack[0]
 	if _debugvm {
 		fmt.Println("RESULT:", val.String())
-		LogFrame(ctx.Frame)
+		LogFrame(ctx.VM.Stack, ctx.VM.Frame)
 	}
+	fmt.Println("RESULT:", val.String())
 
 	return val
 }
@@ -87,19 +132,14 @@ func ParseReader(ast *AST, filename string, r io.Reader) (NodeID, *Err) {
 	}
 
 	// TODO: parse stream if we can, hence making "one-pass" interpreter
-	tokens := slices.Collect(tokenize(filename, strings.NewReader("("+string(b)+")")))
+	tokens := slices.Collect(tokenize(filename, strings.NewReader("("+string(b)+"\n)")))
 
 	nodes, err := parse(ast, tokens)
 	if err.Err != nil {
 		return -1, err.Err
 	}
 
-	var expr NodeID
-	if len(nodes) == 1 {
-		expr = nodes[0]
-	} else {
-		expr = ast.Append(NodeExprList(Pos{filename, 1, 1}, nodes))
-	}
+	expr := ast.Append(NodeExprList(Pos{filename, 1, 1}, nodes))
 
 	// optimization passes
 	// TODO: optimize pass:
@@ -179,9 +219,13 @@ func NewEngine() *Engine {
 
 // CreateContext creates and initializes a new Context tied to a given Engine.
 func (eng *Engine) CreateContext() *Context {
+	stack := &TheStack{}
 	ctx := &Context{
 		Engine: eng,
-		Frame:  &StackFrame{nil, map[string]Value{}},
+		VM: &VM{
+			Stack: stack,
+			Frame: stack.Append(-1),
+		},
 	}
 	ctx.resetWd()
 	ctx.LoadEnvironment()

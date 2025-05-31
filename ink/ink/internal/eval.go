@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rprtr258/fun"
+	"github.com/rprtr258/scuf"
 	"github.com/rs/zerolog/log"
 )
 
@@ -16,7 +17,7 @@ const _debugvm = false
 
 const _asserts = true
 
-func assert(b bool, kvs ...any) {
+func assertc(skip int, b bool, kvs ...any) {
 	if !_asserts {
 		return
 	}
@@ -25,11 +26,15 @@ func assert(b bool, kvs ...any) {
 		return
 	}
 
-	e := log.Fatal()
+	e := log.Fatal().Caller(skip)
 	for i := 0; i < len(kvs); i += 2 {
 		e.Any(kvs[i].(string), kvs[i+1])
 	}
 	e.Msg("assert failed")
+}
+
+func assert(b bool, kvs ...any) {
+	assertc(1, b, kvs...)
 }
 
 // zero-extend a slice of bytes to given length
@@ -42,8 +47,6 @@ func zeroExtend(s ValueString, max int) []byte {
 	copy(extended, s)
 	return extended
 }
-
-const maxPrintLen = 120
 
 // Value represents any value in the Ink programming language.
 // Each value corresponds to some primitive or object value created
@@ -267,18 +270,15 @@ func (v ValueComposite) Equals(other Value) bool {
 
 // ValueFunction is the value of any variables referencing functions defined in an Ink program.
 type ValueFunction struct {
-	defn  *Node // NodeLiteralFunction
-	frame *StackFrame
+	defn  NodeID // NodeLiteralFunction
+	frame StackFrameID
 }
 
 func (v ValueFunction) String() string {
-	// ellipsize function body at a reasonable length,
+	// TODO: ellipsize function body at a reasonable length,
 	// so as not to be too verbose in repl environments
-	fstr := v.defn.String()
-	if len(fstr) > maxPrintLen {
-		fstr = fstr[:maxPrintLen] + ".."
-	}
-	return fstr
+	stackframe := scuf.String(v.frame.String(), scuf.FgHiBlack)
+	return fmt.Sprintf("fn#%d(%s)", v.defn, stackframe)
 }
 
 func (v ValueFunction) Equals(other Value) bool {
@@ -294,59 +294,27 @@ func (v ValueFunction) Equals(other Value) bool {
 	}
 }
 
-// ValueFunctionCallThunk is an internal representation of a lazy
-// function evaluation used to implement tail call optimization.
-type ValueFunctionCallThunk struct {
-	vt       map[string]Value
-	function ValueFunction
-}
-
-func (v ValueFunctionCallThunk) String() string {
-	return fmt.Sprintf("Thunk of (%s)", v.function)
-}
-
-func (v ValueFunctionCallThunk) Equals(other Value) bool {
-	if _, isEmpty := other.(ValueEmpty); isEmpty {
-		return true
-	}
-
-	if ov, ok := other.(ValueFunctionCallThunk); ok {
-		// to compare structs containing slices, we really want
-		// a pointer comparison, not a value comparison
-		return &v.vt == &ov.vt && &v.function == &ov.function
-	}
-
-	return false
-}
-
-// unwrapThunk expands out a recursive structure of thunks
-//
-//	into a flat for loop control structure
-func unwrapThunk(thunk ValueFunctionCallThunk, ast *AST) (v Value) {
-	isThunk := true
-	for isThunk {
-		frame := &StackFrame{
-			parent: thunk.function.frame,
-			vt:     thunk.vt,
-		}
-		v = ast.Nodes[thunk.function.defn.Children[0]].Eval(frame, true, ast)
-		if isErr(v) {
-			return v
-		}
-		thunk, isThunk = v.(ValueFunctionCallThunk)
-	}
-
-	return
+type VM struct {
+	// Frame represents the Context's global heap
+	Stack       *TheStack
+	Frame       StackFrameID
+	returnStack Stack[returnFrame]
+	valueStack  Stack[Value]
 }
 
 // call into an Ink callback function synchronously
-func evalInkFunction(ast *AST, fn Value, pos Pos, allowThunk bool, args ...Value) Value {
+func (vm *VM) evalInkFunction(
+	ast *AST,
+	fn Value,
+	pos Pos,
+	args ...Value,
+) Value {
 	// call into an Ink callback function synchronously
 	switch fn := fn.(type) {
 	case ValueFunction:
 		// TODO: check args count matches
 		argValueTable := map[string]Value{}
-		for i, argNode := range fn.defn.Children[1:] {
+		for i, argNode := range ast.Nodes[fn.defn].Children[1:] {
 			if i < len(args) {
 				if identNode := ast.Nodes[argNode]; identNode.Kind == NodeKindIdentifier {
 					argValueTable[identNode.Meta.(string)] = args[i]
@@ -354,18 +322,17 @@ func evalInkFunction(ast *AST, fn Value, pos Pos, allowThunk bool, args ...Value
 			}
 		}
 
-		// TCO: used for evaluating expressions that may be in tail positions
+		// TODO: TCO: used for evaluating expressions that may be in tail positions
 		// at the end of Nodes whose evaluation allocates another StackFrame
 		// like ExpressionList and FunctionLiteral's body
-		returnThunk := ValueFunctionCallThunk{
-			vt:       argValueTable,
-			function: fn,
-		}
 
-		if allowThunk {
-			return returnThunk
-		}
-		return unwrapThunk(returnThunk, ast)
+		// expand out a recursive structure of thunks into a flat for loop control structure
+		// vm.Frame = vm.Stack.append(vm.Frame, argValueTable)
+		vm.Frame = vm.Stack.append(vm.Stack.append(vm.Frame, vm.Stack.frames[fn.frame].vt), argValueTable) // TODO: or ?
+		// rebased := vm.Stack.Rebase(vm.Frame, fn.frame)
+		// vm.Frame = vm.Stack.append(rebased, argValueTable) // TODO: or ?
+		vm.returnStack.Push(returnFrame{ast.Nodes[fn.defn].Children[0], 0})
+		return vm.Eval(ast)
 	case NativeFunctionValue:
 		return fn.exec(fn.ctx, pos, args)
 	default:
@@ -373,57 +340,60 @@ func evalInkFunction(ast *AST, fn Value, pos Pos, allowThunk bool, args ...Value
 	}
 }
 
-func operandToStringKey(right Node, frame *StackFrame, ast *AST) (string, *Err) {
+func (vm *VM) operandToStringKey(ast *AST) Value {
+	rf := vm.returnStack.Pop()
+	right := ast.Nodes[rf.n]
 	switch right.Kind {
 	case NodeKindIdentifier:
-		return right.Meta.(string), nil
-
+		return ValueString(right.Meta.(string))
 	case NodeKindLiteralString:
-		return right.Meta.(string), nil
-
+		return ValueString(right.Meta.(string))
 	case NodeKindLiteralNumber:
-		return nToS(right.Meta.(float64)), nil
-
+		return ValueString(nToS(right.Meta.(float64)))
 	default:
-		rightEvaluatedValue := right.Eval(frame, false, ast)
+		vm.returnStack.Push(rf)
+		rightEvaluatedValue := vm.Eval(ast)
 		if isErr(rightEvaluatedValue) {
-			return "", rightEvaluatedValue.(ValueError).Err
+			return rightEvaluatedValue.(ValueError)
 		}
 
 		switch rv := rightEvaluatedValue.(type) {
 		case ValueString:
-			return string(rv), nil
+			return rv
 		case ValueNumber:
-			return nToS(float64(rv)), nil
+			return ValueString(nToS(float64(rv)))
 		default:
-			return "", &Err{nil, ErrRuntime, fmt.Sprintf("cannot access invalid property name %s of a composite value [%s]", rightEvaluatedValue, right.Position(ast)), Pos{}}
+			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access invalid property name %s of a composite value [%s]", rightEvaluatedValue, right.Position(ast)), Pos{}}}
 		}
 	}
 }
 
-func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value {
+func (vm *VM) define(
+	ast *AST,
+	leftSide Node,
+	rightValue Value,
+) Value {
 	if _, isEmpty := rightValue.(ValueEmpty); isEmpty {
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot assign an empty value to %s (actually anything)", leftSide), leftSide.Position(ast)}}
 	}
 
 	switch leftSide.Kind {
 	case NodeKindIdentifier:
-		frame.Set(leftSide.Meta.(string), rightValue)
+		vm.Stack.Set(vm.Frame, leftSide.Meta.(string), rightValue)
 		return rightValue
 	case NodeKindExprBinary:
 		if leftSide.Meta.(Kind) != OpAccessor {
 			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot assign value to %s", leftSide), leftSide.Position(ast)}}
 		}
 
-		leftValue := ast.Nodes[leftSide.Children[0]].Eval(frame, false, ast)
+		vm.returnStack.Push(returnFrame{leftSide.Children[0], 0})
+		leftValue := vm.Eval(ast)
 		if isErr(leftValue) {
 			return leftValue
 		}
 
-		leftKey, err := operandToStringKey(ast.Nodes[leftSide.Children[1]], frame, ast)
-		if err != nil {
-			return ValueError{err}
-		}
+		vm.returnStack.Push(returnFrame{leftSide.Children[1], 0})
+		leftKey := string(vm.operandToStringKey(ast).(ValueString))
 
 		switch left := leftValue.(type) {
 		case ValueComposite:
@@ -472,11 +442,11 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 					}
 				}
 				res := ValueString(string(b))
-				frame.Update(leftIdent.Meta.(string), res)
+				vm.Stack.Update(vm.Frame, leftIdent.Meta.(string), res)
 				return res
 			case rn == len(left):
 				res := left + rightString
-				frame.Update(leftIdent.Meta.(string), res)
+				vm.Stack.Update(vm.Frame, leftIdent.Meta.(string), res)
 				return res
 			default:
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
@@ -496,7 +466,7 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 		res := ValueList{&xs}
 		for i := range len(leftSide.Children) {
 			leftSide := leftSide.Children[i]
-			v := define(frame, ast, ast.Nodes[leftSide], (*rightList.xs)[i])
+			v := vm.define(ast, ast.Nodes[leftSide], (*rightList.xs)[i])
 			if isErr(v) {
 				return v
 			}
@@ -510,24 +480,27 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 		}
 
 		res := make(ValueComposite, len(leftSide.Children)/2)
-		for i := 0; i*2 < len(leftSide.Children); i++ {
-			keyN, val := ast.Nodes[leftSide.Children[2*i]], leftSide.Children[2*i+1]
-			key, err := operandToStringKey(keyN, frame, ast)
-			if err != nil {
-				return ValueError{&Err{err, ErrRuntime, "invalid key in dict destructure assignment", keyN.Pos}}
+		for i := 0; i < len(leftSide.Children); i += 2 {
+			keyN, val := ast.Nodes[leftSide.Children[i]], leftSide.Children[i+1]
+			vm.returnStack.Push(returnFrame{leftSide.Children[i], 0})
+			key := vm.operandToStringKey(ast)
+			if isErr(key) {
+				return ValueError{&Err{key.(ValueError).Err, ErrRuntime, "invalid key in dict destructure assignment", keyN.Pos}}
 			}
 
-			rightSide, ok := rightComposite[key]
+			kkey := string(key.(ValueString))
+
+			rightSide, ok := rightComposite[kkey]
 			if !ok {
 				knownKeys := fun.Keys(rightComposite)
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", key, knownKeys), keyN.Position(ast)}}
 			}
 
-			v := define(frame, ast, ast.Nodes[val], rightSide)
+			v := vm.define(ast, ast.Nodes[val], rightSide)
 			if isErr(v) {
 				return v
 			}
-			res[key] = v
+			res[kkey] = v
 		}
 		return res
 	default:
@@ -536,11 +509,31 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 	}
 }
 
-func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
+func (vm *VM) Eval(ast *AST) Value {
+	rf := vm.returnStack.Pop()
+	n := ast.Nodes[rf.n]
+	if _debugvm {
+		fmt.Println("EVAL AT", n.Position(ast))
+		fmt.Println("RETURN STACK")
+		for _, frame := range vm.returnStack {
+			fmt.Println("\t", ast.Nodes[frame.n].String(), frame.i)
+		}
+		fmt.Println("\t", n.String(), rf.i)
+		fmt.Println("VALUE STACK")
+		for _, value := range vm.valueStack {
+			fmt.Println("\t", value.String())
+		}
+		fmt.Println("FRAME STACK")
+		fmt.Println(vm.Stack.String(vm.Frame))
+		fmt.Println()
+	}
 	switch n.Kind {
 	case NodeKindIdentifier:
-		val, ok := frame.Get(n.Meta.(string))
+		val, ok := vm.Stack.Get(vm.Frame, n.Meta.(string))
 		if !ok {
+			// TODO: add stacktrace into runtime errors
+			LogFrame(vm.Stack, vm.Frame)
+			fmt.Println("return stack", vm.returnStack)
 			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Meta.(string)), n.Position(ast)}}
 		}
 		return val
@@ -553,115 +546,157 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 	case NodeKindLiteralBoolean:
 		return ValueBoolean(n.Meta.(bool))
 	case NodeKindLiteralComposite:
-		obj := make(ValueComposite, len(n.Children)/2)
-		for i := 0; i < len(n.Children); i += 2 {
-			keyStr, err := operandToStringKey(ast.Nodes[n.Children[i]], frame, ast)
-			if err != nil {
-				return ValueError{err}
+		if rf.i < len(n.Children) { // key value pairs eval
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			if rf.i%2 == 0 { // eval key
+				vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+				return vm.operandToStringKey(ast)
+			} else { // eval value
+				vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+				return vm.Eval(ast)
 			}
-
-			v := ast.Nodes[n.Children[i+1]].Eval(frame, false, ast)
-			if isErr(v) {
-				return v
+		} else {
+			values := vm.valueStack.Popn(len(n.Children))
+			obj := make(ValueComposite, len(n.Children)/2)
+			for i := 0; i < len(n.Children); i += 2 {
+				keyStr := string(values[i].(ValueString))
+				v := values[i+1]
+				obj[keyStr] = v
 			}
-
-			obj[keyStr] = v
+			return obj
 		}
-		return obj
 	case NodeKindLiteralList:
-		xs := make([]Value, len(n.Children))
-		listVal := ValueList{&xs}
-		for i, valn := range n.Children {
-			v := ast.Nodes[valn].Eval(frame, false, ast)
-			if isErr(v) {
-				return v
-			}
-			(*listVal.xs)[i] = v
+		if rf.i < len(n.Children) {
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		} else {
+			xs := vm.valueStack.Popn(len(n.Children))
+			return ValueList{&xs}
 		}
-		return listVal
 	case NodeKindLiteralFunction:
+		vt := map[string]Value{}
+		for _, id := range vm.Stack.history2(vm.Frame) {
+			frame := vm.Stack.frames[id]
+			maps.Copy(vt, frame.vt)
+		}
+
 		return ValueFunction{
-			defn:  &n,
-			frame: frame,
+			defn:  rf.n,
+			frame: vm.Stack.append(vm.Frame, vt),
+			// frame: vm.Frame, // TODO: fix closure stack?
 		}
 	case NodeKindExprMatch:
-		conditionVal := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
-		if isErr(conditionVal) {
-			return conditionVal
-		}
-
-		for i := 0; i < len(n.Children[1:]); i += 2 {
-			target, expression := n.Children[1+i], n.Children[1+i+1]
-			targetVal := ast.Nodes[target].Eval(frame, false, ast)
-			if isErr(targetVal) {
-				return targetVal
+		switch {
+		case rf.i == 0: // eval condition
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		case rf.i == len(n.Children): // eval match when no target matched
+			vm.valueStack.Pop() // remove condition
+			return Null
+		case rf.i%2 == 1: // eval target
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		case rf.i%2 == 0: // eval expression
+			target := vm.valueStack.Pop()
+			condition := vm.valueStack.Pop()
+			if target.Equals(condition) { // target matched, match evaluates to expression
+				vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			} else { // no match, get back condition value and eval next target
+				vm.valueStack.Push(condition)
+				vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
 			}
-
-			if conditionVal.Equals(targetVal) {
-				return ast.Nodes[expression].Eval(frame, false, ast)
-			}
+			return vm.Eval(ast)
+		default:
+			panic("unreachable")
 		}
-		return Null
 	case NodeKindExprList:
 		length := len(n.Children)
 		if length == 0 {
 			return Null
 		}
 
-		callFrame := &StackFrame{
-			parent: frame,
-			vt:     map[string]Value{},
-		}
-
-		for _, expr := range n.Children[:length-1] {
-			if expr := ast.Nodes[expr].Eval(callFrame, false, ast); isErr(expr) {
-				return expr
+		switch {
+		case rf.i == len(n.Children): // pop frame after last expression
+			vm.Frame = vm.Stack.frames[vm.Frame].parent
+			return vm.valueStack.Pop()
+		case rf.i == len(n.Children)-1: // eval last expression
+			if len(n.Children) > 1 {
+				vm.valueStack.Pop() // value unused
 			}
-		}
-		// return values of expression lists are tail call optimized,
-		// so return a maybe ThunkValue
-		return ast.Nodes[n.Children[length-1]].Eval(callFrame, allowThunk, ast)
-	case NodeKindExprUnary:
-		switch n.Meta.(Kind) {
-		case OpNegation:
-			operand := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
-			if isErr(operand) {
-				return operand
-			}
-
-			switch o := operand.(type) {
-			case ValueNumber:
-				return -o
-			case ValueBoolean:
-				return ValueBoolean(!o)
-			default:
-				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), ast.Nodes[n.Children[0]].Position(ast)}}
-			}
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			// return values of expression lists are tail call optimized,
+			// so return a maybe ThunkValue
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		case rf.i == 0:
+			vm.Frame = vm.Stack.Append(vm.Frame)
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		case rf.i < len(n.Children)-1:
+			vm.valueStack.Pop() // value unused
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
 		default:
-			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("unrecognized unary operator %s", n), n.Position(ast)}}
+			panic("unreachable")
+		}
+	case NodeKindExprUnary:
+		switch rf.i {
+		case 0:
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		default:
+			switch n.Meta.(Kind) {
+			case OpNegation:
+				operand := vm.valueStack.Pop()
+				switch o := operand.(type) {
+				case ValueNumber:
+					return -o
+				case ValueBoolean:
+					return ValueBoolean(!o)
+				default:
+					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot negate non-boolean and non-number value %s", o), ast.Nodes[n.Children[0]].Position(ast)}}
+				}
+			default:
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("unrecognized unary operator %s", n), n.Position(ast)}}
+			}
 		}
 	case NodeKindExprBinary:
-		left := ast.Nodes[n.Children[0]]
-		right := ast.Nodes[n.Children[1]]
-		return func() Value {
-			switch n.Meta.(Kind) {
-			case OpDefine:
-				rightValue := right.Eval(frame, false, ast)
+		switch n.Meta.(Kind) {
+		case OpDefine:
+			switch rf.i {
+			case 0: // eval right
+				vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+				vm.returnStack.Push(returnFrame{n.Children[1], 0})
+				return vm.Eval(ast)
+			default:
+				left := ast.Nodes[n.Children[0]]
+				rightValue := vm.valueStack.Pop()
 				if err, ok := rightValue.(ValueError); ok {
 					return ValueError{&Err{err.Err, ErrRuntime, "cannot evaluate right-side of assignment", ast.Nodes[n.Children[0]].Position(ast)}}
 				}
 
-				return define(frame, ast, left, rightValue)
-			case OpAccessor:
-				leftValue := left.Eval(frame, false, ast)
+				return vm.define(ast, left, rightValue)
+			}
+		case OpAccessor:
+			switch rf.i {
+			case 0:
+				vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+				vm.returnStack.Push(returnFrame{n.Children[0], 0})
+				return vm.Eval(ast)
+			default:
+				leftValue := vm.valueStack.Pop()
 				if isErr(leftValue) {
 					return leftValue
 				}
 
-				rightValueStr, err := operandToStringKey(right, frame, ast)
-				if err != nil {
-					return ValueError{err}
-				}
+				vm.returnStack.Push(returnFrame{n.Children[1], 0})
+				rightValueStr := string(vm.operandToStringKey(ast).(ValueString))
 
 				switch left := leftValue.(type) {
 				case ValueComposite:
@@ -696,19 +731,30 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot access property %q of a non-list/composite value %v", rightValueStr, left), ast.Nodes[n.Children[1]].Position(ast)}}
 				}
 			}
+		}
 
-			leftValue := left.Eval(frame, false, ast)
+		switch rf.i {
+		case 0:
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[0], 0})
+			return vm.Eval(ast)
+		case 1:
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[1], 0})
+			return vm.Eval(ast)
+		default:
+			rightValue := vm.valueStack.Pop() // TODO: do not evaluate on OpAnd/OpOr
+			if isErr(rightValue) {
+				return rightValue
+			}
+
+			leftValue := vm.valueStack.Pop()
 			if isErr(leftValue) {
 				return leftValue
 			}
 
 			switch n.Meta.(Kind) {
 			case OpAdd:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -748,11 +794,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support addition", leftValue, rightValue), n.Position(ast)}}
 			case OpSubtract:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -762,11 +803,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support subtraction", leftValue, rightValue), n.Position(ast)}}
 			case OpMultiply:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -781,11 +817,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support multiplication", leftValue, rightValue), n.Position(ast)}}
 			case OpDivide:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				if leftNum, isNum := leftValue.(ValueNumber); isNum {
 					if right, ok := rightValue.(ValueNumber); ok {
 						if right == 0 {
@@ -798,11 +829,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support division", leftValue, rightValue), n.Position(ast)}}
 			case OpModulus:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				if leftNum, isNum := leftValue.(ValueNumber); isNum {
 					if right, ok := rightValue.(ValueNumber); ok {
 						if right == 0 {
@@ -821,21 +847,11 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			case OpLogicalAnd:
 				// TODO: do not evaluate `right` here
 				fail := func() Value {
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical &", leftValue, rightValue), n.Position(ast)}}
 				}
 
 				switch left := leftValue.(type) {
 				case ValueNumber:
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					if right, ok := rightValue.(ValueNumber); ok {
 						if isInteger(left) && isInteger(right) {
 							return ValueNumber(int64(left) & int64(right))
@@ -846,11 +862,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 					return fail()
 				case ValueString:
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					if right, ok := rightValue.(ValueString); ok {
 						max := max(len(left), len(right))
 
@@ -868,11 +879,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						return ValueBoolean(false)
 					}
 
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					right, ok := rightValue.(ValueBoolean)
 					if !ok {
 						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise & of %T and %T", left, right), n.Position(ast)}}
@@ -885,21 +891,11 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 			case OpLogicalOr:
 				// TODO: do not evaluate `right` here
 				fail := func() Value {
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical |", leftValue, rightValue), n.Position(ast)}}
 				}
 
 				switch left := leftValue.(type) {
 				case ValueNumber:
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					if right, ok := rightValue.(ValueNumber); ok {
 						if !isInteger(left) {
 							return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of non-integer values %s, %s", right.String(), left.String()), n.Position(ast)}}
@@ -909,11 +905,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 					}
 					return fail()
 				case ValueString:
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					if right, ok := rightValue.(ValueString); ok {
 						max := max(len(left), len(right))
 
@@ -931,11 +922,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 						return ValueBoolean(true)
 					}
 
-					rightValue := right.Eval(frame, false, ast)
-					if isErr(rightValue) {
-						return rightValue
-					}
-
 					right, ok := rightValue.(ValueBoolean)
 					if !ok {
 						return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot take bitwise | of %T and %T", left, right), n.Position(ast)}}
@@ -946,11 +932,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return fail()
 			case OpLogicalXor:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -979,11 +960,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("values %s and %s do not support bitwise or logical ^", leftValue, rightValue), n.Position(ast)}}
 			case OpGreaterThan:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -997,11 +973,6 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf(">: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
 			case OpLessThan:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				switch left := leftValue.(type) {
 				case ValueNumber:
 					if right, ok := rightValue.(ValueNumber); ok {
@@ -1015,30 +986,27 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("<: values %s and %s do not support comparison", leftValue, rightValue), n.Position(ast)}}
 			case OpEqual:
-				rightValue := right.Eval(frame, false, ast)
-				if isErr(rightValue) {
-					return rightValue
-				}
-
 				return ValueBoolean(leftValue.Equals(rightValue))
 			default:
 				return ValueError{&Err{nil, ErrAssert, fmt.Sprintf("unknown binary operator %s", n.String()), Pos{}}}
 			}
-		}()
+		}
 	case NodeKindFunctionCall:
-		fn := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
-		if isErr(fn) {
-			return fn
+		switch {
+		case rf.i < len(n.Children):
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
+			return vm.Eval(ast)
+		case rf.i == len(n.Children):
+			argResults := vm.valueStack.Popn(len(n.Children) - 1)
+			fn := vm.valueStack.Pop()
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
+			return vm.evalInkFunction(ast, fn, n.Position(ast), argResults...)
+		default:
+			res := vm.valueStack.Pop()
+			vm.Frame = vm.Stack.frames[vm.Frame].parent
+			return res
 		}
-
-		argResults := make([]Value, len(n.Children[1:]))
-		for i, arg := range n.Children[1:] {
-			argResults[i] = ast.Nodes[arg].Eval(frame, false, ast)
-			if isErr(argResults[i]) {
-				return argResults[i]
-			}
-		}
-		return evalInkFunction(ast, fn, n.Position(ast), allowThunk, argResults...)
 	default:
 		panic(fmt.Sprint("unreachable", n.Kind))
 	}

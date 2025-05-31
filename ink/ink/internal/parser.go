@@ -352,6 +352,5 @@ func parse(ast *AST, tokens []Token) (nodes []NodeID, e errParse) {
 		LogNode(ast.Nodes[expr])
 		nodes = append(nodes, expr)
 	}
-	LogAST(ast)
 	return
 }
