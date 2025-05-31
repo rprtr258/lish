@@ -15,13 +15,11 @@ type StackFrame struct {
 
 // Get a value from the stack frame chain
 func (frame *StackFrame) Get(name string) (Value, bool) {
-	for frame != nil {
+	for ; frame != nil; frame = frame.parent {
 		val, ok := frame.vt[name]
 		if ok {
 			return val, true
 		}
-
-		frame = frame.parent
 	}
 
 	return Null, false
