@@ -41,14 +41,19 @@ func (s *Stack[T]) Push(v T) {
 }
 
 func (s *Stack[T]) Popn(n int) []T {
-	assert(len(*s) >= n, "stack_size", len(*s), "want", n, "stack", fmt.Sprintf("%v", *s))
+	assertc(2, len(*s) >= n, "stack_size", len(*s), "want", n, "stack", fmt.Sprintf("%v", *s))
 	v := slices.Clone((*s)[len(*s)-n:])
 	*s = (*s)[:len(*s)-n]
 	return v
 }
 
 func (s *Stack[T]) Pop() T {
-	return s.Popn(1)[0]
+	// return s.Popn(1)[0] // TODO: get back
+	n := 1
+	assertc(2, len(*s) >= n, "stack_size", len(*s), "want", n, "stack", fmt.Sprintf("%v", *s))
+	v := slices.Clone((*s)[len(*s)-n:])
+	*s = (*s)[:len(*s)-n]
+	return v[0]
 }
 
 func (s Stack[T]) Peek() T {
@@ -75,6 +80,7 @@ func (ctx *Context) Eval(node NodeID) Value {
 	}
 
 	ctx.VM = &VM{
+		ctx.VM.Stack,
 		ctx.VM.Frame,
 		Stack[returnFrame]{{node, 0}},
 		Stack[Value]{},
@@ -95,8 +101,9 @@ func (ctx *Context) Eval(node NodeID) Value {
 	val := ctx.VM.valueStack[0]
 	if _debugvm {
 		fmt.Println("RESULT:", val.String())
-		LogFrame(ctx.VM.Frame)
+		LogFrame(ctx.VM.Stack, ctx.VM.Frame)
 	}
+	fmt.Println("RESULT:", val.String())
 
 	return val
 }
@@ -212,10 +219,12 @@ func NewEngine() *Engine {
 
 // CreateContext creates and initializes a new Context tied to a given Engine.
 func (eng *Engine) CreateContext() *Context {
+	stack := &TheStack{}
 	ctx := &Context{
 		Engine: eng,
 		VM: &VM{
-			Frame: &StackFrame{nil, map[string]Value{}},
+			Stack: stack,
+			Frame: stack.Append(-1),
 		},
 	}
 	ctx.resetWd()

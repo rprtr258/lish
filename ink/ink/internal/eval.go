@@ -17,7 +17,7 @@ const _debugvm = false
 
 const _asserts = true
 
-func assert(b bool, kvs ...any) {
+func assertc(skip int, b bool, kvs ...any) {
 	if !_asserts {
 		return
 	}
@@ -26,11 +26,15 @@ func assert(b bool, kvs ...any) {
 		return
 	}
 
-	e := log.Fatal().Caller(1)
+	e := log.Fatal().Caller(skip)
 	for i := 0; i < len(kvs); i += 2 {
 		e.Any(kvs[i].(string), kvs[i+1])
 	}
 	e.Msg("assert failed")
+}
+
+func assert(b bool, kvs ...any) {
+	assertc(1, b, kvs...)
 }
 
 // zero-extend a slice of bytes to given length
@@ -267,13 +271,13 @@ func (v ValueComposite) Equals(other Value) bool {
 // ValueFunction is the value of any variables referencing functions defined in an Ink program.
 type ValueFunction struct {
 	defn  NodeID // NodeLiteralFunction
-	frame *StackFrame
+	frame StackFrameID
 }
 
 func (v ValueFunction) String() string {
 	// TODO: ellipsize function body at a reasonable length,
 	// so as not to be too verbose in repl environments
-	stackframe := scuf.String(fmt.Sprintf("%p", v.parentFrame)[6:], scuf.FgHiBlack)
+	stackframe := scuf.String(v.frame.String(), scuf.FgHiBlack)
 	return fmt.Sprintf("fn#%d(%s)", v.defn, stackframe)
 }
 
@@ -292,7 +296,8 @@ func (v ValueFunction) Equals(other Value) bool {
 
 type VM struct {
 	// Frame represents the Context's global heap
-	Frame       *StackFrame
+	Stack       *TheStack
+	Frame       StackFrameID
 	returnStack Stack[returnFrame]
 	valueStack  Stack[Value]
 }
@@ -322,9 +327,10 @@ func (vm *VM) evalInkFunction(
 		// like ExpressionList and FunctionLiteral's body
 
 		// expand out a recursive structure of thunks into a flat for loop control structure
-		// vm.Frame = &StackFrame{vm.Frame, argValueTable}
-		// vm.Frame = &StackFrame{fn.parentFrame, argValueTable} // TODO: or ?
-		vm.Frame = &StackFrame{vm.Frame.Rebase(fn.parentFrame), argValueTable} // TODO: or ?
+		// vm.Frame = vm.Stack.append(vm.Frame, argValueTable)
+		vm.Frame = vm.Stack.append(vm.Stack.append(vm.Frame, vm.Stack.frames[fn.frame].vt), argValueTable) // TODO: or ?
+		// rebased := vm.Stack.Rebase(vm.Frame, fn.frame)
+		// vm.Frame = vm.Stack.append(rebased, argValueTable) // TODO: or ?
 		vm.returnStack.Push(returnFrame{ast.Nodes[fn.defn].Children[0], 0})
 		return vm.Eval(ast)
 	case NativeFunctionValue:
@@ -373,7 +379,7 @@ func (vm *VM) define(
 
 	switch leftSide.Kind {
 	case NodeKindIdentifier:
-		vm.Frame.Set(leftSide.Meta.(string), rightValue)
+		vm.Stack.Set(vm.Frame, leftSide.Meta.(string), rightValue)
 		return rightValue
 	case NodeKindExprBinary:
 		if leftSide.Meta.(Kind) != OpAccessor {
@@ -436,11 +442,11 @@ func (vm *VM) define(
 					}
 				}
 				res := ValueString(string(b))
-				vm.Frame.Update(leftIdent.Meta.(string), res)
+				vm.Stack.Update(vm.Frame, leftIdent.Meta.(string), res)
 				return res
 			case rn == len(left):
 				res := left + rightString
-				vm.Frame.Update(leftIdent.Meta.(string), res)
+				vm.Stack.Update(vm.Frame, leftIdent.Meta.(string), res)
 				return res
 			default:
 				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("tried to modify string %s at out of bounds index %s", left, leftKey), ast.Nodes[leftSide.Children[1]].Position(ast)}}
@@ -507,24 +513,26 @@ func (vm *VM) Eval(ast *AST) Value {
 	rf := vm.returnStack.Pop()
 	n := ast.Nodes[rf.n]
 	if _debugvm {
-		fmt.Println("EVAL")
+		fmt.Println("EVAL AT", n.Position(ast))
 		fmt.Println("RETURN STACK")
 		for _, frame := range vm.returnStack {
 			fmt.Println("\t", ast.Nodes[frame.n].String(), frame.i)
 		}
 		fmt.Println("\t", n.String(), rf.i)
-		fmt.Println("VALUE STACK", vm.valueStack)
-		fmt.Println("POS", n.Position(ast))
+		fmt.Println("VALUE STACK")
+		for _, value := range vm.valueStack {
+			fmt.Println("\t", value.String())
+		}
 		fmt.Println("FRAME STACK")
-		fmt.Println(vm.Frame.String())
+		fmt.Println(vm.Stack.String(vm.Frame))
 		fmt.Println()
 	}
 	switch n.Kind {
 	case NodeKindIdentifier:
-		val, ok := vm.Frame.Get(n.Meta.(string))
+		val, ok := vm.Stack.Get(vm.Frame, n.Meta.(string))
 		if !ok {
 			// TODO: add stacktrace into runtime errors
-			LogFrame(vm.Frame)
+			LogFrame(vm.Stack, vm.Frame)
 			fmt.Println("return stack", vm.returnStack)
 			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Meta.(string)), n.Position(ast)}}
 		}
@@ -567,15 +575,16 @@ func (vm *VM) Eval(ast *AST) Value {
 			return ValueList{&xs}
 		}
 	case NodeKindLiteralFunction:
-		// vt := map[string]Value{}
-		// for _, frame := range vm.Frame {
-		// 	maps.Copy(vt, frame.vt)
-		// }
+		vt := map[string]Value{}
+		for _, id := range vm.Stack.history2(vm.Frame) {
+			frame := vm.Stack.frames[id]
+			maps.Copy(vt, frame.vt)
+		}
 
 		return ValueFunction{
-			defn: rf.n,
-			// parentFrame: StackFrame{vt},
-			frame: vm.Frame, // TODO: fix closure stack?
+			defn:  rf.n,
+			frame: vm.Stack.append(vm.Frame, vt),
+			// frame: vm.Frame, // TODO: fix closure stack?
 		}
 	case NodeKindExprMatch:
 		switch {
@@ -610,16 +619,20 @@ func (vm *VM) Eval(ast *AST) Value {
 		}
 
 		switch {
+		case rf.i == len(n.Children): // pop frame after last expression
+			vm.Frame = vm.Stack.frames[vm.Frame].parent
+			return vm.valueStack.Pop()
 		case rf.i == len(n.Children)-1: // eval last expression
 			if len(n.Children) > 1 {
 				vm.valueStack.Pop() // value unused
 			}
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
 			// return values of expression lists are tail call optimized,
 			// so return a maybe ThunkValue
 			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
 			return vm.Eval(ast)
 		case rf.i == 0:
-			vm.Frame = &StackFrame{vm.Frame, map[string]Value{}}
+			vm.Frame = vm.Stack.Append(vm.Frame)
 			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
 			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
 			return vm.Eval(ast)
@@ -991,7 +1004,7 @@ func (vm *VM) Eval(ast *AST) Value {
 			return vm.evalInkFunction(ast, fn, n.Position(ast), argResults...)
 		default:
 			res := vm.valueStack.Pop()
-			vm.Frame = vm.Frame.parent
+			vm.Frame = vm.Stack.frames[vm.Frame].parent
 			return res
 		}
 	default:

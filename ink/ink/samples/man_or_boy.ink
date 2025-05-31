@@ -14,3 +14,4 @@ a := (k, x1, x2, x3, x4, x5) => (
 x := (i) => () => i
 k := 8 # 10
 out(string(a(k, x(1), x(~1), x(~1), x(1), x(0)))+'\n')
+# TODO: assert -67 on k=10

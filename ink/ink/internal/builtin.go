@@ -108,7 +108,7 @@ func (ctx *Context) LoadFunc(
 	name string,
 	exec func(*Context, Pos, []Value) Value,
 ) {
-	ctx.VM.Frame.Set(name, NativeFunctionValue{name, exec, ctx})
+	ctx.VM.Stack.Set(ctx.VM.Frame, name, NativeFunctionValue{name, exec, ctx})
 }
 
 // Create and return a standard error callback response with the given message
