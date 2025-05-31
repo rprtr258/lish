@@ -2,8 +2,13 @@ package internal
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
+	"unsafe"
+
+	"github.com/rprtr258/fun"
+	"github.com/rprtr258/scuf"
 )
 
 // StackFrame represents the heap of variables local to a particular function call frame,
@@ -43,20 +48,60 @@ func (frame *StackFrame) Update(name string, val Value) {
 }
 
 func (frame *StackFrame) String() string {
-	var sb strings.Builder
+	frames := []string{}
 	for ; frame != nil; frame = frame.parent {
-		if len(frame.vt) > 0 {
-			entries := make([]string, 0, len(frame.vt))
-			for k, v := range frame.vt {
-				entries = append(entries, fmt.Sprintf("%s : %s", k, v.String()))
-			}
-			sort.Strings(entries)
+		frames = append(frames, scuf.NewString(func(sb scuf.Buffer) {
+			sb.String(fmt.Sprintf("%p", frame)[6:], scuf.FgHiBlack)
+			sb.String("{")
+			if frame.parent == nil {
+				sb.String("#root")
+			} else if len(frame.vt) > 0 {
+				keys := fun.Keys(frame.vt)
+				sort.Strings(keys)
 
-			sb.WriteString(fmt.Sprintf("{\n\t%s\n}", strings.Join(entries, "\n\t")))
-		} else {
-			sb.WriteString(fmt.Sprintf("{}"))
-		}
-		sb.WriteString("\n")
+				for i, k := range keys {
+					if i > 0 {
+						sb.String(" ")
+					}
+					sb.String(k)
+					sb.String("=", scuf.FgBlack)
+					sb.String(frame.vt[k].String())
+				}
+			}
+			sb.String("}")
+		}))
 	}
-	return sb.String()
+	frames = slices.Collect(func(yield func(string) bool) {
+		for _, frame := range slices.Backward(frames) {
+			if !yield(frame) {
+				break
+			}
+		}
+	})
+	return strings.Join(frames, "\n")
+}
+
+func (frame *StackFrame) LeastCommonAncestor(f *StackFrame) *StackFrame {
+	for frame != f {
+		if uintptr(unsafe.Pointer(frame)) > uintptr(unsafe.Pointer(f)) {
+			frame = frame.parent
+		} else {
+			f = f.parent
+		}
+	}
+	return frame
+}
+
+func (frame *StackFrame) Rebase(head *StackFrame) *StackFrame {
+	lca := frame.LeastCommonAncestor(head)
+	return frame.rebase(head, lca)
+}
+
+func (frame *StackFrame) rebase(head, lca *StackFrame) *StackFrame {
+	if head == lca {
+		return frame
+	}
+
+	prehead := frame.rebase(head.parent, lca)
+	return &StackFrame{prehead, head.vt}
 }

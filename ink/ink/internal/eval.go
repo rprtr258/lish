@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"github.com/rprtr258/fun"
+	"github.com/rprtr258/scuf"
 	"github.com/rs/zerolog/log"
 )
 
-// const _debugvm = false
+const _debugvm = false
 
-const _debugvm = true
+// const _debugvm = true
 
 const _asserts = true
 
@@ -272,7 +273,8 @@ type ValueFunction struct {
 func (v ValueFunction) String() string {
 	// TODO: ellipsize function body at a reasonable length,
 	// so as not to be too verbose in repl environments
-	return "fn" + v.defn.String()
+	stackframe := scuf.String(fmt.Sprintf("%p", v.parentFrame)[6:], scuf.FgHiBlack)
+	return fmt.Sprintf("fn#%d(%s)", v.defn, stackframe)
 }
 
 func (v ValueFunction) Equals(other Value) bool {
@@ -320,7 +322,9 @@ func (vm *VM) evalInkFunction(
 		// like ExpressionList and FunctionLiteral's body
 
 		// expand out a recursive structure of thunks into a flat for loop control structure
-		vm.Frame = &StackFrame{vm.Frame, argValueTable}
+		// vm.Frame = &StackFrame{vm.Frame, argValueTable}
+		// vm.Frame = &StackFrame{fn.parentFrame, argValueTable} // TODO: or ?
+		vm.Frame = &StackFrame{vm.Frame.Rebase(fn.parentFrame), argValueTable} // TODO: or ?
 		vm.returnStack.Push(returnFrame{ast.Nodes[fn.defn].Children[0], 0})
 		return vm.Eval(ast)
 	case NativeFunctionValue:
@@ -511,6 +515,8 @@ func (vm *VM) Eval(ast *AST) Value {
 		fmt.Println("\t", n.String(), rf.i)
 		fmt.Println("VALUE STACK", vm.valueStack)
 		fmt.Println("POS", n.Position(ast))
+		fmt.Println("FRAME STACK")
+		fmt.Println(vm.Frame.String())
 		fmt.Println()
 	}
 	switch n.Kind {
@@ -978,10 +984,15 @@ func (vm *VM) Eval(ast *AST) Value {
 			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
 			vm.returnStack.Push(returnFrame{n.Children[rf.i], 0})
 			return vm.Eval(ast)
-		default:
+		case rf.i == len(n.Children):
 			argResults := vm.valueStack.Popn(len(n.Children) - 1)
 			fn := vm.valueStack.Pop()
+			vm.returnStack.Push(returnFrame{rf.n, rf.i + 1})
 			return vm.evalInkFunction(ast, fn, n.Position(ast), argResults...)
+		default:
+			res := vm.valueStack.Pop()
+			vm.Frame = vm.Frame.parent
+			return res
 		}
 	default:
 		panic(fmt.Sprint("unreachable", n.Kind))
