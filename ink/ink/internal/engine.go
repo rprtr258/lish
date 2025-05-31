@@ -181,10 +181,7 @@ func NewEngine() *Engine {
 func (eng *Engine) CreateContext() *Context {
 	ctx := &Context{
 		Engine: eng,
-		Frame: &StackFrame{
-			parent: nil,
-			vt:     map[string]Value{},
-		},
+		Frame:  &StackFrame{nil, map[string]Value{}},
 	}
 	ctx.resetWd()
 	ctx.LoadEnvironment()
