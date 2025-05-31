@@ -267,8 +267,8 @@ func (v ValueComposite) Equals(other Value) bool {
 
 // ValueFunction is the value of any variables referencing functions defined in an Ink program.
 type ValueFunction struct {
-	defn        *Node // NodeLiteralFunction
-	parentFrame *StackFrame
+	defn  *Node // NodeLiteralFunction
+	frame *StackFrame
 }
 
 func (v ValueFunction) String() string {
@@ -326,7 +326,7 @@ func unwrapThunk(thunk ValueFunctionCallThunk, ast *AST) (v Value) {
 	isThunk := true
 	for isThunk {
 		frame := &StackFrame{
-			parent: thunk.function.parentFrame,
+			parent: thunk.function.frame,
 			vt:     thunk.vt,
 		}
 		v = ast.Nodes[thunk.function.defn.Children[0]].Eval(frame, true, ast)
@@ -593,8 +593,8 @@ func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 		return listVal
 	case NodeKindLiteralFunction:
 		return ValueFunction{
-			defn:        &n,
-			parentFrame: frame,
+			defn:  &n,
+			frame: frame,
 		}
 	case NodeKindExprMatch:
 		conditionVal := ast.Nodes[n.Children[0]].Eval(frame, false, ast)
