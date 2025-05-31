@@ -494,7 +494,7 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 
 		xs := make([]Value, len(leftSide.Children))
 		res := ValueList{&xs}
-		for i := 0; i < len(leftSide.Children); i++ {
+		for i := range len(leftSide.Children) {
 			leftSide := leftSide.Children[i]
 			v := define(frame, ast, ast.Nodes[leftSide], (*rightList.xs)[i])
 			if isErr(v) {
@@ -510,32 +510,26 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 		}
 
 		res := make(ValueComposite, len(leftSide.Children)/2)
-		var k_ func(int) Value
-		k_ = func(i int) Value {
-			if i*2 < len(leftSide.Children) {
-				keyN, val := ast.Nodes[leftSide.Children[2*i]], leftSide.Children[2*i+1]
-				key, err := operandToStringKey(keyN, frame, ast)
-				if err != nil {
-					return ValueError{&Err{err, ErrRuntime, "invalid key in dict destructure assignment", keyN.Pos}}
-				}
-
-				rightSide, ok := rightComposite[key]
-				if !ok {
-					knownKeys := fun.Keys(rightComposite)
-					return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", key, knownKeys), keyN.Position(ast)}}
-				}
-
-				v := define(frame, ast, ast.Nodes[val], rightSide)
-				if isErr(v) {
-					return v
-				}
-				res[key] = v
-				return k_(i + 1)
-			} else {
-				return res
+		for i := 0; i*2 < len(leftSide.Children); i++ {
+			keyN, val := ast.Nodes[leftSide.Children[2*i]], leftSide.Children[2*i+1]
+			key, err := operandToStringKey(keyN, frame, ast)
+			if err != nil {
+				return ValueError{&Err{err, ErrRuntime, "invalid key in dict destructure assignment", keyN.Pos}}
 			}
+
+			rightSide, ok := rightComposite[key]
+			if !ok {
+				knownKeys := fun.Keys(rightComposite)
+				return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot destructure unknown key %s in dict, known keys are: %v", key, knownKeys), keyN.Position(ast)}}
+			}
+
+			v := define(frame, ast, ast.Nodes[val], rightSide)
+			if isErr(v) {
+				return v
+			}
+			res[key] = v
 		}
-		return k_(0)
+		return res
 	default:
 		// TODO: show node as-is, store position start and end instead of just start
 		return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("cannot assign value to non-identifier %s", leftSide), leftSide.Position(ast)}}
