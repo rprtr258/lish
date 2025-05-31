@@ -47,12 +47,12 @@ func LogError(err *Err) {
 	}
 }
 
-func LogFrame(scope *StackFrame) {
+func LogFrame(frame *StackFrame) {
 	if !L.Dump {
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "frame dump:\n%s\n", scope.String())
+	fmt.Fprintf(os.Stdout, "frame dump:\n%s\n", frame.String())
 }
 
 func LogToken2(parserStr string, format string, args ...any) {

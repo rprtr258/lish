@@ -551,7 +551,6 @@ func define(frame *StackFrame, ast *AST, leftSide Node, rightValue Value) Value 
 func (n Node) Eval(frame *StackFrame, allowThunk bool, ast *AST) Value {
 	switch n.Kind {
 	case NodeKindIdentifier:
-		// LogScope(scope)
 		val, ok := frame.Get(n.Meta.(string))
 		if !ok {
 			return ValueError{&Err{nil, ErrRuntime, fmt.Sprintf("%s is not defined", n.Meta.(string)), n.Position(ast)}}
